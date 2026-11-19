@@ -446,6 +446,7 @@
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
           <button class="btn btn-soft btn-sm" onclick="openShareModal()">🔗 공유</button>
+          <button class="btn btn-soft btn-sm" onclick="openSyncTab()">☁️ 동기화</button>
           <span class="pill dday" id="hdr-dday">D-Day</span>
         </div>
       </div>
@@ -901,7 +902,6 @@
       <button class="nav-btn" data-tab="expenses"><span class="ico">💰</span>경비</button>
       <button class="nav-btn" data-tab="weather"><span class="ico">🧥</span>날씨·옷</button>
       <button class="nav-btn" data-tab="checklist"><span class="ico">✅</span>알림·체크</button>
-      <button class="nav-btn" data-tab="sync"><span class="ico">☁️</span>동기화</button>
     </div>
   </nav>
 
@@ -2480,6 +2480,13 @@
       if (!confirm("기본 부산 2박 3일 일정으로 되돌릴까요?")) return;
       state = structuredClone(DEFAULT_DATA);
       saveState();
+    }
+
+    function openSyncTab() {
+      document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+      document.getElementById("tab-sync")?.classList.add("active");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     document.querySelectorAll(".nav-btn").forEach(btn => {
