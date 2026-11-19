@@ -454,15 +454,18 @@
       <!-- TAB 1: TIMELINE -->
       <section id="tab-timeline" class="tab-panel active">
         <div class="day-tabs" id="day-tabs"></div>
-        <div class="planb-bar">
-          <div>
-            <div style="font-weight:800;font-size:13.5px;">☔ 우천·한파용 플랜 B 보기</div>
-            <div style="font-size:11.5px;color:var(--muted);">날씨가 궂을 때 대체 실내 동선 확인</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+          <div class="planb-bar" style="flex:1;margin-bottom:0;padding:8px 12px;">
+            <div>
+              <div style="font-weight:800;font-size:13px;">☔ 플랜 B</div>
+              <div style="font-size:11px;color:var(--muted);">우천·한파 대체</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="planb-toggle" />
+              <span class="slider"></span>
+            </label>
           </div>
-          <label class="switch">
-            <input type="checkbox" id="planb-toggle" />
-            <span class="slider"></span>
-          </label>
+          <button id="edit-mode-btn" class="btn btn-soft" style="height:48px;white-space:nowrap;" onclick="toggleEditMode()">✏️ 일정 편집</button>
         </div>
         <div id="planb-content" class="planb-box" style="display:none;"></div>
         <div class="card" style="padding:10px;">
@@ -473,7 +476,7 @@
           <div id="day-map" style="margin-bottom:0;"></div>
         </div>
         <div id="timeline-list"></div>
-        <button class="btn btn-soft" style="width:100%;margin-bottom:12px;" onclick="openPlaceModal(null)">+ 이 날 일정 추가하기</button>
+        <button id="add-place-btn" class="btn btn-soft" style="width:100%;margin-bottom:12px;display:none;" onclick="openPlaceModal(null)">+ 이 날 일정 추가하기</button>
       </section>
 
       <!-- TAB 2: EXPENSES -->
@@ -827,6 +830,7 @@
     let currentSyncId = urlTripParam || DEFAULT_SB.syncId;
     let state = loadState();
     let currentDay = 1;
+    let editMode = false;
     let sbClient = null;
     let sbChannel = null;
     let saveTimer = null;
@@ -938,15 +942,28 @@
                 <a class="map-btn" href="${it.mapUrl}" target="_blank" onclick="event.stopPropagation()">지도</a>
               </div>
             </div>
+            ${editMode ? `
             <div style="display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9;" onclick="event.stopPropagation()">
               <button class="btn btn-soft btn-sm" onclick="moveItem(${idx}, -1)" ${idx === 0 ? "disabled" : ""}>↑</button>
               <button class="btn btn-soft btn-sm" onclick="moveItem(${idx}, 1)" ${idx === dayObj.items.length - 1 ? "disabled" : ""}>↓</button>
               <button class="btn btn-soft btn-sm" style="flex:1;" onclick="openPlaceModal('${it.id}')">✏️ 장소 수정</button>
               <button class="btn btn-danger btn-sm" onclick="deleteItem('${it.id}')">삭제</button>
-            </div>
+            </div>` : ""}
           </div>
         `;
       }).join("");
+      const addBtn = document.getElementById("add-place-btn");
+      if (addBtn) addBtn.style.display = editMode ? "flex" : "none";
+      const emBtn = document.getElementById("edit-mode-btn");
+      if (emBtn) {
+        emBtn.textContent = editMode ? "✓ 편집 완료" : "✏️ 일정 편집";
+        emBtn.className = editMode ? "btn btn-primary" : "btn btn-soft";
+      }
+    }
+
+    function toggleEditMode() {
+      editMode = !editMode;
+      renderTimeline();
     }
 
     function moveItem(idx, delta) {
