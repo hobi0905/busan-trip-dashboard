@@ -6261,7 +6261,7 @@
        🎁 혜택 체크 (국내·해외 할인/패스/멤버십 DB)
        ===================================================================== */
     const BENEFIT_RULES = [
-      { id: "ktx", scope: "KR", test: (it, txt) => /KTX|SRT|기차|열차|코레일|광명/.test(txt) && (Number(it.costTotal) || 0) >= 10000,
+      { id: "ktx", scope: "KR", test: (it, txt) => /KTX|SRT|코레일|ITX|무궁화|새마을/.test(txt) && (Number(it.costTotal) || 0) >= 10000,
         title: "KTX 청년·힘내라 청춘 / N카드 / 조조할인", low: 0.05, high: 0.3,
         tip: "코레일 앱에서 청년(만 24세 이하)·힘내라 청춘·N카드(2인 동반석)·조조할인(5~20%) 중 가장 유리한 것만 골라 적용. 카드사 할인은 별도.",
         where: "letskorail.com" },
@@ -6277,11 +6277,11 @@
         title: "통신사 멤버십·카드사 외식 할인", low: 0.03, high: 0.1,
         tip: "SKT T멤버십·카드사 외식 브랜드 할인, 캐치테이블·테이블링 예약 쿠폰 확인. 현장 결제 전에 앱에서 매장을 찾아보세요.",
         where: "멤버십 앱" },
-      { id: "transit", scope: "KR", test: (it, txt) => /버스|지하철|1호선|2호선|전철|환승|대중교통|급행/.test(txt) && (Number(it.moveCost) || 0) > 0,
+      { id: "transit", scope: "KR", test: (it, txt) => inferItemExpenseCategory(it) === "교통" && (Number(it.moveCost) || 0) > 0,
         title: "대중교통 교통카드·정액권", low: 0, high: 0.06,
         tip: "1회권 대신 교통카드(환승 할인). 하루 3회 이상 타면 1일권·K-패스가 유리한지 계산해 보세요.",
         where: "부산 교통카드" },
-      { id: "pass", scope: "KR", test: (it, txt) => /전망대|박물관|미술관|투어|입장|관광|해수욕장|타워/.test(txt) && (Number(it.costTotal) || 0) >= 8000,
+      { id: "pass", scope: "KR", test: (it, txt) => !Array.isArray(it.menus) && /전망대|박물관|미술관|투어|입장|관광지|해수욕장|타워/.test(txt) && (Number(it.costTotal) || 0) >= 8000,
         title: "관광지 온라인 예매·지역 패스", low: 0.05, high: 0.25,
         tip: "공식 온라인 예매 할인. 2곳 이상 유료 관광지를 가면 Visit Busan Pass·시티투어 패스가 이득인지 계산.",
         where: "visitbusan.net" },
@@ -6386,7 +6386,8 @@
       if (it.benefitApplied) return false;
       it.badges = it.badges || [];
       if (!it.badges.includes("🎁 할인 가능")) it.badges.push("🎁 할인 가능");
-      const note = `🎁 ${f.title} (예상 절감 ${f.saveText}) — ${f.tip}`;
+      const shortTip = (String(f.tip || "").split(". ")[0] || f.tip || "").slice(0, 64);
+      const note = `🎁 ${f.title} (예상 절감 ${f.saveText}) — ${shortTip}`;
       it.memo = String(it.memo || "");
       if (!it.memo.includes(f.title)) it.memo = (it.memo ? it.memo + " · " : "") + note;
       it.benefitApplied = { title: f.title, saveText: f.saveText, where: f.where, at: new Date().toISOString() };
