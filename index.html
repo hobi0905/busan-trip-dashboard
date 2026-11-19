@@ -2043,6 +2043,7 @@
 
     function saveState(skipCloud = false) {
       try { syncDiningChecklist(); ensureAirportOutfitAlert(); } catch (e) { console.warn("checklist sync error", e); }
+      try { savePersonalPackingLocal(getPacking()); } catch (e) {}
       localStorage.setItem(getLocalKey(), JSON.stringify(state));
       try { registerMyTrip(currentSyncId, state.meta, true); } catch (e) {}
       renderAll();
@@ -5719,9 +5720,38 @@
     let packingDraftTrip = "";
     let packingDraftSeq = 0;
 
+    function getPackingUserId() {
+      return (myProfile && myProfile.id) ? myProfile.id : "default";
+    }
+
+    function getPersonalPackingStorageKey() {
+      return `trip_packing_${currentSyncId}_${getPackingUserId()}`;
+    }
+
+    function savePersonalPackingLocal(pObj) {
+      try { localStorage.setItem(getPersonalPackingStorageKey(), JSON.stringify(pObj)); } catch {}
+    }
+
     function getPacking() {
-      if (!state.packing || typeof state.packing !== "object") state.packing = {};
-      return state.packing;
+      const uid = getPackingUserId();
+      if (!state.packingByUser || typeof state.packingByUser !== "object") state.packingByUser = {};
+      if (!state.packingByUser[uid]) {
+        // Migrate legacy shared state.packing for host/single-user only
+        const isOwner = !state.meta?.hostId || state.meta.hostId === uid;
+        if (isOwner && state.packing && typeof state.packing === "object" && state.packing.setupDone) {
+          state.packingByUser[uid] = structuredClone(state.packing);
+        } else {
+          try {
+            const raw = localStorage.getItem(getPersonalPackingStorageKey());
+            if (raw) {
+              state.packingByUser[uid] = JSON.parse(raw);
+              return state.packingByUser[uid];
+            }
+          } catch {}
+          state.packingByUser[uid] = {};
+        }
+      }
+      return state.packingByUser[uid];
     }
 
     function packingDraftInit() {
@@ -5992,6 +6022,7 @@
       const p = getPacking();
       const ctx = packingContext();
       const draft = packingDraftInit();
+      const myNick = (myProfile && myProfile.nickname) ? `${myProfile.nickname}님의 ` : "내 ";
 
       if (!p.setupDone) {
         const chip = (kind, key, label, active) =>
@@ -5999,8 +6030,8 @@
         const hasItems = (p.items || []).length > 0;
         host.innerHTML = `
           <div class="card">
-            <div style="font-size:15px;font-weight:800;">🧳 짐 챙기기 설정</div>
-            <div style="font-size:12px;color:var(--muted);margin:4px 0 12px;line-height:1.5;">조건을 고르면 <b>${ctx.nights}박 ${ctx.days}일</b> 일정·날씨·바다 일정까지 계산해서 짐 목록을 자동으로 만들어 드려요.</div>
+            <div style="font-size:15px;font-weight:800;">🧳 ${myNick}짐 챙기기 설정</div>
+            <div style="font-size:12px;color:var(--muted);margin:4px 0 12px;line-height:1.5;">동반인 각자의 조건에 맞춰 <b>${ctx.nights}박 ${ctx.days}일</b> 개인 짐 목록을 따로 만들어 드려요.</div>
             <div style="font-size:11.5px;font-weight:800;color:var(--ocean-dark);margin-bottom:4px;">성별</div>
             <div class="pk-setup-chips" style="margin-bottom:10px;">${PACKING_GENDERS.map(g => chip("gender", g.key, g.label, draft.gender === g.key)).join("")}</div>
             <div style="font-size:11.5px;font-weight:800;color:var(--ocean-dark);margin-bottom:4px;">연령대</div>
@@ -6041,7 +6072,7 @@
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
             <div>
-              <div style="font-size:15px;font-weight:800;">🧳 짐 챙기기</div>
+              <div style="font-size:15px;font-weight:800;">🧳 ${myNick}짐 챙기기</div>
               <div style="font-size:11.5px;color:var(--muted);margin-top:2px;">${ctx.nights}박 ${ctx.days}일 · ${styleLabel} · ${genderLabel} ${ageLabel}</div>
             </div>
             <div style="font-size:13px;font-weight:800;color:var(--ocean-dark);white-space:nowrap;">${done}/${items.length}</div>
