@@ -3646,6 +3646,13 @@
     function updateAccessGate() {
       if (!splashDone) return;
       const jm = document.getElementById("join-modal");
+      // 새 여행 선택·설정 창이 떠 있는 동안에는 승인 요청 창을 겹쳐 띄우지 않는다
+      const newTripFlowOpen = ["trip-type-modal", "new-trip-setup-modal", "overseas-setup-modal"]
+        .some(id => document.getElementById(id)?.classList.contains("open"));
+      if (newTripFlowOpen) {
+        if (jm) jm.classList.remove("open");
+        return;
+      }
       if (isNewFlow && !myProfile.nickname) {
         document.body.classList.remove("unlocked");
         if (jm) jm.classList.remove("open");
