@@ -755,7 +755,8 @@
         <input id="pm-stay" class="input" placeholder="체류" style="width:90px;" />
       </div>
       <div class="row">
-        <input id="pm-memo" class="input" placeholder="메모" />
+        <input id="pm-memo" class="input" placeholder="메모" style="flex:1;" />
+        <input id="pm-cost" type="number" class="input" placeholder="금액(원)" style="width:115px;" />
       </div>
       <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;margin-bottom:10px;cursor:pointer;">
         <input type="checkbox" id="pm-has-menus" />
@@ -1303,14 +1304,25 @@
       return `${hh}:${mm}`;
     }
 
+    function isCurrentDayWeekend() {
+      const dayObj = state.days.find(d => d.day === currentDay);
+      if (!dayObj?.date) return false;
+      const d = new Date(dayObj.date + "T00:00:00");
+      const dow = d.getDay();
+      return dow === 0 || dow === 6;
+    }
+
     function predictTaxiForTime(depStr, baseDistM, baseDurS) {
       const m = String(depStr || "").match(/^(\d{1,2}):(\d{2})$/);
       const minsOfDay = m ? (Number(m[1]) * 60 + Number(m[2])) : 600;
-      let factor = 1.05, label = "낮 평시", night = false;
-      if ((minsOfDay >= 450 && minsOfDay <= 570) || (minsOfDay >= 1050 && minsOfDay <= 1200)) {
-        factor = 1.28; label = "출퇴근 혼잡";
-      } else if (minsOfDay >= 1320 || minsOfDay < 240) {
+      const weekend = isCurrentDayWeekend();
+      let factor = 1.05, label = weekend ? "주말 평시" : "낮 평시", night = false;
+      if (minsOfDay >= 1320 || minsOfDay < 240) {
         factor = 0.85; label = "심야(할증)"; night = true;
+      } else if (!weekend && ((minsOfDay >= 450 && minsOfDay <= 570) || (minsOfDay >= 1050 && minsOfDay <= 1200))) {
+        factor = 1.28; label = "출퇴근 혼잡";
+      } else if (weekend && minsOfDay >= 780 && minsOfDay <= 1140) {
+        factor = 1.12; label = "주말 나들이";
       }
       const mins = Math.max(2, Math.round((baseDurS / 60) * factor));
       const baseFare = 4800 + Math.max(0, baseDistM - 1600) / 131 * 100;
@@ -1333,17 +1345,27 @@
       const depVal = (document.getElementById("tr-dep").value.trim() || "10:00");
       const { distM, durS, km } = trRouteCache;
       const cur = predictTaxiForTime(depVal, distM, durS);
-      const slots = [
+      if (/^\d{1,2}:\d{2}$/.test(depVal)) {
+        document.getElementById("tr-arr").value = cur.arr;
+        document.getElementById("tr-cost").value = String(cur.fare);
+      }
+      const weekend = isCurrentDayWeekend();
+      const slots = (weekend ? [
+        { icon: "🌅", tag: "오전", dep: "10:00" },
+        { icon: "☀️", tag: "낮", dep: "14:00" },
+        { icon: "🌆", tag: "저녁", dep: "19:00" },
+        { icon: "🌙", tag: "심야", dep: "23:00" }
+      ] : [
         { icon: "🌅", tag: "출근", dep: "08:30" },
         { icon: "☀️", tag: "낮", dep: "14:00" },
         { icon: "🌆", tag: "퇴근", dep: "18:30" },
         { icon: "🌙", tag: "심야", dep: "23:00" }
-      ].map(s => ({ ...s, ...predictTaxiForTime(s.dep, distM, durS) }));
+      ]).map(s => ({ ...s, ...predictTaxiForTime(s.dep, distM, durS) }));
 
       box.innerHTML = `
         <div style="background:#f0f9ff;border:1.5px solid #38bdf8;border-radius:10px;padding:8px 10px;margin-top:4px;">
           <div style="font-size:11px;font-weight:700;color:var(--ocean-dark);margin-bottom:6px;">
-            🚕 도로 ${km.toFixed(1)}km · 누르면 도착시각·비용 자동 입력 후 바로 일정 추가!
+            🚕 도로 ${km.toFixed(1)}km (${weekend ? "주말 기준" : "평일 기준"}) · 누르면 바로 일정 추가!
           </div>
           <button type="button" class="btn btn-primary" style="width:100%;margin-bottom:6px;text-align:left;display:flex;justify-content:space-between;align-items:center;"
             onclick="applyTaxiPrediction('${cur.dep}','${cur.arr}',${cur.fare})">
@@ -1482,6 +1504,7 @@
       document.getElementById("pm-move").value = it ? (it.moveMode || "") : "";
       document.getElementById("pm-stay").value = it ? (it.stay || "") : "체류 60분";
       document.getElementById("pm-memo").value = it ? (it.memo || "") : "";
+      document.getElementById("pm-cost").value = it ? (it.costTotal ?? it.moveCost ?? 0) : "";
       document.getElementById("pm-has-menus").checked = it ? Array.isArray(it.menus) : false;
       pickedLat = it?.lat ?? null;
       pickedLng = it?.lng ?? null;
@@ -1554,6 +1577,8 @@
       const moveMode = document.getElementById("pm-move").value.trim();
       const stay = document.getElementById("pm-stay").value.trim();
       const memo = document.getElementById("pm-memo").value.trim();
+      const costVal = document.getElementById("pm-cost").value.trim();
+      const costNum = costVal === "" ? null : Math.max(0, Number(costVal) || 0);
       const hasMenus = document.getElementById("pm-has-menus").checked;
       const mapUrl = `https://map.naver.com/p/search/${encodeURIComponent(toPlace || place)}`;
 
@@ -1561,6 +1586,10 @@
         const it = dayObj.items.find(x => x.id === editingPlaceId);
         if (it) {
           it.time = time; it.place = place; it.moveMode = moveMode; it.stay = stay; it.memo = memo; it.mapUrl = mapUrl;
+          if (costNum !== null) {
+            it.costTotal = costNum;
+            if (placeEditMode === "route" || it.moveCost) it.moveCost = costNum;
+          }
           if (placeEditMode === "route") { it.fromPlace = fromPlace; it.toPlace = toPlace; }
           else { delete it.fromPlace; delete it.toPlace; }
           if (typeof pickedLat === "number") { it.lat = pickedLat; it.lng = pickedLng; }
@@ -1568,9 +1597,10 @@
           if (!hasMenus) delete it.menus;
         }
       } else {
+        const c = costNum ?? 0;
         const newItem = {
           id: "d" + currentDay + "-" + Date.now(),
-          time, place, stay, moveMode, moveMin: 10, moveCost: 0, costTotal: 0,
+          time, place, stay, moveMode, moveMin: 10, moveCost: placeEditMode === "route" ? c : 0, costTotal: c,
           badges: ["직접 추가"], mapUrl, memo
         };
         if (placeEditMode === "route") { newItem.fromPlace = fromPlace; newItem.toPlace = toPlace; }
