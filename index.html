@@ -2579,7 +2579,7 @@
       try {
         const q = `[out:json][timeout:6];(node${filter}["name"](around:1800,${aLat},${aLng});way${filter}["name"](around:1800,${aLat},${aLng}););out center 15;`;
         const ctrl = new AbortController();
-        const tid = setTimeout(() => ctrl.abort(), 5000);
+        const tid = setTimeout(() => ctrl.abort(), 3500);
         const r = await fetch("https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(q), { signal: ctrl.signal });
         clearTimeout(tid);
         const data = await r.json();
@@ -2604,6 +2604,17 @@
         seen.add(key);
         const distKm = calcDistKm(aLat, aLng, s.lat, s.lng);
         merged.push({ ...s, distKm });
+      }
+      // 요청한 목적의 후보가 5곳보다 적으면 가까운 다른 추천 후보로 5곳을 채운다
+      if (merged.length < 5) {
+        const fillers = CURATED_BUSAN_SPOTS
+          .filter(s => !seen.has(s.name.replace(/\s+/g, "")))
+          .map(s => ({ ...s, source: "추천", timeMatch: 1, distKm: calcDistKm(aLat, aLng, s.lat, s.lng) }))
+          .sort((a, b) => a.distKm - b.distKm);
+        for (const f of fillers) {
+          if (merged.length >= 5) break;
+          merged.push(f);
+        }
       }
       merged.sort((a, b) => ((a.timeMatch || 0) - (b.timeMatch || 0)) || (a.distKm - b.distKm));
       const top5 = merged.slice(0, 5);
