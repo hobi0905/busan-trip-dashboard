@@ -1442,6 +1442,10 @@
 
     // 지도 핀 좌표는 로컬/클라우드에 저장된 일정 데이터에 없을 수 있으므로,
     // 기본 데이터에 정의된 좌표를 일정 id 기준으로 항상 사용할 수 있게 둔다.
+    const COORD_BY_ID = {};
+    DEFAULT_DATA.days.forEach(d => (d.items || []).forEach(it => {
+      if (typeof it.lat === "number" && typeof it.lng === "number") COORD_BY_ID[it.id] = [it.lat, it.lng];
+    }));
     /* =====================================================================
        국내 / 해외 여행 모드 + 국가별 필수 출국 요건
        ===================================================================== */
@@ -2853,7 +2857,7 @@
       }
       const dayObj = state.days.find(d => d.day === currentDay) || state.days[0];
       dayMapPts = (dayObj.items || []).map(it => {
-        const ll = (typeof it.lat === "number" && typeof it.lng === "number") ? [it.lat, it.lng] : COORD_BY_ID[it.id];
+        const ll = (typeof it.lat === "number" && typeof it.lng === "number") ? [it.lat, it.lng] : (COORD_BY_ID[it.id] || null);
         return ll ? { it, ll } : null;
       }).filter(Boolean);
       leafletMap.closePopup();
