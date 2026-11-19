@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root {
       --bg: #f8fafc;
@@ -472,6 +473,7 @@
           <div id="day-map" style="margin-bottom:0;"></div>
         </div>
         <div id="timeline-list"></div>
+        <button class="btn btn-soft" style="width:100%;margin-bottom:12px;" onclick="openPlaceModal(null)">+ 이 날 일정 추가하기</button>
       </section>
 
       <!-- TAB 2: EXPENSES -->
@@ -636,6 +638,37 @@
     </div>
   </div>
 
+  <!-- PLACE EDIT / SEARCH MODAL -->
+  <div id="place-modal" class="modal-backdrop" onclick="if(event.target===this)closePlaceModal()">
+    <div class="modal-sheet">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div id="place-modal-title" style="font-size:16px;font-weight:800;">✏️ 장소 수정 / 검색</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closePlaceModal()">닫기</button>
+      </div>
+      <div class="row">
+        <input id="pm-search-q" class="input" placeholder="장소명 검색 (예: 해운대 암소갈비)" onkeydown="if(event.key==='Enter')searchPlaceOnMap()" />
+        <button class="btn btn-primary btn-sm" onclick="searchPlaceOnMap()">검색</button>
+      </div>
+      <div id="pm-search-results" style="max-height:130px;overflow-y:auto;margin-bottom:8px;"></div>
+      <div class="row">
+        <input id="pm-time" class="input" placeholder="시간 (예: 13:00)" style="width:95px;" />
+        <input id="pm-place" class="input" placeholder="장소명" />
+      </div>
+      <div class="row">
+        <input id="pm-move" class="input" placeholder="이동수단 (예: 도보 5분)" />
+        <input id="pm-stay" class="input" placeholder="체류 (예: 50분)" style="width:105px;" />
+      </div>
+      <div class="row">
+        <input id="pm-memo" class="input" placeholder="메모" />
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;margin-bottom:10px;cursor:pointer;">
+        <input type="checkbox" id="pm-has-menus" />
+        <span>식당·카페 (클릭 시 메뉴판 선택 가능)</span>
+      </label>
+      <button class="btn btn-primary" style="width:100%;" onclick="savePlaceEdit()">저장하기</button>
+    </div>
+  </div>
+
   <!-- MENU MODAL -->
   <div id="menu-modal" class="modal-backdrop" onclick="if(event.target===this)closeMenuModal()">
     <div class="modal-sheet">
@@ -643,7 +676,21 @@
         <div id="menu-modal-title" style="font-size:16px;font-weight:800;">🍽️ 메뉴 선택</div>
         <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeMenuModal()">닫기</button>
       </div>
-      <div id="menu-modal-list" style="max-height:46vh;overflow-y:auto;"></div>
+      <div id="menu-modal-list" style="max-height:34vh;overflow-y:auto;"></div>
+      <details style="margin-top:8px;background:var(--ocean-soft);padding:8px 10px;border-radius:10px;border:1px solid #bae6fd;">
+        <summary style="font-size:12.5px;font-weight:800;color:var(--ocean-dark);cursor:pointer;">📥 메뉴판 한 번에 불러오기 (텍스트 / 사진)</summary>
+        <div style="margin-top:8px;">
+          <textarea id="menu-bulk-text" rows="3" class="input" placeholder="네이버 지도 메뉴 텍스트 붙여넣기 (예: 아메리카노 5,500원)&#10;또는 캡처 이미지를 여기에 Ctrl+V 붙여넣기!"></textarea>
+          <div class="row" style="margin-top:6px;margin-bottom:4px;">
+            <button class="btn btn-primary btn-sm" style="flex:1;" onclick="applyBulkMenuText()">텍스트로 일괄 추가</button>
+            <label class="btn btn-soft btn-sm" style="flex:1;cursor:pointer;">
+              📷 사진 첨부 (OCR)
+              <input id="menu-ocr-file" type="file" accept="image/*" style="display:none;" onchange="handleMenuImageFile(this.files[0])" />
+            </label>
+          </div>
+          <div id="menu-ocr-status" style="font-size:11.5px;color:var(--ocean-dark);"></div>
+        </div>
+      </details>
       <div class="row" style="margin-top:8px;">
         <input id="menu-custom-name" class="input" placeholder="직접 추가 메뉴명" />
         <input id="menu-custom-price" type="number" class="input" placeholder="가격" style="width:95px;" />
@@ -863,7 +910,7 @@
 
       const n = Math.max(1, Number(state.meta.travelers) || 2);
       const listEl = document.getElementById("timeline-list");
-      listEl.innerHTML = dayObj.items.map(it => {
+      listEl.innerHTML = dayObj.items.map((it, idx) => {
         const badges = (it.badges || []).map(b => {
           let cls = "tag";
           if (b.includes("휴무") || b.includes("필수")) cls += " warn";
@@ -871,7 +918,7 @@
           return `<span class="${cls}">${b}</span>`;
         }).join("");
         const per = Math.round((it.costTotal || 0) / n);
-        const hasMenus = Array.isArray(it.menus) && it.menus.length > 0;
+        const hasMenus = Array.isArray(it.menus);
         const picked = hasMenus ? it.menus.filter(m => m.qty > 0) : [];
         const pickedText = picked.length ? picked.map(m => `${m.name}×${m.qty}`).join(" · ") : "";
         return `
@@ -879,22 +926,210 @@
             <div class="tl-head">
               <span class="tl-time">${it.time}</span>
               <div class="tl-place">${it.place}</div>
-              <span class="tl-stay">${it.stay}</span>
+              <span class="tl-stay">${it.stay || ""}</span>
             </div>
             <div class="tl-badges">${badges}${hasMenus ? `<span class="tag blue">🍽️ 메뉴 선택</span>` : ""}</div>
             ${pickedText ? `<div style="font-size:12.5px;font-weight:700;color:var(--ocean-dark);background:var(--ocean-soft);padding:6px 9px;border-radius:8px;margin-bottom:6px;">🍴 ${pickedText} (${fmt(it.costTotal)})</div>` : ""}
             <div class="tl-memo">${it.memo || ""}</div>
             <div class="tl-meta">
-              <div class="tl-move">🚶 ${it.moveMode} (${it.moveMin}분 · ${fmt(it.moveCost)})</div>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <span class="tl-cost">${fmt(it.costTotal)} <span style="font-weight:500;color:var(--muted);">(1인 ${fmt(per)})</span></span>
+              <div class="tl-move">🚶 ${it.moveMode || ""} (${it.moveMin || 0}분 · ${fmt(it.moveCost || 0)})</div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span class="tl-cost">${fmt(it.costTotal || 0)} <span style="font-weight:500;color:var(--muted);">(1인 ${fmt(per)})</span></span>
                 <a class="map-btn" href="${it.mapUrl}" target="_blank" onclick="event.stopPropagation()">지도</a>
               </div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9;" onclick="event.stopPropagation()">
+              <button class="btn btn-soft btn-sm" onclick="moveItem(${idx}, -1)" ${idx === 0 ? "disabled" : ""}>↑</button>
+              <button class="btn btn-soft btn-sm" onclick="moveItem(${idx}, 1)" ${idx === dayObj.items.length - 1 ? "disabled" : ""}>↓</button>
+              <button class="btn btn-soft btn-sm" style="flex:1;" onclick="openPlaceModal('${it.id}')">✏️ 장소 수정</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteItem('${it.id}')">삭제</button>
             </div>
           </div>
         `;
       }).join("");
     }
+
+    function moveItem(idx, delta) {
+      const dayObj = state.days.find(d => d.day === currentDay);
+      if (!dayObj) return;
+      const target = idx + delta;
+      if (target < 0 || target >= dayObj.items.length) return;
+      const [moved] = dayObj.items.splice(idx, 1);
+      dayObj.items.splice(target, 0, moved);
+      saveState();
+    }
+
+    function deleteItem(itemId) {
+      if (!confirm("이 일정을 삭제할까요?")) return;
+      const dayObj = state.days.find(d => d.day === currentDay);
+      if (!dayObj) return;
+      dayObj.items = dayObj.items.filter(x => x.id !== itemId);
+      saveState();
+    }
+
+    let editingPlaceId = null;
+    let pickedLat = null, pickedLng = null;
+
+    function openPlaceModal(itemId) {
+      editingPlaceId = itemId;
+      const dayObj = state.days.find(d => d.day === currentDay);
+      const it = itemId ? dayObj?.items.find(x => x.id === itemId) : null;
+      document.getElementById("place-modal-title").textContent = it ? "✏️ 장소 수정 / 검색" : "➕ 새 일정 추가";
+      document.getElementById("pm-search-q").value = it ? it.place : "";
+      document.getElementById("pm-search-results").innerHTML = "";
+      document.getElementById("pm-time").value = it ? it.time : "12:00";
+      document.getElementById("pm-place").value = it ? it.place : "";
+      document.getElementById("pm-move").value = it ? (it.moveMode || "") : "";
+      document.getElementById("pm-stay").value = it ? (it.stay || "") : "체류 60분";
+      document.getElementById("pm-memo").value = it ? (it.memo || "") : "";
+      document.getElementById("pm-has-menus").checked = it ? Array.isArray(it.menus) : false;
+      pickedLat = it?.lat ?? null;
+      pickedLng = it?.lng ?? null;
+      document.getElementById("place-modal").classList.add("open");
+    }
+
+    function closePlaceModal() { document.getElementById("place-modal").classList.remove("open"); }
+
+    async function searchPlaceOnMap() {
+      const q = document.getElementById("pm-search-q").value.trim();
+      if (!q) return;
+      const resEl = document.getElementById("pm-search-results");
+      resEl.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:4px;">검색 중...</div>`;
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=kr&limit=5&q=${encodeURIComponent(q)}`);
+        const list = await r.json();
+        if (!list.length) {
+          resEl.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:4px;">검색 결과가 없습니다. 앞에 '부산 '을 붙여 다시 검색해 보세요.</div>`;
+          return;
+        }
+        resEl.innerHTML = list.map((p, i) => `
+          <div class="expense-item" style="padding:6px 4px;cursor:pointer;" onclick="selectSearchPlace(${i})">
+            <div style="font-size:12px;">
+              <strong>${p.name || q}</strong>
+              <div style="color:var(--muted);font-size:11px;">${p.display_name}</div>
+            </div>
+            <span class="tag blue">선택</span>
+          </div>
+        `).join("");
+        window._lastPlaceResults = list;
+      } catch {
+        resEl.innerHTML = `<div style="font-size:12px;color:var(--danger);padding:4px;">지도 검색 중 오류가 발생했습니다.</div>`;
+      }
+    }
+
+    function selectSearchPlace(i) {
+      const p = (window._lastPlaceResults || [])[i];
+      if (!p) return;
+      document.getElementById("pm-place").value = p.name || document.getElementById("pm-search-q").value.trim();
+      pickedLat = parseFloat(p.lat);
+      pickedLng = parseFloat(p.lon);
+      document.getElementById("pm-search-results").innerHTML = `<div style="font-size:12px;color:var(--success);padding:4px;">✓ 좌표 선택됨 (${pickedLat.toFixed(4)}, ${pickedLng.toFixed(4)})</div>`;
+    }
+
+    function savePlaceEdit() {
+      const dayObj = state.days.find(d => d.day === currentDay);
+      if (!dayObj) return;
+      const time = document.getElementById("pm-time").value.trim() || "12:00";
+      const place = document.getElementById("pm-place").value.trim();
+      if (!place) return alert("장소명을 입력해 주세요.");
+      const moveMode = document.getElementById("pm-move").value.trim();
+      const stay = document.getElementById("pm-stay").value.trim();
+      const memo = document.getElementById("pm-memo").value.trim();
+      const hasMenus = document.getElementById("pm-has-menus").checked;
+      const mapUrl = `https://map.naver.com/p/search/${encodeURIComponent(place)}`;
+
+      if (editingPlaceId) {
+        const it = dayObj.items.find(x => x.id === editingPlaceId);
+        if (it) {
+          it.time = time; it.place = place; it.moveMode = moveMode; it.stay = stay; it.memo = memo; it.mapUrl = mapUrl;
+          if (typeof pickedLat === "number") { it.lat = pickedLat; it.lng = pickedLng; }
+          if (hasMenus && !Array.isArray(it.menus)) it.menus = [];
+          if (!hasMenus) delete it.menus;
+        }
+      } else {
+        const newItem = {
+          id: "d" + currentDay + "-" + Date.now(),
+          time, place, stay, moveMode, moveMin: 10, moveCost: 0, costTotal: 0,
+          badges: ["직접 추가"], mapUrl, memo
+        };
+        if (typeof pickedLat === "number") { newItem.lat = pickedLat; newItem.lng = pickedLng; }
+        if (hasMenus) newItem.menus = [];
+        dayObj.items.push(newItem);
+      }
+      closePlaceModal();
+      saveState();
+    }
+
+    function parseMenuTextToItems(text) {
+      const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      const found = [];
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const mInline = line.match(/^(.+?)\s+([0-9][0-9,]{2,})\s*원?$/);
+        if (mInline) {
+          const price = Number(mInline[2].replace(/,/g, ""));
+          if (price >= 500) found.push({ name: mInline[1].trim(), price, qty: 0 });
+          continue;
+        }
+        if (i + 1 < lines.length) {
+          const mNext = lines[i + 1].match(/^([0-9][0-9,]{2,})\s*원?$/);
+          if (mNext && !/^[0-9,]+원?$/.test(line)) {
+            const price = Number(mNext[1].replace(/,/g, ""));
+            if (price >= 500) { found.push({ name: line, price, qty: 0 }); i++; }
+          }
+        }
+      }
+      return found;
+    }
+
+    function applyBulkMenuText() {
+      const txt = document.getElementById("menu-bulk-text").value;
+      const parsed = parseMenuTextToItems(txt);
+      if (!parsed.length) return alert("인식된 메뉴가 없습니다. '메뉴명 12,000원' 형태로 입력해 주세요.");
+      parsed.forEach(p => {
+        if (!draftMenus.some(m => m.name === p.name)) draftMenus.push(p);
+      });
+      document.getElementById("menu-bulk-text").value = "";
+      renderMenuDraft();
+      document.getElementById("menu-ocr-status").textContent = `✓ ${parsed.length}개 메뉴를 추가했습니다! 수량을 조절해 주세요.`;
+    }
+
+    async function handleMenuImageFile(file) {
+      if (!file) return;
+      const stEl = document.getElementById("menu-ocr-status");
+      if (!window.Tesseract) return (stEl.textContent = "OCR 라이브러리 로드 중입니다. 잠시 후 다시 시도해 주세요.");
+      stEl.textContent = "📷 사진에서 메뉴 글자를 읽는 중...";
+      try {
+        const res = await window.Tesseract.recognize(file, "kor+eng", {
+          logger: m => {
+            if (m.status === "recognizing text") stEl.textContent = `📷 메뉴판 분석 중... ${Math.round((m.progress || 0) * 100)}%`;
+          }
+        });
+        const text = res?.data?.text || "";
+        document.getElementById("menu-bulk-text").value = text;
+        const parsed = parseMenuTextToItems(text);
+        if (parsed.length) {
+          parsed.forEach(p => { if (!draftMenus.some(m => m.name === p.name)) draftMenus.push(p); });
+          renderMenuDraft();
+          stEl.textContent = `✓ 사진에서 ${parsed.length}개 메뉴를 인식해 추가했습니다!`;
+        } else {
+          stEl.textContent = "글자는 읽었지만 가격 패턴을 못 찾았어요. 위 입력창에서 다듬고 '텍스트로 일괄 추가'를 눌러주세요.";
+        }
+      } catch (e) {
+        stEl.textContent = "사진 분석 중 오류가 발생했습니다.";
+      }
+    }
+
+    document.getElementById("menu-modal")?.addEventListener("paste", (ev) => {
+      const items = ev.clipboardData?.items || [];
+      for (const it of items) {
+        if (it.type.startsWith("image/")) {
+          ev.preventDefault();
+          handleMenuImageFile(it.getAsFile());
+          break;
+        }
+      }
+    });
 
     let editingMenuDayIdx = -1;
     let editingMenuItemId = null;
