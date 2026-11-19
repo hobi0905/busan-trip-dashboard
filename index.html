@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>부산 2박 3일 뚜벅이 여행 대시보드</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --ocean: #0284c7;
+      --ocean-dark: #0369a1;
+      --ocean-light: #e0f2fe;
+      --ocean-soft: #f0f9ff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --success: #059669;
+      --success-bg: #ecfdf5;
+      --warn: #d97706;
+      --warn-bg: #fffbeb;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      --radius: 16px;
+      --shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: 84px;
+      line-height: 1.45;
+    }
+    .container { max-width: 560px; margin: 0 auto; }
+
+    /* Sticky Header */
+    .sticky-header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px 10px;
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .trip-title { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
+    .trip-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .badges-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 600;
+      background: var(--ocean-soft);
+      color: var(--ocean-dark);
+      border: 1px solid #bae6fd;
+    }
+    .pill.dday { background: var(--ocean); color: #fff; border-color: var(--ocean); }
+    .pill.sync-ok { background: var(--success-bg); color: var(--success); border-color: #a7f3d0; }
+    .pill.sync-local { background: #f1f5f9; color: var(--muted); border-color: var(--border); }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+      background: var(--ocean-soft);
+      border: 1px solid #bae6fd;
+      border-radius: 12px;
+      padding: 8px 10px;
+    }
+    .sum-box { text-align: center; }
+    .sum-label { font-size: 10.5px; color: var(--muted); font-weight: 600; }
+    .sum-val { font-size: 14px; font-weight: 800; color: var(--ocean-dark); margin-top: 1px; }
+
+    /* Main Content */
+    .main { padding: 14px 16px; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Cards & Controls */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: var(--shadow);
+      margin-bottom: 12px;
+    }
+    .day-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .day-btn {
+      padding: 9px 6px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .day-btn.active {
+      background: var(--ocean);
+      color: #fff;
+      border-color: var(--ocean);
+    }
+
+    /* Plan B Toggle */
+    .planb-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+    }
+    .switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      display: inline-block;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; inset: 0;
+      background: #cbd5e1;
+      border-radius: 999px;
+      transition: .2s;
+      cursor: pointer;
+    }
+    .slider:before {
+      content: "";
+      position: absolute;
+      width: 18px; height: 18px;
+      left: 3px; top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: .2s;
+    }
+    .switch input:checked + .slider { background: var(--ocean); }
+    .switch input:checked + .slider:before { transform: translateX(20px); }
+
+    .planb-box {
+      background: #eff6ff;
+      border: 1px solid #93c5fd;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+    .planb-box strong { color: var(--ocean-dark); display: block; margin-bottom: 4px; }
+
+    /* Timeline Item */
+    .tl-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .tl-time {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--ocean);
+      background: var(--ocean-soft);
+      padding: 3px 8px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+    .tl-place { font-size: 15.5px; font-weight: 800; flex: 1; }
+    .tl-stay { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+    .tl-badges { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
+    .tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: #f1f5f9;
+      color: #334155;
+    }
+    .tag.warn { background: var(--danger-bg); color: var(--danger); }
+    .tag.good { background: var(--success-bg); color: var(--success); }
+    .tag.blue { background: var(--ocean-light); color: var(--ocean-dark); }
+    .tl-memo { font-size: 12.5px; color: #475569; margin-bottom: 10px; }
+    .tl-meta {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding-top: 9px;
+      border-top: 1px dashed var(--border);
+      font-size: 12px;
+    }
+    .tl-move { color: var(--muted); }
+    .tl-cost { font-weight: 700; color: var(--text); }
+    .map-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 10px;
+      border-radius: 8px;
+      background: var(--ocean-soft);
+      color: var(--ocean-dark);
+      font-weight: 700;
+      font-size: 12px;
+      text-decoration: none;
+      border: 1px solid #bae6fd;
+    }
+
+    /* Donut & Expenses */
+    .donut-wrap {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .legend { flex: 1; min-width: 170px; }
+    .legend-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
+      margin-bottom: 6px;
+    }
+    .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+    }
+    .expense-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .expense-item:last-child { border-bottom: none; }
+    .status-btn {
+      border: none;
+      border-radius: 8px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .st-done { background: var(--success-bg); color: var(--success); }
+    .st-plan { background: var(--warn-bg); color: var(--warn); }
+    .st-site { background: #f1f5f9; color: #475569; }
+
+    /* Forms & Buttons */
+    .input, select, textarea {
+      width: 100%;
+      padding: 9px 11px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 13px;
+      background: #fff;
+    }
+    .row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 9px 14px;
+      border-radius: 10px;
+      border: none;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-primary { background: var(--ocean); color: #fff; }
+    .btn-soft { background: var(--ocean-soft); color: var(--ocean-dark); border: 1px solid #bae6fd; }
+    .btn-danger { background: var(--danger-bg); color: var(--danger); }
+    .btn-sm { padding: 5px 9px; font-size: 11.5px; border-radius: 8px; }
+
+    /* Alert Multi-select Chips */
+    .chip-group { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+    }
+    .chip.selected {
+      background: var(--ocean);
+      color: #fff;
+      border-color: var(--ocean);
+    }
+
+    /* Weather Card */
+    .weather-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .w-temp { font-size: 20px; font-weight: 800; color: var(--ocean-dark); }
+    .outfit-box {
+      background: var(--ocean-soft);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 12.5px;
+      margin-top: 8px;
+    }
+
+    /* Bottom Nav */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 50;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: center;
+    }
+    .nav-inner {
+      width: 100%;
+      max-width: 560px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+    }
+    .nav-btn {
+      background: none;
+      border: none;
+      padding: 8px 2px 10px;
+      font-family: inherit;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      cursor: pointer;
+    }
+    .nav-btn .ico { font-size: 18px; }
+    .nav-btn.active { color: var(--ocean); }
+    .sec-title { font-size: 14.5px; font-weight: 800; margin: 0 0 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="sticky-header">
+      <div class="header-top">
+        <div>
+          <div class="trip-title" id="hdr-title">부산 2박 3일 뚜벅이 여행</div>
+          <div class="trip-sub" id="hdr-sub">2027.01.31(일) ~ 02.02(화) · 성인 2명</div>
+        </div>
+        <span class="pill dday" id="hdr-dday">D-Day</span>
+      </div>
+      <div class="badges-row">
+        <span class="pill" id="hdr-travel-time">총 이동 0분</span>
+        <span class="pill sync-local" id="hdr-sync">로컬 저장됨</span>
+      </div>
+      <div class="summary-strip">
+        <div class="sum-box">
+          <div class="sum-label">총 예상 경비</div>
+          <div class="sum-val" id="sum-total">₩0</div>
+        </div>
+        <div class="sum-box">
+          <div class="sum-label">1인당 (÷<span id="sum-n">2</span>)</div>
+          <div class="sum-val" id="sum-per">₩0</div>
+        </div>
+        <div class="sum-box">
+          <div class="sum-label">예약 완료</div>
+          <div class="sum-val" id="sum-done">0건</div>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- TAB 1: TIMELINE -->
+      <section id="tab-timeline" class="tab-panel active">
+        <div class="day-tabs" id="day-tabs"></div>
+        <div class="planb-bar">
+          <div>
+            <div style="font-weight:800;font-size:13.5px;">☔ 우천·한파용 플랜 B 보기</div>
+            <div style="font-size:11.5px;color:var(--muted);">날씨가 궂을 때 대체 실내 동선 확인</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="planb-toggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div id="planb-content" class="planb-box" style="display:none;"></div>
+        <div id="timeline-list"></div>
+      </section>
+
+      <!-- TAB 2: EXPENSES -->
+      <section id="tab-expenses" class="tab-panel">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <h3 class="sec-title" style="margin:0;">카테고리별 지출 비중</h3>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;">
+              인원 <input type="number" id="travelers-input" min="1" max="20" value="2" class="input" style="width:56px;padding:4px 6px;text-align:center;" />명
+            </div>
+          </div>
+          <div class="donut-wrap">
+            <svg id="donut-svg" width="150" height="150" viewBox="0 0 150 150"></svg>
+            <div class="legend" id="donut-legend"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="sec-title">항목 추가</h3>
+          <div class="row">
+            <select id="exp-cat" style="width:110px;">
+              <option value="교통">교통</option>
+              <option value="숙소">숙소</option>
+              <option value="식비">식비</option>
+              <option value="관광">관광</option>
+              <option value="기타">기타</option>
+            </select>
+            <input id="exp-name" class="input" placeholder="항목명 (예: 간식비)" />
+          </div>
+          <div class="row">
+            <input id="exp-amt" type="number" class="input" placeholder="총액 (원)" />
+            <select id="exp-status" style="width:120px;">
+              <option value="예정">결제 예정</option>
+              <option value="완료">예약 완료</option>
+              <option value="현장">현장 결제</option>
+            </select>
+            <button class="btn btn-primary" onclick="addExpense()">추가</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="sec-title">정산 내역 (상태 탭해서 변경)</h3>
+          <div id="expense-list"></div>
+        </div>
+      </section>
+
+      <!-- TAB 3: WEATHER & OUTFIT -->
+      <section id="tab-weather" class="tab-panel">
+        <div class="card" style="background:var(--ocean-soft);border-color:#bae6fd;">
+          <div style="font-weight:800;font-size:14px;color:var(--ocean-dark);">🌊 1월 말~2월 초 부산 해변 체감 날씨 포인트</div>
+          <div style="font-size:12.5px;color:#334155;margin-top:4px;">
+            광안리·청사포 해변은 바닷바람(14~21km/h) 때문에 체감온도가 2~3°C 더 낮아요. 실외는 방풍+보온, 실내(지하철·카페)는 따뜻하므로 <strong>벗기 쉬운 겹겹이 레이어드</strong>가 핵심입니다.
+          </div>
+        </div>
+        <div id="weather-list"></div>
+      </section>
+
+      <!-- TAB 4: CHECKLIST & ALERTS -->
+      <section id="tab-checklist" class="tab-panel">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h3 class="sec-title" style="margin:0;">⏰ 예매 오픈일 알림 (중복 선택)</h3>
+            <button class="btn btn-soft btn-sm" onclick="requestWebNotif()">브라우저 알림 켜기</button>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+            전날 · 1시간 전 · 30분 전 · 10분 전 중 원하는 시점을 모두 고른 뒤 <strong>캘린더(.ics) 저장</strong>을 누르면 아이폰 캘린더에 알람이 한 번에 들어갑니다.
+          </div>
+          <div id="alerts-list"></div>
+        </div>
+
+        <div class="card">
+          <h3 class="sec-title">📱 줄서기 · 예매 앱 바로가기</h3>
+          <div class="row">
+            <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://app.catchtable.co.kr/" target="_blank">캐치테이블 (이재모피자)</a>
+            <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://www.tabling.co.kr/" target="_blank">테이블링 (수변최고)</a>
+          </div>
+          <div class="row" style="margin-bottom:0;">
+            <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://www.letskorail.com/" target="_blank">코레일 (KTX)</a>
+            <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://www.bluelinepark.com/" target="_blank">블루라인파크</a>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="sec-title">🎒 출발 전 준비 체크리스트</h3>
+          <div class="row">
+            <input id="chk-new" class="input" placeholder="새 준비물 추가..." />
+            <button class="btn btn-primary" onclick="addChecklist()">추가</button>
+          </div>
+          <div id="checklist-items"></div>
+        </div>
+      </section>
+
+      <!-- TAB 5: CLOUD SYNC & JSON -->
+      <section id="tab-sync" class="tab-panel">
+        <div class="card">
+          <h3 class="sec-title">☁️ Supabase 클라우드 저장 & 다중 기기 동기화</h3>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+            같은 <strong>공유 코드(Sync ID)</strong>를 입력한 두 기기(내 폰 ↔ 남자친구 폰)에서 일정·경비·체크리스트·알림 설정이 실시간으로 자동 동기화됩니다.
+          </div>
+          <div class="row"><input id="sb-url" class="input" placeholder="Supabase Project URL (https://xxx.supabase.co)" /></div>
+          <div class="row"><input id="sb-key" class="input" placeholder="Supabase Anon Public Key" /></div>
+          <div class="row">
+            <input id="sb-sync-id" class="input" placeholder="공유 코드 (예: busan-2027-gayeon)" />
+            <button class="btn btn-primary" onclick="connectSupabase()">연결</button>
+          </div>
+          <div class="row" style="margin-bottom:0;">
+            <button class="btn btn-soft btn-sm" style="flex:1;" onclick="pullFromCloud()">지금 불러오기</button>
+            <button class="btn btn-soft btn-sm" style="flex:1;" onclick="pushToCloud()">지금 저장하기</button>
+            <button class="btn btn-soft btn-sm" style="flex:1;" onclick="copySqlSchema()">SQL 복사</button>
+          </div>
+          <div id="sb-status" style="font-size:12px;color:var(--muted);margin-top:8px;"></div>
+        </div>
+
+        <div class="card">
+          <h3 class="sec-title">📦 여행 JSON 데이터 교체 / 백업</h3>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">
+            JSON 구조로 분리되어 있어 다른 국내 여행 일정도 그대로 붙여넣어 대시보드를 재사용할 수 있습니다.
+          </div>
+          <div class="row">
+            <button class="btn btn-soft btn-sm" style="flex:1;" onclick="exportJson()">JSON 내보내기</button>
+            <button class="btn btn-danger btn-sm" style="flex:1;" onclick="resetDefault()">기본 부산 일정으로 초기화</button>
+          </div>
+          <textarea id="json-box" rows="6" class="input" placeholder="여기에 JSON을 붙여넣고 적용을 누르세요..."></textarea>
+          <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="importJson()">JSON 적용하기</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <nav class="bottom-nav">
+    <div class="nav-inner">
+      <button class="nav-btn active" data-tab="timeline"><span class="ico">🗓️</span>일정</button>
+      <button class="nav-btn" data-tab="expenses"><span class="ico">💰</span>경비</button>
+      <button class="nav-btn" data-tab="weather"><span class="ico">🧥</span>날씨·옷</button>
+      <button class="nav-btn" data-tab="checklist"><span class="ico">✅</span>알림·체크</button>
+      <button class="nav-btn" data-tab="sync"><span class="ico">☁️</span>동기화</button>
+    </div>
+  </nav>
+
+  <script>
+    const DEFAULT_DATA = {
+      meta: {
+        title: "부산 2박 3일 뚜벅이 여행",
+        destination: "부산 (광안리 · 해운대 · 전포 · 남포동)",
+        startDate: "2027-01-31",
+        endDate: "2027-02-02",
+        travelers: 2,
+        note: "이재모피자·이가네 떡볶이 일요일 휴무 반영 동선"
+      },
+      days: [
+        {
+          day: 1, date: "2027-01-31", label: "1일차 (일)", subtitle: "숭의→광명→부산역→광안리",
+          planBTitle: "우천·한파 플랜 B: 해운대 대신 실내·온천 코스",
+          planBDesc: "비나 강풍이 심하면 해변 산책 대신 호텔 아쿠아 펠리스 21층 스카이전망대·해수온천·찜질방(24시간)으로 전환하세요. 저녁 다리집은 택시(5분)로 이동하면 비를 거의 맞지 않습니다.",
+          items: [
+            { id: "d1-1", time: "08:11", place: "숭의역 출발 → 광명역", stay: "이동 80분", moveMode: "수인분당선→1호선", moveMin: 80, moveCost: 4900, costTotal: 4900, badges: ["출발"], mapUrl: "https://map.naver.com/p/search/%EA%B4%91%EB%AA%85%EC%97%AD", memo: "09:31 광명역 도착 후 KTX 승강장 이동" },
+            { id: "d1-2", time: "10:17", place: "KTX 25열차 (광명 → 부산역)", stay: "탑승 149분", moveMode: "KTX 일반실", moveMin: 149, moveCost: 104400, costTotal: 104400, badges: ["예매 필수", "12/31 오픈"], mapUrl: "https://map.naver.com/p/search/%EB%B6%80%EC%82%B0%EC%97%AD", memo: "12:46 부산역 도착 · 순방향 2인 연석 (유아동반석 앞뒤칸·4인석 제외)" },
+            { id: "d1-3", time: "12:55", place: "본전돼지국밥", stay: "체류 45분", moveMode: "부산역 6번 출구 도보 3분", moveMin: 3, moveCost: 0, costTotal: 22000, badges: ["일요일 영업", "08:40~21:00"], mapUrl: "https://map.naver.com/p/search/%EB%B3%B8%EC%A0%84%EB%8F%BC%EC%A7%80%EA%B5%AD%EB%B0%A5", memo: "돼지국밥 11,000원×2 · 캐리어 동반 가능" },
+            { id: "d1-4", time: "14:35", place: "호텔 아쿠아 펠리스 체크인", stay: "체크인 15:00", moveMode: "41번 버스 (부산역→광안리)", moveMin: 44, moveCost: 3100, costTotal: 211411, badges: ["예약 완료", "광안대교 정면뷰"], mapUrl: "https://map.naver.com/p/search/%ED%98%B8%ED%85%94%20%EC%95%84%EC%BF%A0%EC%95%84%20%ED%8E%A0%EB%A6%AC%EC%8A%A4", memo: "디럭스 오션뷰 더블 2박 · 1/24 모임통장 카드 결제 예정" },
+            { id: "d1-5", time: "15:40", place: "카페 차선책 (광안리)", stay: "체류 60분", moveMode: "호텔 도보 3분", moveMin: 3, moveCost: 0, costTotal: 13000, badges: ["연중무휴", "11:00~22:00"], mapUrl: "https://map.naver.com/p/search/%EC%B0%A8%EC%84%A0%EC%B1%85%20%EA%B4%91%EC%95%88%EB%A6%AC", memo: "3층 한옥 오션뷰 · 아메리카노 5,500 + 인절미라떼 7,500" },
+            { id: "d1-6", time: "17:40", place: "다리집 (남천동 떡볶이)", stay: "체류 50분", moveMode: "도보 20분 (택시 5분)", moveMin: 20, moveCost: 0, costTotal: 22200, badges: ["일요일 영업", "11:30~20:50"], mapUrl: "https://map.naver.com/p/search/%EB%8B%A4%EB%A6%AC%EC%A7%91", memo: "떡볶이·오징어튀김·국물어묵 · 일요일 휴무 대체" },
+            { id: "d1-7", time: "18:50", place: "광안대교 야경 & 뚜벅스 광안점", stay: "체류 60분+", moveMode: "해변 도보 복귀", moveMin: 15, moveCost: 0, costTotal: 14000, badges: ["일몰 18:00", "21층 전망대"], mapUrl: "https://map.naver.com/p/search/%EB%9A%9C%EB%B2%85%EC%8A%A4%20%EA%B4%91%EC%95%88%EC%A0%90", memo: "호텔 스카이전망대·해수온천 또는 7층 카페 뚜벅스" }
+          ]
+        },
+        {
+          day: 2, date: "2027-02-01", label: "2일차 (월)", subtitle: "청사포·해운대→전포→이재모",
+          planBTitle: "우천·한파 플랜 B: 해운대 제외 실내·전포 코스",
+          planBDesc: "강풍·우천 시 오전엔 호텔 해수온천·찜질방에서 쉬고, 2호선 광안→전포(15분)로 바로 이동해 전포카페거리와 이재모피자 전포점을 즐기세요.",
+          items: [
+            { id: "d2-1", time: "09:40", place: "해변열차 (미포 → 청사포)", stay: "탑승 10분", moveMode: "1003번 급행버스", moveMin: 47, moveCost: 4200, costTotal: 20000, badges: ["동절기 09:00~19:00"], mapUrl: "https://www.bluelinepark.com/", memo: "10:30 탑승 · 1인 10,000원×2" },
+            { id: "d2-2", time: "10:45", place: "다릿돌전망대 & 카페 바다당", stay: "체류 55분", moveMode: "청사포정거장 도보 1분", moveMin: 1, moveCost: 0, costTotal: 16500, badges: ["월요일 영업", "09:30~21:00"], mapUrl: "https://map.naver.com/p/search/%EB%B0%94%EB%8B%A4%EB%8B%B9%20%EC%B2%AD%EC%82%AC%ED%8F%AC", memo: "쌍둥이 등대 뷰 · 11:10까지 입장" },
+            { id: "d2-3", time: "12:00", place: "스카이캡슐 (청사포 → 미포)", stay: "탑승 30분", moveMode: "블루라인파크", moveMin: 30, moveCost: 0, costTotal: 50000, badges: ["예약 필수", "1/5 07:00 오픈"], mapUrl: "https://www.bluelinepark.com/", memo: "2인 1대 50,000원 · 청사포 출발 추천" },
+            { id: "d2-4", time: "13:00", place: "상국이네 (해운대시장)", stay: "체류 45분", moveMode: "미포→해운대 도보 15분", moveMin: 15, moveCost: 0, costTotal: 19500, badges: ["월요일 영업", "수요일 휴무"], mapUrl: "https://map.naver.com/p/search/%EC%83%81%EA%B5%AD%EC%9D%B4%EB%84%A4", memo: "떡볶이+순대+튀김 · 10:00~01:00" },
+            { id: "d2-5", time: "14:05", place: "워킹홀리데이 해운대", stay: "체류 35분", moveMode: "도보 5분", moveMin: 5, moveCost: 0, costTotal: 11000, badges: ["5층 통창 오션뷰", "08:00~21:30"], mapUrl: "https://map.naver.com/p/search/%EC%9B%8C%ED%82%B9%ED%99%80%EB%A6%AC%EB%8D%B0%EC%9D%B4%20%ED%95%B4%EC%9A%B4%EB%8C%80", memo: "14:40 해운대역 5번 출구로 이동" },
+            { id: "d2-6", time: "17:00", place: "이재모피자 전포점", stay: "체류 70분", moveMode: "2호선 해운대→전포", moveMin: 49, moveCost: 3300, costTotal: 44000, badges: ["일요일 휴무 주의", "원격 줄서기 가능"], mapUrl: "https://map.naver.com/p/search/%EC%9D%B4%EC%9E%AC%EB%AA%A8%ED%94%BC%EC%9E%90%20%EC%A0%84%ED%8F%AC%EC%A0%90", memo: "이재모크러스트 L+김치볶음밥+음료 · 도착 전 캐치테이블 확인" }
+          ]
+        },
+        {
+          day: 3, date: "2027-02-02", label: "3일차 (화)", subtitle: "까사부사노→남포동→부산역",
+          planBTitle: "우천·한파 플랜 B: 남포동 실내 아케이드 + 15:17 열차",
+          planBDesc: "비가 오면 남포동 국제시장·보수동책방골목·BIFF광장 실내 위주로 둘러보고, 귀가 열차를 15:17 KTX 110열차로 늦추면 여유롭습니다.",
+          items: [
+            { id: "d3-1", time: "08:30", place: "까사부사노 테라스 (모닝 커피)", stay: "체류 50분", moveMode: "호텔 도보 5분", moveMin: 5, moveCost: 0, costTotal: 9500, badges: ["화요일 영업", "08:30 오픈"], mapUrl: "https://map.naver.com/p/search/%EA%B9%8C%EC%82%AC%EB%B6%80%EC%82%AC%EB%85%B8%20%ED%85%8C%EB%9D%BC%EC%8A%A4", memo: "광안리 바닷가 1층 테라스" },
+            { id: "d3-2", time: "11:00", place: "체크아웃 → 부산역 물품보관함", stay: "짐 보관", moveMode: "41번 버스", moveMin: 42, moveCost: 3100, costTotal: 6000, badges: ["11:00 체크아웃"], mapUrl: "https://map.naver.com/p/search/%EB%B6%80%EC%82%B0%EC%97%AD", memo: "11:45 부산역 물품보관함 이용" },
+            { id: "d3-3", time: "12:15", place: "이가네 떡볶이 (부평깡통시장)", stay: "체류 25분", moveMode: "1호선 부산역→남포역", moveMin: 9, moveCost: 3000, costTotal: 13000, badges: ["일요일 휴무 주의", "월~토 10:00~17:00"], mapUrl: "https://map.naver.com/p/search/%EC%9D%B4%EA%B0%80%EB%84%A4%20%EB%96%A1%EB%B3%B6%EC%9D%B4", memo: "떡튀세트 5,000×2 + 오뎅 3,000" },
+            { id: "d3-4", time: "13:22", place: "KTX 108열차 (부산역 → 광명역)", stay: "탑승 181분", moveMode: "KTX 일반실", moveMin: 181, moveCost: 94400, costTotal: 94400, badges: ["예매 필수", "1/2 오픈"], mapUrl: "https://map.naver.com/p/search/%EA%B4%91%EB%AA%85%EC%97%AD", memo: "16:23 광명역 → 18:14 숭의역 (여유 플랜 15:17 KTX)" }
+          ]
+        }
+      ],
+      expenses: [
+        { id: "e1", category: "교통", name: "KTX 왕복 (광명↔부산 2인)", amount: 198800, status: "예정" },
+        { id: "e2", category: "교통", name: "숭의↔광명 전철 왕복 (2인)", amount: 9800, status: "현장" },
+        { id: "e3", category: "교통", name: "부산 시내버스·지하철 (2인)", amount: 23200, status: "현장" },
+        { id: "e4", category: "숙소", name: "아쿠아 펠리스 디럭스 오션뷰 2박", amount: 211411, status: "예정" },
+        { id: "e5", category: "식비", name: "1일차 (본전·차선책·다리집)", amount: 57200, status: "현장" },
+        { id: "e6", category: "식비", name: "2일차 (아침·바다당·상국이네·워킹·이재모)", amount: 103000, status: "현장" },
+        { id: "e7", category: "식비", name: "3일차 (까사부사노·이가네)", amount: 22500, status: "현장" },
+        { id: "e8", category: "관광", name: "해변열차 2인 + 스카이캡슐 1대", amount: 70000, status: "예정" },
+        { id: "e9", category: "기타", name: "물품보관함·간식·여유비", amount: 14000, status: "현장" }
+      ],
+      weather: [
+        { day: "1일차 · 1/31 (일)", area: "광안리 · 부산역", icon: "⛅", condition: "맑고 쌀쌀한 바닷바람", minTemp: -2, maxTemp: 6, wind: "16~21km/h (머리가 흩날릴 정도)", feelsLike: "체감 -6~3°C", sunset: "18:00", outfit: "히트텍 상하의 + 기모 바지 + 숏/롱패딩 + 목도리", tip: "해변은 건물 그늘 없이 바닷바람을 그대로 맞습니다. 야경(18:50) 볼 때 장갑·핫팩 필수!" },
+        { day: "2일차 · 2/1 (월)", area: "청사포 · 해운대 · 전포", icon: "☀️", condition: "대체로 맑음 · 오전 찬바람", minTemp: -3, maxTemp: 7, wind: "14~19km/h (약간 쌀쌀한 바람)", feelsLike: "체감 -6~4°C", sunset: "18:01", outfit: "벗기 쉬운 겹겹이 레이어드 (니트/맨투맨 + 패딩) + 방풍 목도리", tip: "스카이캡슐 대기 줄은 춥고 지하철·전포 실내는 따뜻해요. 벗기 편한 코디 추천!" },
+        { day: "3일차 · 2/2 (화)", area: "광안리 · 남포동", icon: "🌤️", condition: "구름 조금 · 아침 영하권", minTemp: -2, maxTemp: 6, wind: "14~18km/h", feelsLike: "체감 -5~3°C", sunset: "18:02", outfit: "기모 이너 + 도톰한 가디건/후리스 + 패딩 + 편한 운동화", tip: "08:30 까사부사노 테라스는 핫팩 챙기면 좋고, 이가네 떡볶이는 서서 먹어 보온 유지가 중요해요." }
+      ],
+      bookingAlerts: [
+        { id: "a1", title: "1/31 출발 KTX 예매 오픈", datetime: "2026-12-31T07:00", displayTime: "2026.12.31(목) 07:00", desc: "코레일톡 · 10:17 KTX 25열차 순방향 2인 연석", offsets: ["1d", "1h", "10m"] },
+        { id: "a2", title: "2/2 귀가 KTX 예매 오픈", datetime: "2027-01-02T07:00", displayTime: "2027.01.02(토) 07:00", desc: "코레일톡 · 13:22 KTX 108열차 (또는 15:17)", offsets: ["1d", "30m", "10m"] },
+        { id: "a3", title: "블루라인파크 스카이캡슐 오픈", datetime: "2027-01-05T07:00", displayTime: "2027.01.05(화) 07:00", desc: "2/1 12:00~12:30 청사포→미포 2인승", offsets: ["1d", "1h", "30m", "10m"] },
+        { id: "a4", title: "아고다 결제 전날 모임통장 입금", datetime: "2027-01-23T17:00", displayTime: "2027.01.23(토) 17:00", desc: "1/24 아고다 211,411원 결제 예정", offsets: ["1h", "10m"] }
+      ],
+      checklist: [
+        { id: "c1", text: "아쿠아 펠리스 찜질방·인피니티풀 점검일 공지 확인 (출발 1주 전)", done: false },
+        { id: "c2", text: "이재모피자 전포점 캐치테이블 원격대기 가능 여부 확인 (1/24경)", done: false },
+        { id: "c3", text: "맛집·카페 8곳 영업시간 재확인 (출발 3일 전)", done: false },
+        { id: "c4", text: "내복(상하)·기모 바지·목도리·장갑·핫팩 챙기기", done: false },
+        { id: "c5", text: "보조배터리·충전기·모임통장 카드·신분증", done: false }
+      ]
+    };
+
+    const STORAGE_KEY = "busan_trip_dashboard_v1";
+    const SB_CONF_KEY = "busan_trip_supabase_conf_v1";
+    const DEFAULT_SB = {
+      url: "https://dwsvrpxppmicykxuhkhg.supabase.co",
+      key: "sb_publishable_Xd0zebf6GG3fA43uC0Cl8w_ZzH4bZyr",
+      syncId: "busan-2027-gayeon"
+    };
+    let state = loadState();
+    let currentDay = 1;
+    let sbClient = null;
+    let sbChannel = null;
+    let saveTimer = null;
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : structuredClone(DEFAULT_DATA);
+      } catch {
+        return structuredClone(DEFAULT_DATA);
+      }
+    }
+
+    function saveState(skipCloud = false) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderAll();
+      if (!skipCloud && sbClient) {
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => pushToCloud(true), 450);
+      }
+    }
+
+    const fmt = (n) => "₩" + Math.round(Number(n) || 0).toLocaleString("ko-KR");
+
+    function renderHeader() {
+      const m = state.meta;
+      document.getElementById("hdr-title").textContent = m.title;
+      document.getElementById("hdr-sub").textContent = `${m.startDate} ~ ${m.endDate} · 성인 ${m.travelers}명`;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const start = new Date(m.startDate + "T00:00:00");
+      const diff = Math.ceil((start - today) / 86400000);
+      document.getElementById("hdr-dday").textContent = diff > 0 ? `D-${diff}` : diff === 0 ? "D-Day" : `D+${Math.abs(diff)}`;
+
+      const totalMin = state.days.reduce((acc, d) => acc + d.items.reduce((s, it) => s + (it.moveMin || 0), 0), 0);
+      const h = Math.floor(totalMin / 60), min = totalMin % 60;
+      document.getElementById("hdr-travel-time").textContent = `총 이동 ${h}시간 ${min}분`;
+
+      const totalExp = state.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+      const n = Math.max(1, Number(m.travelers) || 2);
+      const doneCnt = state.expenses.filter(e => e.status === "완료").length;
+      document.getElementById("sum-total").textContent = fmt(totalExp);
+      document.getElementById("sum-n").textContent = n;
+      document.getElementById("sum-per").textContent = fmt(totalExp / n);
+      document.getElementById("sum-done").textContent = `${doneCnt}/${state.expenses.length}건`;
+    }
+
+    function renderTimeline() {
+      const tabsEl = document.getElementById("day-tabs");
+      tabsEl.innerHTML = state.days.map(d =>
+        `<button class="day-btn ${d.day === currentDay ? "active" : ""}" onclick="setDay(${d.day})">${d.label}</button>`
+      ).join("");
+
+      const dayObj = state.days.find(d => d.day === currentDay) || state.days[0];
+      const showPlanB = document.getElementById("planb-toggle").checked;
+      const pbBox = document.getElementById("planb-content");
+      if (showPlanB) {
+        pbBox.style.display = "block";
+        pbBox.innerHTML = `<strong>${dayObj.planBTitle}</strong>${dayObj.planBDesc}`;
+      } else {
+        pbBox.style.display = "none";
+      }
+
+      const n = Math.max(1, Number(state.meta.travelers) || 2);
+      const listEl = document.getElementById("timeline-list");
+      listEl.innerHTML = dayObj.items.map(it => {
+        const badges = (it.badges || []).map(b => {
+          let cls = "tag";
+          if (b.includes("휴무") || b.includes("필수")) cls += " warn";
+          else if (b.includes("완료") || b.includes("영업") || b.includes("오픈")) cls += " blue";
+          return `<span class="${cls}">${b}</span>`;
+        }).join("");
+        const per = Math.round((it.costTotal || 0) / n);
+        return `
+          <div class="card">
+            <div class="tl-head">
+              <span class="tl-time">${it.time}</span>
+              <div class="tl-place">${it.place}</div>
+              <span class="tl-stay">${it.stay}</span>
+            </div>
+            <div class="tl-badges">${badges}</div>
+            <div class="tl-memo">${it.memo || ""}</div>
+            <div class="tl-meta">
+              <div class="tl-move">🚶 ${it.moveMode} (${it.moveMin}분 · ${fmt(it.moveCost)})</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="tl-cost">${fmt(it.costTotal)} <span style="font-weight:500;color:var(--muted);">(1인 ${fmt(per)})</span></span>
+                <a class="map-btn" href="${it.mapUrl}" target="_blank">지도</a>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function setDay(d) { currentDay = d; renderTimeline(); }
+    document.getElementById("planb-toggle").addEventListener("change", renderTimeline);
+
+    function renderExpenses() {
+      document.getElementById("travelers-input").value = state.meta.travelers;
+      const cats = [
+        { name: "교통", color: "#0284c7" },
+        { name: "숙소", color: "#0ea5e9" },
+        { name: "식비", color: "#38bdf8" },
+        { name: "관광", color: "#14b8a6" },
+        { name: "기타", color: "#94a3b8" }
+      ];
+      const totals = cats.map(c => ({
+        ...c,
+        val: state.expenses.filter(e => e.category === c.name).reduce((s, e) => s + (Number(e.amount) || 0), 0)
+      }));
+      const grand = totals.reduce((s, c) => s + c.val, 0) || 1;
+
+      const svg = document.getElementById("donut-svg");
+      const r = 54, cx = 75, cy = 75, circ = 2 * Math.PI * r;
+      let offset = 0;
+      let circles = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#f1f5f9" stroke-width="22"/>`;
+      totals.forEach(c => {
+        if (!c.val) return;
+        const len = (c.val / grand) * circ;
+        circles += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c.color}" stroke-width="22"
+          stroke-dasharray="${len} ${circ - len}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})"/>`;
+        offset += len;
+      });
+      circles += `<text x="${cx}" y="${cy - 2}" text-anchor="middle" font-size="11" fill="#64748b" font-weight="700">총합</text>
+        <text x="${cx}" y="${cy + 14}" text-anchor="middle" font-size="13" fill="#0f172a" font-weight="800">${fmt(grand)}</text>`;
+      svg.innerHTML = circles;
+
+      document.getElementById("donut-legend").innerHTML = totals.map(c => `
+        <div class="legend-row">
+          <span><span class="dot" style="background:${c.color}"></span>${c.name}</span>
+          <strong>${fmt(c.val)} (${Math.round((c.val / grand) * 100)}%)</strong>
+        </div>
+      `).join("");
+
+      const n = Math.max(1, Number(state.meta.travelers) || 2);
+      document.getElementById("expense-list").innerHTML = state.expenses.map(e => {
+        const stCls = e.status === "완료" ? "st-done" : e.status === "예정" ? "st-plan" : "st-site";
+        const stLabel = e.status === "완료" ? "예약 완료" : e.status === "예정" ? "결제 예정" : "현장 결제";
+        return `
+          <div class="expense-item">
+            <div style="flex:1;">
+              <div style="font-size:13.5px;font-weight:700;">[${e.category}] ${e.name}</div>
+              <div style="font-size:12px;color:var(--muted);">${fmt(e.amount)} · 1인 ${fmt(e.amount / n)}</div>
+            </div>
+            <button class="status-btn ${stCls}" onclick="cycleStatus('${e.id}')">${stLabel}</button>
+            <button class="btn btn-danger btn-sm" onclick="delExpense('${e.id}')">삭제</button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    document.getElementById("travelers-input").addEventListener("change", (ev) => {
+      state.meta.travelers = Math.max(1, Number(ev.target.value) || 2);
+      saveState();
+    });
+
+    function addExpense() {
+      const cat = document.getElementById("exp-cat").value;
+      const name = document.getElementById("exp-name").value.trim();
+      const amt = Number(document.getElementById("exp-amt").value);
+      const status = document.getElementById("exp-status").value;
+      if (!name || !amt) return alert("항목명과 금액을 입력해 주세요.");
+      state.expenses.push({ id: "e" + Date.now(), category: cat, name, amount: amt, status });
+      document.getElementById("exp-name").value = "";
+      document.getElementById("exp-amt").value = "";
+      saveState();
+    }
+    function cycleStatus(id) {
+      const order = ["예정", "완료", "현장"];
+      const item = state.expenses.find(e => e.id === id);
+      if (!item) return;
+      item.status = order[(order.indexOf(item.status) + 1) % order.length];
+      saveState();
+    }
+    function delExpense(id) {
+      state.expenses = state.expenses.filter(e => e.id !== id);
+      saveState();
+    }
+
+    function renderWeather() {
+      document.getElementById("weather-list").innerHTML = (state.weather || []).map(w => `
+        <div class="card">
+          <div class="weather-top">
+            <div>
+              <div style="font-weight:800;font-size:15px;">${w.icon} ${w.day}</div>
+              <div style="font-size:12px;color:var(--muted);">${w.area} · ${w.condition}</div>
+            </div>
+            <div class="w-temp">${w.minTemp}° / ${w.maxTemp}°</div>
+          </div>
+          <div style="font-size:12px;color:#475569;">💨 ${w.wind} · ${w.feelsLike} · 🌅 일몰 ${w.sunset}</div>
+          <div class="outfit-box">
+            <div style="font-weight:800;color:var(--ocean-dark);margin-bottom:3px;">🧥 권장 옷차림: ${w.outfit}</div>
+            <div style="color:#334155;">${w.tip}</div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    const OFFSET_OPTIONS = [
+      { key: "1d", label: "전날", min: 1440 },
+      { key: "1h", label: "1시간 전", min: 60 },
+      { key: "30m", label: "30분 전", min: 30 },
+      { key: "10m", label: "10분 전", min: 10 }
+    ];
+
+    function renderChecklist() {
+      document.getElementById("alerts-list").innerHTML = (state.bookingAlerts || []).map(a => {
+        const chips = OFFSET_OPTIONS.map(o => {
+          const on = (a.offsets || []).includes(o.key);
+          return `<span class="chip ${on ? "selected" : ""}" onclick="toggleAlertOffset('${a.id}','${o.key}')">${on ? "✓ " : ""}${o.label}</span>`;
+        }).join("");
+        return `
+          <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+              <div>
+                <div style="font-weight:800;font-size:13.5px;">${a.title}</div>
+                <div style="font-size:11.5px;color:var(--ocean-dark);font-weight:700;">${a.displayTime}</div>
+                <div style="font-size:11.5px;color:var(--muted);margin-top:2px;">${a.desc}</div>
+              </div>
+              <button class="btn btn-soft btn-sm" onclick="downloadAlertIcs('${a.id}')">📅 캘린더 저장</button>
+            </div>
+            <div class="chip-group">${chips}</div>
+          </div>
+        `;
+      }).join("");
+
+      document.getElementById("checklist-items").innerHTML = (state.checklist || []).map(c => `
+        <div class="expense-item">
+          <label style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer;font-size:13px;${c.done ? "text-decoration:line-through;color:var(--muted);" : ""}">
+            <input type="checkbox" ${c.done ? "checked" : ""} onchange="toggleCheck('${c.id}')" />
+            <span>${c.text}</span>
+          </label>
+          <button class="btn btn-danger btn-sm" onclick="delCheck('${c.id}')">삭제</button>
+        </div>
+      `).join("");
+    }
+
+    function toggleAlertOffset(id, key) {
+      const a = state.bookingAlerts.find(x => x.id === id);
+      if (!a) return;
+      a.offsets = a.offsets || [];
+      if (a.offsets.includes(key)) a.offsets = a.offsets.filter(k => k !== key);
+      else a.offsets.push(key);
+      saveState();
+    }
+
+    function downloadAlertIcs(id) {
+      const a = state.bookingAlerts.find(x => x.id === id);
+      if (!a) return;
+      const dt = a.datetime.replace(/[-:]/g, "") + "00";
+      const alarms = (a.offsets || ["10m"]).map(k => {
+        const opt = OFFSET_OPTIONS.find(o => o.key === k);
+        const mins = opt ? opt.min : 10;
+        return `BEGIN:VALARM\nACTION:DISPLAY\nDESCRIPTION:${a.title} (${opt ? opt.label : ""})\nTRIGGER:-PT${mins}M\nEND:VALARM`;
+      }).join("\n");
+      const ics = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//BusanTripDashboard//KR",
+        "BEGIN:VEVENT",
+        `UID:${a.id}-${Date.now()}@busantrip`,
+        `DTSTART;TZID=Asia/Seoul:${dt}`,
+        `DTEND;TZID=Asia/Seoul:${dt}`,
+        `SUMMARY:${a.title}`,
+        `DESCRIPTION:${a.desc}`,
+        alarms,
+        "END:VEVENT",
+        "END:VCALENDAR"
+      ].join("\n");
+      const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${a.id}-alert.ics`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function requestWebNotif() {
+      if (!("Notification" in window)) return alert("이 브라우저는 알림을 지원하지 않습니다.");
+      const perm = await Notification.requestPermission();
+      if (perm === "granted") {
+        new Notification("부산 여행 알림 활성화 완료!", { body: "설정한 예매 오픈 알림이 준비되었습니다." });
+      } else {
+        alert("브라우저 알림 권한이 차단되었습니다. 아이폰은 '캘린더 저장(.ics)'을 추천합니다!");
+      }
+    }
+
+    function toggleCheck(id) {
+      const c = state.checklist.find(x => x.id === id);
+      if (c) c.done = !c.done;
+      saveState();
+    }
+    function addChecklist() {
+      const t = document.getElementById("chk-new").value.trim();
+      if (!t) return;
+      state.checklist.push({ id: "c" + Date.now(), text: t, done: false });
+      document.getElementById("chk-new").value = "";
+      saveState();
+    }
+    function delCheck(id) {
+      state.checklist = state.checklist.filter(x => x.id !== id);
+      saveState();
+    }
+
+    /* Supabase Cloud Sync */
+    function initSupabaseFromStorage() {
+      try {
+        const raw = localStorage.getItem(SB_CONF_KEY);
+        const conf = raw ? JSON.parse(raw) : DEFAULT_SB;
+        document.getElementById("sb-url").value = conf.url || DEFAULT_SB.url;
+        document.getElementById("sb-key").value = conf.key || DEFAULT_SB.key;
+        document.getElementById("sb-sync-id").value = conf.syncId || DEFAULT_SB.syncId;
+        if (conf.url && conf.key && conf.syncId) startSupabase(conf.url, conf.key, conf.syncId);
+      } catch {
+        startSupabase(DEFAULT_SB.url, DEFAULT_SB.key, DEFAULT_SB.syncId);
+      }
+    }
+
+    function connectSupabase() {
+      const url = document.getElementById("sb-url").value.trim();
+      const key = document.getElementById("sb-key").value.trim();
+      const syncId = document.getElementById("sb-sync-id").value.trim() || "busan-2027-gayeon";
+      if (!url || !key) return alert("Supabase Project URL과 Anon Key를 입력해 주세요.");
+      localStorage.setItem(SB_CONF_KEY, JSON.stringify({ url, key, syncId }));
+      startSupabase(url, key, syncId);
+    }
+
+    async function startSupabase(url, key, syncId) {
+      if (!window.supabase) return setSyncStatus("Supabase SDK 로드 실패", false);
+      sbClient = window.supabase.createClient(url, key);
+      setSyncStatus(`클라우드 연결됨 (${syncId})`, true);
+
+      await pullFromCloud(true);
+
+      if (sbChannel) sbClient.removeChannel(sbChannel);
+      sbChannel = sbClient
+        .channel("trip_" + syncId)
+        .on("postgres_changes", { event: "*", schema: "public", table: "trip_dashboards", filter: `sync_id=eq.${syncId}` }, (payload) => {
+          if (payload.new && payload.new.data) {
+            state = payload.new.data;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            renderAll();
+            setSyncStatus(`실시간 동기화됨 (${new Date().toLocaleTimeString("ko-KR")})`, true);
+          }
+        })
+        .subscribe();
+    }
+
+    async function pullFromCloud(silent = false) {
+      if (!sbClient) return !silent && alert("먼저 Supabase를 연결해 주세요.");
+      const syncId = document.getElementById("sb-sync-id").value.trim() || "busan-2027-gayeon";
+      const { data, error } = await sbClient.from("trip_dashboards").select("data, updated_at").eq("sync_id", syncId).maybeSingle();
+      if (error) return setSyncStatus("불러오기 오류: " + error.message, false);
+      if (data && data.data) {
+        state = data.data;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        renderAll();
+        setSyncStatus(`클라우드 동기화됨 (${syncId})`, true);
+      } else {
+        await pushToCloud(true);
+      }
+    }
+
+    async function pushToCloud(silent = false) {
+      if (!sbClient) return !silent && alert("먼저 Supabase를 연결해 주세요.");
+      const syncId = document.getElementById("sb-sync-id").value.trim() || "busan-2027-gayeon";
+      const { error } = await sbClient.from("trip_dashboards").upsert({
+        sync_id: syncId,
+        data: state,
+        updated_at: new Date().toISOString()
+      });
+      if (error) setSyncStatus("저장 오류: " + error.message, false);
+      else setSyncStatus(`클라우드 저장됨 (${new Date().toLocaleTimeString("ko-KR")})`, true);
+    }
+
+    function setSyncStatus(msg, ok) {
+      const pill = document.getElementById("hdr-sync");
+      pill.textContent = ok ? "☁️ 자동 동기화" : "로컬 저장됨";
+      pill.className = "pill " + (ok ? "sync-ok" : "sync-local");
+      document.getElementById("sb-status").textContent = msg;
+    }
+
+    function copySqlSchema() {
+      const sql = `create table if not exists public.trip_dashboards (
+  sync_id text primary key,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table public.trip_dashboards enable row level security;
+create policy "public_rw" on public.trip_dashboards for all using (true) with check (true);
+alter publication supabase_realtime add table public.trip_dashboards;`;
+      navigator.clipboard?.writeText(sql);
+      alert("Supabase SQL 스키마가 복사되었습니다! Supabase SQL Editor에 붙여넣고 Run 해주세요.");
+    }
+
+    function exportJson() {
+      const txt = JSON.stringify(state, null, 2);
+      document.getElementById("json-box").value = txt;
+      navigator.clipboard?.writeText(txt);
+      alert("현재 여행 JSON이 입력창과 클립보드에 복사되었습니다!");
+    }
+    function importJson() {
+      try {
+        const parsed = JSON.parse(document.getElementById("json-box").value);
+        if (!parsed.meta || !parsed.days || !parsed.expenses) throw new Error("형식 오류");
+        state = parsed;
+        saveState();
+        alert("새 여행 일정 JSON을 적용했습니다!");
+      } catch (e) {
+        alert("유효한 여행 JSON 형식이 아닙니다.");
+      }
+    }
+    function resetDefault() {
+      if (!confirm("기본 부산 2박 3일 일정으로 되돌릴까요?")) return;
+      state = structuredClone(DEFAULT_DATA);
+      saveState();
+    }
+
+    document.querySelectorAll(".nav-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+      });
+    });
+
+    function renderAll() {
+      renderHeader();
+      renderTimeline();
+      renderExpenses();
+      renderWeather();
+      renderChecklist();
+    }
+
+    renderAll();
+    initSupabaseFromStorage();
+  </script>
+</body>
+</html>

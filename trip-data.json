@@ -1,0 +1,356 @@
+{
+  "meta": {
+    "title": "부산 2박 3일 뚜벅이 여행",
+    "destination": "부산 (광안리 · 해운대 · 전포 · 남포동)",
+    "startDate": "2027-01-31",
+    "endDate": "2027-02-02",
+    "travelers": 2,
+    "note": "이재모피자·이가네 떡볶이 일요일 휴무 반영 동선"
+  },
+  "days": [
+    {
+      "day": 1,
+      "date": "2027-01-31",
+      "label": "1일차 (일)",
+      "subtitle": "숭의→광명→부산역→광안리 오션뷰",
+      "planBTitle": "우천·한파 플랜 B: 해운대 대신 실내·온천 코스",
+      "planBDesc": "비나 강풍이 심하면 해변 산책 대신 호텔 아쿠아 펠리스 21층 스카이전망대·해수온천·찜질방(24시간)과 2층 카페/라운지로 일정을 전환하세요. 저녁 다리집은 택시(5분)로 바로 이동하면 비를 거의 맞지 않습니다.",
+      "items": [
+        {
+          "id": "d1-1",
+          "time": "08:11",
+          "place": "숭의역 출발 → 광명역",
+          "stay": "이동 80분",
+          "moveMode": "수인분당선 → 1호선",
+          "moveMin": 80,
+          "moveCost": 4900,
+          "costTotal": 4900,
+          "badges": ["출발"],
+          "mapUrl": "https://map.naver.com/p/search/%EA%B4%91%EB%AA%85%EC%97%AD",
+          "memo": "09:31 광명역 도착, KTX 승강장으로 여유 있게 이동"
+        },
+        {
+          "id": "d1-2",
+          "time": "10:17",
+          "place": "KTX 25열차 (광명 → 부산역)",
+          "stay": "탑승 149분",
+          "moveMode": "KTX 일반실",
+          "moveMin": 149,
+          "moveCost": 104400,
+          "costTotal": 104400,
+          "badges": ["예매 필수", "12/31 오픈"],
+          "mapUrl": "https://map.naver.com/p/search/%EB%B6%80%EC%82%B0%EC%97%AD",
+          "memo": "12:46 부산역 도착 · 순방향 2인 연석 (유아동반석 앞뒤칸·4인석 제외)"
+        },
+        {
+          "id": "d1-3",
+          "time": "12:55",
+          "place": "본전돼지국밥",
+          "stay": "체류 45분",
+          "moveMode": "부산역 6번 출구 도보 3분",
+          "moveMin": 3,
+          "moveCost": 0,
+          "costTotal": 22000,
+          "badges": ["일요일 영업", "08:40~21:00"],
+          "mapUrl": "https://map.naver.com/p/search/%EB%B3%B8%EC%A0%84%EB%8F%BC%EC%A7%80%EA%B5%AD%EB%B0%A5",
+          "memo": "돼지국밥 11,000원×2 · 캐리어 동반 가능"
+        },
+        {
+          "id": "d1-4",
+          "time": "14:35",
+          "place": "호텔 아쿠아 펠리스 체크인",
+          "stay": "짐 보관·체크인",
+          "moveMode": "41번 버스 (부산역→광안리)",
+          "moveMin": 44,
+          "moveCost": 3100,
+          "costTotal": 211411,
+          "badges": ["예약 완료", "광안대교 정면뷰"],
+          "mapUrl": "https://map.naver.com/p/search/%ED%98%B8%ED%85%94%20%EC%95%84%EC%BF%A0%EC%95%84%20%ED%8E%A0%EB%A6%AC%EC%8A%A4",
+          "memo": "디럭스 오션뷰 더블 2박 · 1/24 모임통장 카드 결제 예정"
+        },
+        {
+          "id": "d1-5",
+          "time": "15:40",
+          "place": "카페 차선책 (광안리)",
+          "stay": "체류 60분",
+          "moveMode": "호텔 도보 3분",
+          "moveMin": 3,
+          "moveCost": 0,
+          "costTotal": 13000,
+          "badges": ["연중무휴", "11:00~22:00"],
+          "mapUrl": "https://map.naver.com/p/search/%EC%B0%A8%EC%84%A0%EC%B1%85%20%EA%B4%91%EC%95%88%EB%A6%AC",
+          "memo": "3층 한옥 오션뷰 · 아메리카노 5,500 + 인절미라떼 7,500 (16시 전 착석 추천)"
+        },
+        {
+          "id": "d1-6",
+          "time": "17:40",
+          "place": "다리집 (남천동 떡볶이)",
+          "stay": "체류 50분",
+          "moveMode": "도보 20분 (택시 5분)",
+          "moveMin": 20,
+          "moveCost": 0,
+          "costTotal": 22200,
+          "badges": ["일요일 영업", "11:30~20:50"],
+          "mapUrl": "https://map.naver.com/p/search/%EB%8B%A4%EB%A6%AC%EC%A7%91",
+          "memo": "떡볶이·오징어튀김·국물어묵 · 일요일 휴무인 이재모/이가네 대체"
+        },
+        {
+          "id": "d1-7",
+          "time": "18:50",
+          "place": "광안대교 야경 & 뚜벅스 광안점(선택)",
+          "stay": "체류 60분+",
+          "moveMode": "해변 도보 복귀",
+          "moveMin": 15,
+          "moveCost": 0,
+          "costTotal": 14000,
+          "badges": ["일몰 18:00", "21층 전망대"],
+          "mapUrl": "https://map.naver.com/p/search/%EB%9A%9C%EB%B2%85%EC%8A%A4%20%EA%B4%91%EC%95%88%EC%A0%90",
+          "memo": "호텔 스카이전망대·해수온천 또는 7층 카페 뚜벅스(09:30~24:30)"
+        }
+      ]
+    },
+    {
+      "day": 2,
+      "date": "2027-02-01",
+      "label": "2일차 (월)",
+      "subtitle": "청사포·해운대 → 전포 → 이재모피자",
+      "planBTitle": "우천·한파 플랜 B: 해운대 제외 실내·전포 코스",
+      "planBDesc": "강풍·우천으로 스카이캡슐 운행/대기가 부담스러우면 오전엔 호텔 해수온천·찜질방에서 쉬고, 2호선 광안→전포(15분)로 바로 이동해 전포카페거리 실내 카페와 이재모피자 전포점을 즐기세요.",
+      "items": [
+        {
+          "id": "d2-1",
+          "time": "09:40",
+          "place": "해변열차 (미포 → 청사포)",
+          "stay": "탑승 10분",
+          "moveMode": "1003번 급행버스 (광안→미포)",
+          "moveMin": 47,
+          "moveCost": 4200,
+          "costTotal": 20000,
+          "badges": ["동절기 09:00~19:00"],
+          "mapUrl": "https://www.bluelinepark.com/",
+          "memo": "10:30 탑승 · 1인 10,000원×2"
+        },
+        {
+          "id": "d2-2",
+          "time": "10:45",
+          "place": "다릿돌전망대 & 카페 바다당",
+          "stay": "체류 55분",
+          "moveMode": "청사포정거장 도보 1분",
+          "moveMin": 1,
+          "moveCost": 0,
+          "costTotal": 16500,
+          "badges": ["월요일 영업", "09:30~21:00"],
+          "mapUrl": "https://map.naver.com/p/search/%EB%B0%94%EB%8B%A4%EB%8B%B9%20%EC%B2%AD%EC%82%AC%ED%8F%AC",
+          "memo": "쌍둥이 등대 뷰 · 11:10까지 입장해 12:00 스카이캡슐 여유 있게 대기"
+        },
+        {
+          "id": "d2-3",
+          "time": "12:00",
+          "place": "스카이캡슐 (청사포 → 미포)",
+          "stay": "탑승 30분",
+          "moveMode": "블루라인파크 스카이캡슐",
+          "moveMin": 30,
+          "moveCost": 0,
+          "costTotal": 50000,
+          "badges": ["예약 필수", "1/5 07:00 오픈"],
+          "mapUrl": "https://www.bluelinepark.com/",
+          "memo": "2인 1대 50,000원 · 청사포 출발이 대기가 짧은 편"
+        },
+        {
+          "id": "d2-4",
+          "time": "13:00",
+          "place": "상국이네 (해운대시장)",
+          "stay": "체류 45분",
+          "moveMode": "미포→해운대 도보 15분",
+          "moveMin": 15,
+          "moveCost": 0,
+          "costTotal": 19500,
+          "badges": ["월요일 영업", "수요일 휴무"],
+          "mapUrl": "https://map.naver.com/p/search/%EC%83%81%EA%B5%AD%EC%9D%B4%EB%84%A4",
+          "memo": "떡볶이+순대+튀김 · 10:00~01:00 영업"
+        },
+        {
+          "id": "d2-5",
+          "time": "14:05",
+          "place": "워킹홀리데이 해운대",
+          "stay": "체류 35분",
+          "moveMode": "도보 5분",
+          "moveMin": 5,
+          "moveCost": 0,
+          "costTotal": 11000,
+          "badges": ["5층 통창 오션뷰", "08:00~21:30"],
+          "mapUrl": "https://map.naver.com/p/search/%EC%9B%8C%ED%82%B9%ED%99%80%EB%A6%AC%EB%8D%B0%EC%9D%B4%20%ED%95%B4%EC%9A%B4%EB%8C%80",
+          "memo": "14:40 해운대역 5번 출구로 이동 → 2호선 전포역"
+        },
+        {
+          "id": "d2-6",
+          "time": "17:00",
+          "place": "이재모피자 전포점",
+          "stay": "체류 70분",
+          "moveMode": "2호선 해운대→전포 (49분)",
+          "moveMin": 49,
+          "moveCost": 3300,
+          "costTotal": 44000,
+          "badges": ["일요일 휴무 주의", "캐치테이블 원격대기"],
+          "mapUrl": "https://map.naver.com/p/search/%EC%9D%B4%EC%9E%AC%EB%AA%A8%ED%94%BC%EC%9E%90%20%EC%A0%84%ED%8F%AC%EC%A0%90",
+          "memo": "이재모크러스트 L+김치볶음밥+음료 · 도착 전 캐치테이블 확인"
+        }
+      ]
+    },
+    {
+      "day": 3,
+      "date": "2027-02-02",
+      "label": "3일차 (화)",
+      "subtitle": "모닝 커피 → 남포동 이가네 → 부산역",
+      "planBTitle": "우천·한파 플랜 B: 남포동 실내 쇼핑·책방골목 + 15:17 열차",
+      "planBDesc": "비가 오면 남포동 국제시장 아케이드·보수동책방골목·BIFF광장 실내 위주로 둘러보고, 귀가 열차를 15:17 KTX 110열차로 늦추면 훨씬 여유롭게 움직일 수 있습니다.",
+      "items": [
+        {
+          "id": "d3-1",
+          "time": "08:30",
+          "place": "까사부사노 테라스 (모닝 커피)",
+          "stay": "체류 50분",
+          "moveMode": "호텔 도보 5분",
+          "moveMin": 5,
+          "moveCost": 0,
+          "costTotal": 9500,
+          "badges": ["화요일 영업", "08:30 오픈"],
+          "mapUrl": "https://map.naver.com/p/search/%EA%B9%8C%EC%82%AC%EB%B6%80%EC%82%AC%EB%85%B8%20%ED%85%8C%EB%9D%BC%EC%8A%A4",
+          "memo": "광안리 바닷가 1층 테라스 · 오픈과 동시에 착석 가능"
+        },
+        {
+          "id": "d3-2",
+          "time": "11:00",
+          "place": "체크아웃 → 부산역 물품보관함",
+          "stay": "짐 보관",
+          "moveMode": "41번 버스 (광안→부산역)",
+          "moveMin": 42,
+          "moveCost": 3100,
+          "costTotal": 6000,
+          "badges": ["11:00 체크아웃"],
+          "mapUrl": "https://map.naver.com/p/search/%EB%B6%80%EC%82%B0%EC%97%AD",
+          "memo": "11:45 부산역 물품보관함 이용 후 1호선 남포역 이동"
+        },
+        {
+          "id": "d3-3",
+          "time": "12:15",
+          "place": "이가네 떡볶이 (부평깡통시장)",
+          "stay": "체류 25분",
+          "moveMode": "1호선 부산역→남포역 (9분)",
+          "moveMin": 9,
+          "moveCost": 3000,
+          "costTotal": 13000,
+          "badges": ["일요일 휴무 주의", "월~토 10:00~17:00"],
+          "mapUrl": "https://map.naver.com/p/search/%EC%9D%B4%EA%B0%80%EB%84%A4%20%EB%96%A1%EB%B3%B6%EC%9D%B4",
+          "memo": "떡볶이튀김세트 5,000×2 + 오뎅 3,000 · 서서 먹는 바 형태"
+        },
+        {
+          "id": "d3-4",
+          "time": "13:22",
+          "place": "KTX 108열차 (부산역 → 광명역)",
+          "stay": "탑승 181분",
+          "moveMode": "KTX 일반실",
+          "moveMin": 181,
+          "moveCost": 94400,
+          "costTotal": 94400,
+          "badges": ["예매 필수", "1/2 오픈"],
+          "mapUrl": "https://map.naver.com/p/search/%EA%B4%91%EB%AA%85%EC%97%AD",
+          "memo": "16:23 광명역 도착 → 16:42 전철 → 18:14 숭의역 (여유 플랜 15:17 KTX)"
+        }
+      ]
+    }
+  ],
+  "expenses": [
+    { "id": "e1", "category": "교통", "name": "KTX 왕복 (광명↔부산 2인)", "amount": 198800, "status": "예정" },
+    { "id": "e2", "category": "교통", "name": "숭의↔광명 전철 왕복 (2인)", "amount": 9800, "status": "현장" },
+    { "id": "e3", "category": "교통", "name": "부산 시내버스·지하철 (2인)", "amount": 23200, "status": "현장" },
+    { "id": "e4", "category": "숙소", "name": "아쿠아 펠리스 디럭스 오션뷰 2박", "amount": 211411, "status": "예정" },
+    { "id": "e5", "category": "식비", "name": "1일차 (본전·차선책·다리집)", "amount": 57200, "status": "현장" },
+    { "id": "e6", "category": "식비", "name": "2일차 (아침·바다당·상국이네·워킹·이재모)", "amount": 103000, "status": "현장" },
+    { "id": "e7", "category": "식비", "name": "3일차 (까사부사노·이가네)", "amount": 22500, "status": "현장" },
+    { "id": "e8", "category": "관광", "name": "해변열차 2인 + 스카이캡슐 1대", "amount": 70000, "status": "예정" },
+    { "id": "e9", "category": "기타", "name": "물품보관함·간식·여유비", "amount": 14000, "status": "현장" }
+  ],
+  "weather": [
+    {
+      "day": "1일차 · 1/31 (일)",
+      "area": "광안리 · 부산역",
+      "icon": "⛅",
+      "condition": "맑고 쌀쌀한 바닷바람",
+      "minTemp": -2,
+      "maxTemp": 6,
+      "wind": "16~21km/h (머리가 흩날릴 정도)",
+      "feelsLike": "체감 -6~3°C",
+      "sunset": "18:00",
+      "outfit": "히트텍 상하의 + 기모 바지 + 숏/롱패딩 + 목도리",
+      "tip": "해변은 건물 그늘 없이 바닷바람을 그대로 맞습니다. 야경(18:50) 볼 때 장갑·핫팩 필수!"
+    },
+    {
+      "day": "2일차 · 2/1 (월)",
+      "area": "청사포 · 해운대 · 전포",
+      "icon": "☀️",
+      "condition": "대체로 맑음 · 오전 찬바람",
+      "minTemp": -3,
+      "maxTemp": 7,
+      "wind": "14~19km/h (약간 쌀쌀한 바람)",
+      "feelsLike": "체감 -6~4°C",
+      "sunset": "18:01",
+      "outfit": "벗기 쉬운 겹겹이 레이어드 (니트/맨투맨 + 패딩) + 방풍 목도리",
+      "tip": "스카이캡슐·해변열차 대기 줄이 바닷가라 춥고, 지하철·전포 카페·피자집 실내는 따뜻해 겉옷 벗기 편한 코디가 좋아요."
+    },
+    {
+      "day": "3일차 · 2/2 (화)",
+      "area": "광안리 · 남포동",
+      "icon": "🌤️",
+      "condition": "구름 조금 · 아침 영하권",
+      "minTemp": -2,
+      "maxTemp": 6,
+      "wind": "14~18km/h",
+      "feelsLike": "체감 -5~3°C",
+      "sunset": "18:02",
+      "outfit": "기모 이너 + 도톰한 가디건/후리스 + 패딩 + 편한 운동화",
+      "tip": "08:30 까사부사노 테라스는 담요·핫팩 챙기면 좋고, 이가네 떡볶이는 서서 먹기 때문에 보온 유지가 중요해요."
+    }
+  ],
+  "bookingAlerts": [
+    {
+      "id": "a1",
+      "title": "1/31 출발 KTX 예매 오픈",
+      "datetime": "2026-12-31T07:00",
+      "displayTime": "2026.12.31(목) 07:00",
+      "desc": "코레일톡 · 10:17 KTX 25열차 순방향 2인 연석 (8호차/유아동반석 앞뒤 제외)",
+      "offsets": ["1d", "1h", "10m"]
+    },
+    {
+      "id": "a2",
+      "title": "2/2 귀가 KTX 예매 오픈",
+      "datetime": "2027-01-02T07:00",
+      "displayTime": "2027.01.02(토) 07:00",
+      "desc": "코레일톡 · 13:22 KTX 108열차 (또는 15:17 KTX 110열차)",
+      "offsets": ["1d", "30m", "10m"]
+    },
+    {
+      "id": "a3",
+      "title": "블루라인파크 스카이캡슐 오픈",
+      "datetime": "2027-01-05T07:00",
+      "displayTime": "2027.01.05(화) 07:00",
+      "desc": "2/1 12:00~12:30 청사포→미포 2인승 (매주 화요일 07:00 4주 뒤 오픈)",
+      "offsets": ["1d", "1h", "30m", "10m"]
+    },
+    {
+      "id": "a4",
+      "title": "아고다 결제 전날 모임통장 입금",
+      "datetime": "2027-01-23T17:00",
+      "displayTime": "2027.01.23(토) 17:00",
+      "desc": "1/24 아고다 211,411원 결제 예정 — 모임통장 카드 잔액 채우기",
+      "offsets": ["1h", "10m"]
+    }
+  ],
+  "checklist": [
+    { "id": "c1", "text": "아쿠아 펠리스 찜질방·인피니티풀 점검일 공지 확인 (출발 1주 전)", "done": false },
+    { "id": "c2", "text": "이재모피자 전포점 캐치테이블 원격대기 가능 여부 확인 (1/24경)", "done": false },
+    { "id": "c3", "text": "맛집·카페 8곳 설 연휴/동절기 영업시간 재확인 (출발 3일 전)", "done": false },
+    { "id": "c4", "text": "내복(상하)·기모 바지·목도리·장갑·핫팩 챙기기", "done": false },
+    { "id": "c5", "text": "보조배터리·충전기·모임통장 카드·신분증", "done": false }
+  ]
+}
