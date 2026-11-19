@@ -1316,13 +1316,78 @@
       const h = Math.floor(totalMin / 60), min = totalMin % 60;
       document.getElementById("hdr-travel-time").textContent = `총 이동 ${h}시간 ${min}분`;
 
-      const totalExp = state.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    function inferItemExpenseCategory(it) {
+      const text = `${it.place || ""} ${(it.badges || []).join(" ")} ${it.moveMode || ""}`;
+      if (/호텔|숙소|펜션|리조트|체크인|에어비앤비|모텔|게스트하우스/.test(text)) return "숙소";
+      if (it.fromPlace || it.toPlace || /택시|KTX|SRT|버스|전철|지하철|열차|비행기|항공|시외버스|공항/.test(it.place || "") || (it.badges || []).some(b => /택시|KTX|항공|버스|전철/.test(b))) {
+        if (/해변열차|스카이캡슐|케이블카|유람선/.test(it.place || "")) return "관광";
+        if (/물품보관함/.test(it.place || "")) return "기타";
+        return "교통";
+      }
+      if (Array.isArray(it.menus) || /국밥|피자|떡볶이|카페|커피|식당|음식점|바|술집|맛집|브런치|레스토랑/.test(text)) return "식비";
+      if (/전망대|해수욕장|박물관|미술관|투어|관광|체험|테마파크/.test(text)) return "관광";
+      return "기타";
+    }
+
+    function getSyncedExpenses() {
+      const statusMap = state.expenseStatusMap || {};
+      const list = [];
+      let transitBusSum = 0;
+
+      (state.days || []).forEach(day => {
+        (day.items || []).forEach(it => {
+          const ct = Number(it.costTotal) || 0;
+          const mc = Number(it.moveCost) || 0;
+          const cat = inferItemExpenseCategory(it);
+
+          if (ct > 0) {
+            const eid = "tl_" + it.id;
+            const defStatus = /예약 완료/.test((it.badges || []).join(" ")) ? "완료" : (/예약|예매|오픈|숙소/.test(cat + " " + (it.badges || []).join(" ")) ? "예정" : "현장");
+            list.push({
+              id: eid,
+              timelineItemId: it.id,
+              dayNum: day.day,
+              category: cat,
+              name: `${day.day}일차 · ${it.place}`,
+              amount: ct,
+              status: statusMap[eid] || defStatus,
+              fromTimeline: true
+            });
+          }
+          if (mc > 0 && mc !== ct) {
+            transitBusSum += mc;
+          }
+        });
+      });
+
+      if (transitBusSum > 0) {
+        const eid = "tl_transit_local";
+        list.push({
+          id: eid,
+          category: "교통",
+          name: "일정 내 대중교통 이동 합계 (버스·지하철)",
+          amount: transitBusSum,
+          status: statusMap[eid] || "현장",
+          fromTimeline: true
+        });
+      }
+
+      (state.expenses || []).forEach(e => {
+        if (e.manual || !/^e[1-9]$/.test(e.id)) {
+          list.push(e);
+        }
+      });
+      return list;
+    }
+
+      const synced = getSyncedExpenses();
+      const totalExp = synced.reduce((s, e) => s + (Number(e.amount) || 0), 0);
       const n = Math.max(1, Number(m.travelers) || 2);
-      const doneCnt = state.expenses.filter(e => e.status === "완료").length;
+      const doneCnt = synced.filter(e => e.status === "완료").length;
       document.getElementById("sum-total").textContent = fmt(totalExp);
       document.getElementById("sum-n").textContent = n;
       document.getElementById("sum-per").textContent = fmt(totalExp / n);
-      document.getElementById("sum-done").textContent = `${doneCnt}/${state.expenses.length}건`;
+      document.getElementById("sum-done").textContent = `${doneCnt}/${synced.length}건`;
 
       const pBtn = document.getElementById("hdr-profile-btn");
       if (pBtn) {
@@ -2087,6 +2152,7 @@
 
     function renderExpenses() {
       document.getElementById("travelers-input").value = state.meta.travelers;
+      const synced = getSyncedExpenses();
       const cats = [
         { name: "교통", color: "#0284c7" },
         { name: "숙소", color: "#0ea5e9" },
@@ -2096,7 +2162,7 @@
       ];
       const totals = cats.map(c => ({
         ...c,
-        val: state.expenses.filter(e => e.category === c.name).reduce((s, e) => s + (Number(e.amount) || 0), 0)
+        val: synced.filter(e => e.category === c.name).reduce((s, e) => s + (Number(e.amount) || 0), 0)
       }));
       const grand = totals.reduce((s, c) => s + c.val, 0) || 1;
 
@@ -2123,17 +2189,17 @@
       `).join("");
 
       const n = Math.max(1, Number(state.meta.travelers) || 2);
-      document.getElementById("expense-list").innerHTML = state.expenses.map(e => {
+      document.getElementById("expense-list").innerHTML = synced.map(e => {
         const stCls = e.status === "완료" ? "st-done" : e.status === "예정" ? "st-plan" : "st-site";
         const stLabel = e.status === "완료" ? "예약 완료" : e.status === "예정" ? "결제 예정" : "현장 결제";
         return `
           <div class="expense-item">
             <div style="flex:1;">
-              <div style="font-size:13.5px;font-weight:700;">[${e.category}] ${e.name}</div>
+              <div style="font-size:13.5px;font-weight:700;">[${e.category}] ${e.name} ${e.fromTimeline ? '<span class="tag blue" style="font-size:10px;padding:1px 5px;">일정 연동</span>' : ""}</div>
               <div style="font-size:12px;color:var(--muted);">${fmt(e.amount)} · 1인 ${fmt(e.amount / n)}</div>
             </div>
             <button class="status-btn ${stCls}" onclick="cycleStatus('${e.id}')">${stLabel}</button>
-            <button class="btn btn-danger btn-sm" onclick="delExpense('${e.id}')">삭제</button>
+            ${e.fromTimeline ? "" : `<button class="btn btn-danger btn-sm" onclick="delExpense('${e.id}')">삭제</button>`}
           </div>
         `;
       }).join("");
@@ -2150,13 +2216,20 @@
       const amt = Number(document.getElementById("exp-amt").value);
       const status = document.getElementById("exp-status").value;
       if (!name || !amt) return alert("항목명과 금액을 입력해 주세요.");
-      state.expenses.push({ id: "e" + Date.now(), category: cat, name, amount: amt, status });
+      state.expenses.push({ id: "e" + Date.now(), category: cat, name, amount: amt, status, manual: true });
       document.getElementById("exp-name").value = "";
       document.getElementById("exp-amt").value = "";
       saveState();
     }
     function cycleStatus(id) {
       const order = ["예정", "완료", "현장"];
+      if (id.startsWith("tl_")) {
+        if (!state.expenseStatusMap) state.expenseStatusMap = {};
+        const cur = getSyncedExpenses().find(e => e.id === id)?.status || "현장";
+        state.expenseStatusMap[id] = order[(order.indexOf(cur) + 1) % order.length];
+        saveState();
+        return;
+      }
       const item = state.expenses.find(e => e.id === id);
       if (!item) return;
       item.status = order[(order.indexOf(item.status) + 1) % order.length];
