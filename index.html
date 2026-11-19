@@ -879,14 +879,22 @@
         return ll ? { it, ll } : null;
       }).filter(Boolean);
       if (!pts.length) return;
-      // 같은 좌표(예: 미포 정거장 출발·도착)에 핀이 겹쳐 가려지지 않도록 살짝 벌린다.
-      const seenKey = {};
+      const rawCoords = pts.map(p => p.ll);
+      leafletMap.fitBounds(rawCoords, { padding: [24, 24] });
+      setTimeout(() => leafletMap.invalidateSize(), 80);
+      // 가까운 핀(호텔·카페·야경 등)이 겹쳐 번호가 가려지지 않도록 화면 픽셀 기준으로 살짝 떼어 놓는다.
+      const zoom = leafletMap.getZoom();
+      const placedPx = [];
       const shown = pts.map(p => {
-        const key = p.ll[0].toFixed(4) + "," + p.ll[1].toFixed(4);
-        const n = (seenKey[key] = (seenKey[key] || 0) + 1);
-        if (n === 1) return p.ll;
-        const ang = (n - 2) * (Math.PI * 2 / 6);
-        return [p.ll[0] + Math.sin(ang) * 0.0007, p.ll[1] + Math.cos(ang) * 0.0007];
+        const base = leafletMap.project(L.latLng(p.ll), zoom);
+        let pt = base;
+        for (let k = 1; k <= 40 && placedPx.some(q => q.distanceTo(pt) < 27); k++) {
+          const ang = k * 2.399963;
+          const r = 27 * Math.sqrt(k);
+          pt = L.point(base.x + Math.cos(ang) * r, base.y + Math.sin(ang) * r);
+        }
+        placedPx.push(pt);
+        return leafletMap.unproject(pt, zoom);
       });
       const coords = [];
       pts.forEach((p, idx) => {
@@ -904,8 +912,6 @@
       if (coords.length > 1) {
         L.polyline(coords, { color: "#0284c7", weight: 3.5, dashArray: "6, 6", opacity: 0.85 }).addTo(mapLayerGroup);
       }
-      leafletMap.fitBounds(coords, { padding: [24, 24] });
-      setTimeout(() => leafletMap.invalidateSize(), 80);
     }
 
     function renderExpenses() {
