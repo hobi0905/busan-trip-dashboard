@@ -654,8 +654,8 @@
       </div>
       <div id="pm-single-box">
         <div class="row">
-          <input id="pm-search-q" class="input" placeholder="장소명 검색 (예: 부산역, 남천동)" onkeydown="if(event.key==='Enter')searchPlaceOnMap('single')" />
-          <button class="btn btn-primary btn-sm" onclick="searchPlaceOnMap('single')">검색</button>
+          <input id="pm-search-q" class="input" style="flex:1;min-width:0;" placeholder="장소명 검색 (예: 부산역, 남천동)" onkeydown="if(event.key==='Enter')searchPlaceOnMap('single')" />
+          <button class="btn btn-primary btn-sm" style="flex:0 0 auto;white-space:nowrap;" onclick="searchPlaceOnMap('single')">검색</button>
         </div>
         <div class="row">
           <input id="pm-place" class="input" placeholder="장소명" />
@@ -663,12 +663,12 @@
       </div>
       <div id="pm-route-box" style="display:none;">
         <div class="row">
-          <input id="pm-from" class="input" placeholder="출발지 (예: 숭의역)" onkeydown="if(event.key==='Enter')searchPlaceOnMap('from')" />
-          <button class="btn btn-soft btn-sm" onclick="searchPlaceOnMap('from')">출발 검색</button>
+          <input id="pm-from" class="input" style="flex:1;min-width:0;" placeholder="출발지 (예: 숭의역)" onkeydown="if(event.key==='Enter')searchPlaceOnMap('from')" />
+          <button class="btn btn-soft btn-sm" style="flex:0 0 auto;white-space:nowrap;" onclick="searchPlaceOnMap('from')">출발 검색</button>
         </div>
         <div class="row">
-          <input id="pm-to" class="input" placeholder="도착지 (예: 광명역)" onkeydown="if(event.key==='Enter')searchPlaceOnMap('to')" />
-          <button class="btn btn-soft btn-sm" onclick="searchPlaceOnMap('to')">도착 검색</button>
+          <input id="pm-to" class="input" style="flex:1;min-width:0;" placeholder="도착지 (예: 광명역)" onkeydown="if(event.key==='Enter')searchPlaceOnMap('to')" />
+          <button class="btn btn-soft btn-sm" style="flex:0 0 auto;white-space:nowrap;" onclick="searchPlaceOnMap('to')">도착 검색</button>
         </div>
       </div>
       <div id="pm-search-results" style="max-height:130px;overflow-y:auto;margin-bottom:8px;"></div>
