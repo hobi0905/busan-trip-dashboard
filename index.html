@@ -1954,7 +1954,7 @@
     }
 
     const SAMPLE_TRIP_LIST = [
-      { syncId: "au-sydney-4n5d", title: "🇦🇺 호주 시드니·블루마운틴 4박 5일", startDate: "2027-02-13", endDate: "2027-02-17", locked: false, sample: true }
+      { syncId: "au-sydney-4n5d", title: "🇦🇺 호주 시드니·블루마운틴 4박 5일", startDate: "2027-02-13", endDate: "2027-02-17", locked: false }
     ];
 
     const STORAGE_KEY = "busan_trip_dashboard_v1";
@@ -4159,7 +4159,7 @@
     function getMyTrips() {
       try {
         const raw = localStorage.getItem(MY_TRIPS_KEY);
-        const list = (raw ? JSON.parse(raw) : []).filter(t => t && !t.sample);
+        const list = (raw ? JSON.parse(raw) : []).filter(Boolean);
         if (!list.some(t => t.syncId === DEFAULT_SB.syncId)) {
           list.unshift({
             syncId: DEFAULT_SB.syncId,
@@ -4169,9 +4169,17 @@
             locked: false
           });
         }
+        SAMPLE_TRIP_LIST.forEach(s => {
+          if (!list.some(t => t.syncId === s.syncId)) {
+            list.push({ ...s });
+          }
+        });
         return list;
       } catch {
-        return [{ syncId: DEFAULT_SB.syncId, title: DEFAULT_DATA.meta.title, startDate: DEFAULT_DATA.meta.startDate, endDate: DEFAULT_DATA.meta.endDate, locked: false }];
+        return [
+          { syncId: DEFAULT_SB.syncId, title: DEFAULT_DATA.meta.title, startDate: DEFAULT_DATA.meta.startDate, endDate: DEFAULT_DATA.meta.endDate, locked: false },
+          ...SAMPLE_TRIP_LIST.map(s => ({ ...s }))
+        ];
       }
     }
 
