@@ -3088,6 +3088,9 @@
         const nm = String(withCoord.place || "").split(/\s*(?:→|\()/)[0].trim();
         return { label: nm, query: nm, lat: withCoord.lat, lon: withCoord.lng };
       }
+      // 새로 만든 일정처럼 날짜만 있는 경우 목적지로 조회
+      const dest = String(state.meta?.destination || "").split(/[(\s]/)[0].trim();
+      if (dest) return { label: dest, query: dest };
       return null;
     }
 
@@ -4687,6 +4690,9 @@
           date: iso,
           label: `${i + 1}일차 (${wdays[d.getDay()]})`,
           subtitle: `${dest || "여행"} ${i + 1}일차`,
+          city: dest || "",
+          cityLabel: dest || "",
+          area: dest || "",
           planBTitle: "우천·날씨 변동 시 실내 코스",
           planBDesc: "카페·실내 전시·맛집 위주로 유동적으로 이동해 보세요.",
           items: []
