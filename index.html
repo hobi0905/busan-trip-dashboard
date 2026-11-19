@@ -742,6 +742,13 @@
       ]
     };
 
+    // 지도 핀 좌표는 로컬/클라우드에 저장된 일정 데이터에 없을 수 있으므로,
+    // 기본 데이터에 정의된 좌표를 일정 id 기준으로 항상 사용할 수 있게 둔다.
+    const COORD_BY_ID = {};
+    DEFAULT_DATA.days.forEach(d => (d.items || []).forEach(it => {
+      if (typeof it.lat === "number" && typeof it.lng === "number") COORD_BY_ID[it.id] = [it.lat, it.lng];
+    }));
+
     const STORAGE_KEY = "busan_trip_dashboard_v1";
     const SB_CONF_KEY = "busan_trip_supabase_conf_v1";
     const DEFAULT_SB = {
@@ -868,19 +875,31 @@
       }
       mapLayerGroup.clearLayers();
       const dayObj = state.days.find(d => d.day === currentDay) || state.days[0];
-      const pts = (dayObj.items || []).filter(it => typeof it.lat === "number" && typeof it.lng === "number");
+      const pts = (dayObj.items || []).map(it => {
+        const ll = (typeof it.lat === "number" && typeof it.lng === "number") ? [it.lat, it.lng] : COORD_BY_ID[it.id];
+        return ll ? { it, ll } : null;
+      }).filter(Boolean);
       if (!pts.length) return;
+      // 같은 좌표(예: 미포 정거장 출발·도착)에 핀이 겹쳐 가려지지 않도록 살짝 벌린다.
+      const seenKey = {};
+      const shown = pts.map(p => {
+        const key = p.ll[0].toFixed(4) + "," + p.ll[1].toFixed(4);
+        const n = (seenKey[key] = (seenKey[key] || 0) + 1);
+        if (n === 1) return p.ll;
+        const ang = (n - 2) * (Math.PI * 2 / 6);
+        return [p.ll[0] + Math.sin(ang) * 0.0007, p.ll[1] + Math.cos(ang) * 0.0007];
+      });
       const coords = [];
-      pts.forEach((it, idx) => {
-        coords.push([it.lat, it.lng]);
+      pts.forEach((p, idx) => {
+        coords.push(shown[idx]);
         const icon = L.divIcon({
           className: "",
           html: `<div class="pin-num">${idx + 1}</div>`,
           iconSize: [24, 24],
           iconAnchor: [12, 12]
         });
-        L.marker([it.lat, it.lng], { icon })
-          .bindPopup(`<strong>${idx + 1}. ${it.place}</strong><br>${it.time} · ${it.moveMode}`)
+        L.marker(shown[idx], { icon })
+          .bindPopup(`<strong>${idx + 1}. ${p.it.place}</strong><br>${p.it.time}${p.it.moveMode ? " · " + p.it.moveMode : ""}`)
           .addTo(mapLayerGroup);
       });
       if (coords.length > 1) {
