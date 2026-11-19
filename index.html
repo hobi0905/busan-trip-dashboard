@@ -990,6 +990,7 @@
         const ll = (typeof it.lat === "number" && typeof it.lng === "number") ? [it.lat, it.lng] : COORD_BY_ID[it.id];
         return ll ? { it, ll } : null;
       }).filter(Boolean);
+      leafletMap.closePopup();
       mapLayerGroup.clearLayers();
       if (!dayMapPts.length) return;
       leafletMap.fitBounds(dayMapPts.map(p => p.ll), { padding: [26, 26] });
