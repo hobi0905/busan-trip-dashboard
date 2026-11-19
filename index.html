@@ -721,14 +721,16 @@
         </div>
 
         <div class="card">
-          <h3 class="sec-title">📱 줄서기 · 예매 앱 바로가기</h3>
-          <div class="row">
-            <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://app.catchtable.co.kr/" target="_blank">캐치테이블 (이재모피자)</a>
-            <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://www.tabling.co.kr/" target="_blank">테이블링 (수변최고)</a>
-          </div>
-          <div class="row" style="margin-bottom:0;">
-            <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://www.letskorail.com/" target="_blank">코레일 (KTX)</a>
-            <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://www.bluelinepark.com/" target="_blank">블루라인파크</a>
+          <h3 class="sec-title" id="booking-apps-title">📱 줄서기 · 예매 앱 바로가기</h3>
+          <div id="booking-apps-links">
+            <div class="row">
+              <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://app.catchtable.co.kr/" target="_blank">캐치테이블 (이재모피자)</a>
+              <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://www.tabling.co.kr/" target="_blank">테이블링 (수변최고)</a>
+            </div>
+            <div class="row" style="margin-bottom:0;">
+              <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://www.letskorail.com/" target="_blank">코레일 (KTX)</a>
+              <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://www.bluelinepark.com/" target="_blank">블루라인파크</a>
+            </div>
           </div>
         </div>
 
@@ -1384,6 +1386,7 @@
           ] }
         ],
         genericExtra: ["선크림 SPF50·선글라스·모자 (자외선 매우 강함)", "수영복·래시가드 (해변 일정)", "상비약(소화제·진통제·밴드)"],
+        links: [{ label: "호주 ETA 안내(내무부)", url: "https://immi.homeaffairs.gov.au/" }, { label: "호주관광청", url: "https://www.australia.com/ko-kr" }],
         entryAlert: { title: "호주 ETA 신청·승인 확인", daysBefore: 28, desc: "Australian ETA 앱 · 여권 정보 입력 후 승인 메일 보관" }
       },
       "일본": {
@@ -1413,6 +1416,7 @@
           ] }
         ],
         genericExtra: ["편한 운동화 (하루 1.5만 보 대비)", "상비약·마스크"],
+        links: [{ label: "Visit Japan Web", url: "https://www.vjw.digital.go.jp/" }, { label: "일본정부관광국", url: "https://www.jnto.go.kr/" }],
         entryAlert: { title: "Visit Japan Web 등록하기", daysBefore: 14, desc: "입국심사·세관 QR을 캡처해 오프라인 저장" }
       },
       "미국": {
@@ -1442,6 +1446,7 @@
           ] }
         ],
         genericExtra: ["상비약(처방전 영문)·멀티비타민", "얇은 겉옷 (실내 냉방 강함)"],
+        links: [{ label: "ESTA 공식 신청", url: "https://esta.cbp.dhs.gov/" }, { label: "미국 여행 안전 정보", url: "https://travel.state.gov/" }],
         entryAlert: { title: "미국 ESTA 신청 (72시간 전 필수)", daysBefore: 21, desc: "cbp.dhs.gov 공식 사이트 · US$40 · 승인번호 저장" }
       },
       "유럽 (솅겐)": {
@@ -1471,6 +1476,7 @@
           ] }
         ],
         genericExtra: ["얇은 겉옷·우산", "상비약·유럽연합 보험증 사본"],
+        links: [{ label: "ETIAS·EES 공식 안내", url: "https://travel-europe.europa.eu/etias_en" }, { label: "유럽연합 입국 안내", url: "https://travel-europe.europa.eu/" }],
         entryAlert: { title: "유럽 입국요건·ETIAS 시행 여부 재확인", daysBefore: 30, desc: "여권 잔여 기간, EES 등록, ETIAS 시행 상태 확인" }
       },
       "태국": {
@@ -1500,6 +1506,7 @@
           ] }
         ],
         genericExtra: ["얇은 긴팔·우비 (스콜 대비)", "선크림·모자"],
+        links: [{ label: "태국 TDAC", url: "https://tdac.immigration.go.th/" }, { label: "태국관광청", url: "https://www.tourismthailand.org/" }],
         entryAlert: { title: "태국 TDAC 제출 (도착 3일 전부터)", daysBefore: 2, desc: "tdac.immigration.go.th · 무료 · QR 캡처" }
       },
       "베트남": {
@@ -1529,6 +1536,7 @@
           ] }
         ],
         genericExtra: ["얇은 긴팔·우비", "선크림·모자"],
+        links: [{ label: "베트남 e-비자", url: "https://evisa.gov.vn/" }, { label: "베트남 관광 안내", url: "https://vietnam.travel/" }],
         entryAlert: { title: "베트남 입국요건 점검 (무비자 45일·여권 6개월)", daysBefore: 21, desc: "45일 초과 시 e-비자 신청" }
       },
       "대만": {
@@ -1558,6 +1566,7 @@
           ] }
         ],
         genericExtra: ["편한 운동화", "상비약"],
+        links: [{ label: "대만 TWAC", url: "https://twac.immigration.gov.tw/" }, { label: "대만관광청", url: "https://www.taiwan.net.tw/" }],
         entryAlert: { title: "대만 TWAC 제출 (입국 7일 이내)", daysBefore: 6, desc: "twac.immigration.gov.tw · 무료 · 확인 메일 저장" }
       },
       "싱가포르": {
@@ -1587,6 +1596,7 @@
           ] }
         ],
         genericExtra: ["선크림·우산", "상비약"],
+        links: [{ label: "싱가포르 SGAC", url: "https://eservices.ica.gov.sg/sgarrivalcard/" }, { label: "싱가포르 관광청", url: "https://www.visitsingapore.com/" }],
         entryAlert: { title: "싱가포르 SGAC 제출 (도착 3일 이내)", daysBefore: 2, desc: "ICA 공식 사이트 · 무료" }
       },
       "기타": {
@@ -1616,6 +1626,7 @@
           ] }
         ],
         genericExtra: ["상비약", "얇은 겉옷"],
+        links: [{ label: "외교부 여권 안내", url: "https://www.passport.go.kr/" }, { label: "해외안전여행", url: "https://www.0404.go.kr/" }],
         entryAlert: { title: "비자·입국허가 요건 확인", daysBefore: 30, desc: "대사관·공식 이민국 사이트에서 확인" }
       }
     };
@@ -3264,23 +3275,46 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
+    const DOMESTIC_APP_LINKS_HTML = [
+      '<div class="row">',
+      '  <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://app.catchtable.co.kr/" target="_blank">캐치테이블 (이재모피자)</a>',
+      '  <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://www.tabling.co.kr/" target="_blank">테이블링 (수변최고)</a>',
+      '</div>',
+      '<div class="row" style="margin-bottom:0;">',
+      '  <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://www.letskorail.com/" target="_blank">코레일 (KTX)</a>',
+      '  <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://www.bluelinepark.com/" target="_blank">블루라인파크</a>',
+      '</div>'
+    ].join("");
+    const DOMESTIC_APP_LINKS_TITLE = "📱 줄서기 · 예매 앱 바로가기";
+
     function renderOverseasEmphasis() {
       const overseas = state.meta?.tripType === "overseas";
       const banner = document.getElementById("overseas-banner");
       const box = document.getElementById("chk-overseas-box");
       const badge = document.getElementById("nav-check-badge");
       const navBtn = document.querySelector('.nav-btn[data-tab="checklist"]');
+      const appTitle = document.getElementById("booking-apps-title");
+      const appLinks = document.getElementById("booking-apps-links");
       if (!overseas) {
         if (banner) banner.classList.add("hidden");
         if (box) box.innerHTML = "";
         if (badge) badge.style.display = "none";
         if (navBtn) navBtn.classList.remove("has-alert");
+        if (appTitle) appTitle.textContent = DOMESTIC_APP_LINKS_TITLE;
+        if (appLinks && DOMESTIC_APP_LINKS_HTML) appLinks.innerHTML = DOMESTIC_APP_LINKS_HTML;
         return;
       }
       const preset = getCountryPreset(state.meta.country) || COUNTRY_PRESETS["기타"];
       const country = state.meta.country || "해외";
       const left = pendingRequiredCount();
       const urgentLeft = (state.checklist || []).filter(c => !c.done && c.urgent).length;
+      if (appTitle) appTitle.textContent = "📱 입국·결제 바로가기";
+      if (appLinks) {
+        const links = preset.links || [];
+        appLinks.innerHTML = `<div class="row" style="margin-bottom:0;flex-wrap:wrap;">` + links.map(l =>
+          `<a class="btn btn-soft" style="flex:1 1 46%;text-decoration:none;font-size:12px;text-align:center;" href="${l.url}" target="_blank" rel="noopener">${l.label}</a>`
+        ).join("") + `</div>`;
+      }
       if (banner) {
         banner.classList.remove("hidden");
         banner.classList.toggle("ok", left === 0);
