@@ -375,6 +375,30 @@
     .nav-btn .ico { font-size: 18px; }
     .nav-btn.active { color: var(--ocean); }
     .sec-title { font-size: 14.5px; font-weight: 800; margin: 0 0 10px; }
+
+    /* Modal / Sheet */
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(15, 23, 42, 0.45);
+      display: none; align-items: flex-end; justify-content: center;
+      padding: 16px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-backdrop.center { align-items: center; }
+    .modal-sheet {
+      width: 100%; max-width: 440px;
+      background: #fff; border-radius: 20px;
+      padding: 18px; box-shadow: 0 12px 32px rgba(15,23,42,0.18);
+    }
+    .share-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 12px; }
+    .share-opt {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px; border-radius: 12px;
+      border: 1px solid var(--border); background: #fff;
+      font-family: inherit; font-size: 14px; font-weight: 700;
+      color: var(--text); cursor: pointer; text-decoration: none;
+    }
+    .share-opt:active { background: var(--ocean-soft); }
   </style>
 </head>
 <body>
@@ -385,7 +409,10 @@
           <div class="trip-title" id="hdr-title">부산 2박 3일 뚜벅이 여행</div>
           <div class="trip-sub" id="hdr-sub">2027.01.31(일) ~ 02.02(화) · 성인 2명</div>
         </div>
-        <span class="pill dday" id="hdr-dday">D-Day</span>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button class="btn btn-soft btn-sm" onclick="openShareModal()">🔗 공유</button>
+          <span class="pill dday" id="hdr-dday">D-Day</span>
+        </div>
       </div>
       <div class="badges-row">
         <span class="pill" id="hdr-travel-time">총 이동 0분</span>
@@ -515,41 +542,91 @@
         </div>
       </section>
 
-      <!-- TAB 5: CLOUD SYNC & JSON -->
+      <!-- TAB 5: CLOUD BACKUP & NEW TRIP -->
       <section id="tab-sync" class="tab-panel">
         <div class="card">
-          <h3 class="sec-title">☁️ Supabase 클라우드 저장 & 다중 기기 동기화</h3>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-            같은 <strong>공유 코드(Sync ID)</strong>를 입력한 두 기기(내 폰 ↔ 남자친구 폰)에서 일정·경비·체크리스트·알림 설정이 실시간으로 자동 동기화됩니다.
+          <h3 class="sec-title">☁️ 클라우드 백업</h3>
+          <div style="font-size:13px;color:var(--text);font-weight:700;" id="sync-trip-label">현재 여행: 부산 2박 3일 뚜벅이 여행</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px;" id="sb-status">마지막 백업: 확인 중...</div>
+          <div class="row" style="margin-top:12px;margin-bottom:0;">
+            <button class="btn btn-primary" style="flex:1;" onclick="pushToCloud()">☁️ 지금 백업하기</button>
+            <button class="btn btn-soft" style="flex:1;" onclick="pullFromCloud()">📥 백업 불러오기</button>
           </div>
-          <div class="row"><input id="sb-url" class="input" placeholder="Supabase Project URL (https://xxx.supabase.co)" /></div>
-          <div class="row"><input id="sb-key" class="input" placeholder="Supabase Anon Public Key" /></div>
-          <div class="row">
-            <input id="sb-sync-id" class="input" placeholder="공유 코드 (예: busan-2027-gayeon)" />
-            <button class="btn btn-primary" onclick="connectSupabase()">연결</button>
-          </div>
-          <div class="row" style="margin-bottom:0;">
-            <button class="btn btn-soft btn-sm" style="flex:1;" onclick="pullFromCloud()">지금 불러오기</button>
-            <button class="btn btn-soft btn-sm" style="flex:1;" onclick="pushToCloud()">지금 저장하기</button>
-            <button class="btn btn-soft btn-sm" style="flex:1;" onclick="copySqlSchema()">SQL 복사</button>
-          </div>
-          <div id="sb-status" style="font-size:12px;color:var(--muted);margin-top:8px;"></div>
         </div>
 
         <div class="card">
-          <h3 class="sec-title">📦 여행 JSON 데이터 교체 / 백업</h3>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">
-            JSON 구조로 분리되어 있어 다른 국내 여행 일정도 그대로 붙여넣어 대시보드를 재사용할 수 있습니다.
+          <h3 class="sec-title">✨ 새 여행 계획 개설</h3>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+            새로운 여행을 만들 때 <strong>비밀번호</strong>를 걸어두면, 공유 링크를 받은 사람도 비밀번호를 입력해야 볼 수 있어요.
           </div>
-          <div class="row">
-            <button class="btn btn-soft btn-sm" style="flex:1;" onclick="exportJson()">JSON 내보내기</button>
-            <button class="btn btn-danger btn-sm" style="flex:1;" onclick="resetDefault()">기본 부산 일정으로 초기화</button>
-          </div>
-          <textarea id="json-box" rows="6" class="input" placeholder="여기에 JSON을 붙여넣고 적용을 누르세요..."></textarea>
-          <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="importJson()">JSON 적용하기</button>
+          <button class="btn btn-soft" style="width:100%;" onclick="openNewTripModal()">+ 새 여행 만들기 (비밀번호 설정)</button>
         </div>
+
+        <details class="card" style="padding:12px 14px;">
+          <summary style="font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;">⚙️ 고급 설정 (JSON 교체 / 초기화)</summary>
+          <div style="margin-top:10px;">
+            <div class="row">
+              <button class="btn btn-soft btn-sm" style="flex:1;" onclick="exportJson()">JSON 내보내기</button>
+              <button class="btn btn-danger btn-sm" style="flex:1;" onclick="resetDefault()">부산 기본 일정 초기화</button>
+            </div>
+            <textarea id="json-box" rows="5" class="input" placeholder="여기에 JSON을 붙여넣고 적용을 누르세요..."></textarea>
+            <button class="btn btn-primary btn-sm" style="width:100%;margin-top:8px;" onclick="importJson()">JSON 적용하기</button>
+          </div>
+        </details>
       </section>
     </main>
+  </div>
+
+  <!-- SHARE MODAL -->
+  <div id="share-modal" class="modal-backdrop" onclick="if(event.target===this)closeShareModal()">
+    <div class="modal-sheet">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:16px;font-weight:800;">🔗 여행 일정 공유하기</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeShareModal()">닫기</button>
+      </div>
+      <div id="share-lock-note" style="font-size:12px;color:var(--muted);margin-top:6px;"></div>
+      <div class="share-grid">
+        <button class="share-opt" onclick="copyShareUrl()"><span>📋</span><span>링크 복사하기</span></button>
+        <button class="share-opt" onclick="shareViaNative()"><span>💬</span><span>카카오톡 / 다른 앱으로 보내기</span></button>
+        <a id="share-sms-link" class="share-opt" href="#"><span>📩</span><span>문자(SMS)로 보내기</span></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW TRIP MODAL -->
+  <div id="new-trip-modal" class="modal-backdrop center" onclick="if(event.target===this)closeNewTripModal()">
+    <div class="modal-sheet">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-size:16px;font-weight:800;">✨ 새 여행 개설</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeNewTripModal()">닫기</button>
+      </div>
+      <div class="row"><input id="nt-title" class="input" placeholder="여행 이름 (예: 제주 2박 3일)" /></div>
+      <div class="row">
+        <input id="nt-start" type="date" class="input" value="2027-03-01" />
+        <input id="nt-end" type="date" class="input" value="2027-03-03" />
+      </div>
+      <div class="row">
+        <input id="nt-travelers" type="number" min="1" value="2" class="input" placeholder="인원수" style="width:90px;" />
+        <input id="nt-pw" type="password" class="input" placeholder="비밀번호 설정 (선택 · 비우면 공개)" />
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:10px;">
+        비밀번호를 입력하면 공유 링크를 열 때 비밀번호를 물어봅니다.
+      </div>
+      <button class="btn btn-primary" style="width:100%;" onclick="createNewTrip()">개설하고 클라우드에 저장</button>
+    </div>
+  </div>
+
+  <!-- PASSWORD LOCK MODAL -->
+  <div id="lock-modal" class="modal-backdrop center" style="background:rgba(15,23,42,0.82);">
+    <div class="modal-sheet">
+      <div style="font-size:17px;font-weight:800;">🔒 비밀번호가 설정된 여행입니다</div>
+      <div id="lock-trip-name" style="font-size:13px;color:var(--muted);margin-top:4px;"></div>
+      <div class="row" style="margin-top:12px;">
+        <input id="lock-pw-input" type="password" class="input" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')unlockTrip()" />
+      </div>
+      <div id="lock-err" style="font-size:12px;color:var(--danger);margin-bottom:8px;"></div>
+      <button class="btn btn-primary" style="width:100%;" onclick="unlockTrip()">잠금 해제</button>
+    </div>
   </div>
 
   <nav class="bottom-nav">
@@ -650,15 +727,19 @@
       key: "sb_publishable_Xd0zebf6GG3fA43uC0Cl8w_ZzH4bZyr",
       syncId: "busan-2027-gayeon"
     };
+    const urlTripParam = new URLSearchParams(location.search).get("trip");
+    let currentSyncId = urlTripParam || DEFAULT_SB.syncId;
     let state = loadState();
     let currentDay = 1;
     let sbClient = null;
     let sbChannel = null;
     let saveTimer = null;
 
+    function getLocalKey() { return STORAGE_KEY + "_" + currentSyncId; }
+
     function loadState() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(getLocalKey()) || (currentSyncId === DEFAULT_SB.syncId ? localStorage.getItem(STORAGE_KEY) : null);
         return raw ? JSON.parse(raw) : structuredClone(DEFAULT_DATA);
       } catch {
         return structuredClone(DEFAULT_DATA);
@@ -666,7 +747,7 @@
     }
 
     function saveState(skipCloud = false) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(getLocalKey(), JSON.stringify(state));
       renderAll();
       if (!skipCloud && sbClient) {
         clearTimeout(saveTimer);
@@ -958,34 +1039,107 @@
       saveState();
     }
 
-    /* Supabase Cloud Sync */
-    function initSupabaseFromStorage() {
-      try {
-        const raw = localStorage.getItem(SB_CONF_KEY);
-        const conf = raw ? JSON.parse(raw) : DEFAULT_SB;
-        document.getElementById("sb-url").value = conf.url || DEFAULT_SB.url;
-        document.getElementById("sb-key").value = conf.key || DEFAULT_SB.key;
-        document.getElementById("sb-sync-id").value = conf.syncId || DEFAULT_SB.syncId;
-        if (conf.url && conf.key && conf.syncId) startSupabase(conf.url, conf.key, conf.syncId);
-      } catch {
-        startSupabase(DEFAULT_SB.url, DEFAULT_SB.key, DEFAULT_SB.syncId);
+    /* Share & Password Lock & New Trip */
+    function getShareUrl() {
+      const u = new URL(location.href);
+      u.searchParams.set("trip", currentSyncId);
+      return u.toString();
+    }
+    function openShareModal() {
+      const url = getShareUrl();
+      document.getElementById("share-lock-note").textContent = state.meta.passHash
+        ? "🔒 비밀번호가 설정된 여행입니다. 받는 분께 비밀번호도 함께 알려주세요."
+        : "🌐 비밀번호 없이 링크만으로 바로 볼 수 있는 여행입니다.";
+      document.getElementById("share-sms-link").href = `sms:?&body=${encodeURIComponent(`[${state.meta.title}] 여행 일정 & 경비 대시보드\n${url}`)}`;
+      document.getElementById("share-modal").classList.add("open");
+    }
+    function closeShareModal() { document.getElementById("share-modal").classList.remove("open"); }
+    async function copyShareUrl() {
+      await navigator.clipboard?.writeText(getShareUrl());
+      alert("공유 링크가 복사되었습니다!");
+      closeShareModal();
+    }
+    async function shareViaNative() {
+      const url = getShareUrl();
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: state.meta.title, text: `${state.meta.title} 일정 & 경비`, url });
+          closeShareModal();
+        } catch {}
+      } else {
+        await navigator.clipboard?.writeText(url);
+        alert("이 기기에서는 앱 공유창이 지원되지 않아 링크를 복사했어요. 카카오톡에 바로 붙여넣어 주세요!");
+        closeShareModal();
       }
     }
 
-    function connectSupabase() {
-      const url = document.getElementById("sb-url").value.trim();
-      const key = document.getElementById("sb-key").value.trim();
-      const syncId = document.getElementById("sb-sync-id").value.trim() || "busan-2027-gayeon";
-      if (!url || !key) return alert("Supabase Project URL과 Anon Key를 입력해 주세요.");
-      localStorage.setItem(SB_CONF_KEY, JSON.stringify({ url, key, syncId }));
-      startSupabase(url, key, syncId);
+    async function sha256(str) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+    function checkLockScreen() {
+      const modal = document.getElementById("lock-modal");
+      if (state.meta?.passHash && sessionStorage.getItem("unlocked_" + currentSyncId) !== state.meta.passHash) {
+        document.getElementById("lock-trip-name").textContent = `${state.meta.title} (${currentSyncId})`;
+        document.getElementById("lock-err").textContent = "";
+        document.getElementById("lock-pw-input").value = "";
+        modal.classList.add("open");
+      } else {
+        modal.classList.remove("open");
+      }
+    }
+    async function unlockTrip() {
+      const pw = document.getElementById("lock-pw-input").value;
+      const h = await sha256(pw);
+      if (h === state.meta.passHash) {
+        sessionStorage.setItem("unlocked_" + currentSyncId, h);
+        document.getElementById("lock-modal").classList.remove("open");
+      } else {
+        document.getElementById("lock-err").textContent = "비밀번호가 맞지 않습니다.";
+      }
+    }
+
+    function openNewTripModal() { document.getElementById("new-trip-modal").classList.add("open"); }
+    function closeNewTripModal() { document.getElementById("new-trip-modal").classList.remove("open"); }
+    async function createNewTrip() {
+      const title = document.getElementById("nt-title").value.trim();
+      const startDate = document.getElementById("nt-start").value;
+      const endDate = document.getElementById("nt-end").value;
+      const travelers = Math.max(1, Number(document.getElementById("nt-travelers").value) || 2);
+      const pw = document.getElementById("nt-pw").value;
+      if (!title || !startDate || !endDate) return alert("여행 이름과 날짜를 입력해 주세요.");
+
+      const newId = "trip-" + Math.random().toString(36).slice(2, 8);
+      const passHash = pw ? await sha256(pw) : null;
+      currentSyncId = newId;
+      state = {
+        meta: { title, destination: title, startDate, endDate, travelers, passHash },
+        days: [
+          { day: 1, date: startDate, label: "1일차", subtitle: "출발", planBTitle: "우천 플랜 B", planBDesc: "실내 코스로 변경", items: [] },
+          { day: 2, date: startDate, label: "2일차", subtitle: "주요 일정", planBTitle: "우천 플랜 B", planBDesc: "실내 코스로 변경", items: [] },
+          { day: 3, date: endDate, label: "3일차", subtitle: "귀가", planBTitle: "우천 플랜 B", planBDesc: "실내 코스로 변경", items: [] }
+        ],
+        expenses: [],
+        weather: [],
+        bookingAlerts: [],
+        checklist: []
+      };
+      if (passHash) sessionStorage.setItem("unlocked_" + currentSyncId, passHash);
+      history.replaceState(null, "", getShareUrl());
+      closeNewTripModal();
+      saveState();
+      await startSupabase(DEFAULT_SB.url, DEFAULT_SB.key, currentSyncId);
+      alert(`새 여행 '${title}'이 개설됐어요! 상단 '공유' 버튼으로 링크를 보낼 수 있습니다.`);
+    }
+
+    /* Supabase Cloud Sync */
+    function initSupabaseFromStorage() {
+      startSupabase(DEFAULT_SB.url, DEFAULT_SB.key, currentSyncId);
     }
 
     async function startSupabase(url, key, syncId) {
-      if (!window.supabase) return setSyncStatus("Supabase SDK 로드 실패", false);
+      if (!window.supabase) return setSyncStatus("마지막 백업: 연결 실패", false);
       sbClient = window.supabase.createClient(url, key);
-      setSyncStatus(`클라우드 연결됨 (${syncId})`, true);
-
       await pullFromCloud(true);
 
       if (sbChannel) sbClient.removeChannel(sbChannel);
@@ -994,39 +1148,49 @@
         .on("postgres_changes", { event: "*", schema: "public", table: "trip_dashboards", filter: `sync_id=eq.${syncId}` }, (payload) => {
           if (payload.new && payload.new.data) {
             state = payload.new.data;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            localStorage.setItem(getLocalKey(), JSON.stringify(state));
             renderAll();
-            setSyncStatus(`실시간 동기화됨 (${new Date().toLocaleTimeString("ko-KR")})`, true);
+            checkLockScreen();
+            setSyncStatus(`마지막 백업: ${formatBackupTime(payload.new.updated_at)}`, true);
           }
         })
         .subscribe();
     }
 
+    function formatBackupTime(iso) {
+      const d = iso ? new Date(iso) : new Date();
+      return d.toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    }
+
     async function pullFromCloud(silent = false) {
-      if (!sbClient) return !silent && alert("먼저 Supabase를 연결해 주세요.");
-      const syncId = document.getElementById("sb-sync-id").value.trim() || "busan-2027-gayeon";
-      const { data, error } = await sbClient.from("trip_dashboards").select("data, updated_at").eq("sync_id", syncId).maybeSingle();
-      if (error) return setSyncStatus("불러오기 오류: " + error.message, false);
+      if (!sbClient) return;
+      const { data, error } = await sbClient.from("trip_dashboards").select("data, updated_at").eq("sync_id", currentSyncId).maybeSingle();
+      if (error) return setSyncStatus("백업 불러오기 오류: " + error.message, false);
       if (data && data.data) {
         state = data.data;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        localStorage.setItem(getLocalKey(), JSON.stringify(state));
         renderAll();
-        setSyncStatus(`클라우드 동기화됨 (${syncId})`, true);
+        checkLockScreen();
+        setSyncStatus(`마지막 백업: ${formatBackupTime(data.updated_at)}`, true);
+        if (!silent) alert("클라우드 백업을 불러왔습니다!");
       } else {
         await pushToCloud(true);
       }
     }
 
     async function pushToCloud(silent = false) {
-      if (!sbClient) return !silent && alert("먼저 Supabase를 연결해 주세요.");
-      const syncId = document.getElementById("sb-sync-id").value.trim() || "busan-2027-gayeon";
+      if (!sbClient) return;
+      const nowIso = new Date().toISOString();
       const { error } = await sbClient.from("trip_dashboards").upsert({
-        sync_id: syncId,
+        sync_id: currentSyncId,
         data: state,
-        updated_at: new Date().toISOString()
+        updated_at: nowIso
       });
-      if (error) setSyncStatus("저장 오류: " + error.message, false);
-      else setSyncStatus(`클라우드 저장됨 (${new Date().toLocaleTimeString("ko-KR")})`, true);
+      if (error) setSyncStatus("백업 저장 오류: " + error.message, false);
+      else {
+        setSyncStatus(`마지막 백업: ${formatBackupTime(nowIso)}`, true);
+        if (!silent) alert("클라우드에 백업했습니다!");
+      }
     }
 
     function setSyncStatus(msg, ok) {
@@ -1034,19 +1198,8 @@
       pill.textContent = ok ? "☁️ 자동 동기화" : "로컬 저장됨";
       pill.className = "pill " + (ok ? "sync-ok" : "sync-local");
       document.getElementById("sb-status").textContent = msg;
-    }
-
-    function copySqlSchema() {
-      const sql = `create table if not exists public.trip_dashboards (
-  sync_id text primary key,
-  data jsonb not null,
-  updated_at timestamptz not null default now()
-);
-alter table public.trip_dashboards enable row level security;
-create policy "public_rw" on public.trip_dashboards for all using (true) with check (true);
-alter publication supabase_realtime add table public.trip_dashboards;`;
-      navigator.clipboard?.writeText(sql);
-      alert("Supabase SQL 스키마가 복사되었습니다! Supabase SQL Editor에 붙여넣고 Run 해주세요.");
+      const lbl = document.getElementById("sync-trip-label");
+      if (lbl) lbl.textContent = `현재 여행: ${state.meta.title}`;
     }
 
     function exportJson() {

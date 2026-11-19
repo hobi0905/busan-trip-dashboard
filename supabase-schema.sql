@@ -5,6 +5,8 @@ create table if not exists public.trip_dashboards (
   updated_at timestamptz not null default now()
 );
 
+grant select, insert, update on public.trip_dashboards to anon, authenticated;
+
 alter table public.trip_dashboards enable row level security;
 
 -- 공유 코드(sync_id)를 아는 기기끼리 읽기/쓰기 동기화 허용
