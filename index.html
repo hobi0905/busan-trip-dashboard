@@ -5431,6 +5431,11 @@
     function applyHoursToItem(it, info) {
       const oh = info.oh || "";
       const short = shortenOpeningHours(oh);
+      const closed = info.closed || "";
+      it.hoursCheckedAt = new Date().toISOString();
+      it.hoursSource = info.source || "";
+      // 새 정보가 없으면 기존 일정에 적힌 영업시간 배지를 지우지 않는다
+      if (!short && !closed) return false;
       it.badges = (it.badges || []).filter(b =>
         !/^🕒/.test(b) &&
         !/^\d{1,2}:\d{2}~\d{1,2}:\d{2}$/.test(b) &&
@@ -5439,17 +5444,29 @@
         b !== "연중무휴" && b !== "휴무일 미확인" && b !== "영업시간 확인 필요"
       );
       if (short) it.badges.unshift(`🕒 ${short}`);
-      if (info.closed) it.badges.unshift(`${info.closed} 휴무`);
-      if (!short && !info.closed) it.badges.push("영업시간 확인 필요");
-      if (short && !info.closed) {
-        const m0 = String(it.memo || "");
-        if (!m0.includes("휴무일은 방문 전")) it.memo = (m0 ? m0 + " · " : "") + "휴무일은 방문 전 확인";
-      }
-      it.hoursUpdatedAt = new Date().toISOString();
-      it.hoursSource = info.source || "";
+      if (closed) it.badges.unshift(`${closed} 휴무`);
       if (short) {
         const memo = String(it.memo || "");
         if (!memo.includes(short)) it.memo = (memo ? memo + " · " : "") + `영업시간 ${short}`;
+      }
+      if (short && !closed) {
+        const m0 = String(it.memo || "");
+        if (!m0.includes("휴무일은 방문 전")) it.memo = (m0 ? m0 + " · " : "") + "휴무일은 방문 전 확인";
+      }
+      return true;
+    }
+
+    async function nominatimHours(q, countryCode) {
+      if (!q) return "";
+      let url = `https://nominatim.openstreetmap.org/search?format=json&extratags=1&limit=1&addressdetails=0&q=${encodeURIComponent(q)}`;
+      if (countryCode && /^[a-z]{2}$/.test(countryCode)) url += `&countrycodes=${countryCode}`;
+      try {
+        const r = await fetch(url);
+        if (!r.ok) return "";
+        const arr = await r.json();
+        return arr?.[0]?.extratags?.opening_hours || "";
+      } catch {
+        return "";
       }
     }
 
@@ -5458,19 +5475,22 @@
       const knownKey = Object.keys(KNOWN_SPOT_META).find(k => clean.includes(k));
       const known = knownKey ? KNOWN_SPOT_META[knownKey] : null;
       const out = { oh: "", closed: known?.closed || "", source: known ? "내부 DB" : "" };
-      try {
-        const q = encodeURIComponent(`${clean} ${cityHint || ""}`.trim());
-        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&extratags=1&limit=1&addressdetails=0&q=${q}`);
-        if (r.ok) {
-          const arr = await r.json();
-          const oh = arr?.[0]?.extratags?.opening_hours || "";
-          if (oh) {
-            out.oh = oh;
-            out.closed = parseOsmClosedDay(oh) || out.closed;
-            out.source = "OSM";
-          }
+      const cc = String(state.meta?.countryCode || "").toLowerCase();
+      const latin = (clean.match(/[A-Za-z][A-Za-z'&.\- ]{2,}/) || [""])[0].trim();
+      const tries = [];
+      if (cityHint) tries.push(`${clean} ${cityHint}`);
+      tries.push(clean);
+      if (latin && latin.toLowerCase() !== clean.toLowerCase()) tries.push(latin);
+      for (const q of tries) {
+        const oh = await nominatimHours(q, cc);
+        if (oh) {
+          out.oh = oh;
+          out.closed = parseOsmClosedDay(oh) || out.closed;
+          out.source = "OSM";
+          break;
         }
-      } catch {}
+        await new Promise(res => setTimeout(res, 220));
+      }
       return out;
     }
 
@@ -5488,15 +5508,14 @@
         const cityHint = String(state.meta?.destination || "").split(/[(\s]/)[0] || "";
         const uniq = [];
         targets.forEach(t => { if (!uniq.some(u => u.key === t.key)) uniq.push(t); });
-        const capped = uniq.slice(0, 24);
+        const capped = uniq.slice(0, 18);
         for (let i = 0; i < capped.length; i++) {
           const t = capped[i];
           if (btn) btn.textContent = `⏳ 확인 중 ${i + 1}/${capped.length}`;
           const info = await lookupOpeningHours(t.name, cityHint);
-          targets.filter(x => x.key === t.key).forEach(r => {
-            applyHoursToItem(r.it, info);
-            if (info.oh || info.closed) ok++; else fail++;
-          });
+          const related = targets.filter(x => x.key === t.key);
+          const applied = related.some(r => applyHoursToItem(r.it, info));
+          if (applied) ok++; else fail++;
           await new Promise(res => setTimeout(res, 380));
         }
         state.meta.hoursUpdatedAt = new Date().toISOString();
@@ -5521,7 +5540,7 @@
         const d = diningSpotNames().length;
         const c = state.meta?.hoursChecked;
         detail.textContent = `맛집·카페 ${d}곳` +
-          (c ? ` · 확인 ${c.total}곳 (반영 ${c.ok} · 미확인 ${c.fail})` : "") +
+          (c ? ` · 확인 ${c.total}곳 (정보 반영 ${c.ok} · 미확인 ${c.fail})` : "") +
           " · OSM/내부 DB 기준이라 방문 전 전화 확인이 가장 정확해요.";
       }
     }
