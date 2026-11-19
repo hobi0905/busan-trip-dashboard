@@ -3661,7 +3661,6 @@
       if (pendingNewTripSetup) {
         pendingNewTripSetup = false;
         openTripTypeModal();
-        updateAccessGate();
         return;
       }
       const needsApproval = Boolean(
@@ -3776,6 +3775,7 @@
     }
     function closeTripTypeModal() {
       document.getElementById("trip-type-modal").classList.remove("open");
+      setTimeout(() => { try { updateAccessGate(); } catch {} }, 30);
     }
 
     function pickTripType(type) {
