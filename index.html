@@ -415,6 +415,25 @@
       border: 2px solid #fff;
       box-shadow: 0 2px 6px rgba(2,132,199,0.45);
     }
+    .avatar-sm {
+      width: 22px; height: 22px; border-radius: 50%;
+      object-fit: cover; background: #bae6fd;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800; color: var(--ocean-dark);
+      overflow: hidden; flex-shrink: 0;
+    }
+    .avatar-md {
+      width: 38px; height: 38px; border-radius: 50%;
+      object-fit: cover; background: #bae6fd;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 800; color: var(--ocean-dark);
+      overflow: hidden; flex-shrink: 0;
+    }
+    .badge-dot {
+      background: var(--danger); color: #fff;
+      border-radius: 999px; font-size: 10px; font-weight: 800;
+      padding: 1px 5px; margin-left: 3px;
+    }
   </style>
 </head>
 <body>
@@ -433,6 +452,8 @@
       <div class="badges-row">
         <span class="pill" id="hdr-travel-time">총 이동 0분</span>
         <span class="pill sync-local" id="hdr-sync">로컬 저장됨</span>
+        <button class="pill" style="cursor:pointer;" onclick="openProfileModal()" id="hdr-profile-btn">👤 프로필 설정</button>
+        <button class="pill" style="cursor:pointer;" onclick="openMembersModal()" id="hdr-members-btn">👥 동반인 <span id="hdr-req-badge" class="badge-dot" style="display:none;">0</span></button>
       </div>
       <div class="summary-strip">
         <div class="sum-box">
@@ -779,6 +800,52 @@
     </div>
   </div>
 
+  <!-- PROFILE MODAL -->
+  <div id="profile-modal" class="modal-backdrop center" onclick="if(event.target===this && myProfile.nickname)closeProfileModal()">
+    <div class="modal-sheet">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-size:16px;font-weight:800;">👤 내 프로필 설정</div>
+        <button id="prof-close-btn" class="btn btn-sm" style="background:#f1f5f9;" onclick="closeProfileModal()">닫기</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div id="prof-avatar-preview" class="avatar-md" style="width:54px;height:54px;font-size:20px;">👤</div>
+        <div style="flex:1;">
+          <label class="btn btn-soft btn-sm" style="cursor:pointer;">
+            📷 프로필 사진 선택
+            <input type="file" accept="image/*" style="display:none;" onchange="handleAvatarUpload(this.files[0])" />
+          </label>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">닉네임과 사진은 동반인에게 함께 보여요.</div>
+        </div>
+      </div>
+      <div class="row">
+        <input id="prof-nickname" class="input" placeholder="닉네임 입력 (예: 가연)" maxlength="20" />
+      </div>
+      <button class="btn btn-primary" style="width:100%;" onclick="saveMyProfile()">프로필 저장하기</button>
+    </div>
+  </div>
+
+  <!-- MEMBERS & APPROVAL MODAL -->
+  <div id="members-modal" class="modal-backdrop" onclick="if(event.target===this)closeMembersModal()">
+    <div class="modal-sheet">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:16px;font-weight:800;">👥 동반인 관리</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeMembersModal()">닫기</button>
+      </div>
+      <div id="members-pending-box" style="margin-bottom:10px;"></div>
+      <div id="members-list-box" style="max-height:36vh;overflow-y:auto;margin-bottom:10px;"></div>
+      <button class="btn btn-primary" style="width:100%;" onclick="closeMembersModal();openInviteShare()">+ 동반인 초대 링크 보내기</button>
+    </div>
+  </div>
+
+  <!-- INVITE JOIN REQUEST MODAL -->
+  <div id="join-modal" class="modal-backdrop center" style="background:rgba(15,23,42,0.75);">
+    <div class="modal-sheet">
+      <div style="font-size:16.5px;font-weight:800;">💌 여행 동반인 초대</div>
+      <div id="join-trip-desc" style="font-size:13px;color:var(--muted);margin-top:4px;"></div>
+      <div id="join-status-box" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
   <!-- PASSWORD LOCK MODAL -->
   <div id="lock-modal" class="modal-backdrop center" style="background:rgba(15,23,42,0.82);">
     <div class="modal-sheet">
@@ -892,20 +959,56 @@
 
     const STORAGE_KEY = "busan_trip_dashboard_v1";
     const MY_TRIPS_KEY = "busan_trip_my_trips_v1";
+    const PROFILE_KEY = "busan_trip_my_profile_v1";
     const SB_CONF_KEY = "busan_trip_supabase_conf_v1";
     const DEFAULT_SB = {
       url: "https://dwsvrpxppmicykxuhkhg.supabase.co",
       key: "sb_publishable_Xd0zebf6GG3fA43uC0Cl8w_ZzH4bZyr",
       syncId: "busan-2027-gayeon"
     };
-    const urlTripParam = new URLSearchParams(location.search).get("trip");
+    const urlParams = new URLSearchParams(location.search);
+    const urlTripParam = urlParams.get("trip");
+    const isInviteLink = urlParams.get("invite") === "1";
     let currentSyncId = urlTripParam || DEFAULT_SB.syncId;
+    let myProfile = loadMyProfile();
+    let draftAvatarDataUrl = myProfile.avatar || "";
     let state = loadState();
     let currentDay = 1;
     let editMode = false;
     let sbClient = null;
     let sbChannel = null;
     let saveTimer = null;
+
+    function loadMyProfile() {
+      try {
+        const raw = localStorage.getItem(PROFILE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch {}
+      const fresh = { id: "u_" + Math.random().toString(36).slice(2, 10), nickname: "", avatar: "" };
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(fresh));
+      return fresh;
+    }
+
+    function isHost() {
+      if (!state.meta) return true;
+      if (!state.meta.hostId && !isInviteLink) {
+        state.meta.hostId = myProfile.id;
+      }
+      return state.meta.hostId === myProfile.id;
+    }
+
+    function getMyRole() {
+      if (isHost()) return "host";
+      const m = (state.members || []).find(x => x.id === myProfile.id);
+      if (m) return m.role || "viewer";
+      if (isInviteLink) return "guest";
+      return "editor";
+    }
+
+    function canEdit() {
+      const r = getMyRole();
+      return r === "host" || r === "editor";
+    }
 
     function getLocalKey() { return STORAGE_KEY + "_" + currentSyncId; }
 
@@ -966,6 +1069,22 @@
       document.getElementById("sum-n").textContent = n;
       document.getElementById("sum-per").textContent = fmt(totalExp / n);
       document.getElementById("sum-done").textContent = `${doneCnt}/${state.expenses.length}건`;
+
+      const pBtn = document.getElementById("hdr-profile-btn");
+      if (pBtn) {
+        const av = myProfile.avatar
+          ? `<img class="avatar-sm" src="${myProfile.avatar}" />`
+          : `<span class="avatar-sm">${(myProfile.nickname || "나").slice(0, 1)}</span>`;
+        pBtn.innerHTML = `${av} <span>${myProfile.nickname || "프로필 설정"}</span>`;
+      }
+      const reqCount = isHost() ? (state.joinRequests || []).length : 0;
+      const reqBadge = document.getElementById("hdr-req-badge");
+      if (reqBadge) {
+        reqBadge.style.display = reqCount > 0 ? "inline-block" : "none";
+        reqBadge.textContent = reqCount;
+      }
+      const emBtn = document.getElementById("edit-mode-btn");
+      if (emBtn) emBtn.style.display = canEdit() ? "inline-flex" : "none";
     }
 
     function renderTimeline() {
@@ -1818,13 +1937,181 @@
       saveState();
     }
 
+    /* Profile, Invite & Member Approval */
+    function openProfileModal(forced = false) {
+      draftAvatarDataUrl = myProfile.avatar || "";
+      document.getElementById("prof-nickname").value = myProfile.nickname || "";
+      document.getElementById("prof-close-btn").style.display = forced ? "none" : "inline-flex";
+      const prev = document.getElementById("prof-avatar-preview");
+      prev.innerHTML = draftAvatarDataUrl ? `<img src="${draftAvatarDataUrl}" style="width:100%;height:100%;object-fit:cover;" />` : "👤";
+      document.getElementById("profile-modal").classList.add("open");
+    }
+    function closeProfileModal() { document.getElementById("profile-modal").classList.remove("open"); }
+
+    function handleAvatarUpload(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const size = 96;
+          canvas.width = size; canvas.height = size;
+          const ctx = canvas.getContext("2d");
+          const minSide = Math.min(img.width, img.height);
+          const sx = (img.width - minSide) / 2, sy = (img.height - minSide) / 2;
+          ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+          draftAvatarDataUrl = canvas.toDataURL("image/jpeg", 0.78);
+          document.getElementById("prof-avatar-preview").innerHTML = `<img src="${draftAvatarDataUrl}" style="width:100%;height:100%;object-fit:cover;" />`;
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function saveMyProfile() {
+      const nick = document.getElementById("prof-nickname").value.trim();
+      if (!nick) return alert("닉네임을 입력해 주세요.");
+      myProfile.nickname = nick;
+      myProfile.avatar = draftAvatarDataUrl || "";
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(myProfile));
+      if (!state.meta.hostId && !isInviteLink) state.meta.hostId = myProfile.id;
+      const meInMembers = (state.members || []).find(m => m.id === myProfile.id);
+      if (meInMembers) { meInMembers.nickname = nick; meInMembers.avatar = myProfile.avatar; }
+      closeProfileModal();
+      saveState();
+      checkInviteFlow();
+    }
+
+    function openInviteShare() {
+      const u = new URL(location.href);
+      u.searchParams.set("trip", currentSyncId);
+      u.searchParams.set("invite", "1");
+      const url = u.toString();
+      document.getElementById("share-lock-note").textContent = "💌 동반인 초대 링크입니다. 상대방이 접속 후 승인 요청을 보내면 수정 권한을 골라 승인할 수 있어요.";
+      document.getElementById("share-sms-link").href = `sms:?&body=${encodeURIComponent(`[${state.meta.title}] 동반인 초대 링크\n${url}`)}`;
+      window._customShareUrl = url;
+      document.getElementById("share-modal").classList.add("open");
+    }
+
+    function openMembersModal() {
+      renderMembersModal();
+      document.getElementById("members-modal").classList.add("open");
+    }
+    function closeMembersModal() { document.getElementById("members-modal").classList.remove("open"); }
+
+    function renderMembersModal() {
+      const pendBox = document.getElementById("members-pending-box");
+      const listBox = document.getElementById("members-list-box");
+      const reqs = state.joinRequests || [];
+      if (isHost() && reqs.length) {
+        pendBox.innerHTML = `<div style="font-size:12.5px;font-weight:800;color:var(--danger);margin-bottom:6px;">🔔 승인 대기 요청 (${reqs.length}건)</div>` +
+          reqs.map(r => `
+            <div class="card" style="padding:10px;margin-bottom:6px;background:var(--warn-bg);border-color:#fde68a;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <div class="avatar-md">${r.avatar ? `<img src="${r.avatar}" style="width:100%;height:100%;object-fit:cover;" />` : (r.nickname || "?").slice(0,1)}</div>
+                <div style="font-weight:800;font-size:13.5px;">${r.nickname} 님이 동반인 승인을 요청했어요</div>
+              </div>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-primary btn-sm" style="flex:1;" onclick="approveMember('${r.id}','editor')">승인 (수정 가능)</button>
+                <button class="btn btn-soft btn-sm" style="flex:1;" onclick="approveMember('${r.id}','viewer')">승인 (읽기 전용)</button>
+                <button class="btn btn-danger btn-sm" onclick="rejectMember('${r.id}')">거절</button>
+              </div>
+            </div>
+          `).join("");
+      } else {
+        pendBox.innerHTML = "";
+      }
+
+      const members = state.members || [];
+      listBox.innerHTML = `<div style="font-size:12.5px;font-weight:800;color:var(--muted);margin-bottom:6px;">등록된 동반인 (${members.length + 1}명)</div>` +
+        `<div class="expense-item" style="padding:6px 0;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="avatar-md">${isHost() && myProfile.avatar ? `<img src="${myProfile.avatar}" style="width:100%;height:100%;object-fit:cover;" />` : "👑"}</div>
+            <div><div style="font-weight:700;font-size:13.5px;">호스트 ${isHost() ? `(${myProfile.nickname || "나"})` : ""}</div><div style="font-size:11px;color:var(--muted);">전체 관리 권한</div></div>
+          </div>
+          <span class="tag blue">호스트</span>
+        </div>` +
+        members.map(m => `
+          <div class="expense-item" style="padding:6px 0;">
+            <div style="display:flex;align-items:center;gap:8px;flex:1;">
+              <div class="avatar-md">${m.avatar ? `<img src="${m.avatar}" style="width:100%;height:100%;object-fit:cover;" />` : (m.nickname || "?").slice(0,1)}</div>
+              <div>
+                <div style="font-weight:700;font-size:13.5px;">${m.nickname}</div>
+                <div style="font-size:11px;color:var(--muted);">${m.role === "editor" ? "공동 편집 가능" : "읽기 전용"}</div>
+              </div>
+            </div>
+            ${isHost() ? `<button class="btn btn-soft btn-sm" onclick="toggleMemberRole('${m.id}')">${m.role === "editor" ? "읽기전용으로" : "수정권한 주기"}</button>
+              <button class="btn btn-danger btn-sm" onclick="removeMember('${m.id}')">제외</button>` : `<span class="tag">${m.role === "editor" ? "수정 가능" : "읽기 전용"}</span>`}
+          </div>
+        `).join("");
+    }
+
+    function approveMember(reqId, role) {
+      const req = (state.joinRequests || []).find(r => r.id === reqId);
+      if (!req) return;
+      state.joinRequests = state.joinRequests.filter(r => r.id !== reqId);
+      state.members = (state.members || []).filter(m => m.id !== reqId);
+      state.members.push({ id: req.id, nickname: req.nickname, avatar: req.avatar, role });
+      renderMembersModal();
+      saveState();
+    }
+    function rejectMember(reqId) {
+      state.joinRequests = (state.joinRequests || []).filter(r => r.id !== reqId);
+      renderMembersModal();
+      saveState();
+    }
+    function toggleMemberRole(mid) {
+      const m = (state.members || []).find(x => x.id === mid);
+      if (m) m.role = m.role === "editor" ? "viewer" : "editor";
+      renderMembersModal();
+      saveState();
+    }
+    function removeMember(mid) {
+      state.members = (state.members || []).filter(x => x.id !== mid);
+      renderMembersModal();
+      saveState();
+    }
+
+    function checkInviteFlow() {
+      const jm = document.getElementById("join-modal");
+      if (!jm) return;
+      if (!myProfile.nickname) {
+        openProfileModal(true);
+        return;
+      }
+      if (!isInviteLink || isHost() || (state.members || []).some(m => m.id === myProfile.id)) {
+        jm.classList.remove("open");
+        return;
+      }
+      document.getElementById("join-trip-desc").textContent = `'${state.meta.title}' 일정에 ${myProfile.nickname} 님으로 참여합니다.`;
+      const alreadyPending = (state.joinRequests || []).some(r => r.id === myProfile.id);
+      const box = document.getElementById("join-status-box");
+      if (alreadyPending) {
+        box.innerHTML = `<div style="padding:12px;background:var(--ocean-soft);border-radius:10px;font-size:13px;font-weight:700;color:var(--ocean-dark);text-align:center;">⏳ 호스트의 승인을 기다리는 중입니다...<br><span style="font-size:11.5px;font-weight:500;">승인되면 자동으로 일정이 열려요!</span></div>`;
+      } else {
+        box.innerHTML = `<button class="btn btn-primary" style="width:100%;" onclick="sendJoinRequest()">🙋 호스트에게 동반인 승인 요청 보내기</button>`;
+      }
+      jm.classList.add("open");
+    }
+
+    function sendJoinRequest() {
+      state.joinRequests = (state.joinRequests || []).filter(r => r.id !== myProfile.id);
+      state.joinRequests.push({ id: myProfile.id, nickname: myProfile.nickname, avatar: myProfile.avatar, requestedAt: new Date().toISOString() });
+      saveState();
+      checkInviteFlow();
+    }
+
     /* Share & Password Lock & New Trip */
     function getShareUrl() {
+      if (window._customShareUrl) return window._customShareUrl;
       const u = new URL(location.href);
+      u.searchParams.delete("invite");
       u.searchParams.set("trip", currentSyncId);
       return u.toString();
     }
     function openShareModal() {
+      window._customShareUrl = null;
       const url = getShareUrl();
       document.getElementById("share-lock-note").textContent = state.meta.passHash
         ? "🔒 비밀번호가 설정된 여행입니다. 받는 분께 비밀번호도 함께 알려주세요."
@@ -2081,6 +2368,7 @@
       renderWeather();
       renderChecklist();
       renderMyTrips();
+      checkInviteFlow();
     }
 
     renderAll();
