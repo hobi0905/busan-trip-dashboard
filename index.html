@@ -471,6 +471,86 @@
       55% { transform: translate(0px, -8px) rotate(-4deg) scale(1.08); opacity: 1; }
       100% { transform: translate(80px, -20px) rotate(4deg) scale(0.95); opacity: 0.15; }
     }
+
+    /* 국내 / 해외 여행 선택 (분할 카드) */
+    .type-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .type-card {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+      min-height: 172px; padding: 14px 13px; border-radius: 16px;
+      border: 1.5px solid var(--border); background: #fff;
+      font-family: inherit; text-align: left; cursor: pointer;
+      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+      box-shadow: 0 2px 8px rgba(15,23,42,0.04);
+    }
+    .type-card:active { transform: scale(0.98); }
+    .type-card.domestic { background: linear-gradient(160deg, #f0f9ff 0%, #ffffff 62%); border-color: #bae6fd; }
+    .type-card.overseas { background: linear-gradient(160deg, #eef2ff 0%, #ffffff 62%); border-color: #c7d2fe; }
+    .type-ico { font-size: 30px; line-height: 1; }
+    .type-title { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
+    .type-desc { font-size: 11.5px; color: var(--muted); line-height: 1.45; }
+    .type-cta { margin-top: auto; font-size: 11.5px; font-weight: 800; color: var(--ocean-dark); }
+    .type-card.overseas .type-cta { color: #4338ca; }
+
+    /* 국가 선택 · 필수 요건 미리보기 */
+    .country-chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .country-chip {
+      padding: 8px 4px; border-radius: 10px; border: 1px solid var(--border);
+      background: #fff; font-family: inherit; font-size: 12px; font-weight: 700;
+      color: var(--text); cursor: pointer; white-space: nowrap;
+    }
+    .country-chip.active { background: var(--ocean); border-color: var(--ocean); color: #fff; }
+    .req-box { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px; padding: 9px 11px; font-size: 11.5px; color: #7c2d12; }
+    .req-line { display: flex; gap: 5px; margin-top: 4px; line-height: 1.45; }
+    .req-line b { color: #9a3412; }
+
+    /* 해외 필수 체크 배너 (헤더 상단 고정) */
+    .overseas-banner {
+      margin-top: 10px; border-radius: 12px; padding: 8px 10px;
+      border: 1px solid #fecaca;
+      background: linear-gradient(135deg, #fef2f2 0%, #fff7ed 100%);
+      display: flex; align-items: center; gap: 8px; cursor: pointer;
+    }
+    .overseas-banner.hidden { display: none; }
+    .overseas-banner .ob-ico { font-size: 16px; flex-shrink: 0; }
+    .overseas-banner .ob-main { flex: 1; min-width: 0; }
+    .overseas-banner .ob-title { font-size: 11.5px; font-weight: 800; color: #b91c1c; }
+    .overseas-banner .ob-sub { font-size: 10.5px; color: #7c2d12; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .overseas-banner .ob-count { font-size: 10.5px; font-weight: 800; color: #fff; background: #dc2626; border-radius: 999px; padding: 2px 7px; white-space: nowrap; }
+    .overseas-banner.ok { border-color: #a7f3d0; background: linear-gradient(135deg, #ecfdf5 0%, #f0fdfa 100%); }
+    .overseas-banner.ok .ob-title { color: #047857; }
+    .overseas-banner.ok .ob-count { background: #059669; }
+
+    /* 체크리스트 그룹 */
+    .chk-group { margin-bottom: 14px; }
+    .chk-group-head {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 12.5px; font-weight: 800; margin: 0 0 6px; padding-bottom: 5px;
+      border-bottom: 1px dashed var(--border);
+    }
+    .chk-group-head.urgent { color: #b91c1c; border-bottom-color: #fecaca; }
+    .chk-group-head .cnt { font-size: 10.5px; font-weight: 700; color: var(--muted); }
+    .chk-item-urgent { background: #fff5f5; border-radius: 10px; padding-left: 8px !important; border-left: 3px solid #ef4444; }
+    .chk-tag { font-size: 9.5px; font-weight: 800; color: #fff; background: #ef4444; border-radius: 6px; padding: 1px 5px; margin-left: 4px; white-space: nowrap; }
+
+    /* 하단 네비 체크 배지 */
+    .nav-btn { position: relative; }
+    .nav-badge {
+      position: absolute; top: 2px; right: calc(50% - 28px);
+      min-width: 16px; height: 16px; border-radius: 999px;
+      background: #dc2626; color: #fff; font-size: 10px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center; padding: 0 4px;
+      box-shadow: 0 1px 4px rgba(220,38,38,0.45);
+    }
+    .nav-btn.has-alert .ico { animation: navPulse 1.9s ease-in-out infinite; }
+    @keyframes navPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.14); } }
+
+    /* 도시별 날씨 */
+    .city-weather-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .city-chip {
+      display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 800;
+      color: #4338ca; background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 999px; padding: 2px 8px;
+    }
+    .w-src { font-size: 10px; color: var(--muted); }
   </style>
 </head>
 <body>
@@ -516,6 +596,14 @@
           <div class="sum-label">예약 완료</div>
           <div class="sum-val" id="sum-done">0건</div>
         </div>
+      </div>
+      <div id="overseas-banner" class="overseas-banner hidden" onclick="jumpToChecklist()">
+        <span class="ob-ico" id="ob-ico">✈️</span>
+        <div class="ob-main">
+          <div class="ob-title" id="ob-title">해외여행 출국 필수 체크</div>
+          <div class="ob-sub" id="ob-sub"></div>
+        </div>
+        <span class="ob-count" id="ob-count">0</span>
       </div>
     </header>
 
@@ -600,6 +688,15 @@
 
       <!-- TAB 3: WEATHER & OUTFIT -->
       <section id="tab-weather" class="tab-panel">
+        <div class="card" style="padding:11px 12px;">
+          <div class="city-weather-head" style="flex-wrap:wrap;">
+            <div style="flex:1;min-width:150px;">
+              <div style="font-size:13.5px;font-weight:800;">🌤️ 일정 도시별 날씨</div>
+              <div style="font-size:11.5px;color:var(--muted);" id="weather-city-note">일정의 도시를 읽어 그날 그 도시 날씨를 보여드려요.</div>
+            </div>
+            <button class="btn btn-soft btn-sm" style="white-space:nowrap;" onclick="refreshCityWeather(false)" id="weather-refresh-btn">🔄 일정 도시별 날씨 새로고침</button>
+          </div>
+        </div>
         <div class="card" id="weather-climate-card" style="background:var(--ocean-soft);border-color:#bae6fd;">
           <div style="font-weight:800;font-size:14px;color:var(--ocean-dark);">🌊 1월 말~2월 초 부산 해변 체감 날씨 포인트</div>
           <div style="font-size:12.5px;color:#334155;margin-top:4px;">
@@ -611,6 +708,7 @@
 
       <!-- TAB 4: CHECKLIST & ALERTS -->
       <section id="tab-checklist" class="tab-panel">
+        <div id="chk-overseas-box"></div>
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <h3 class="sec-title" style="margin:0;">⏰ 예매 오픈일 알림 (중복 선택)</h3>
@@ -763,7 +861,8 @@
         <div class="card">
           <h3 class="sec-title">📂 내 여행 목록</h3>
           <div id="my-trips-list" style="margin-bottom:10px;"></div>
-          <button class="btn btn-soft" style="width:100%;" onclick="openNewTripModal()">+ 새 여행 만들기 (비밀번호 설정)</button>
+          <button class="btn btn-soft" style="width:100%;margin-bottom:8px;" onclick="openNewTripModal()">+ 새 여행 만들기 (국내 / 해외 선택)</button>
+          <button class="btn btn-soft" style="width:100%;" onclick="openSampleTrip('au-sydney-4n5d')">📚 예시 여행 열기 · 🇦🇺 호주 시드니·블루마운틴 4박 5일</button>
         </div>
 
         <details class="card" style="padding:12px 14px;">
@@ -998,10 +1097,11 @@
       </div>
       <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">내 여행 목록</div>
       <div id="trips-modal-list" style="max-height:32vh;overflow-y:auto;margin-bottom:10px;"></div>
-      <div class="row" style="margin-bottom:0;">
-        <button class="btn btn-primary" style="flex:1;" onclick="closeTripsModal();openNewTripSetupModal()">+ 새 여행 만들기</button>
+      <div class="row" style="margin-bottom:8px;">
+        <button class="btn btn-primary" style="flex:1;" onclick="closeTripsModal();openTripTypeModal()">+ 새 여행 만들기</button>
         <button class="btn btn-soft" style="flex:1;" onclick="copyNewUserStartUrl()">🆕 시작 링크 복사</button>
       </div>
+      <button class="btn btn-soft" style="width:100%;" onclick="closeTripsModal();openSampleTrip('au-sydney-4n5d')">📚 예시 여행 열기 · 🇦🇺 호주 시드니·블루마운틴 4박 5일</button>
     </div>
   </div>
 
@@ -1036,6 +1136,59 @@
       <div style="font-size:12.5px;color:var(--muted);margin-bottom:14px;">호스트로 입장해 프로필과 여행 기본 정보를 설정하면 나만의 여행 일정표가 만들어져요.</div>
       <button class="btn btn-primary" style="width:100%;margin-bottom:8px;" onclick="enterAsNewHost()">👑 호스트로 입장하기</button>
       <button class="btn btn-soft" style="width:100%;" onclick="closeWelcomeHostModal();openProfileModal(true,'login')">🔑 기존 프로필 불러오기</button>
+    </div>
+  </div>
+
+  <!-- TRIP TYPE SELECTOR: 국내 / 해외 -->
+  <div id="trip-type-modal" class="modal-backdrop center" onclick="if(event.target===this)closeTripTypeModal()">
+    <div class="modal-sheet" style="max-width:520px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="font-size:16.5px;font-weight:800;">어디로 떠나세요?</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeTripTypeModal()">닫기</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">국내는 기존 그대로, 해외는 비자·입국·통신·결제 체크까지 자동으로 붙습니다.</div>
+      <div class="type-split">
+        <button class="type-card domestic" onclick="pickTripType('domestic')">
+          <span class="type-ico">🇰🇷</span>
+          <span class="type-title">국내여행</span>
+          <span class="type-desc">일정 · 경비 · 날씨 탭<br>기존 방식 그대로</span>
+          <span class="type-cta">이대로 시작 →</span>
+        </button>
+        <button class="type-card overseas" onclick="pickTripType('overseas')">
+          <span class="type-ico">✈️</span>
+          <span class="type-title">해외여행</span>
+          <span class="type-desc">국가별 비자·입국<br>필수 체크 자동 추가</span>
+          <span class="type-cta">국가 선택 →</span>
+        </button>
+      </div>
+      <button class="btn btn-soft" style="width:100%;margin-top:12px;" onclick="closeTripTypeModal();openSampleTrip('au-sydney-4n5d')">📚 예시 여행 열기 · 🇦🇺 호주 시드니·블루마운틴 4박 5일</button>
+    </div>
+  </div>
+
+  <!-- OVERSEAS TRIP SETUP -->
+  <div id="overseas-setup-modal" class="modal-backdrop center" onclick="if(event.target===this)closeOverseasSetupModal()">
+    <div class="modal-sheet">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:16px;font-weight:800;">✈️ 해외여행 기본 설정</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeOverseasSetupModal()">닫기</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">국가를 고르면 그 나라의 필수 비자·입국·통신·어댑터 준비물이 체크리스트에 바로 들어갑니다.</div>
+      <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:4px;">어느 나라로 가나요?</div>
+      <div id="os-country-chips" class="country-chips" style="margin-bottom:8px;"></div>
+      <div class="row" id="os-custom-row" style="display:none;">
+        <input id="os-country-custom" class="input" placeholder="국가명 직접 입력 (예: 뉴질랜드)" maxlength="20" oninput="renderOverseasPreview()" />
+      </div>
+      <div id="os-country-preview" class="req-box" style="margin-bottom:10px;"></div>
+      <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:3px;">여행 이름</div>
+      <div class="row"><input id="os-title" class="input" placeholder="예: 시드니 · 블루마운틴 4박 5일" maxlength="40" /></div>
+      <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:3px;">여행 날짜</div>
+      <div class="row">
+        <input id="os-start" type="date" class="input" style="flex:1;" />
+        <input id="os-end" type="date" class="input" style="flex:1;" />
+      </div>
+      <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:3px;">인원수 (명)</div>
+      <div class="row"><input id="os-travelers" type="number" min="1" max="20" value="2" class="input" /></div>
+      <button class="btn btn-primary" style="width:100%;" onclick="createOverseasTrip()">✈️ 해외여행 시작하기</button>
     </div>
   </div>
 
@@ -1112,7 +1265,7 @@
       <button class="nav-btn" data-tab="recommend"><span class="ico">✨</span>추천</button>
       <button class="nav-btn" data-tab="expenses"><span class="ico">💰</span>경비</button>
       <button class="nav-btn" data-tab="weather"><span class="ico">🧥</span>날씨·옷</button>
-      <button class="nav-btn" data-tab="checklist"><span class="ico">✅</span>알림·체크</button>
+      <button class="nav-btn" data-tab="checklist"><span class="ico">✅</span>알림·체크<span class="nav-badge" id="nav-check-badge" style="display:none;">0</span></button>
     </div>
   </nav>
 
@@ -1199,10 +1352,507 @@
 
     // 지도 핀 좌표는 로컬/클라우드에 저장된 일정 데이터에 없을 수 있으므로,
     // 기본 데이터에 정의된 좌표를 일정 id 기준으로 항상 사용할 수 있게 둔다.
-    const COORD_BY_ID = {};
-    DEFAULT_DATA.days.forEach(d => (d.items || []).forEach(it => {
-      if (typeof it.lat === "number" && typeof it.lng === "number") COORD_BY_ID[it.id] = [it.lat, it.lng];
-    }));
+    /* =====================================================================
+       국내 / 해외 여행 모드 + 국가별 필수 출국 요건
+       ===================================================================== */
+    const COUNTRY_PRESETS = {
+      "호주": {
+        flag: "🇦🇺", short: "호주", code: "AU",
+        defaultCity: "Sydney", defaultCityLabel: "시드니",
+        entry: "ETA(전자여행허가) 앱 사전 신청 필수 — 호주 입국 전 승인 필요",
+        passport: "여권 유효기간 6개월 이상",
+        comms: "eSIM/유심·로밍 · O형 3핀 멀티어댑터",
+        banner: "ETA 승인 · 여권 6개월 · eSIM",
+        notes: [
+          "ETA는 호주 공식 'Australian ETA' 앱에서만 신청(AUD 20 · 체류 3개월 · 유효 12개월) — 대행 웹사이트 결제는 사기 위험",
+          "호주 세관: 음식물·목재·씨앗·동물성 제품은 반입 신고 필수(미신고 과태료 큼)",
+          "콘센트는 230V O형 3핀 — 한국 2핀은 어댑터 없이 안 꽂힙니다"
+        ],
+        groups: [
+          { group: "🚨 필수 출국·비자", items: [
+            { text: "호주 ETA(전자여행허가) 앱 신청 후 승인 메일 저장", urgent: true },
+            { text: "여권 유효기간 6개월 이상 확인 (부족하면 재발급)", urgent: true },
+            { text: "e-티켓·숙소 바우처·ETA 승인 화면 오프라인 저장", urgent: true },
+            { text: "호주 세관 신고서 작성 — 음식물·목재·씨앗 반입 신고" },
+            { text: "여행자보험 가입 (의료비·액티비티 보장)" }
+          ] },
+          { group: "📱 통신·결제", items: [
+            { text: "eSIM 또는 유심 준비 (Telstra·Optus 계열 30GB)" },
+            { text: "O형 3핀 멀티어댑터 챙기기 (230V)" },
+            { text: "트래블월렛·해외결제 카드 AUD 충전 + 소액 현금" },
+            { text: "보조배터리·충전 케이블 (기내 반입)" }
+          ] }
+        ],
+        genericExtra: ["선크림 SPF50·선글라스·모자 (자외선 매우 강함)", "수영복·래시가드 (해변 일정)", "상비약(소화제·진통제·밴드)"],
+        entryAlert: { title: "호주 ETA 신청·승인 확인", daysBefore: 28, desc: "Australian ETA 앱 · 여권 정보 입력 후 승인 메일 보관" }
+      },
+      "일본": {
+        flag: "🇯🇵", short: "일본", code: "JP",
+        defaultCity: "Tokyo", defaultCityLabel: "도쿄",
+        entry: "Visit Japan Web 사전 등록(입국심사·세관 QR)",
+        passport: "여권 유효기간 확인 (체류 기간 이상)",
+        comms: "eSIM/포켓와이파이 · 110V 돼지코 어댑터",
+        banner: "Visit Japan Web · 여권 · eSIM",
+        notes: [
+          "Visit Japan Web에 여권·항공편·숙소를 등록하면 입국심사·세관 QR이 한 번에 나옵니다 (출발 전 캡처)",
+          "한국인은 관광 목적 무비자 90일 · 육류·과일·채소 반입 금지",
+          "콘센트는 110V A형(2핀) — 한국 220V 제품은 변압기 필요할 수 있음"
+        ],
+        groups: [
+          { group: "🚨 필수 출국·비자", items: [
+            { text: "Visit Japan Web 등록 후 입국심사·세관 QR 캡처", urgent: true },
+            { text: "여권 유효기간·영문 이름 확인", urgent: true },
+            { text: "왕복 항공권·숙소 예약 정보 저장", urgent: true },
+            { text: "여행자보험 가입" }
+          ] },
+          { group: "📱 통신·결제", items: [
+            { text: "eSIM 또는 포켓와이파이 준비" },
+            { text: "110V 돼지코 어댑터 (A형 2핀)" },
+            { text: "엔화·트래블월렛 충전 / 모바일 Suica·ICOCA 등록" },
+            { text: "보조배터리·충전 케이블" }
+          ] }
+        ],
+        genericExtra: ["편한 운동화 (하루 1.5만 보 대비)", "상비약·마스크"],
+        entryAlert: { title: "Visit Japan Web 등록하기", daysBefore: 14, desc: "입국심사·세관 QR을 캡처해 오프라인 저장" }
+      },
+      "미국": {
+        flag: "🇺🇸", short: "미국", code: "US",
+        defaultCity: "New York", defaultCityLabel: "뉴욕",
+        entry: "ESTA(전자여행허가) — 출발 72시간 전까지 신청 필수",
+        passport: "여권 유효기간 확인 (ESTA는 여권 만료일까지 유효)",
+        comms: "eSIM/로밍 · 110V 어댑터(A형)",
+        banner: "ESTA · 여권 · eSIM",
+        notes: [
+          "ESTA는 공식 cbp.dhs.gov에서만 신청(US$40 · 유효 2년) — 신청 후 보통 몇 분~72시간 내 승인",
+          "입국 시 여권·ESTA·숙소 주소를 준비하고, I-94는 자동 전자 기록됩니다",
+          "콘센트는 110V A형 — 한국 220V 기기는 변압기 필요"
+        ],
+        groups: [
+          { group: "🚨 필수 출국·비자", items: [
+            { text: "ESTA 신청·승인 확인 (출발 72시간 전까지 필수)", urgent: true },
+            { text: "여권 유효기간 확인 · 전자여권 필요", urgent: true },
+            { text: "e-티켓·숙소 주소(영문)·ESTA 승인번호 저장", urgent: true },
+            { text: "여행자보험 가입 (의료비 단가 높음)" }
+          ] },
+          { group: "📱 통신·결제", items: [
+            { text: "eSIM·로밍 준비 (주별 통신 품질 차이)" },
+            { text: "110V 어댑터(A형)" },
+            { text: "달러·해외결제 카드, 팁 문화 대비 현금" },
+            { text: "캐리어 TSA 잠금장치" }
+          ] }
+        ],
+        genericExtra: ["상비약(처방전 영문)·멀티비타민", "얇은 겉옷 (실내 냉방 강함)"],
+        entryAlert: { title: "미국 ESTA 신청 (72시간 전 필수)", daysBefore: 21, desc: "cbp.dhs.gov 공식 사이트 · US$40 · 승인번호 저장" }
+      },
+      "유럽 (솅겐)": {
+        flag: "🇪🇺", short: "유럽", code: "",
+        defaultCity: "Paris", defaultCityLabel: "파리",
+        entry: "ETIAS/입국요건 확인 (ETIAS는 아직 미시행 · 시행 시 신청)",
+        passport: "여권 잔여 유효기간 3~6개월 이상 (국가별 상이)",
+        comms: "유심/eSIM · 멀티어댑터(C·F형)",
+        banner: "여권 3~6개월 · EES 등록 · eSIM",
+        notes: [
+          "ETIAS는 2026년 11월 현재 시행 전(신청 불필요) — 시행되면 €20·유효 3년, 공식 사이트에서만 신청",
+          "EES(출입국시스템)는 2026년 4월부터 전면 시행 — 첫 입국 때 얼굴·지문 등록으로 줄이 길 수 있음",
+          "솅겐 90/180일 규칙 확인 · 소매치기 주의(가방 지퍼·복대)"
+        ],
+        groups: [
+          { group: "🚨 필수 출국·비자", items: [
+            { text: "여권 유효기간 3~6개월 이상 확인", urgent: true },
+            { text: "ETIAS 시행 여부 확인 (시행 시 출발 전 신청)", urgent: true },
+            { text: "숙소·항공 예약증, 솅겐 90/180일 계산", urgent: true },
+            { text: "여행자보험 (의료비 3만 유로 이상 권장)" }
+          ] },
+          { group: "📱 통신·결제", items: [
+            { text: "유심/eSIM 준비 (국가 넘어가면 로밍 확인)" },
+            { text: "멀티어댑터 (C·F형 230V)" },
+            { text: "유로·트래블월렛 충전 (나라별 통화 구분)" },
+            { text: "소매치기 방지 가방·복대" }
+          ] }
+        ],
+        genericExtra: ["얇은 겉옷·우산", "상비약·유럽연합 보험증 사본"],
+        entryAlert: { title: "유럽 입국요건·ETIAS 시행 여부 재확인", daysBefore: 30, desc: "여권 잔여 기간, EES 등록, ETIAS 시행 상태 확인" }
+      },
+      "태국": {
+        flag: "🇹🇭", short: "태국", code: "TH",
+        defaultCity: "Bangkok", defaultCityLabel: "방콕",
+        entry: "TDAC(태국 디지털 입국신고서) — 도착 3일 이내 무료 제출",
+        passport: "여권 유효기간 6개월 이상",
+        comms: "eSIM/유심 · 220V 2핀(C형) 대개 호환",
+        banner: "TDAC · 여권 6개월 · eSIM",
+        notes: [
+          "TDAC는 공식 tdac.immigration.go.th에서 무료 — 수수료 받는 사칭 사이트 주의",
+          "한국인은 1981년 협정으로 무비자 90일 (2026년 개편 후에도 유지)",
+          "입국심사에서 TDAC QR과 숙소 주소를 보여줄 수 있게 캡처"
+        ],
+        groups: [
+          { group: "🚨 필수 출국·비자", items: [
+            { text: "TDAC 제출·QR 저장 (도착 3일 이내, 입국마다 새로)", urgent: true },
+            { text: "여권 유효기간 6개월 이상 확인", urgent: true },
+            { text: "왕복 항공권·숙소 주소(영문) 저장", urgent: true },
+            { text: "여행자보험 가입" }
+          ] },
+          { group: "📱 통신·결제", items: [
+            { text: "eSIM 또는 현지 유심(AIS·True) 준비" },
+            { text: "220V 2핀(C형) — 대부분 한국 플러그 호환" },
+            { text: "바트 환전·트래블월렛 (카드 수수료 확인)" },
+            { text: "모기 기피제·상비약" }
+          ] }
+        ],
+        genericExtra: ["얇은 긴팔·우비 (스콜 대비)", "선크림·모자"],
+        entryAlert: { title: "태국 TDAC 제출 (도착 3일 전부터)", daysBefore: 2, desc: "tdac.immigration.go.th · 무료 · QR 캡처" }
+      },
+      "베트남": {
+        flag: "🇻🇳", short: "베트남", code: "VN",
+        defaultCity: "Hanoi", defaultCityLabel: "하노이",
+        entry: "무비자 45일 (여권 6개월 이상) · 45일 초과 시 e-비자 90일",
+        passport: "여권 유효기간 6개월 이상 (긴급 여권 불가)",
+        comms: "유심/eSIM · 220V 멀티어댑터",
+        banner: "무비자 45일 · 여권 6개월 · eSIM",
+        notes: [
+          "무비자 45일은 2028-03-14까지 유효 · 긴급 여권으로는 무비자 입국 불가",
+          "45일 초과·복수 입국은 e-비자(최대 90일) — 공식 evisa.gov.vn",
+          "입국심사용 숙소 주소(영문)를 미리 저장"
+        ],
+        groups: [
+          { group: "🚨 필수 출국·비자", items: [
+            { text: "무비자 45일 대상 확인 · 여권 6개월 이상", urgent: true },
+            { text: "45일 초과 시 e-비자 신청(evisa.gov.vn)", urgent: true },
+            { text: "숙소 주소(영문)·왕복 항공권 저장", urgent: true },
+            { text: "여행자보험 가입" }
+          ] },
+          { group: "📱 통신·결제", items: [
+            { text: "유심/eSIM (Viettel·Vinaphone)" },
+            { text: "220V 멀티어댑터 (A·C 겸용)" },
+            { text: "동(VND)·달러 소액, 트래블월렛" },
+            { text: "모기 기피제·상비약" }
+          ] }
+        ],
+        genericExtra: ["얇은 긴팔·우비", "선크림·모자"],
+        entryAlert: { title: "베트남 입국요건 점검 (무비자 45일·여권 6개월)", daysBefore: 21, desc: "45일 초과 시 e-비자 신청" }
+      },
+      "대만": {
+        flag: "🇹🇼", short: "대만", code: "TW",
+        defaultCity: "Taipei", defaultCityLabel: "타이베이",
+        entry: "온라인 입국신고서 TWAC — 입국 7일 이내 무료 제출",
+        passport: "여권 유효기간 6개월 이상",
+        comms: "eSIM/유심 · 110V A형 어댑터",
+        banner: "TWAC · 여권 6개월 · eSIM",
+        notes: [
+          "TWAC는 공식 twac.immigration.gov.tw에서 무료, 입국 7일 이내 제출 · 확인 메일 보관",
+          "한국인 무비자 90일 · 왕복 항공권 필요",
+          "콘센트는 110V A형 — 변압기 필요할 수 있음"
+        ],
+        groups: [
+          { group: "🚨 필수 출국·비자", items: [
+            { text: "TWAC 제출·확인 메일 보관 (입국 7일 이내)", urgent: true },
+            { text: "여권 유효기간 6개월 이상 확인", urgent: true },
+            { text: "왕복 항공권·숙소 주소 저장", urgent: true },
+            { text: "여행자보험 가입" }
+          ] },
+          { group: "📱 통신·결제", items: [
+            { text: "eSIM/유심 준비" },
+            { text: "110V A형 어댑터" },
+            { text: "대만달러(TWD)·카드, 이지카드 교통" },
+            { text: "우비·접이식 우산 (비 많음)" }
+          ] }
+        ],
+        genericExtra: ["편한 운동화", "상비약"],
+        entryAlert: { title: "대만 TWAC 제출 (입국 7일 이내)", daysBefore: 6, desc: "twac.immigration.gov.tw · 무료 · 확인 메일 저장" }
+      },
+      "싱가포르": {
+        flag: "🇸🇬", short: "싱가포르", code: "SG",
+        defaultCity: "Singapore", defaultCityLabel: "싱가포르",
+        entry: "SG Arrival Card — 입국 3일 이내 무료 제출",
+        passport: "여권 유효기간 6개월 이상",
+        comms: "eSIM/유심 · 230V G형 3핀 어댑터",
+        banner: "SGAC · 여권 6개월 · eSIM",
+        notes: [
+          "SG Arrival Card는 공식 ICA 사이트에서 무료, 도착 3일 이내 제출",
+          "한국인 무비자 90일 · 전자담배 반입 금지",
+          "콘센트는 230V G형(3핀) — 어댑터 필요"
+        ],
+        groups: [
+          { group: "🚨 필수 출국·비자", items: [
+            { text: "SG Arrival Card 제출·확인 메일 저장 (3일 이내)", urgent: true },
+            { text: "여권 유효기간 6개월 이상 확인", urgent: true },
+            { text: "숙소·왕복 항공권 저장", urgent: true },
+            { text: "여행자보험 가입" }
+          ] },
+          { group: "📱 통신·결제", items: [
+            { text: "eSIM/유심 준비" },
+            { text: "G형 3핀 어댑터 (230V)" },
+            { text: "SGD·카드 (교통은 컨텍리스 카드 가능)" },
+            { text: "얇은 긴팔 (실내 냉방 강함)" }
+          ] }
+        ],
+        genericExtra: ["선크림·우산", "상비약"],
+        entryAlert: { title: "싱가포르 SGAC 제출 (도착 3일 이내)", daysBefore: 2, desc: "ICA 공식 사이트 · 무료" }
+      },
+      "기타": {
+        flag: "🌍", short: "기타", code: "",
+        defaultCity: "", defaultCityLabel: "",
+        entry: "비자·입국허가 요건 확인 (국가별 상이)",
+        passport: "여권 유효기간 6개월 이상",
+        comms: "eSIM/유심 · 국가별 어댑터",
+        banner: "비자 여부 · 여권 6개월 · eSIM",
+        notes: [
+          "방문 국가의 대사관·공식 이민국 사이트에서 비자·입국신고 요건을 먼저 확인하세요",
+          "환승 국가의 경유 비자도 함께 확인",
+          "콘센트·전압은 국가별로 다르니 멀티어댑터를 챙기세요"
+        ],
+        groups: [
+          { group: "🚨 필수 출국·비자", items: [
+            { text: "비자·입국허가(전자허가) 요건 확인", urgent: true },
+            { text: "여권 유효기간 6개월 이상 확인", urgent: true },
+            { text: "왕복 항공권·숙소 예약증 저장", urgent: true },
+            { text: "여행자보험 가입" }
+          ] },
+          { group: "📱 통신·결제", items: [
+            { text: "eSIM/유심·로밍 준비" },
+            { text: "멀티어댑터 (전압·플러그 확인)" },
+            { text: "트래블월렛·해외결제 카드 충전" },
+            { text: "보조배터리·충전 케이블" }
+          ] }
+        ],
+        genericExtra: ["상비약", "얇은 겉옷"],
+        entryAlert: { title: "비자·입국허가 요건 확인", daysBefore: 30, desc: "대사관·공식 이민국 사이트에서 확인" }
+      }
+    };
+
+    function getCountryPreset(name) {
+      if (!name) return null;
+      if (COUNTRY_PRESETS[name]) return COUNTRY_PRESETS[name];
+      const hit = Object.keys(COUNTRY_PRESETS).find(k => k !== "기타" && (name.includes(k.replace(" (솅겐)", "")) || k.includes(name)));
+      return hit ? COUNTRY_PRESETS[hit] : COUNTRY_PRESETS["기타"];
+    }
+
+    /* 도시별 날씨: 좌표/기후 참고표 (없으면 Open-Meteo 지오코딩) */
+    const CITY_GEO = {
+      "시드니": { lat: -33.8688, lon: 151.2093, country: "AU" },
+      "카툼바": { lat: -33.7128, lon: 150.3119, country: "AU" },
+      "블루마운틴": { lat: -33.7128, lon: 150.3119, country: "AU" },
+      "멜버른": { lat: -37.8136, lon: 144.9631, country: "AU" },
+      "골드코스트": { lat: -28.0167, lon: 153.4000, country: "AU" },
+      "브리즈번": { lat: -27.4698, lon: 153.0251, country: "AU" },
+      "도쿄": { lat: 35.6762, lon: 139.6503, country: "JP" },
+      "오사카": { lat: 34.6937, lon: 135.5023, country: "JP" },
+      "교토": { lat: 35.0116, lon: 135.7681, country: "JP" },
+      "삿포로": { lat: 43.0618, lon: 141.3545, country: "JP" },
+      "후쿠오카": { lat: 33.5904, lon: 130.4017, country: "JP" },
+      "뉴욕": { lat: 40.7128, lon: -74.0060, country: "US" },
+      "로스앤젤레스": { lat: 34.0522, lon: -118.2437, country: "US" },
+      "샌프란시스코": { lat: 37.7749, lon: -122.4194, country: "US" },
+      "하와이": { lat: 21.3069, lon: -157.8583, country: "US" },
+      "파리": { lat: 48.8566, lon: 2.3522, country: "FR" },
+      "런던": { lat: 51.5074, lon: -0.1278, country: "GB" },
+      "로마": { lat: 41.9028, lon: 12.4964, country: "IT" },
+      "바르셀로나": { lat: 41.3874, lon: 2.1686, country: "ES" },
+      "프라하": { lat: 50.0755, lon: 14.4378, country: "CZ" },
+      "방콕": { lat: 13.7563, lon: 100.5018, country: "TH" },
+      "치앙마이": { lat: 18.7883, lon: 98.9853, country: "TH" },
+      "푸켓": { lat: 7.8804, lon: 98.3923, country: "TH" },
+      "하노이": { lat: 21.0278, lon: 105.8342, country: "VN" },
+      "호치민": { lat: 10.8231, lon: 106.6297, country: "VN" },
+      "다낭": { lat: 16.0544, lon: 108.2022, country: "VN" },
+      "타이베이": { lat: 25.0330, lon: 121.5654, country: "TW" },
+      "가오슝": { lat: 22.6273, lon: 120.3014, country: "TW" },
+      "싱가포르": { lat: 1.3521, lon: 103.8198, country: "SG" },
+      "서울": { lat: 37.5665, lon: 126.9780, country: "KR" },
+      "부산": { lat: 35.1796, lon: 129.0756, country: "KR" },
+      "제주": { lat: 33.4996, lon: 126.5312, country: "KR" },
+      "인천": { lat: 37.4563, lon: 126.7052, country: "KR" },
+      "강릉": { lat: 37.7519, lon: 128.8761, country: "KR" },
+      "여수": { lat: 34.7604, lon: 127.6622, country: "KR" },
+      "경주": { lat: 35.8562, lon: 129.2247, country: "KR" }
+    };
+
+    const CLIMATE_TABLE = {
+      "시드니": { tmin: [19, 19, 18, 15, 12, 10, 9, 10, 13, 15, 17, 18], tmax: [26, 26, 25, 23, 20, 18, 17, 19, 21, 23, 24, 26] },
+      "카툼바": { tmin: [14, 14, 12, 9, 6, 4, 3, 4, 6, 8, 10, 12], tmax: [23, 22, 20, 17, 14, 11, 11, 13, 16, 18, 20, 22] },
+      "블루마운틴": { tmin: [14, 14, 12, 9, 6, 4, 3, 4, 6, 8, 10, 12], tmax: [23, 22, 20, 17, 14, 11, 11, 13, 16, 18, 20, 22] },
+      "멜버른": { tmin: [15, 15, 13, 11, 9, 7, 6, 7, 8, 9, 11, 13], tmax: [26, 26, 24, 20, 17, 14, 14, 15, 18, 20, 22, 24] },
+      "골드코스트": { tmin: [22, 22, 21, 18, 15, 12, 11, 12, 14, 17, 19, 21], tmax: [29, 28, 28, 26, 23, 21, 21, 22, 24, 25, 27, 28] },
+      "도쿄": { tmin: [1, 2, 5, 10, 15, 19, 23, 24, 20, 15, 9, 3], tmax: [10, 11, 14, 19, 23, 26, 30, 31, 27, 22, 17, 12] },
+      "오사카": { tmin: [2, 3, 6, 11, 16, 20, 24, 25, 21, 15, 9, 4], tmax: [10, 11, 15, 20, 25, 28, 32, 33, 29, 23, 18, 12] },
+      "삿포로": { tmin: [-7, -6, -2, 3, 9, 13, 18, 19, 14, 7, 1, -4], tmax: [-1, 0, 4, 11, 17, 21, 25, 26, 21, 14, 7, 1] },
+      "뉴욕": { tmin: [-3, -2, 2, 7, 12, 17, 20, 19, 15, 9, 5, 0], tmax: [4, 6, 10, 17, 22, 27, 30, 29, 25, 18, 12, 7] },
+      "파리": { tmin: [3, 3, 5, 7, 11, 14, 16, 16, 13, 10, 6, 4], tmax: [7, 8, 12, 16, 20, 23, 25, 25, 21, 16, 11, 8] },
+      "런던": { tmin: [3, 3, 4, 6, 9, 12, 14, 14, 12, 9, 6, 4], tmax: [8, 8, 11, 14, 18, 21, 23, 23, 20, 16, 11, 8] },
+      "방콕": { tmin: [21, 23, 25, 26, 26, 25, 25, 25, 25, 24, 23, 21], tmax: [33, 33, 34, 35, 34, 33, 33, 33, 32, 32, 32, 32] },
+      "하노이": { tmin: [14, 16, 18, 22, 24, 26, 26, 26, 25, 22, 18, 15], tmax: [20, 21, 24, 28, 32, 33, 33, 32, 31, 29, 25, 22] },
+      "타이베이": { tmin: [14, 14, 16, 19, 22, 25, 26, 26, 25, 22, 19, 15], tmax: [19, 20, 22, 26, 29, 32, 34, 34, 31, 27, 23, 20] },
+      "싱가포르": { tmin: [24, 24, 25, 25, 26, 26, 26, 25, 25, 25, 24, 24], tmax: [30, 31, 32, 32, 32, 31, 31, 30, 31, 31, 30, 30] },
+      "서울": { tmin: [-6, -4, 2, 8, 13, 18, 22, 22, 17, 10, 3, -3], tmax: [2, 5, 11, 18, 23, 27, 29, 30, 26, 20, 12, 5] },
+      "부산": { tmin: [-1, 1, 5, 10, 14, 18, 22, 23, 19, 13, 7, 1], tmax: [8, 10, 14, 19, 23, 26, 29, 30, 26, 22, 16, 10] },
+      "제주": { tmin: [1, 2, 6, 11, 15, 19, 23, 24, 20, 14, 8, 3], tmax: [8, 9, 13, 18, 22, 26, 29, 30, 26, 21, 15, 10] }
+    };
+
+    function seasonalEstimate(cityLabel, month, lat) {
+      const key = Object.keys(CLIMATE_TABLE).find(k => String(cityLabel || "").includes(k));
+      if (key) {
+        const t = CLIMATE_TABLE[key];
+        return { min: t.tmin[month], max: t.tmax[month] };
+      }
+      const absLat = Math.abs(typeof lat === "number" ? lat : 37);
+      const hemi = (typeof lat === "number" ? lat : 37) >= 0 ? 1 : -1;
+      const mean = 28 - 0.42 * absLat;
+      const amp = Math.min(13, 0.22 * absLat + 3);
+      const mid = mean + Math.cos(((month + 0.5) - 6.5) / 12 * Math.PI * 2) * amp * hemi;
+      return { min: Math.round(mid - 4), max: Math.round(mid + 4) };
+    }
+
+    function outfitFor(minT, maxT, rainProb) {
+      let base;
+      if (maxT >= 30) base = "반팔·린넨 + 반바지, 모자·선글라스 필수";
+      else if (maxT >= 26) base = "반팔·얇은 셔츠 + 반바지/면바지";
+      else if (maxT >= 22) base = "반팔·얇은 긴팔 + 가벼운 겉옷";
+      else if (maxT >= 17) base = "맨투맨·얇은 니트 + 가디건";
+      else if (maxT >= 11) base = "니트 + 자켓·트렌치, 도톰한 바지";
+      else if (maxT >= 4) base = "기모 이너 + 코트·경량 패딩";
+      else base = "히트텍 상하의 + 패딩 + 목도리·장갑";
+      if (maxT - minT >= 9) base += " · 벗기 쉬운 레이어드";
+      if ((rainProb || 0) >= 50) base += " + 접이식 우산·방수 신발";
+      return base;
+    }
+
+    function fmtMD(dateStr) {
+      const d = new Date(String(dateStr) + "T00:00:00");
+      if (isNaN(d)) return String(dateStr || "");
+      const wd = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
+      return `${d.getMonth() + 1}/${d.getDate()} (${wd})`;
+    }
+
+    /* =====================================================================
+       예시 여행: 🇦🇺 호주 시드니·블루마운틴 4박 5일 (au-sydney-4n5d)
+       ===================================================================== */
+    function buildAustraliaSample() {
+      const preset = getCountryPreset("호주");
+      const days = [
+        {
+          day: 1, date: "2027-02-13", label: "1일차 (토)", subtitle: "인천 → 시드니 · 서큘러키",
+          city: "Sydney", cityLabel: "시드니", area: "시드니", areaDetail: "서큘러키 · 더록스",
+          planBTitle: "지연·결항 플랜 B",
+          planBDesc: "출발이 지연되면 첫날 일정은 호텔 체크인과 더록스 늦은 저녁만 남기고, 오페라하우스 투어를 둘째 날 오후로 옮기세요. 공항철도는 24시간 운행이라 심야 도착도 괜찮습니다.",
+          items: [
+            { id: "au1-1", time: "09:05", place: "인천공항 → 시드니공항 (KE401)", fromPlace: "인천공항", toPlace: "시드니공항", stay: "탑승 10시간 20분", moveMode: "대한항공 KE401 직항", moveMin: 620, moveCost: 0, costTotal: 1200000, badges: ["예매 완료", "ETA 승인 필요"], lat: -33.9399, lng: 151.1753, mapUrl: "https://map.naver.com/p/search/%EC%8B%9C%EB%93%9C%EB%8B%88%20%EA%B3%B5%ED%95%AD", memo: "인천 T2 06:35 카운터 마감 · 도착 21:25(시드니 현지) · 기내에서 호주 입국신고서 작성" },
+            { id: "au1-2", time: "21:40", place: "입국심사 · ETA 확인 · 세관", stay: "40분", moveMode: "도보", moveMin: 0, moveCost: 0, costTotal: 0, badges: ["ETA 자동 조회", "음식물 신고"], lat: -33.9399, lng: 151.1753, mapUrl: "https://map.naver.com/p/search/%EC%8B%9C%EB%93%9C%EB%8B%88%20%EA%B3%B5%ED%95%AD", memo: "여권으로 ETA 자동 조회 · 라면 분말·견과·목재 소품은 반드시 신고 (미신고 과태료)" },
+            { id: "au1-3", time: "22:30", place: "시드니공항 → 센트럴 (Airport Link)", fromPlace: "시드니공항", toPlace: "센트럴역", stay: "이동 25분", moveMode: "Airport Link T8", moveMin: 25, moveCost: 40000, costTotal: 40000, badges: ["24시간 운행", "컨택리스 태그"], lat: -33.8830, lng: 151.2070, mapUrl: "https://map.naver.com/p/search/Sydney%20Central%20Station", memo: "2인 왕복 기준 · 해외결제 카드나 Opal 카드로 태그" },
+            { id: "au1-4", time: "23:10", place: "호텔 체크인 (서큘러키 하버뷰)", stay: "4박", moveMode: "센트럴역 도보·트램 10분", moveMin: 10, moveCost: 6000, costTotal: 1120000, badges: ["예약 완료", "4박"], lat: -33.8614, lng: 151.2108, mapUrl: "https://map.naver.com/p/search/Circular%20Quay%20Sydney", memo: "오페라하우스 도보 8분 · 조식 불포함 · 24시간 프런트" },
+            { id: "au1-5", time: "23:45", place: "더록스 늦은 저녁 (Pancakes on the Rocks)", stay: "체류 50분", moveMode: "도보 6분", moveMin: 6, moveCost: 0, costTotal: 48000, badges: ["24시간 영업", "현지 인기"], lat: -33.8597, lng: 151.2090, mapUrl: "https://map.naver.com/p/search/Pancakes%20on%20the%20Rocks", memo: "비프립+버터밀크 팬케이크 · 첫날은 가볍게", menus: [{ name: "버터밀크 팬케이크", price: 19000, qty: 1 }, { name: "비프 립", price: 29000, qty: 1 }, { name: "커피", price: 5500, qty: 0 }] }
+          ]
+        },
+        {
+          day: 2, date: "2027-02-14", label: "2일차 (일)", subtitle: "오페라하우스 · 하버브리지 · 와이니어드",
+          city: "Sydney", cityLabel: "시드니", area: "시드니", areaDetail: "서큘러키 · 와이니어드 · 달링하버",
+          planBTitle: "비·강풍 플랜 B",
+          planBDesc: "비가 오면 오페라하우스 내부 투어와 시드니 현대미술관(MCA)·호주박물관으로 바꾸고, 와이니어드 페리 대신 기차로 밀슨스포인트를 다녀오세요.",
+          items: [
+            { id: "au2-1", time: "08:40", place: "The Grounds of the City 브런치 (CBD)", stay: "체류 60분", moveMode: "도보·트램 12분", moveMin: 12, moveCost: 6000, costTotal: 42000, badges: ["08:00 오픈", "주말 대기"], lat: -33.8688, lng: 151.2073, mapUrl: "https://map.naver.com/p/search/The%20Grounds%20of%20the%20City", memo: "주말엔 20~30분 대기 · 카운터 주문", menus: [{ name: "에그 베네딕트", price: 23000, qty: 1 }, { name: "플랫화이트", price: 6500, qty: 2 }, { name: "프렌치 토스트", price: 21000, qty: 0 }] },
+            { id: "au2-2", time: "10:00", place: "시드니 오페라하우스 가이드 투어", stay: "체류 75분", moveMode: "도보 10분", moveMin: 10, moveCost: 0, costTotal: 60000, badges: ["1시간 투어", "온라인 예약 권장"], lat: -33.8568, lng: 151.2153, mapUrl: "https://map.naver.com/p/search/Sydney%20Opera%20House", memo: "2인 60,000원 상당(AUD 45×2) · 한국어 오디오가이드 없음 · 실내는 냉방 강함" },
+            { id: "au2-3", time: "11:40", place: "로열 보태닉 가든 산책", stay: "체류 50분", moveMode: "도보 5분", moveMin: 5, moveCost: 0, costTotal: 0, badges: ["무료", "하버뷰"], lat: -33.8640, lng: 151.2153, mapUrl: "https://map.naver.com/p/search/Royal%20Botanic%20Garden", memo: "미세스 맥쿼리 포인트에서 하버브리지 사진 스팟" },
+            { id: "au2-4", time: "12:50", place: "오페라바 점심 (Opera Bar)", stay: "체류 60분", moveMode: "도보 8분", moveMin: 8, moveCost: 0, costTotal: 68000, badges: ["하버뷰", "예약 없이 입장"], lat: -33.8573, lng: 151.2150, mapUrl: "https://map.naver.com/p/search/Opera%20Bar%20Sydney", memo: "야외석은 햇빛 강함 · 선크림 필수", menus: [{ name: "피시앤칩스", price: 32000, qty: 1 }, { name: "시저 샐러드", price: 24000, qty: 1 }, { name: "스파클링", price: 12000, qty: 0 }] },
+            { id: "au2-5", time: "14:30", place: "하버브리지 파이론 룩아웃", stay: "체류 45분", moveMode: "도보 15분", moveMin: 15, moveCost: 0, costTotal: 30000, badges: ["전망대", "10:00~17:00"], lat: -33.8523, lng: 151.2108, mapUrl: "https://map.naver.com/p/search/Pylon%20Lookout", memo: "브리지 등반(BridgeClimb)보다 가볍고 저렴한 전망대" },
+            { id: "au2-6", time: "15:40", place: "서큘러키 → 와이니어드 페리", fromPlace: "서큘러키 선착장", toPlace: "와이니어드 선착장", stay: "탑승 15분", moveMode: "Sydney Ferries F3", moveMin: 15, moveCost: 16000, costTotal: 16000, badges: ["오페라하우스 뷰", "Opal 태그"], lat: -33.8577, lng: 151.2108, mapUrl: "https://map.naver.com/p/search/Circular%20Quay%20Wharf", memo: "2인 편도 · 뱃머리 왼쪽 좌석이 오페라하우스 사진 최고" },
+            { id: "au2-7", time: "16:10", place: "와이니어드 · 밀슨스포인트 산책 (루나파크)", stay: "체류 70분", moveMode: "도보", moveMin: 10, moveCost: 0, costTotal: 0, badges: ["무료", "하버 전망"], lat: -33.8472, lng: 151.2107, mapUrl: "https://map.naver.com/p/search/Wendys%20Secret%20Garden", memo: "웬디스 시크릿 가든에서 하버브리지 정면 뷰" },
+            { id: "au2-8", time: "17:30", place: "와이니어드 → 서큘러키 페리 (복귀)", fromPlace: "와이니어드 선착장", toPlace: "서큘러키 선착장", stay: "탑승 15분", moveMode: "Sydney Ferries F3", moveMin: 15, moveCost: 16000, costTotal: 16000, badges: ["석양 시간", "Opal 태그"], lat: -33.8610, lng: 151.2050, mapUrl: "https://map.naver.com/p/search/Milsons%20Point", memo: "2월 일몰은 19:50경 · 배 위에서 노을 보기 좋아요" },
+            { id: "au2-9", time: "18:30", place: "달링하버 야경 산책", stay: "체류 40분", moveMode: "트램 L1", moveMin: 15, moveCost: 6000, costTotal: 6000, badges: ["야경", "무료 산책"], lat: -33.8735, lng: 151.2010, mapUrl: "https://map.naver.com/p/search/Darling%20Harbour", memo: "피어마켓 방향 불꽃·버스커 공연 자주 있음" },
+            { id: "au2-10", time: "19:20", place: "달링하버 저녁 (Hurricane's Grill)", stay: "체류 80분", moveMode: "도보 5분", moveMin: 5, moveCost: 0, costTotal: 95000, badges: ["립 인기", "예약 권장"], lat: -33.8741, lng: 151.2025, mapUrl: "https://map.naver.com/p/search/Hurricanes%20Grill%20Darling%20Harbour", memo: "주말 저녁은 대기 길어요 · 19시 전 입장 추천", menus: [{ name: "포크 립 하프", price: 45000, qty: 1 }, { name: "스테이크", price: 42000, qty: 1 }, { name: "감자 사이드", price: 8000, qty: 1 }] }
+          ]
+        },
+        {
+          day: 3, date: "2027-02-15", label: "3일차 (월)", subtitle: "블루마운틴 · 카툼바 · 르우라",
+          city: "Katoomba", cityLabel: "카툼바", area: "블루마운틴", areaDetail: "Three Sisters · 르우라",
+          planBTitle: "비·안개 플랜 B",
+          planBDesc: "산악 안개가 짙으면 Three Sisters 전망 대신 Scenic World 실내 전시와 르우라 마을 카페·빈티지숍 위주로 돌고, 15시 기차로 일찍 복귀하세요. 기차는 1시간 간격이라 시간표 확인 필수.",
+          items: [
+            { id: "au3-1", time: "07:10", place: "호텔 → 센트럴역", stay: "이동 20분", moveMode: "도보·트램", moveMin: 20, moveCost: 6000, costTotal: 6000, badges: ["이동"], lat: -33.8830, lng: 151.2070, mapUrl: "https://map.naver.com/p/search/Sydney%20Central%20Station", memo: "플랫폼 5~7번 Blue Mountains Line · 기차 안 화장실 있음" },
+            { id: "au3-2", time: "07:45", place: "센트럴 → 카툼바 (Blue Mountains Line)", fromPlace: "센트럴역", toPlace: "카툼바역", stay: "탑승 2시간", moveMode: "NSW TrainLink", moveMin: 120, moveCost: 22000, costTotal: 22000, badges: ["왕복 22,000원", "Opal 태그"], lat: -33.7128, lng: 150.3119, mapUrl: "https://map.naver.com/p/search/Katoomba%20Station", memo: "2인 왕복 기준 금액 · 창가 오른쪽이 산 풍경" },
+            { id: "au3-3", time: "10:10", place: "Scenic World (스카이웨이·레일웨이·케이블웨이)", stay: "체류 2시간", moveMode: "카툼바역 도보·686번 버스", moveMin: 15, moveCost: 8000, costTotal: 110000, badges: ["온라인 예약 권장", "09:00~17:00"], lat: -33.7290, lng: 150.3010, mapUrl: "https://map.naver.com/p/search/Scenic%20World%20Katoomba", memo: "2인 패스 · 레일웨이는 경사 52도라 심장 약하면 스카이웨이 추천" },
+            { id: "au3-4", time: "12:20", place: "카툼바 마을 점심 (The Yellow Deli)", stay: "체류 55분", moveMode: "도보 6분", moveMin: 6, moveCost: 0, costTotal: 45000, badges: ["월요일 영업", "독특한 인테리어"], lat: -33.7120, lng: 150.3120, mapUrl: "https://map.naver.com/p/search/The%20Yellow%20Deli%20Katoomba", memo: "나무로 지은 동화 같은 매장 · 샌드위치·수프", menus: [{ name: "델리 샌드위치", price: 21000, qty: 1 }, { name: "수프", price: 16000, qty: 1 }, { name: "핫초코", price: 8000, qty: 1 }] },
+            { id: "au3-5", time: "13:30", place: "에코포인트 · Three Sisters 전망대", stay: "체류 70분", moveMode: "도보 20분", moveMin: 20, moveCost: 0, costTotal: 0, badges: ["무료", "절경"], lat: -33.7320, lng: 150.3120, mapUrl: "https://map.naver.com/p/search/Three%20Sisters%20Echo%20Point", memo: "계단 내려가는 길 있음 · 운동화 필수, 산 위는 5°C가량 시원" },
+            { id: "au3-6", time: "14:50", place: "르우라 마을 산책 & 카페", stay: "체류 60분", moveMode: "686번 버스 12분", moveMin: 12, moveCost: 6000, costTotal: 24000, badges: ["빈티지숍", "조용한 마을"], lat: -33.7170, lng: 150.3300, mapUrl: "https://map.naver.com/p/search/Leura%20Mall", memo: "르우라 몰 골목 카페에서 쉬고 기념품", menus: [{ name: "플랫화이트", price: 6500, qty: 2 }, { name: "스콘", price: 6000, qty: 1 }] },
+            { id: "au3-7", time: "16:20", place: "카툼바 → 센트럴 (복귀 기차)", fromPlace: "카툼바역", toPlace: "센트럴역", stay: "탑승 2시간", moveMode: "NSW TrainLink", moveMin: 120, moveCost: 0, costTotal: 0, badges: ["1시간 간격", "저녁 혼잡"], lat: -33.7128, lng: 150.3119, mapUrl: "https://map.naver.com/p/search/Katoomba%20Station", memo: "왕복권으로 복귀 · 놓치면 17:20 다음 열차" },
+            { id: "au3-8", time: "19:00", place: "더록스 펍 저녁 (The Australian Hotel)", stay: "체류 80분", moveMode: "센트럴역 도보·트램 15분", moveMin: 15, moveCost: 6000, costTotal: 58000, badges: ["월요일 영업", "펍 분위기"], lat: -33.8597, lng: 151.2080, mapUrl: "https://map.naver.com/p/search/The%20Australian%20Heritage%20Hotel", memo: "캥거루·에뮤 피자로 유명한 펍 · 주문은 카운터", menus: [{ name: "캥거루 피자", price: 26000, qty: 1 }, { name: "에뮤 피자", price: 26000, qty: 1 }, { name: "맥주", price: 9000, qty: 0 }] }
+          ]
+        },
+        {
+          day: 4, date: "2027-02-16", label: "4일차 (화)", subtitle: "본다이 → 쿠지 · 서리힐스 · 뉴타운",
+          city: "Sydney", cityLabel: "시드니", area: "시드니", areaDetail: "본다이 · 쿠지 · 서리힐스",
+          planBTitle: "폭염·강풍 플랜 B",
+          planBDesc: "기온이 32°C를 넘거나 바람이 강하면 본다이→쿠지 6km 해안 산책을 버스 이동으로 바꾸고, 서리힐스 브런치와 뉴타운 실내 위주로 돌아요. 해수욕은 수영 금지 표지판을 꼭 확인하세요.",
+          items: [
+            { id: "au4-1", time: "08:20", place: "호텔 → 본다이 비치 (333번 버스)", stay: "이동 35분", moveMode: "버스 333", moveMin: 35, moveCost: 8000, costTotal: 8000, badges: ["Opal 태그", "출근 시간 혼잡"], lat: -33.8908, lng: 151.2743, mapUrl: "https://map.naver.com/p/search/Bondi%20Beach", memo: "2인 편도 · 서큘러키에서 333번이 가장 빠름" },
+            { id: "au4-2", time: "09:00", place: "본다이 비치 산책 · 서퍼 구경", stay: "체류 60분", moveMode: "도보", moveMin: 15, moveCost: 0, costTotal: 0, badges: ["무료", "자외선 매우 강함"], lat: -33.8908, lng: 151.2743, mapUrl: "https://map.naver.com/p/search/Bondi%20Beach", memo: "선크림 SPF50 수시로 바르기 · 남쪽 아이스버그 수영장도 포토스팟" },
+            { id: "au4-3", time: "10:10", place: "본다이 → 쿠지 해안 산책 (6km)", fromPlace: "본다이 비치", toPlace: "쿠지 비치", stay: "산책 2시간 10분", moveMode: "도보 (Bondi to Coogee Walk)", moveMin: 130, moveCost: 0, costTotal: 0, badges: ["6km", "물 필수"], lat: -33.9030, lng: 151.2680, mapUrl: "https://map.naver.com/p/search/Bondi%20to%20Coogee%20Walk", memo: "타마라마·브론테 해변 지나 가장 경치 좋은 구간 · 물 2L 준비" },
+            { id: "au4-4", time: "12:40", place: "쿠지 비치 점심 (Coogee Pavilion)", stay: "체류 70분", moveMode: "도보 3분", moveMin: 3, moveCost: 0, costTotal: 72000, badges: ["화요일 영업", "비치뷰"], lat: -33.9208, lng: 151.2583, mapUrl: "https://map.naver.com/p/search/Coogee%20Pavilion", memo: "루프탑은 예약 권장 · 주중 점심은 여유로움", menus: [{ name: "그릴드 피시", price: 36000, qty: 1 }, { name: "버거", price: 26000, qty: 1 }, { name: "주스", price: 10000, qty: 0 }] },
+            { id: "au4-5", time: "14:20", place: "쿠지 → 서리힐스 (버스)", fromPlace: "쿠지 비치", toPlace: "서리힐스", stay: "이동 35분", moveMode: "버스 373·M10", moveMin: 35, moveCost: 8000, costTotal: 8000, badges: ["Opal 태그"], lat: -33.8920, lng: 151.2060, mapUrl: "https://map.naver.com/p/search/Surry%20Hills", memo: "2인 편도 · 환승은 Opal 자동 적용" },
+            { id: "au4-6", time: "15:10", place: "서리힐스 카페 (Bills Surry Hills)", stay: "체류 60분", moveMode: "도보 5분", moveMin: 5, moveCost: 0, costTotal: 34000, badges: ["리코타 핫케이크", "웨이팅"], lat: -33.8915, lng: 151.2108, mapUrl: "https://map.naver.com/p/search/Bills%20Surry%20Hills", memo: "리코타 핫케이크가 시그니처 · 한국어 메뉴 없음", menus: [{ name: "리코타 핫케이크", price: 22000, qty: 1 }, { name: "플랫화이트", price: 6000, qty: 2 }] },
+            { id: "au4-7", time: "16:40", place: "뉴타운 킹스트리트 산책 (빈티지숍)", stay: "체류 80분", moveMode: "기차 10분", moveMin: 15, moveCost: 6000, costTotal: 6000, badges: ["빈티지숍", "스트리트 아트"], lat: -33.8960, lng: 151.1790, mapUrl: "https://map.naver.com/p/search/King%20Street%20Newtown", memo: "서리힐스에서 기차 한 정거장 · LP숍·빈티지 옷가게 구경" },
+            { id: "au4-8", time: "18:30", place: "뉴타운 저녁 (Mary's Newtown)", stay: "체류 80분", moveMode: "도보 6분", moveMin: 6, moveCost: 0, costTotal: 56000, badges: ["화요일 영업", "버거·맥주"], lat: -33.8987, lng: 151.1796, mapUrl: "https://map.naver.com/p/search/Marys%20Newtown", memo: "현금 결제 선호 · 버거 2개+감자튀김", menus: [{ name: "치즈버거", price: 21000, qty: 2 }, { name: "감자튀김", price: 9000, qty: 1 }, { name: "수제 맥주", price: 9000, qty: 0 }] }
+          ]
+        },
+        {
+          day: 5, date: "2027-02-17", label: "5일차 (수)", subtitle: "맨리 · CBD → 인천",
+          city: "Sydney", cityLabel: "시드니", area: "시드니", areaDetail: "맨리 · CBD · 공항",
+          planBTitle: "귀국일 지연 플랜 B",
+          planBDesc: "페리 결항이나 쇼핑이 길어지면 맨리를 건너뛰고 13시까지 CBD에서 점심·기념품을 끝낸 뒤 15:30 공항철도로 이동하세요. 국제선은 출발 3시간 전 도착을 권장합니다.",
+          items: [
+            { id: "au5-1", time: "08:00", place: "체크아웃 · 짐 보관", stay: "30분", moveMode: "프런트", moveMin: 0, moveCost: 0, costTotal: 0, badges: ["11:00 정규 체크아웃", "짐 보관 무료"], lat: -33.8614, lng: 151.2108, mapUrl: "https://map.naver.com/p/search/Circular%20Quay%20Sydney", memo: "맨리 다녀온 뒤 14시에 짐 찾고 공항으로" },
+            { id: "au5-2", time: "08:40", place: "서큘러키 → 맨리 페리 (F1)", fromPlace: "서큘러키 선착장", toPlace: "맨리 선착장", stay: "탑승 30분", moveMode: "Sydney Ferries F1", moveMin: 30, moveCost: 18000, costTotal: 18000, badges: ["오페라하우스 뷰", "출근 시간대"], lat: -33.8577, lng: 151.2108, mapUrl: "https://map.naver.com/p/search/Manly%20Ferry", memo: "2인 편도 · 30분 항해, 뱃머리 자리 추천" },
+            { id: "au5-3", time: "09:20", place: "맨리 비치 산책 & 카페 아침", stay: "체류 100분", moveMode: "도보 8분", moveMin: 8, moveCost: 0, costTotal: 38000, badges: ["서핑 비치", "카페"], lat: -33.7969, lng: 151.2840, mapUrl: "https://map.naver.com/p/search/Manly%20Beach", memo: "북쪽 코스타 걸어 셸리 비치까지 20분 · 유모차도 가능한 평지", menus: [{ name: "아보카도 토스트", price: 18000, qty: 1 }, { name: "플랫화이트", price: 6500, qty: 2 }, { name: "주스", price: 8000, qty: 0 }] },
+            { id: "au5-4", time: "11:20", place: "맨리 → 서큘러키 페리 (복귀)", fromPlace: "맨리 선착장", toPlace: "서큘러키 선착장", stay: "탑승 30분", moveMode: "Sydney Ferries F1", moveMin: 30, moveCost: 18000, costTotal: 18000, badges: ["Opal 태그"], lat: -33.7969, lng: 151.2840, mapUrl: "https://map.naver.com/p/search/Manly%20Wharf", memo: "2인 편도 · 12시 이전 배를 타야 오후 일정이 편해요" },
+            { id: "au5-5", time: "12:20", place: "QVB · CBD 기념품 쇼핑", stay: "체류 70분", moveMode: "도보 5분", moveMin: 5, moveCost: 0, costTotal: 70000, badges: ["면세 가능", "영수증 보관"], lat: -33.8704, lng: 151.2069, mapUrl: "https://map.naver.com/p/search/Queen%20Victoria%20Building", memo: "호주 과자·티·오팔 소품 · 300호주달러 이상이면 출국장 TRS 환급 신청" },
+            { id: "au5-6", time: "14:00", place: "CBD 점심 (Chat Thai Westfield)", stay: "체류 60분", moveMode: "도보 6분", moveMin: 6, moveCost: 0, costTotal: 46000, badges: ["수요일 영업", "빠른 회전"], lat: -33.8695, lng: 151.2069, mapUrl: "https://map.naver.com/p/search/Chat%20Thai%20Westfield", memo: "공항 가기 전 든든하게 · 팟타이·그린커리", menus: [{ name: "팟타이", price: 19000, qty: 1 }, { name: "그린커리", price: 21000, qty: 1 }, { name: "타이 아이스티", price: 6000, qty: 0 }] },
+            { id: "au5-7", time: "16:00", place: "서큘러키 → 시드니공항 (Airport Link)", fromPlace: "서큘러키역", toPlace: "시드니공항", stay: "이동 25분", moveMode: "Airport Link T8", moveMin: 25, moveCost: 40000, costTotal: 40000, badges: ["출발 3시간 전", "Opal 태그"], lat: -33.9399, lng: 151.1753, mapUrl: "https://map.naver.com/p/search/Sydney%20Airport", memo: "2인 편도 · 국제선 터미널은 마지막 역" },
+            { id: "au5-8", time: "18:00", place: "출국 수속 · TRS 환급 · 면세점", stay: "2시간 30분", moveMode: "도보", moveMin: 0, moveCost: 0, costTotal: 0, badges: ["TRS 환급", "액체류 규정"], lat: -33.9399, lng: 151.1753, mapUrl: "https://map.naver.com/p/search/Sydney%20Airport", memo: "TRS는 1층 환급 데스크에서 영수증·여권 제시 · 100ml 액체 규정 확인" },
+            { id: "au5-9", time: "21:50", place: "시드니공항 → 인천공항 (KE402)", fromPlace: "시드니공항", toPlace: "인천공항", stay: "탑승 10시간 50분", moveMode: "대한항공 KE402", moveMin: 650, moveCost: 0, costTotal: 1200000, badges: ["야간 비행", "기내 수면"], lat: -33.9399, lng: 151.1753, mapUrl: "https://map.naver.com/p/search/%EC%9D%B8%EC%B2%9C%EA%B3%B5%ED%95%AD", memo: "다음날 05:40 인천 도착 · 공항버스 첫차 06:10" }
+          ]
+        }
+      ];
+      return {
+        meta: {
+          title: "🇦🇺 호주 시드니·블루마운틴 4박 5일",
+          destination: "호주 (시드니 · 블루마운틴 · 본다이)",
+          startDate: "2027-02-13",
+          endDate: "2027-02-17",
+          travelers: 2,
+          tripType: "overseas",
+          country: "호주",
+          countryCode: "AU",
+          sampleTrip: true,
+          themeColor: "#0284c7",
+          note: "ETA 사전 승인 · 여권 6개월 · O형 3핀 어댑터 반영"
+        },
+        days,
+        expenses: [
+          { id: "x-eta", category: "기타", name: "호주 ETA 2인 (AUD 20×2)", amount: 40000, status: "예정", manual: true },
+          { id: "x-esim", category: "기타", name: "eSIM 2인 30GB", amount: 30000, status: "예정", manual: true },
+          { id: "x-ins", category: "기타", name: "여행자보험 2인 (5일)", amount: 40000, status: "예정", manual: true }
+        ],
+        weather: buildOverseasWeatherSeed(days, preset),
+        bookingAlerts: [
+          { id: "au-a1", title: "호주 ETA 신청·승인 확인", datetime: "2027-01-16T10:00", displayTime: "2027.01.16(토) 10:00", desc: "Australian ETA 앱 · AUD 20 · 승인 메일 저장", offsets: ["1d", "1h"] },
+          { id: "au-a2", title: "오페라하우스 투어 · Scenic World 예약", datetime: "2027-01-25T20:00", displayTime: "2027.01.25(월) 20:00", desc: "주말·설 연휴 시간대 마감 빠름", offsets: ["1d", "1h"] },
+          { id: "au-a3", title: "여행자보험 가입 · eSIM 구매", datetime: "2027-02-01T20:00", displayTime: "2027.02.01(월) 20:00", desc: "출발 12일 전 · eSIM은 출발일에 설치", offsets: ["1d", "1h"] },
+          { id: "au-a4", title: "여권 유효기간 최종 확인", datetime: "2027-02-06T20:00", displayTime: "2027.02.06(토) 20:00", desc: "출발 1주 전 · 6개월 이상 남았는지 재확인", offsets: ["1d", "10m"] }
+        ],
+        checklist: buildOverseasChecklist(preset),
+        members: [],
+        joinRequests: []
+      };
+    }
+
+    const AUSTRALIA_SAMPLE = buildAustraliaSample();
+
+    function getSampleTrip(syncId) {
+      if (syncId === "au-sydney-4n5d") return structuredClone(AUSTRALIA_SAMPLE);
+      return null;
+    }
+
+    const SAMPLE_TRIP_LIST = [
+      { syncId: "au-sydney-4n5d", title: "🇦🇺 호주 시드니·블루마운틴 4박 5일", startDate: "2027-02-13", endDate: "2027-02-17", locked: false, sample: true }
+    ];
 
     const STORAGE_KEY = "busan_trip_dashboard_v1";
     const MY_TRIPS_KEY = "busan_trip_my_trips_v1";
@@ -1279,9 +1929,12 @@
     function loadState() {
       try {
         const raw = localStorage.getItem(getLocalKey()) || (currentSyncId === DEFAULT_SB.syncId ? localStorage.getItem(STORAGE_KEY) : null);
-        return raw ? hydrateDefaults(JSON.parse(raw)) : structuredClone(DEFAULT_DATA);
+        if (raw) return hydrateDefaults(JSON.parse(raw));
+        const sample = getSampleTrip(currentSyncId);
+        return sample || structuredClone(DEFAULT_DATA);
       } catch {
-        return structuredClone(DEFAULT_DATA);
+        const sample = getSampleTrip(currentSyncId);
+        return sample || structuredClone(DEFAULT_DATA);
       }
     }
 
@@ -2241,23 +2894,289 @@
     }
 
     function renderWeather() {
-      document.getElementById("weather-list").innerHTML = (state.weather || []).map(w => `
-        <div class="card">
-          <div class="weather-top">
-            <div>
-              <div style="font-weight:800;font-size:15px;">${w.icon} ${w.day}</div>
-              <div style="font-size:12px;color:var(--muted);">${w.area} · ${w.condition}</div>
+      const list = state.weather || [];
+      const emptyBox = document.getElementById("weather-list");
+      if (!list.length) {
+        emptyBox.innerHTML = `<div class="card" style="font-size:12.5px;color:var(--muted);">아직 날씨 카드가 없어요. 위의 <strong>🔄 일정 도시별 날씨 새로고침</strong>을 눌러 주세요.</div>`;
+      } else {
+        emptyBox.innerHTML = list.map(w => {
+          const hasTemp = typeof w.minTemp === "number" && typeof w.maxTemp === "number";
+          const temps = hasTemp ? `${w.minTemp}° / ${w.maxTemp}°` : "—";
+          const metaBits = [];
+          if (w.wind) metaBits.push(`💨 ${w.wind}`);
+          if (w.feelsLike) metaBits.push(w.feelsLike);
+          if (w.sunset) metaBits.push(`🌅 일몰 ${w.sunset}`);
+          return `
+            <div class="card">
+              <div class="weather-top">
+                <div>
+                  <div style="font-weight:800;font-size:15px;">${w.icon || "🌤️"} ${w.day || ""}</div>
+                  <div style="font-size:12px;color:var(--muted);">${w.cityLabel ? `<span class="city-chip">🏙️ ${w.cityLabel}</span> ` : ""}${w.area || ""} · ${w.condition || ""}</div>
+                </div>
+                <div class="w-temp">${temps}</div>
+              </div>
+              ${metaBits.length ? `<div style="font-size:12px;color:#475569;">${metaBits.join(" · ")}</div>` : ""}
+              <div class="outfit-box">
+                <div style="font-weight:800;color:var(--ocean-dark);margin-bottom:3px;">🧥 권장 옷차림: ${w.outfit || "-"}</div>
+                <div style="color:#334155;">${w.tip || ""}</div>
+              </div>
+              ${w.sourceLabel ? `<div class="w-src" style="margin-top:6px;">출처: ${w.sourceLabel}${w.fetchedAt ? ` · ${formatBackupTime(w.fetchedAt)} 조회` : ""}</div>` : ""}
             </div>
-            <div class="w-temp">${w.minTemp}° / ${w.maxTemp}°</div>
-          </div>
-          <div style="font-size:12px;color:#475569;">💨 ${w.wind} · ${w.feelsLike} · 🌅 일몰 ${w.sunset}</div>
-          <div class="outfit-box">
-            <div style="font-weight:800;color:var(--ocean-dark);margin-bottom:3px;">🧥 권장 옷차림: ${w.outfit}</div>
-            <div style="color:#334155;">${w.tip}</div>
-          </div>
-        </div>
-      `).join("");
+          `;
+        }).join("");
+      }
+      const note = document.getElementById("weather-city-note");
+      if (note) {
+        const isOverseas = state.meta?.tripType === "overseas";
+        note.textContent = isOverseas
+          ? "일정의 도시를 읽어 그날 그 도시 날씨로 보여드려요 (예보 → 작년 같은 기간 → 계절 평년 순)."
+          : "일정의 도시를 읽어 그날 그 도시 날씨를 보여드려요.";
+      }
     }
+
+    /* =====================================================================
+       일정 도시별 날씨: Open-Meteo 지오코딩 + 예보 (+ 작년 같은 기간 + 계절 평년)
+       ===================================================================== */
+    const WMO_KO = {
+      0: ["☀️", "맑음"], 1: ["🌤️", "대체로 맑음"], 2: ["⛅", "구름 조금"], 3: ["☁️", "흐림"],
+      45: ["🌫️", "안개"], 48: ["🌫️", "서리 안개"],
+      51: ["🌦️", "약한 이슬비"], 53: ["🌦️", "이슬비"], 55: ["🌧️", "강한 이슬비"],
+      56: ["🌧️", "어는 이슬비"], 57: ["🌧️", "어는 이슬비"],
+      61: ["🌦️", "약한 비"], 63: ["🌧️", "비"], 65: ["🌧️", "강한 비"],
+      66: ["🌧️", "어는 비"], 67: ["🌧️", "어는 비"],
+      71: ["🌨️", "약한 눈"], 73: ["🌨️", "눈"], 75: ["❄️", "강한 눈"], 77: ["❄️", "싸락눈"],
+      80: ["🌦️", "약한 소나기"], 81: ["🌧️", "소나기"], 82: ["⛈️", "강한 소나기"],
+      85: ["🌨️", "소낙눈"], 86: ["❄️", "강한 소낙눈"],
+      95: ["⛈️", "뇌우"], 96: ["⛈️", "뇌우·우박"], 99: ["⛈️", "뇌우·우박"]
+    };
+    function wmoInfo(code) {
+      if (WMO_KO[code]) return WMO_KO[code];
+      const c = Number(code);
+      if (!isFinite(c)) return ["🌤️", "구름 조금"];
+      if (c >= 95) return ["⛈️", "뇌우"];
+      if (c >= 80) return ["🌧️", "소나기"];
+      if (c >= 70) return ["🌨️", "눈"];
+      if (c >= 60) return ["🌧️", "비"];
+      if (c >= 50) return ["🌦️", "이슬비"];
+      return ["🌤️", "구름 조금"];
+    }
+
+    function ymdLocal(d) {
+      const p = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    }
+
+    function deriveDayCity(day) {
+      if (!day) return null;
+      if (day.city) return { label: day.cityLabel || day.city, query: day.city, lat: day.lat, lon: day.lng };
+      const area = String(day.area || "").trim();
+      if (area) {
+        const first = area.split(/[·,>\/]/)[0].replace(/\(.*?\)/g, "").trim();
+        if (first) return { label: first, query: first };
+      }
+      const withCoord = (day.items || []).find(it => typeof it.lat === "number");
+      if (withCoord) {
+        const nm = String(withCoord.place || "").split(/\s*(?:→|\()/)[0].trim();
+        return { label: nm, query: nm, lat: withCoord.lat, lon: withCoord.lng };
+      }
+      return null;
+    }
+
+    async function geocodeCity(entry, countryCode) {
+      const knownKey = Object.keys(CITY_GEO).find(k => String(entry.query || entry.label || "").includes(k));
+      if (knownKey) {
+        const g = CITY_GEO[knownKey];
+        return { lat: g.lat, lon: g.lon, label: entry.label || knownKey, country: g.country };
+      }
+      const cacheKey = "trip_city_geo_v1";
+      let cache = {};
+      try { cache = JSON.parse(localStorage.getItem(cacheKey) || "{}"); } catch {}
+      const ck = `${entry.query || entry.label}|${countryCode || ""}`;
+      if (cache[ck]) return cache[ck];
+      try {
+        let url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(entry.query || entry.label)}&count=5&language=ko&format=json`;
+        if (countryCode) url += `&countryCode=${countryCode}`;
+        const r = await fetch(url);
+        if (r.ok) {
+          const j = await r.json();
+          const hit = (j.results || [])[0];
+          if (hit) {
+            const geo = { lat: hit.latitude, lon: hit.longitude, label: entry.label || hit.name, country: hit.country_code };
+            cache[ck] = geo;
+            try { localStorage.setItem(cacheKey, JSON.stringify(cache)); } catch {}
+            return geo;
+          }
+        }
+      } catch {}
+      if (typeof entry.lat === "number") return { lat: entry.lat, lon: entry.lon, label: entry.label, country: countryCode };
+      return null;
+    }
+
+    function fmtSunset(iso) {
+      if (!iso) return "";
+      const m = String(iso).match(/T(\d{2}:\d{2})/);
+      return m ? m[1] : "";
+    }
+
+    async function fetchDayWeather(geo, dateStr) {
+      // 1) 실시간 예보 (오늘부터 16일 이내)
+      try {
+        const u = `https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}` +
+          `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,sunset` +
+          `&timezone=auto&start_date=${dateStr}&end_date=${dateStr}`;
+        const r = await fetch(u);
+        if (r.ok) {
+          const j = await r.json();
+          const tmax = j.daily?.temperature_2m_max?.[0];
+          const tmin = j.daily?.temperature_2m_min?.[0];
+          if (typeof tmax === "number" && typeof tmin === "number") {
+            return {
+              source: "forecast", sourceLabel: "실시간 예보",
+              min: tmin, max: tmax,
+              code: j.daily.weather_code?.[0],
+              wind: j.daily.wind_speed_10m_max?.[0],
+              rainProb: j.daily.precipitation_probability_max?.[0],
+              sunset: fmtSunset(j.daily.sunset?.[0])
+            };
+          }
+        }
+      } catch {}
+      // 2) 작년 같은 기간 실측 (아카이브)
+      try {
+        const d = new Date(dateStr + "T00:00:00");
+        const from = new Date(d.getFullYear() - 1, d.getMonth(), d.getDate() - 2);
+        const to = new Date(d.getFullYear() - 1, d.getMonth(), d.getDate() + 2);
+        const u = `https://archive-api.open-meteo.com/v1/archive?latitude=${geo.lat}&longitude=${geo.lon}` +
+          `&start_date=${ymdLocal(from)}&end_date=${ymdLocal(to)}` +
+          `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,sunset&timezone=auto`;
+        const r = await fetch(u);
+        if (r.ok) {
+          const j = await r.json();
+          const maxes = (j.daily?.temperature_2m_max || []).filter(v => typeof v === "number");
+          const mins = (j.daily?.temperature_2m_min || []).filter(v => typeof v === "number");
+          if (maxes.length && mins.length) {
+            const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+            const codes = (j.daily?.weather_code || []).filter(v => typeof v === "number");
+            const code = codes.length ? codes.sort((a, b) => codes.filter(x => x === b).length - codes.filter(x => x === a).length)[0] : 3;
+            const rains = (j.daily?.precipitation_sum || []).filter(v => typeof v === "number");
+            const winds = (j.daily?.wind_speed_10m_max || []).filter(v => typeof v === "number");
+            return {
+              source: "archive", sourceLabel: "작년 같은 기간 실측",
+              min: avg(mins), max: avg(maxes), code,
+              wind: winds.length ? avg(winds) : null,
+              rainProb: rains.length ? Math.min(90, Math.round(rains.filter(r => r > 0.5).length / rains.length * 100)) : null,
+              sunset: fmtSunset((j.daily?.sunset || [])[0])
+            };
+          }
+        }
+      } catch {}
+      return null;
+    }
+
+    let weatherFetching = false;
+    const weatherAutoFetched = {};
+
+    async function refreshCityWeather(silent = false) {
+      if (weatherFetching) return;
+      weatherFetching = true;
+      const btn = document.getElementById("weather-refresh-btn");
+      const note = document.getElementById("weather-city-note");
+      if (btn) { btn.disabled = true; btn.textContent = "⏳ 도시별 조회 중..."; }
+      try {
+        const countryCode = (getCountryPreset(state.meta?.country) || {}).code || "";
+        const entries = [];
+        let attempted = 0, live = 0;
+        for (const day of state.days || []) {
+          const prev = (state.weather || []).find(x => x.dayNum === day.day);
+          const city = deriveDayCity(day);
+          const dayLabel = `${day.day}일차 · ${fmtMD(day.date)}`;
+          if (!city || !city.query) {
+            entries.push({
+              dayNum: day.day, day: dayLabel, cityLabel: "", area: day.area || "",
+              icon: "🌤️", condition: "도시 미지정", minTemp: null, maxTemp: null,
+              outfit: prev?.outfit || "",
+              tip: "일정에 도시(장소)를 추가하면 그 도시 날씨로 다시 조회해 드려요.",
+              source: "none", sourceLabel: ""
+            });
+            continue;
+          }
+          attempted++;
+          const geo = await geocodeCity(city, countryCode);
+          const got = geo ? await fetchDayWeather(geo, day.date) : null;
+          if (got) live++;
+          const month = new Date(day.date + "T00:00:00").getMonth();
+          const est = seasonalEstimate(city.label, month, geo?.lat ?? city.lat);
+          const minT = got ? got.min : est.min;
+          const maxT = got ? got.max : est.max;
+          const [icon, condition] = got ? wmoInfo(got.code) : ["🌤️", "계절 평년 기준"];
+          entries.push({
+            dayNum: day.day, day: dayLabel,
+            cityLabel: city.label, area: [city.label, day.areaDetail].filter(Boolean).join(" · "),
+            icon, condition,
+            minTemp: Math.round(minT), maxTemp: Math.round(maxT),
+            wind: got && typeof got.wind === "number" ? `${Math.round(got.wind)}km/h` : "",
+            feelsLike: `체감 ${Math.round(minT - 1)}~${Math.round(maxT + 1)}°C`,
+            sunset: got?.sunset || "",
+            outfit: outfitFor(minT, maxT, got?.rainProb || 0),
+            tip: got
+              ? `${city.label} ${got.sourceLabel} 기준` + (typeof got.rainProb === "number" ? ` · 강수확률 ${Math.round(got.rainProb)}%` : "")
+              : `${city.label}의 계절 평년값이에요. 출발 2주 전부터는 실시간 예보로 바뀝니다.`,
+            source: got ? got.source : "seasonal",
+            sourceLabel: got ? got.sourceLabel : "계절 평년 추정",
+            fetchedAt: new Date().toISOString()
+          });
+        }
+        state.weather = entries;
+        saveState(true);
+        renderWeather();
+        if (note) {
+          note.textContent = attempted
+            ? `도시 ${attempted}일 조회 완료 · 실시간/실측 ${live}일 · 계절 평년 ${attempted - live}일`
+            : "일정에 도시(장소)가 없어 조회할 수 없어요.";
+        }
+        if (!silent && !attempted) alert("일정에 도시(장소)가 없어 조회할 수 없어요. 일정에 장소를 먼저 추가해 주세요.");
+      } catch (e) {
+        console.error("weather refresh error", e);
+        if (!silent) alert("날씨를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
+      } finally {
+        weatherFetching = false;
+        if (btn) { btn.disabled = false; btn.textContent = "🔄 일정 도시별 날씨 새로고침"; }
+      }
+    }
+
+    function buildOverseasWeatherSeed(days, preset) {
+      return (days || []).map(d => {
+        const label = d.cityLabel || preset?.defaultCityLabel || "";
+        const known = Object.keys(CITY_GEO).find(k => label.includes(k));
+        const lat = d.lat ?? (known ? CITY_GEO[known].lat : (preset?.code === "AU" ? -33.87 : undefined));
+        const month = new Date(d.date + "T00:00:00").getMonth();
+        const est = seasonalEstimate(label, month, lat);
+        return {
+          dayNum: d.day,
+          day: `${d.day}일차 · ${fmtMD(d.date)}`,
+          cityLabel: label,
+          area: [label, d.areaDetail].filter(Boolean).join(" · "),
+          icon: "🌤️", condition: "계절 평년 기준",
+          minTemp: est.min, maxTemp: est.max,
+          feelsLike: `체감 ${est.min - 1}~${est.max + 1}°C`,
+          outfit: outfitFor(est.min, est.max, 0),
+          tip: `${label ? label + " " : ""}계절 평년값이에요. '일정 도시별 날씨 새로고침'을 누르면 실제 예보로 바뀝니다.`,
+          source: "seasonal", sourceLabel: "계절 평년 추정"
+        };
+      });
+    }
+
+    function buildOverseasChecklist(preset) {
+      const list = [];
+      let n = 0;
+      const push = (group, text, urgent, note) => {
+        list.push({ id: "oc" + (++n) + "-" + Math.random().toString(36).slice(2, 6), text, done: false, group, urgent: Boolean(urgent), note: note || "" });
+      };
+      (preset?.groups || []).forEach(g => (g.items || []).forEach(it => push(g.group, it.text, it.urgent, it.note)));
+      (preset?.genericExtra || []).forEach(t => push("🎒 기본 준비물", t, false));
+      return list;
+    }
+
 
     const OFFSET_OPTIONS = [
       { key: "1d", label: "전날", min: 1440 },
@@ -2265,6 +3184,23 @@
       { key: "30m", label: "30분 전", min: 30 },
       { key: "10m", label: "10분 전", min: 10 }
     ];
+
+    function getChecklistGroups() {
+      const items = state.checklist || [];
+      const order = [];
+      const map = {};
+      items.forEach(c => {
+        const g = c.group || "🎒 출발 전 준비물";
+        if (!map[g]) { map[g] = []; order.push(g); }
+        map[g].push(c);
+      });
+      const priority = ["🚨 필수 출국·비자", "📱 통신·결제"];
+      order.sort((a, b) => {
+        const ia = priority.indexOf(a), ib = priority.indexOf(b);
+        return (ia === -1 ? 90 : ia) - (ib === -1 ? 90 : ib);
+      });
+      return order.map(g => ({ group: g, items: map[g] }));
+    }
 
     function renderChecklist() {
       document.getElementById("alerts-list").innerHTML = (state.bookingAlerts || []).map(a => {
@@ -2287,15 +3223,98 @@
         `;
       }).join("");
 
-      document.getElementById("checklist-items").innerHTML = (state.checklist || []).map(c => `
-        <div class="expense-item">
-          <label style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer;font-size:13px;${c.done ? "text-decoration:line-through;color:var(--muted);" : ""}">
-            <input type="checkbox" ${c.done ? "checked" : ""} onchange="toggleCheck('${c.id}')" />
-            <span>${c.text}</span>
-          </label>
-          <button class="btn btn-danger btn-sm" onclick="delCheck('${c.id}')">삭제</button>
-        </div>
-      `).join("");
+      const groups = getChecklistGroups();
+      const host = document.getElementById("checklist-items");
+      if (!groups.length) {
+        host.innerHTML = `<div class="expense-item" style="color:var(--muted);font-size:12.5px;">체크리스트가 비어 있어요. 아래에서 추가해 주세요.</div>`;
+      } else {
+        host.innerHTML = groups.map(g => {
+          const done = g.items.filter(i => i.done).length;
+          const urgent = g.group.startsWith("🚨");
+          return `<div class="chk-group">
+            <div class="chk-group-head ${urgent ? "urgent" : ""}">
+              <span>${g.group}</span>
+              <span class="cnt">${done}/${g.items.length} 완료</span>
+            </div>
+            ${g.items.map(c => `
+              <div class="expense-item ${c.urgent && !c.done ? "chk-item-urgent" : ""}">
+                <label style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer;font-size:13px;${c.done ? "text-decoration:line-through;color:var(--muted);" : ""}">
+                  <input type="checkbox" ${c.done ? "checked" : ""} onchange="toggleCheck('${c.id}')" />
+                  <span>${c.text}${c.urgent && !c.done ? '<span class="chk-tag">필수</span>' : ""}</span>
+                </label>
+                <button class="btn btn-danger btn-sm" onclick="delCheck('${c.id}')">삭제</button>
+              </div>
+            `).join("")}
+          </div>`;
+        }).join("");
+      }
+      renderOverseasEmphasis();
+    }
+
+    /* =====================================================================
+       해외여행 체크 강조: 상단 배너 · 하단 탭 배지 · 체크 탭 요건 카드
+       ===================================================================== */
+    function pendingRequiredCount() {
+      return (state.checklist || []).filter(c => !c.done && /^(🚨|📱)/.test(c.group || "")).length;
+    }
+
+    function jumpToChecklist() {
+      const btn = document.querySelector('.nav-btn[data-tab="checklist"]');
+      if (btn) btn.click();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function renderOverseasEmphasis() {
+      const overseas = state.meta?.tripType === "overseas";
+      const banner = document.getElementById("overseas-banner");
+      const box = document.getElementById("chk-overseas-box");
+      const badge = document.getElementById("nav-check-badge");
+      const navBtn = document.querySelector('.nav-btn[data-tab="checklist"]');
+      if (!overseas) {
+        if (banner) banner.classList.add("hidden");
+        if (box) box.innerHTML = "";
+        if (badge) badge.style.display = "none";
+        if (navBtn) navBtn.classList.remove("has-alert");
+        return;
+      }
+      const preset = getCountryPreset(state.meta.country) || COUNTRY_PRESETS["기타"];
+      const country = state.meta.country || "해외";
+      const left = pendingRequiredCount();
+      const urgentLeft = (state.checklist || []).filter(c => !c.done && c.urgent).length;
+      if (banner) {
+        banner.classList.remove("hidden");
+        banner.classList.toggle("ok", left === 0);
+        document.getElementById("ob-ico").textContent = preset.flag || "✈️";
+        document.getElementById("ob-title").textContent = `${country} 출국 필수 체크 ${left === 0 ? "완료" : `· ${left}개 남았어요`.trim()}`;
+        document.getElementById("ob-sub").textContent = left === 0
+          ? `${preset.entry} 준비 끝 — 좋아요!`
+          : `${preset.entry} · ${preset.passport}`;
+        document.getElementById("ob-count").textContent = left === 0 ? "✓" : String(left);
+      }
+      if (badge) {
+        badge.style.display = urgentLeft > 0 ? "flex" : "none";
+        badge.textContent = urgentLeft;
+      }
+      if (navBtn) navBtn.classList.toggle("has-alert", urgentLeft > 0);
+      if (box) {
+        box.innerHTML = `
+          <div class="card" style="border-color:#fecaca;background:linear-gradient(135deg,#fff5f5 0%,#ffffff 70%);">
+            <div style="display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:800;color:#b91c1c;">
+              <span style="font-size:17px;">${preset.flag}</span> ${country} 입국 필수 요건
+            </div>
+            <div style="margin-top:8px;font-size:12.5px;color:#7c2d12;line-height:1.5;">
+              <div class="req-line"><b>입국</b><span>${preset.entry}</span></div>
+              <div class="req-line"><b>여권</b><span>${preset.passport}</span></div>
+              <div class="req-line"><b>통신</b><span>${preset.comms}</span></div>
+            </div>
+            <div style="margin-top:8px;font-size:11.5px;color:#9a3412;line-height:1.55;">
+              ${(preset.notes || []).map(n => `· ${n}`).join("<br>")}
+            </div>
+            <div style="margin-top:8px;font-size:11.5px;font-weight:700;color:${left === 0 ? "var(--success)" : "var(--danger)"};">
+              ${left === 0 ? "✓ 출국 필수·통신·결제 항목을 모두 완료했어요." : `아직 ${left}개 남았어요 — 아래 🚨·📱 그룹을 확인해 주세요.`}
+            </div>
+          </div>`;
+      }
     }
 
     function toggleAlertOffset(id, key) {
@@ -2463,7 +3482,7 @@
           closeProfileModal();
           if (pendingNewTripSetup) {
             pendingNewTripSetup = false;
-            openNewTripSetupModal(true);
+            openTripTypeModal();
             return;
           }
           renderAll();
@@ -2487,7 +3506,7 @@
               closeProfileModal();
               if (pendingNewTripSetup) {
                 pendingNewTripSetup = false;
-                openNewTripSetupModal(true);
+                openTripTypeModal();
                 return;
               }
               renderAll();
@@ -2521,7 +3540,7 @@
         closeProfileModal();
         if (pendingNewTripSetup) {
           pendingNewTripSetup = false;
-          openNewTripSetupModal(true);
+          openTripTypeModal();
           return;
         }
         saveState();
@@ -2641,7 +3660,7 @@
       }
       if (pendingNewTripSetup) {
         pendingNewTripSetup = false;
-        openNewTripSetupModal(false);
+        openTripTypeModal();
         updateAccessGate();
         return;
       }
@@ -2746,7 +3765,173 @@
       }
     }
 
-    function openNewTripModal() { document.getElementById("new-trip-modal").classList.add("open"); }
+    /* =====================================================================
+       국내 / 해외 선택 → 새 여행 만들기
+       ===================================================================== */
+    let selectedOverseasCountry = "호주";
+
+    function openTripTypeModal() {
+      document.getElementById("trip-type-modal").classList.add("open");
+      document.getElementById("welcome-host-modal")?.classList.remove("open");
+    }
+    function closeTripTypeModal() {
+      document.getElementById("trip-type-modal").classList.remove("open");
+    }
+
+    function pickTripType(type) {
+      closeTripTypeModal();
+      if (type === "overseas") { openOverseasSetupModal(); return; }
+      openNewTripSetupModal(false);
+    }
+
+    function renderCountryChips() {
+      const box = document.getElementById("os-country-chips");
+      if (!box) return;
+      box.innerHTML = Object.keys(COUNTRY_PRESETS).map(k => {
+        const p = COUNTRY_PRESETS[k];
+        const active = k === selectedOverseasCountry;
+        return `<button type="button" class="country-chip ${active ? "active" : ""}" onclick="selectOverseasCountry('${k}')">${p.flag} ${p.short}</button>`;
+      }).join("");
+    }
+
+    function selectOverseasCountry(name) {
+      selectedOverseasCountry = name;
+      renderCountryChips();
+      renderOverseasPreview();
+    }
+
+    function renderOverseasPreview() {
+      const isCustom = selectedOverseasCountry === "기타";
+      const row = document.getElementById("os-custom-row");
+      if (row) row.style.display = isCustom ? "flex" : "none";
+      const customName = (document.getElementById("os-country-custom")?.value || "").trim();
+      const p = (isCustom ? getCountryPreset(customName || "기타") : getCountryPreset(selectedOverseasCountry)) || COUNTRY_PRESETS["기타"];
+      const box = document.getElementById("os-country-preview");
+      if (!box) return;
+      const flag = isCustom ? "🌍" : p.flag;
+      const count = (p.groups || []).reduce((a, g) => a + (g.items || []).length, 0);
+      box.innerHTML = `
+        <div style="font-weight:800;font-size:12px;color:#9a3412;margin-bottom:2px;">${flag} ${isCustom ? (customName || "직접 입력") : selectedOverseasCountry} 필수 준비</div>
+        <div class="req-line"><b>입국</b><span>${p.entry}</span></div>
+        <div class="req-line"><b>여권</b><span>${p.passport}</span></div>
+        <div class="req-line"><b>통신</b><span>${p.comms}</span></div>
+        <div style="margin-top:6px;font-size:11px;color:#b45309;">체크리스트에 ${count}개 항목이 자동으로 들어갑니다.</div>`;
+    }
+
+    function openOverseasSetupModal() {
+      renderCountryChips();
+      const today = new Date();
+      const s = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 21);
+      const e = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 25);
+      document.getElementById("os-title").value = "";
+      document.getElementById("os-start").value = toLocalIso(s);
+      document.getElementById("os-end").value = toLocalIso(e);
+      document.getElementById("os-travelers").value = "2";
+      document.getElementById("os-country-custom").value = "";
+      renderOverseasPreview();
+      document.getElementById("overseas-setup-modal").classList.add("open");
+    }
+    function closeOverseasSetupModal() {
+      document.getElementById("overseas-setup-modal").classList.remove("open");
+    }
+
+    function buildOverseasAlerts(preset, startDate) {
+      const s = new Date(startDate + "T00:00:00");
+      const at = (daysBefore, hhmm) => {
+        const d = new Date(s.getFullYear(), s.getMonth(), s.getDate() - daysBefore);
+        return `${toLocalIso(d)}T${hhmm || "10:00"}`;
+      };
+      const fmtTime = (dt) => {
+        const d = new Date(dt);
+        const wd = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
+        const p = (n) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}(${wd}) ${p(d.getHours())}:${p(d.getMinutes())}`;
+      };
+      const out = [];
+      if (preset?.entryAlert) {
+        const dt = at(preset.entryAlert.daysBefore, "10:00");
+        out.push({ id: "ov-a1", title: preset.entryAlert.title, datetime: dt, displayTime: fmtTime(dt), desc: preset.entryAlert.desc, offsets: ["1d", "1h"] });
+      }
+      const ins = at(14, "20:00");
+      out.push({ id: "ov-a2", title: "여행자보험 가입 · eSIM 준비", datetime: ins, displayTime: fmtTime(ins), desc: "출발 2주 전 — 보험 증권과 eSIM 설치 QR 저장", offsets: ["1d", "1h"] });
+      const fx = at(7, "20:00");
+      out.push({ id: "ov-a3", title: "해외결제 카드·트래블월렛 충전", datetime: fx, displayTime: fmtTime(fx), desc: "출발 1주 전 — 현지 통화 충전, 카드 해외결제 한도 확인", offsets: ["1d"] });
+      const pk = at(2, "20:00");
+      out.push({ id: "ov-a4", title: "여권·입국허가 최종 점검", datetime: pk, displayTime: fmtTime(pk), desc: "출발 2일 전 — 여권 6개월, 승인 메일, 어댑터·보조배터리", offsets: ["1d", "1h", "10m"] });
+      return out;
+    }
+
+    async function createOverseasTrip() {
+      const isCustom = selectedOverseasCountry === "기타";
+      let country = selectedOverseasCountry;
+      if (isCustom) {
+        country = (document.getElementById("os-country-custom").value || "").trim();
+        if (!country) return alert("국가명을 입력해 주세요.");
+      }
+      const startDate = document.getElementById("os-start").value;
+      const endDate = document.getElementById("os-end").value;
+      const travelers = Math.max(1, Number(document.getElementById("os-travelers").value) || 2);
+      if (!startDate || !endDate || endDate < startDate) return alert("여행 날짜를 올바르게 선택해 주세요.");
+      const nights = Math.max(1, Math.round((new Date(endDate + "T00:00:00") - new Date(startDate + "T00:00:00")) / 86400000));
+      const preset = getCountryPreset(country);
+      const title = (document.getElementById("os-title").value || "").trim() || `${country} ${nights}박 ${nights + 1}일`;
+      const newId = "trip-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 5);
+      const days = buildDateRangeDays(startDate, endDate, country);
+      if (preset.defaultCityLabel) {
+        days.forEach(d => {
+          d.city = preset.defaultCity;
+          d.cityLabel = preset.defaultCityLabel;
+          d.area = preset.defaultCityLabel;
+          d.areaDetail = "";
+          d.subtitle = `${preset.defaultCityLabel} ${d.day}일차`;
+        });
+      }
+      state = {
+        meta: {
+          title,
+          destination: `${country}${preset.defaultCityLabel ? ` (${preset.defaultCityLabel})` : ""}`,
+          startDate, endDate, travelers,
+          tripType: "overseas", country, countryCode: preset.code || "",
+          hostId: myProfile.id, themeColor: "#0284c7",
+          note: `${country} 해외여행 · ${preset.entry}`
+        },
+        days,
+        expenses: [],
+        weather: buildOverseasWeatherSeed(days, preset),
+        bookingAlerts: buildOverseasAlerts(preset, startDate),
+        checklist: buildOverseasChecklist(preset),
+        members: [],
+        joinRequests: []
+      };
+      currentSyncId = newId;
+      currentDay = 1;
+      localStorage.setItem(getLocalKey(), JSON.stringify(state));
+      registerMyTrip(currentSyncId, state.meta);
+      const u = new URL(location.href);
+      u.searchParams.delete("new");
+      u.searchParams.delete("invite");
+      u.searchParams.set("trip", currentSyncId);
+      history.replaceState(null, "", u.toString());
+      closeOverseasSetupModal();
+      renderAll();
+      updateAccessGate();
+      document.querySelector('.nav-btn[data-tab="checklist"]')?.click();
+      await startSupabase(DEFAULT_SB.url, DEFAULT_SB.key, currentSyncId);
+      await pushToCloud(true);
+      refreshCityWeather(true);
+    }
+
+    async function openSampleTrip(syncId = "au-sydney-4n5d") {
+      closeTripTypeModal();
+      closeTripsModal();
+      closeNewTripSetupModal();
+      closeOverseasSetupModal();
+      await switchTrip(syncId);
+      document.querySelector('.nav-btn[data-tab="timeline"]')?.click();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function openNewTripModal() { openTripTypeModal(); }
     function closeNewTripModal() { document.getElementById("new-trip-modal").classList.remove("open"); }
     async function createNewTrip() {
       const title = document.getElementById("nt-title").value.trim();
@@ -2793,9 +3978,12 @@
             locked: false
           });
         }
+        SAMPLE_TRIP_LIST.forEach(s => {
+          if (!list.some(t => t.syncId === s.syncId)) list.push({ ...s });
+        });
         return list;
       } catch {
-        return [{ syncId: DEFAULT_SB.syncId, title: DEFAULT_DATA.meta.title, startDate: DEFAULT_DATA.meta.startDate, endDate: DEFAULT_DATA.meta.endDate, locked: false }];
+        return [{ syncId: DEFAULT_SB.syncId, title: DEFAULT_DATA.meta.title, startDate: DEFAULT_DATA.meta.startDate, endDate: DEFAULT_DATA.meta.endDate, locked: false }, ...SAMPLE_TRIP_LIST.map(s => ({ ...s }))];
       }
     }
 
@@ -2817,10 +4005,11 @@
       const list = getMyTrips();
       el.innerHTML = list.map(t => {
         const active = t.syncId === currentSyncId;
+        const icon = t.sample ? "📚" : (t.locked ? "🔒" : "🗺️");
         return `
           <div class="expense-item" style="padding:8px 0;">
             <div style="flex:1;">
-              <div style="font-size:13.5px;font-weight:700;">${t.locked ? "🔒 " : "🗺️ "}${t.title} ${active ? '<span class="tag blue">현재</span>' : ""}</div>
+              <div style="font-size:13.5px;font-weight:700;">${icon} ${t.title} ${active ? '<span class="tag blue">현재</span>' : ""}${t.sample ? '<span class="tag blue">예시</span>' : ""}</div>
               <div style="font-size:11.5px;color:var(--muted);">${t.startDate} ~ ${t.endDate}</div>
             </div>
             ${active ? "" : `<button class="btn btn-soft btn-sm" onclick="switchTrip('${t.syncId}')">열기</button>`}
@@ -2836,6 +4025,10 @@
       renderAll();
       checkLockScreen();
       await startSupabase(DEFAULT_SB.url, DEFAULT_SB.key, currentSyncId);
+      if (state.meta?.tripType === "overseas" && !weatherAutoFetched[currentSyncId]) {
+        weatherAutoFetched[currentSyncId] = true;
+        setTimeout(() => refreshCityWeather(true), 700);
+      }
     }
 
     /* Supabase Cloud Sync */
@@ -3200,10 +4393,11 @@
       const box = document.getElementById("trips-modal-list");
       box.innerHTML = list.map(t => {
         const active = t.syncId === currentSyncId;
+        const icon = t.sample ? "📚" : (t.locked ? "🔒" : "🗺️");
         return `
           <div class="expense-item" style="padding:7px 0;">
             <div style="flex:1;">
-              <div style="font-size:13.5px;font-weight:700;">${t.locked ? "🔒 " : "🗺️ "}${t.title} ${active ? '<span class="tag blue">현재</span>' : ""}</div>
+              <div style="font-size:13.5px;font-weight:700;">${icon} ${t.title} ${active ? '<span class="tag blue">현재</span>' : ""}${t.sample ? '<span class="tag blue">예시</span>' : ""}</div>
               <div style="font-size:11.5px;color:var(--muted);">${t.startDate} ~ ${t.endDate}</div>
             </div>
             ${active ? "" : `<button class="btn btn-soft btn-sm" onclick="closeTripsModal();switchTrip('${t.syncId}')">열기</button>`}
