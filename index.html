@@ -593,6 +593,40 @@
         </div>
       </section>
 
+      <!-- TAB 6: RECOMMEND -->
+      <section id="tab-recommend" class="tab-panel">
+        <div class="card">
+          <div class="sec-title">✨ 동선 맞춤 장소 추천</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+            방문 시간대·목적·언제 들를지 고르면 주변 장소 5곳을 추천하고, 원하는 곳만 복수 선택해 바로 추가해요!
+          </div>
+          <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:4px;">1. 언제쯤, 어떤 목적으로 방문하나요?</div>
+          <div class="row" style="margin-bottom:8px;">
+            <select id="rec-time" class="input" style="flex:1;">
+              <option value="아침">🌅 아침 (08:00~11:00)</option>
+              <option value="점심" selected>☀️ 점심 (11:00~15:00)</option>
+              <option value="저녁">🌆 저녁 (17:00~21:00)</option>
+              <option value="밤">🌙 밤 (21:00 이후)</option>
+            </select>
+            <select id="rec-purpose" class="input" style="flex:1;">
+              <option value="산책">🚶 산책</option>
+              <option value="음식점">🍽️ 음식점</option>
+              <option value="카페" selected>☕ 카페</option>
+              <option value="바">🍸 바 (Bar)</option>
+              <option value="술집">🍺 술집·이자카야</option>
+              <option value="데이트">💕 데이트 코스</option>
+            </select>
+          </div>
+          <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:4px;">2. 몇 일차, 어느 일정 다음에 넣을까요?</div>
+          <div class="row" style="margin-bottom:10px;">
+            <select id="rec-day" class="input" style="width:115px;" onchange="updateRecommendAfterOptions()"></select>
+            <select id="rec-after" class="input" style="flex:1;"></select>
+          </div>
+          <button class="btn btn-primary" style="width:100%;" onclick="runPlaceRecommend()">✨ 장소 5곳 추천 받기</button>
+        </div>
+        <div id="rec-results"></div>
+      </section>
+
       <!-- TAB 5: CLOUD BACKUP & NEW TRIP -->
       <section id="tab-sync" class="tab-panel">
         <div class="card">
@@ -863,6 +897,7 @@
   <nav class="bottom-nav">
     <div class="nav-inner">
       <button class="nav-btn active" data-tab="timeline"><span class="ico">🗓️</span>일정</button>
+      <button class="nav-btn" data-tab="recommend"><span class="ico">✨</span>추천</button>
       <button class="nav-btn" data-tab="expenses"><span class="ico">💰</span>경비</button>
       <button class="nav-btn" data-tab="weather"><span class="ico">🧥</span>날씨·옷</button>
       <button class="nav-btn" data-tab="checklist"><span class="ico">✅</span>알림·체크</button>
@@ -2456,6 +2491,203 @@
       });
     });
 
+    const CURATED_BUSAN_SPOTS = [
+      { name: "광안리 해변 산책로", purpose: "산책", desc: "광안대교 정면 뷰 해변 산책길 · 야경·아침 산책 모두 좋음", lat: 35.1532, lng: 129.1186, times: ["아침", "점심", "저녁", "밤"] },
+      { name: "민락수변공원", purpose: "산책", desc: "바다 바로 앞 데크 산책로 & 야경 스팟", lat: 35.1563, lng: 129.1319, times: ["아침", "저녁", "밤"] },
+      { name: "해운대 동백섬 산책길", purpose: "산책", desc: "누리마루APEC하우스까지 이어지는 바다 둘레길", lat: 35.1522, lng: 129.1531, times: ["아침", "점심", "저녁"] },
+      { name: "이기대 해안산책로", purpose: "산책", desc: "광안대교를 옆에서 바라보는 해안 절경 데크길", lat: 35.1342, lng: 129.1235, times: ["아침", "점심"] },
+      { name: "전포 카페거리 & 놀이마루", purpose: "산책", desc: "감성 소품샵·골목 구경하기 좋은 뚜벅이 산책 코스", lat: 35.1561, lng: 129.0642, times: ["점심", "저녁"] },
+      { name: "수변최고돼지국밥 민락본점", purpose: "음식점", desc: "항정국밥이 유명한 광안리 인기 국밥집", lat: 35.1558, lng: 129.1304, times: ["아침", "점심", "저녁"] },
+      { name: "고옥 (남천동 히츠마부시)", purpose: "음식점", desc: "광안리 인근 정갈한 장어덮밥 맛집", lat: 35.1456, lng: 129.1121, times: ["점심", "저녁"] },
+      { name: "해목 해운대점", purpose: "음식점", desc: "카이센동·장어덮밥으로 유명한 데이트 맛집", lat: 35.1616, lng: 129.1628, times: ["점심", "저녁"] },
+      { name: "남포수제비", purpose: "음식점", desc: "자갈치·남포동 인근 가성비 좋은 노포 분식", lat: 35.0992, lng: 129.0295, times: ["아침", "점심"] },
+      { name: "톤쇼우 광안점", purpose: "음식점", desc: "광안리 인기 프리미엄 돈카츠 (웨이팅 앱 확인)", lat: 35.1519, lng: 129.1157, times: ["점심", "저녁"] },
+      { name: "랑데자뷰 광안리점", purpose: "카페", desc: "통창 오션뷰·감성 포토존이 예쁜 광안리 카페", lat: 35.1539, lng: 129.1202, times: ["아침", "점심", "저녁"] },
+      { name: "오프오 (OFO) 광안리", purpose: "카페", desc: "광안대교 정면 뷰가 탁 트인 감성 카페", lat: 35.1544, lng: 129.1213, times: ["점심", "저녁", "밤"] },
+      { name: "모모스커피 마린시티", purpose: "카페", desc: "부산 대표 스페셜티 커피 & 바다 산책 연계", lat: 35.1574, lng: 129.1449, times: ["아침", "점심"] },
+      { name: "블랙업커피 서면본점", purpose: "카페", desc: "해수염커피로 유명한 전포·서면 대표 로스터리", lat: 35.1554, lng: 129.0589, times: ["점심", "저녁"] },
+      { name: "와이키키 광안", purpose: "바", desc: "광안대교 야경이 보이는 오션뷰 칵테일 바", lat: 35.1536, lng: 129.1188, times: ["저녁", "밤"] },
+      { name: "티키아일랜드 광안", purpose: "바", desc: "이국적 무드와 칵테일을 즐기는 광안리 루프탑 바", lat: 35.1547, lng: 129.1220, times: ["저녁", "밤"] },
+      { name: "겟올라잇 해운대", purpose: "바", desc: "라이브 재즈 공연과 칵테일이 있는 분위기 좋은 바", lat: 35.1618, lng: 129.1636, times: ["저녁", "밤"] },
+      { name: "전포 부스트/오프더레코드", purpose: "바", desc: "전포동 감성 LP·위스키 바", lat: 35.1549, lng: 129.0648, times: ["저녁", "밤"] },
+      { name: "수변공원 회포장 & 맥주", purpose: "술집", desc: "민락어민활어직판장 회 + 광안리 야경 한잔", lat: 35.1564, lng: 129.1312, times: ["저녁", "밤"] },
+      { name: "광안리 낭만포차 거리", purpose: "술집", desc: "바다 보며 가볍게 한잔하기 좋은 해변 술집 라인", lat: 35.1542, lng: 129.1238, times: ["저녁", "밤"] },
+      { name: "전포동 야키토리/이자카야 골목", purpose: "술집", desc: "분위기 좋은 전포 꼬치구이·하이볼 술집 모음", lat: 35.1556, lng: 129.0652, times: ["저녁", "밤"] },
+      { name: "광안리 M드론라이트쇼 해변", purpose: "데이트", desc: "바다 앞 벤치·모래사장 데이트 및 야경 포토스팟", lat: 35.1531, lng: 129.1187, times: ["저녁", "밤"] },
+      { name: "더베이 101 야경 포인트", purpose: "데이트", desc: "마린시티 반영 야경이 예쁜 해운대 데이트 명소", lat: 35.1568, lng: 129.1520, times: ["저녁", "밤"] },
+      { name: "광안리 네컷사진·소품샵 투어", purpose: "데이트", desc: "해변 뒷골목 감성 소품샵 & 커플 사진", lat: 35.1546, lng: 129.1179, times: ["점심", "저녁"] },
+      { name: "흰여울문화마을 해안터널", purpose: "데이트", desc: "바다 위 절벽 골목길과 오션뷰 포토 스팟", lat: 35.0785, lng: 129.0445, times: ["아침", "점심", "저녁"] }
+    ];
+
+    function initRecommendSelectors() {
+      const daySel = document.getElementById("rec-day");
+      if (!daySel) return;
+      const prevDay = daySel.value;
+      daySel.innerHTML = state.days.map(d => `<option value="${d.day}">${d.label}</option>`).join("");
+      if (prevDay && state.days.some(d => String(d.day) === prevDay)) daySel.value = prevDay;
+      else daySel.value = String(currentDay);
+      updateRecommendAfterOptions();
+    }
+
+    function updateRecommendAfterOptions() {
+      const dayNum = Number(document.getElementById("rec-day")?.value) || currentDay;
+      const dayObj = state.days.find(d => d.day === dayNum);
+      const afterSel = document.getElementById("rec-after");
+      if (!afterSel || !dayObj) return;
+      afterSel.innerHTML = `<option value="-1">맨 처음 (1번째 일정 전)</option>` +
+        dayObj.items.map((it, idx) => `<option value="${idx}">${idx + 1}번째 [${it.place}] 다음</option>`).join("");
+      if (dayObj.items.length > 0) afterSel.value = String(Math.min(1, dayObj.items.length - 1));
+    }
+
+    function calcDistKm(lat1, lng1, lat2, lng2) {
+      const R = 6371, dLat = (lat2 - lat1) * Math.PI / 180, dLng = (lng2 - lng1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function updateRecommendCount() {
+      const cnt = document.querySelectorAll(".rec-pick:checked").length;
+      const btn = document.getElementById("rec-save-btn");
+      if (btn) btn.textContent = cnt ? `💾 선택한 ${cnt}곳 일정에 바로 저장` : "저장할 장소를 선택해 주세요";
+    }
+
+    async function runPlaceRecommend() {
+      const timeSlot = document.getElementById("rec-time").value;
+      const purpose = document.getElementById("rec-purpose").value;
+      const dayNum = Number(document.getElementById("rec-day").value) || currentDay;
+      const afterIdx = Number(document.getElementById("rec-after").value);
+      const dayObj = state.days.find(d => d.day === dayNum);
+      const resEl = document.getElementById("rec-results");
+      if (!dayObj || !resEl) return;
+
+      let anchor = afterIdx >= 0 ? dayObj.items[afterIdx] : dayObj.items[0];
+      if (!anchor?.lat) anchor = dayObj.items.find(x => typeof x.lat === "number") || { lat: 35.1538, lng: 129.1190, place: "광안리" };
+      const aLat = anchor.lat || 35.1538, aLng = anchor.lng || 129.1190;
+
+      resEl.innerHTML = `<div class="card" style="text-align:center;color:var(--muted);font-size:13px;">🔍 ${anchor.place || "선택 위치"} 주변 '${purpose}' 5곳 찾는 중...</div>`;
+
+      const tagMap = {
+        "산책": '["leisure"~"park|garden|beach_resort|promenade"]',
+        "음식점": '["amenity"~"restaurant|fast_food"]',
+        "카페": '["amenity"="cafe"]',
+        "바": '["amenity"~"bar|cocktail"]',
+        "술집": '["amenity"~"pub|bar|izakaya"]',
+        "데이트": '["tourism"~"viewpoint|attraction|gallery"]'
+      };
+      const filter = tagMap[purpose] || '["amenity"="cafe"]';
+      let osmSpots = [];
+      try {
+        const q = `[out:json][timeout:6];(node${filter}["name"](around:1800,${aLat},${aLng});way${filter}["name"](around:1800,${aLat},${aLng}););out center 15;`;
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 5000);
+        const r = await fetch("https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(q), { signal: ctrl.signal });
+        clearTimeout(tid);
+        const data = await r.json();
+        osmSpots = (data.elements || []).map(el => ({
+          name: el.tags?.name,
+          lat: el.lat ?? el.center?.lat,
+          lng: el.lon ?? el.center?.lon,
+          desc: `${purpose} · 주변 실측 장소`,
+          source: "지도"
+        })).filter(x => x.name && x.lat && x.lng);
+      } catch { /* fallback to curated */ }
+
+      const curated = CURATED_BUSAN_SPOTS
+        .filter(s => s.purpose === purpose || (purpose === "데이트" && (s.purpose === "산책" || s.purpose === "카페")))
+        .map(s => ({ ...s, source: "추천", timeMatch: s.times.includes(timeSlot) ? 0 : 1 }));
+
+      const merged = [];
+      const seen = new Set();
+      for (const s of [...curated, ...osmSpots]) {
+        const key = s.name.replace(/\s+/g, "");
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const distKm = calcDistKm(aLat, aLng, s.lat, s.lng);
+        merged.push({ ...s, distKm });
+      }
+      merged.sort((a, b) => ((a.timeMatch || 0) - (b.timeMatch || 0)) || (a.distKm - b.distKm));
+      const top5 = merged.slice(0, 5);
+
+      window._lastRecSpots = top5;
+      window._lastRecTarget = { dayNum, afterIdx, timeSlot, purpose };
+
+      const readOnly = isViewerOnly();
+      if (!top5.length) {
+        resEl.innerHTML = `<div class="card" style="font-size:12.5px;color:var(--muted);">주변 장소를 찾지 못했습니다.</div>`;
+        return;
+      }
+      resEl.innerHTML = top5.map((s, i) => {
+        const walkMin = Math.max(1, Math.round(s.distKm * 15));
+        const taxiMin = Math.max(2, Math.round(s.distKm * 2.5));
+        const distTxt = s.distKm < 1 ? `${Math.round(s.distKm * 1000)}m` : `${s.distKm.toFixed(1)}km`;
+        const moveTxt = s.distKm <= 1.1 ? `도보 약 ${walkMin}분` : `택시 약 ${taxiMin}분`;
+        return `
+          <div class="card" style="cursor:pointer;" onclick="if(event.target.tagName!=='A'&&event.target.tagName!=='INPUT'){const cb=document.getElementById('rec-cb-${i}');if(cb){cb.checked=!cb.checked;updateRecommendCount();}}">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+              <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;flex:1;">
+                ${readOnly ? "" : `<input type="checkbox" id="rec-cb-${i}" class="rec-pick" value="${i}" style="margin-top:3px;width:16px;height:16px;" onchange="updateRecommendCount()" />`}
+                <div>
+                  <div style="font-size:14.5px;font-weight:800;">${i + 1}. ${s.name}</div>
+                  <div style="font-size:12px;color:var(--muted);margin-top:2px;">${s.desc}</div>
+                </div>
+              </label>
+              <span class="tag blue">${distTxt}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+              <span style="font-size:11.5px;color:var(--ocean-dark);">📍 직전 일정에서 ${moveTxt} · ${timeSlot} 추천</span>
+              <a class="btn btn-soft btn-sm" style="text-decoration:none;" href="https://map.naver.com/p/search/${encodeURIComponent(s.name)}" target="_blank">🗺️ 네이버 지도</a>
+            </div>
+          </div>
+        `;
+      }).join("") + (readOnly ? "" : `
+        <div class="card" style="position:sticky;bottom:76px;border:1.5px solid var(--ocean);background:#f0f9ff;">
+          <button id="rec-save-btn" class="btn btn-primary" style="width:100%;" onclick="saveSelectedRecommendations()">저장할 장소를 선택해 주세요</button>
+        </div>
+      `);
+    }
+
+    function saveSelectedRecommendations() {
+      const pickedIdxs = [...document.querySelectorAll(".rec-pick:checked")].map(el => Number(el.value));
+      if (!pickedIdxs.length) return alert("일정에 추가할 장소를 1개 이상 선택해 주세요.");
+      const tgt = window._lastRecTarget;
+      const dayObj = tgt ? state.days.find(d => d.day === tgt.dayNum) : null;
+      if (!dayObj) return;
+      const defaultTimes = { "아침": "09:30", "점심": "13:00", "저녁": "18:30", "밤": "21:30" };
+      const anchor = tgt.afterIdx >= 0 ? dayObj.items[tgt.afterIdx] : null;
+      let baseTime = anchor?.time ? addMinsToTime(anchor.time, 60) : (defaultTimes[tgt.timeSlot] || "14:00");
+      const insertAt = tgt.afterIdx >= 0 ? tgt.afterIdx + 1 : 0;
+
+      const addedNames = [];
+      const newItems = pickedIdxs.map((idx, offset) => {
+        const s = (window._lastRecSpots || [])[idx];
+        const walkMin = Math.max(1, Math.round(s.distKm * 15));
+        const t = offset === 0 ? baseTime : addMinsToTime(baseTime, offset * 60);
+        addedNames.push(s.name);
+        const item = {
+          id: "rec-" + Date.now() + "-" + offset,
+          time: t,
+          place: s.name,
+          stay: "체류 60분",
+          moveMode: s.distKm <= 1.1 ? `도보 ${walkMin}분` : `택시 ${Math.max(2, Math.round(s.distKm * 2.5))}분`,
+          moveMin: s.distKm <= 1.1 ? walkMin : Math.max(3, Math.round(s.distKm * 2.5)),
+          moveCost: 0,
+          costTotal: 0,
+          badges: [tgt.purpose, tgt.timeSlot],
+          lat: s.lat,
+          lng: s.lng,
+          mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(s.name)}`,
+          memo: s.desc
+        };
+        if (tgt.purpose === "음식점" || tgt.purpose === "카페") item.menus = [];
+        return item;
+      });
+      dayObj.items.splice(Math.min(insertAt, dayObj.items.length), 0, ...newItems);
+      currentDay = tgt.dayNum;
+      saveState();
+      document.querySelector('.nav-btn[data-tab="timeline"]')?.click();
+      alert(`${addedNames.join(", ")} (${newItems.length}곳)을 ${dayObj.label} 일정에 추가했습니다!`);
+    }
+
     function renderAll() {
       registerMyTrip(currentSyncId, state.meta);
       renderHeader();
@@ -2465,6 +2697,7 @@
       renderWeather();
       renderChecklist();
       renderMyTrips();
+      initRecommendSelectors();
       checkInviteFlow();
     }
 
