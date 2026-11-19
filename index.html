@@ -3292,6 +3292,18 @@
 
     let mustVisitSpots = [];
 
+    function normalizeSpotName(s) {
+      return String(s || "").replace(/\(.*?\)/g, "").replace(/[\s·&,+]/g, "").toLowerCase();
+    }
+    function nameClashes(name, others) {
+      const a = normalizeSpotName(name);
+      if (!a) return false;
+      return (others || []).some(o => {
+        const b = normalizeSpotName(o);
+        return b && (a.includes(b) || b.includes(a));
+      });
+    }
+
     function renderMustSpotsList() {
       const box = document.getElementById("must-spots-list");
       if (!box) return;
@@ -3434,9 +3446,11 @@
         // If fewer than 3 items on a day and we have cityPool, add closest non-duplicate spot (respecting closed days)
         while (ordered.length < 3 && cityPool.length) {
           const usedNames = new Set(dayBuckets.flatMap(x => x.spots.map(s => s.name)).concat(ordered.map(s => s.name)));
+          const usedArr = [...usedNames];
           const anchor = ordered[ordered.length - 1];
           const avail = cityPool.filter(p => {
             if (usedNames.has(p.name)) return false;
+            if (nameClashes(p.name, usedArr)) return false;
             const kk = Object.keys(KNOWN_SPOT_META).find(k => p.name.includes(k));
             if (kk && KNOWN_SPOT_META[kk].closed === b.weekday) return false;
             return true;
