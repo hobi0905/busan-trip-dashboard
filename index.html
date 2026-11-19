@@ -467,7 +467,7 @@
         <div class="card" style="padding:10px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:0 2px;">
             <span style="font-size:12.5px;font-weight:800;color:var(--ocean-dark);">🗺️ 오늘의 부산 동선 지도</span>
-            <span style="font-size:11px;color:var(--muted);">번호 핀을 눌러 장소 확인</span>
+            <span style="font-size:11px;color:var(--muted);">핀을 눌러 장소 확인 · 확대하면 겹친 핀이 벌어져요</span>
           </div>
           <div id="day-map" style="margin-bottom:0;"></div>
         </div>
@@ -866,7 +866,7 @@
       const mapEl = document.getElementById("day-map");
       if (!mapEl) return;
       if (!leafletMap) {
-        leafletMap = L.map("day-map", { zoomControl: false }).setView([35.15, 129.11], 12);
+        leafletMap = L.map("day-map", { zoomControl: true }).setView([35.15, 129.11], 12);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution: "© OpenStreetMap"
         }).addTo(leafletMap);
@@ -879,22 +879,21 @@
         return ll ? { it, ll } : null;
       }).filter(Boolean);
       if (!pts.length) return;
-      const rawCoords = pts.map(p => p.ll);
-      leafletMap.fitBounds(rawCoords, { padding: [24, 24] });
+      leafletMap.fitBounds(pts.map(p => p.ll), { padding: [26, 26] });
       setTimeout(() => leafletMap.invalidateSize(), 80);
-      // 가까운 핀(호텔·카페·야경 등)이 겹쳐 번호가 가려지지 않도록 화면 픽셀 기준으로 살짝 떼어 놓는다.
-      const zoom = leafletMap.getZoom();
-      const placedPx = [];
+      // 같은 지점(예: 미포 정거장 출발·도착)이 완전히 겹쳐 번호가 가려지지 않도록 45m 이내 좌표만 살짝 벗어나게 둔다.
+      const placed = [];
       const shown = pts.map(p => {
-        const base = leafletMap.project(L.latLng(p.ll), zoom);
-        let pt = base;
-        for (let k = 1; k <= 40 && placedPx.some(q => q.distanceTo(pt) < 27); k++) {
-          const ang = k * 2.399963;
-          const r = 27 * Math.sqrt(k);
-          pt = L.point(base.x + Math.cos(ang) * r, base.y + Math.sin(ang) * r);
+        let ll = p.ll.slice();
+        let k = 1;
+        while (k <= 6 && placed.some(q => Math.abs(q[0] - ll[0]) < 0.0004 && Math.abs(q[1] - ll[1]) < 0.0004)) {
+          const ang = (k - 1) * (Math.PI * 2 / 3) + 0.5;
+          const r = 0.00045 * k;
+          ll = [p.ll[0] + Math.sin(ang) * r, p.ll[1] + Math.cos(ang) * r];
+          k++;
         }
-        placedPx.push(pt);
-        return leafletMap.unproject(pt, zoom);
+        placed.push(ll);
+        return ll;
       });
       const coords = [];
       pts.forEach((p, idx) => {
@@ -905,7 +904,7 @@
           iconSize: [24, 24],
           iconAnchor: [12, 12]
         });
-        L.marker(shown[idx], { icon })
+        L.marker(shown[idx], { icon, riseOnHover: true })
           .bindPopup(`<strong>${idx + 1}. ${p.it.place}</strong><br>${p.it.time}${p.it.moveMode ? " · " + p.it.moveMode : ""}`)
           .addTo(mapLayerGroup);
       });
