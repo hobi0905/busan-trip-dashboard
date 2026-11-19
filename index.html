@@ -726,7 +726,7 @@
           <div class="card">
             <div class="sec-title">📌 필수 장소 포함 최적 루트 추천</div>
             <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-              꼭 가야 하는 곳을 여러 개 추가하면 <strong>휴무일 자동 회피 → 권역별 묶기 → 최단 동선 정렬</strong>까지 여러 번 검증해 최적의 루트를 짜 드려요!
+              꼭 가야 하는 곳 이름만 여러 개 추가하면 <strong>휴무일 자동 조회·회피 → 권역별 묶기 → 최단 동선 정렬</strong>까지 여러 번 검증해 최적의 루트를 짜 드려요!
             </div>
             <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:4px;">여행 지역 & 날짜</div>
             <div class="row" style="margin-bottom:6px;">
@@ -739,16 +739,6 @@
             <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:4px;">꼭 가야 하는 장소 추가 (여러 개 가능)</div>
             <div class="row" style="margin-bottom:6px;">
               <input id="must-spot-input" class="input" style="flex:1;" placeholder="예: 이재모피자, 이가네 떡볶이, 광안리" onkeydown="if(event.key==='Enter'){event.preventDefault();addMustSpot();}" />
-              <select id="must-spot-closed" class="input" style="width:98px;">
-                <option value="">휴무 없음</option>
-                <option value="일">일요일 휴무</option>
-                <option value="월">월요일 휴무</option>
-                <option value="화">화요일 휴무</option>
-                <option value="수">수요일 휴무</option>
-                <option value="목">목요일 휴무</option>
-                <option value="금">금요일 휴무</option>
-                <option value="토">토요일 휴무</option>
-              </select>
               <button class="btn btn-soft btn-sm" onclick="addMustSpot()">+ 추가</button>
             </div>
             <div id="must-spots-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
@@ -3293,8 +3283,26 @@
       "광안리": { closed: "", lat: 35.1532, lng: 129.1187, cat: "관광", cost: 0, stay: "체류 60분", desc: "광안대교 정면 해변 산책" },
       "스카이캡슐": { closed: "", lat: 35.1617, lng: 129.1912, cat: "관광", cost: 35000, stay: "체류 40분", desc: "해운대 블루라인파크" },
       "흰여울": { closed: "", lat: 35.0789, lng: 129.0445, cat: "관광", cost: 0, stay: "체류 70분", desc: "영도 바다 절벽 산책로" },
-      "동화가든": { closed: "수", lat: 37.7911, lng: 128.9144, cat: "음식점", cost: 24000, stay: "체류 50분", desc: "초당순두부마을 (수요일 휴무 회피)" }
+      "해동용궁사": { closed: "", lat: 35.1884, lng: 129.2233, cat: "관광", cost: 0, stay: "체류 60분", desc: "기장 바다 절벽 사찰" },
+      "동화가든": { closed: "수", lat: 37.7911, lng: 128.9144, cat: "음식점", cost: 24000, stay: "체류 50분", desc: "초당순두부마을 (수요일 휴무 회피)" },
+      "경복궁": { closed: "화", lat: 37.5796, lng: 126.9770, cat: "관광", cost: 6000, stay: "체류 80분", desc: "매주 화요일 정기 휴궁 자동 회피" },
+      "창덕궁": { closed: "월", lat: 37.5794, lng: 126.9910, cat: "관광", cost: 6000, stay: "체류 80분", desc: "매주 월요일 정기 휴궁 자동 회피" },
+      "국립중앙박물관": { closed: "", lat: 37.5240, lng: 126.9804, cat: "관광", cost: 0, stay: "체류 90분", desc: "상설전시 무료 관람" },
+      "국립현대미술관": { closed: "", lat: 37.5786, lng: 126.9804, cat: "관광", cost: 4000, stay: "체류 80분", desc: "전시 관람" },
+      "자매국수": { closed: "", lat: 33.4985, lng: 126.5269, cat: "음식점", cost: 20000, stay: "체류 45분", desc: "제주 고기국수" }
     };
+
+    function parseOsmClosedDay(oh) {
+      if (!oh) return "";
+      const s = String(oh);
+      const map = { Mo: "월", Tu: "화", We: "수", Th: "목", Fr: "금", Sa: "토", Su: "일" };
+      for (const [en, ko] of Object.entries(map)) {
+        if (new RegExp(`${en}\\s+off`, "i").test(s)) return ko;
+      }
+      if (/Mo-Sa/i.test(s) && !/Su/i.test(s)) return "일";
+      if (/Tu-Su/i.test(s) && !/Mo/i.test(s)) return "월";
+      return "";
+    }
 
     let mustVisitSpots = [];
 
@@ -3327,19 +3335,17 @@
 
     function addMustSpot() {
       const inp = document.getElementById("must-spot-input");
-      const sel = document.getElementById("must-spot-closed");
       const raw = inp.value.trim();
       if (!raw) return;
       const parts = raw.split(",").map(x => x.trim()).filter(Boolean);
       parts.forEach(name => {
         const knownKey = Object.keys(KNOWN_SPOT_META).find(k => name.includes(k));
-        const autoClosed = sel.value || (knownKey ? KNOWN_SPOT_META[knownKey].closed : "");
+        const autoClosed = knownKey ? KNOWN_SPOT_META[knownKey].closed : "";
         if (!mustVisitSpots.some(x => x.name === name)) {
           mustVisitSpots.push({ name, closed: autoClosed });
         }
       });
       inp.value = "";
-      sel.value = "";
       renderMustSpotsList();
     }
 
@@ -3352,17 +3358,29 @@
       const knownKey = Object.keys(KNOWN_SPOT_META).find(k => name.includes(k));
       if (knownKey) {
         const m = KNOWN_SPOT_META[knownKey];
-        return { name, lat: m.lat, lng: m.lng, cat: m.cat, cost: m.cost, stay: m.stay, desc: m.desc };
+        return { name, lat: m.lat, lng: m.lng, cat: m.cat, cost: m.cost, stay: m.stay, desc: m.desc, closed: m.closed, closedChecked: true };
       }
       try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(destHint + " " + name)}`;
+        const url = `https://nominatim.openstreetmap.org/search?format=json&extratags=1&limit=1&q=${encodeURIComponent(destHint + " " + name)}`;
         const r = await fetch(url);
         const arr = await r.json();
         if (arr && arr[0]) {
-          return { name, lat: parseFloat(arr[0].lat), lng: parseFloat(arr[0].lon), cat: "필수", cost: 0, stay: "체류 60분", desc: "필수 방문 장소" };
+          const oh = arr[0].extratags?.opening_hours || "";
+          const osmClosed = parseOsmClosedDay(oh);
+          return {
+            name,
+            lat: parseFloat(arr[0].lat),
+            lng: parseFloat(arr[0].lon),
+            cat: "필수",
+            cost: 0,
+            stay: "체류 60분",
+            desc: oh ? `영업시간: ${oh}` : "필수 방문 장소 (방문 전 영업일 확인 권장)",
+            closed: osmClosed,
+            closedChecked: Boolean(oh)
+          };
         }
       } catch {}
-      return { name, lat: null, lng: null, cat: "필수", cost: 0, stay: "체류 60분", desc: "필수 방문 장소" };
+      return { name, lat: null, lng: null, cat: "필수", cost: 0, stay: "체류 60분", desc: "필수 방문 장소 (방문 전 영업일 확인 권장)", closed: "", closedChecked: false };
     }
 
     async function optimizeMustVisitRoute() {
@@ -3379,11 +3397,11 @@
       const resBox = document.getElementById("must-results");
       resBox.innerHTML = `<div class="card" style="text-align:center;color:var(--muted);padding:20px;">🧠 1차 휴무일 검증 → 2차 권역 클러스터링 → 3차 최단 동선 정렬 중...</div>`;
 
-      // Pass 1: Resolve coordinates & closed days
+      // Pass 1: Resolve coordinates & closed days automatically
       const resolved = [];
       for (const s of mustVisitSpots) {
         const geo = await geocodeSpot(s.name, destRaw);
-        resolved.push({ ...geo, closed: s.closed || "" });
+        resolved.push({ ...geo, closed: geo.closed || s.closed || "" });
       }
 
       const days = buildDateRangeDays(startStr, endStr, destRaw);
