@@ -636,6 +636,27 @@
     </div>
   </div>
 
+  <!-- MENU MODAL -->
+  <div id="menu-modal" class="modal-backdrop" onclick="if(event.target===this)closeMenuModal()">
+    <div class="modal-sheet">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div id="menu-modal-title" style="font-size:16px;font-weight:800;">🍽️ 메뉴 선택</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeMenuModal()">닫기</button>
+      </div>
+      <div id="menu-modal-list" style="max-height:46vh;overflow-y:auto;"></div>
+      <div class="row" style="margin-top:8px;">
+        <input id="menu-custom-name" class="input" placeholder="직접 추가 메뉴명" />
+        <input id="menu-custom-price" type="number" class="input" placeholder="가격" style="width:95px;" />
+        <button class="btn btn-soft btn-sm" onclick="addCustomMenuItem()">추가</button>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:10px 0 8px;font-weight:800;font-size:14px;">
+        <span>선택 합계</span>
+        <span id="menu-modal-total" style="color:var(--ocean-dark);">₩0</span>
+      </div>
+      <button class="btn btn-primary" style="width:100%;" onclick="saveMenuSelection()">메뉴·경비 저장하기</button>
+    </div>
+  </div>
+
   <!-- PASSWORD LOCK MODAL -->
   <div id="lock-modal" class="modal-backdrop center" style="background:rgba(15,23,42,0.82);">
     <div class="modal-sheet">
@@ -677,11 +698,11 @@
           items: [
             { id: "d1-1", time: "08:11", place: "숭의역 출발 → 광명역", stay: "이동 80분", moveMode: "수인분당선→1호선", moveMin: 80, moveCost: 4900, costTotal: 4900, badges: ["출발"], mapUrl: "https://map.naver.com/p/search/%EA%B4%91%EB%AA%85%EC%97%AD", memo: "09:31 광명역 도착 후 KTX 승강장 이동" },
             { id: "d1-2", time: "10:17", place: "KTX 25열차 (광명 → 부산역)", stay: "탑승 149분", moveMode: "KTX 일반실", moveMin: 149, moveCost: 104400, costTotal: 104400, badges: ["예매 필수", "12/31 오픈"], lat: 35.1152, lng: 129.0422, mapUrl: "https://map.naver.com/p/search/%EB%B6%80%EC%82%B0%EC%97%AD", memo: "12:46 부산역 도착 · 순방향 2인 연석 (유아동반석 앞뒤칸·4인석 제외)" },
-            { id: "d1-3", time: "12:55", place: "본전돼지국밥", stay: "체류 45분", moveMode: "부산역 6번 출구 도보 3분", moveMin: 3, moveCost: 0, costTotal: 22000, badges: ["일요일 영업", "08:40~21:00"], lat: 35.1165, lng: 129.0432, mapUrl: "https://map.naver.com/p/search/%EB%B3%B8%EC%A0%84%EB%8F%BC%EC%A7%80%EA%B5%AD%EB%B0%A5", memo: "돼지국밥 11,000원×2 · 캐리어 동반 가능" },
+            { id: "d1-3", time: "12:55", place: "본전돼지국밥", stay: "체류 45분", moveMode: "부산역 6번 출구 도보 3분", moveMin: 3, moveCost: 0, costTotal: 22000, badges: ["일요일 영업", "08:40~21:00"], lat: 35.1165, lng: 129.0432, mapUrl: "https://map.naver.com/p/search/%EB%B3%B8%EC%A0%84%EB%8F%BC%EC%A7%80%EA%B5%AD%EB%B0%A5", memo: "돼지국밥 11,000원×2 · 캐리어 동반 가능", menus: [{ name: "돼지국밥", price: 11000, qty: 2 }, { name: "수육백반", price: 14000, qty: 0 }, { name: "내장국밥", price: 11000, qty: 0 }, { name: "순대국밥", price: 11000, qty: 0 }] },
             { id: "d1-4", time: "14:35", place: "호텔 아쿠아 펠리스 체크인", stay: "체크인 15:00", moveMode: "41번 버스 (부산역→광안리)", moveMin: 44, moveCost: 3100, costTotal: 211411, badges: ["예약 완료", "광안대교 정면뷰"], lat: 35.1538, lng: 129.1190, mapUrl: "https://map.naver.com/p/search/%ED%98%B8%ED%85%94%20%EC%95%84%EC%BF%A0%EC%95%84%20%ED%8E%A0%EB%A6%AC%EC%8A%A4", memo: "디럭스 오션뷰 더블 2박 · 1/24 모임통장 카드 결제 예정" },
-            { id: "d1-5", time: "15:40", place: "카페 차선책 (광안리)", stay: "체류 60분", moveMode: "호텔 도보 3분", moveMin: 3, moveCost: 0, costTotal: 13000, badges: ["연중무휴", "11:00~22:00"], lat: 35.1533, lng: 129.1186, mapUrl: "https://map.naver.com/p/search/%EC%B0%A8%EC%84%A0%EC%B1%85%20%EA%B4%91%EC%95%88%EB%A6%AC", memo: "3층 한옥 오션뷰 · 아메리카노 5,500 + 인절미라떼 7,500" },
-            { id: "d1-6", time: "17:40", place: "다리집 (남천동 떡볶이)", stay: "체류 50분", moveMode: "도보 20분 (택시 5분)", moveMin: 20, moveCost: 0, costTotal: 22200, badges: ["일요일 영업", "11:30~20:50"], lat: 35.1436, lng: 129.1103, mapUrl: "https://map.naver.com/p/search/%EB%8B%A4%EB%A6%AC%EC%A7%91", memo: "떡볶이·오징어튀김·국물어묵 · 일요일 휴무 대체" },
-            { id: "d1-7", time: "18:50", place: "광안대교 야경 & 뚜벅스 광안점", stay: "체류 60분+", moveMode: "해변 도보 복귀", moveMin: 15, moveCost: 0, costTotal: 14000, badges: ["일몰 18:00", "21층 전망대"], lat: 35.1536, lng: 129.1191, mapUrl: "https://map.naver.com/p/search/%EB%9A%9C%EB%B2%85%EC%8A%A4%20%EA%B4%91%EC%95%88%EC%A0%90", memo: "호텔 스카이전망대·해수온천 또는 7층 카페 뚜벅스" }
+            { id: "d1-5", time: "15:40", place: "카페 차선책 (광안리)", stay: "체류 60분", moveMode: "호텔 도보 3분", moveMin: 3, moveCost: 0, costTotal: 13000, badges: ["연중무휴", "11:00~22:00"], lat: 35.1533, lng: 129.1186, mapUrl: "https://map.naver.com/p/search/%EC%B0%A8%EC%84%A0%EC%B1%85%20%EA%B4%91%EC%95%88%EB%A6%AC", memo: "3층 한옥 오션뷰 · 16시 전 착석 추천", menus: [{ name: "아메리카노", price: 5500, qty: 1 }, { name: "인절미라떼", price: 7500, qty: 1 }, { name: "카페라떼", price: 6000, qty: 0 }, { name: "글루텐프리 갸또", price: 7500, qty: 0 }] },
+            { id: "d1-6", time: "17:40", place: "다리집 (남천동 떡볶이)", stay: "체류 50분", moveMode: "도보 20분 (택시 5분)", moveMin: 20, moveCost: 0, costTotal: 22200, badges: ["일요일 영업", "11:30~20:50"], lat: 35.1436, lng: 129.1103, mapUrl: "https://map.naver.com/p/search/%EB%8B%A4%EB%A6%AC%EC%A7%91", memo: "일요일 휴무 대체 노포 떡볶이", menus: [{ name: "떡볶이", price: 6000, qty: 1 }, { name: "오징어튀김", price: 6500, qty: 1 }, { name: "국물어묵", price: 5700, qty: 1 }, { name: "김밥", price: 4000, qty: 1 }] },
+            { id: "d1-7", time: "18:50", place: "광안대교 야경 & 뚜벅스 광안점", stay: "체류 60분+", moveMode: "해변 도보 복귀", moveMin: 15, moveCost: 0, costTotal: 14000, badges: ["일몰 18:00", "21층 전망대"], lat: 35.1536, lng: 129.1191, mapUrl: "https://map.naver.com/p/search/%EB%9A%9C%EB%B2%85%EC%8A%A4%20%EA%B4%91%EC%95%88%EC%A0%90", memo: "호텔 스카이전망대·해수온천 또는 7층 카페 뚜벅스", menus: [{ name: "아메리카노", price: 6000, qty: 1 }, { name: "슈페너광안소금", price: 8000, qty: 1 }, { name: "카페라떼", price: 6500, qty: 0 }] }
           ]
         },
         {
@@ -690,11 +711,11 @@
           planBDesc: "강풍·우천 시 오전엔 호텔 해수온천·찜질방에서 쉬고, 2호선 광안→전포(15분)로 바로 이동해 전포카페거리와 이재모피자 전포점을 즐기세요.",
           items: [
             { id: "d2-1", time: "09:40", place: "해변열차 (미포 → 청사포)", stay: "탑승 10분", moveMode: "1003번 급행버스", moveMin: 47, moveCost: 4200, costTotal: 20000, badges: ["동절기 09:00~19:00"], lat: 35.1586, lng: 129.1704, mapUrl: "https://www.bluelinepark.com/", memo: "10:30 탑승 · 1인 10,000원×2" },
-            { id: "d2-2", time: "10:45", place: "다릿돌전망대 & 카페 바다당", stay: "체류 55분", moveMode: "청사포정거장 도보 1분", moveMin: 1, moveCost: 0, costTotal: 16500, badges: ["월요일 영업", "09:30~21:00"], lat: 35.1618, lng: 129.1917, mapUrl: "https://map.naver.com/p/search/%EB%B0%94%EB%8B%A4%EB%8B%B9%20%EC%B2%AD%EC%82%AC%ED%8F%AC", memo: "쌍둥이 등대 뷰 · 11:10까지 입장" },
+            { id: "d2-2", time: "10:45", place: "다릿돌전망대 & 카페 바다당", stay: "체류 55분", moveMode: "청사포정거장 도보 1분", moveMin: 1, moveCost: 0, costTotal: 16500, badges: ["월요일 영업", "09:30~21:00"], lat: 35.1618, lng: 129.1917, mapUrl: "https://map.naver.com/p/search/%EB%B0%94%EB%8B%A4%EB%8B%B9%20%EC%B2%AD%EC%82%AC%ED%8F%AC", memo: "쌍둥이 등대 뷰 · 11:10까지 입장", menus: [{ name: "아메리카노", price: 5500, qty: 1 }, { name: "카페라떼", price: 6000, qty: 0 }, { name: "등대 휘낭시에", price: 5500, qty: 2 }] },
             { id: "d2-3", time: "12:00", place: "스카이캡슐 (청사포 → 미포)", stay: "탑승 30분", moveMode: "블루라인파크", moveMin: 30, moveCost: 0, costTotal: 50000, badges: ["예약 필수", "1/5 07:00 오픈"], lat: 35.1586, lng: 129.1704, mapUrl: "https://www.bluelinepark.com/", memo: "2인 1대 50,000원 · 청사포 출발 추천" },
-            { id: "d2-4", time: "13:00", place: "상국이네 (해운대시장)", stay: "체류 45분", moveMode: "미포→해운대 도보 15분", moveMin: 15, moveCost: 0, costTotal: 19500, badges: ["월요일 영업", "수요일 휴무"], lat: 35.1615, lng: 129.1620, mapUrl: "https://map.naver.com/p/search/%EC%83%81%EA%B5%AD%EC%9D%B4%EB%84%A4", memo: "떡볶이+순대+튀김 · 10:00~01:00" },
-            { id: "d2-5", time: "14:05", place: "워킹홀리데이 해운대", stay: "체류 35분", moveMode: "도보 5분", moveMin: 5, moveCost: 0, costTotal: 11000, badges: ["5층 통창 오션뷰", "08:00~21:30"], lat: 35.1597, lng: 129.1604, mapUrl: "https://map.naver.com/p/search/%EC%9B%8C%ED%82%B9%ED%99%80%EB%A6%AC%EB%8D%B0%EC%9D%B4%20%ED%95%B4%EC%9A%B4%EB%8C%80", memo: "14:40 해운대역 5번 출구로 이동" },
-            { id: "d2-6", time: "17:00", place: "이재모피자 전포점", stay: "체류 70분", moveMode: "2호선 해운대→전포", moveMin: 49, moveCost: 3300, costTotal: 44000, badges: ["일요일 휴무 주의", "원격 줄서기 가능"], lat: 35.1563, lng: 129.0628, mapUrl: "https://map.naver.com/p/search/%EC%9D%B4%EC%9E%AC%EB%AA%A8%ED%94%BC%EC%9E%90%20%EC%A0%84%ED%8F%AC%EC%A0%90", memo: "이재모크러스트 L+김치볶음밥+음료 · 도착 전 캐치테이블 확인" }
+            { id: "d2-4", time: "13:00", place: "상국이네 (해운대시장)", stay: "체류 45분", moveMode: "미포→해운대 도보 15분", moveMin: 15, moveCost: 0, costTotal: 19500, badges: ["월요일 영업", "수요일 휴무"], lat: 35.1615, lng: 129.1620, mapUrl: "https://map.naver.com/p/search/%EC%83%81%EA%B5%AD%EC%9D%B4%EB%84%A4", memo: "해운대시장 대표 분식 · 10:00~01:00", menus: [{ name: "떡볶이", price: 6000, qty: 1 }, { name: "순대", price: 6000, qty: 1 }, { name: "모둠튀김 3개", price: 4500, qty: 1 }, { name: "어묵 2꼬치", price: 3000, qty: 1 }] },
+            { id: "d2-5", time: "14:05", place: "워킹홀리데이 해운대", stay: "체류 35분", moveMode: "도보 5분", moveMin: 5, moveCost: 0, costTotal: 11000, badges: ["5층 통창 오션뷰", "08:00~21:30"], lat: 35.1597, lng: 129.1604, mapUrl: "https://map.naver.com/p/search/%EC%9B%8C%ED%82%B9%ED%99%80%EB%A6%AC%EB%8D%B0%EC%9D%B4%20%ED%95%B4%EC%9A%B4%EB%8C%80", memo: "14:40 해운대역 5번 출구로 이동", menus: [{ name: "아메리카노", price: 5500, qty: 2 }, { name: "카페라떼", price: 6300, qty: 0 }, { name: "크로플", price: 12000, qty: 0 }] },
+            { id: "d2-6", time: "17:00", place: "이재모피자 전포점", stay: "체류 70분", moveMode: "2호선 해운대→전포", moveMin: 49, moveCost: 3300, costTotal: 44000, badges: ["일요일 휴무 주의", "원격 줄서기 가능"], lat: 35.1563, lng: 129.0628, mapUrl: "https://map.naver.com/p/search/%EC%9D%B4%EC%9E%AC%EB%AA%A8%ED%94%BC%EC%9E%90%20%EC%A0%84%ED%8F%AC%EC%A0%90", memo: "도착 전 캐치테이블 확인", menus: [{ name: "이재모크러스트 L", price: 29000, qty: 1 }, { name: "이재모크러스트 S", price: 25000, qty: 0 }, { name: "김치볶음밥", price: 11000, qty: 1 }, { name: "치즈오븐스파게티", price: 11000, qty: 0 }, { name: "음료", price: 2000, qty: 2 }] }
           ]
         },
         {
@@ -702,9 +723,9 @@
           planBTitle: "우천·한파 플랜 B: 남포동 실내 아케이드 + 15:17 열차",
           planBDesc: "비가 오면 남포동 국제시장·보수동책방골목·BIFF광장 실내 위주로 둘러보고, 귀가 열차를 15:17 KTX 110열차로 늦추면 여유롭습니다.",
           items: [
-            { id: "d3-1", time: "08:30", place: "까사부사노 테라스 (모닝 커피)", stay: "체류 50분", moveMode: "호텔 도보 5분", moveMin: 5, moveCost: 0, costTotal: 9500, badges: ["화요일 영업", "08:30 오픈"], lat: 35.1544, lng: 129.1198, mapUrl: "https://map.naver.com/p/search/%EA%B9%8C%EC%82%AC%EB%B6%80%EC%82%AC%EB%85%B8%20%ED%85%8C%EB%9D%BC%EC%8A%A4", memo: "광안리 바닷가 1층 테라스" },
+            { id: "d3-1", time: "08:30", place: "까사부사노 테라스 (모닝 커피)", stay: "체류 50분", moveMode: "호텔 도보 5분", moveMin: 5, moveCost: 0, costTotal: 9500, badges: ["화요일 영업", "08:30 오픈"], lat: 35.1544, lng: 129.1198, mapUrl: "https://map.naver.com/p/search/%EA%B9%8C%EC%82%AC%EB%B6%80%EC%82%AC%EB%85%B8%20%ED%85%8C%EB%9D%BC%EC%8A%A4", memo: "광안리 바닷가 1층 테라스", menus: [{ name: "에스프레소", price: 4000, qty: 1 }, { name: "아메리카노", price: 5500, qty: 1 }, { name: "카페라떼", price: 6000, qty: 0 }] },
             { id: "d3-2", time: "11:00", place: "체크아웃 → 부산역 물품보관함", stay: "짐 보관", moveMode: "41번 버스", moveMin: 42, moveCost: 3100, costTotal: 6000, badges: ["11:00 체크아웃"], lat: 35.1152, lng: 129.0422, mapUrl: "https://map.naver.com/p/search/%EB%B6%80%EC%82%B0%EC%97%AD", memo: "11:45 부산역 물품보관함 이용" },
-            { id: "d3-3", time: "12:15", place: "이가네 떡볶이 (부평깡통시장)", stay: "체류 25분", moveMode: "1호선 부산역→남포역", moveMin: 9, moveCost: 3000, costTotal: 13000, badges: ["일요일 휴무 주의", "월~토 10:00~17:00"], lat: 35.1008, lng: 129.0260, mapUrl: "https://map.naver.com/p/search/%EC%9D%B4%EA%B0%80%EB%84%A4%20%EB%96%A1%EB%B3%B6%EC%9D%B4", memo: "떡튀세트 5,000×2 + 오뎅 3,000" },
+            { id: "d3-3", time: "12:15", place: "이가네 떡볶이 (부평깡통시장)", stay: "체류 25분", moveMode: "1호선 부산역→남포역", moveMin: 9, moveCost: 3000, costTotal: 13000, badges: ["일요일 휴무 주의", "월~토 10:00~17:00"], lat: 35.1008, lng: 129.0260, mapUrl: "https://map.naver.com/p/search/%EC%9D%B4%EA%B0%80%EB%84%A4%20%EB%96%A1%EB%B3%B6%EC%9D%B4", memo: "서서 먹는 바 형태", menus: [{ name: "떡볶이튀김세트", price: 5000, qty: 2 }, { name: "떡볶이", price: 5000, qty: 0 }, { name: "오뎅", price: 3000, qty: 1 }] },
             { id: "d3-4", time: "13:22", place: "KTX 108열차 (부산역 → 광명역)", stay: "탑승 181분", moveMode: "KTX 일반실", moveMin: 181, moveCost: 94400, costTotal: 94400, badges: ["예매 필수", "1/2 오픈"], lat: 35.1152, lng: 129.0422, mapUrl: "https://map.naver.com/p/search/%EA%B4%91%EB%AA%85%EC%97%AD", memo: "16:23 광명역 → 18:14 숭의역 (여유 플랜 15:17 KTX)" }
           ]
         }
@@ -765,10 +786,25 @@
 
     function getLocalKey() { return STORAGE_KEY + "_" + currentSyncId; }
 
+    function hydrateDefaults(d) {
+      if (!d || !Array.isArray(d.days)) return d;
+      d.days.forEach(day => {
+        const defDay = DEFAULT_DATA.days.find(x => x.day === day.day);
+        if (!defDay) return;
+        (day.items || []).forEach(it => {
+          const defIt = defDay.items.find(x => x.id === it.id);
+          if (!defIt) return;
+          if (typeof it.lat !== "number" && typeof defIt.lat === "number") { it.lat = defIt.lat; it.lng = defIt.lng; }
+          if (!Array.isArray(it.menus) && Array.isArray(defIt.menus)) { it.menus = structuredClone(defIt.menus); }
+        });
+      });
+      return d;
+    }
+
     function loadState() {
       try {
         const raw = localStorage.getItem(getLocalKey()) || (currentSyncId === DEFAULT_SB.syncId ? localStorage.getItem(STORAGE_KEY) : null);
-        return raw ? JSON.parse(raw) : structuredClone(DEFAULT_DATA);
+        return raw ? hydrateDefaults(JSON.parse(raw)) : structuredClone(DEFAULT_DATA);
       } catch {
         return structuredClone(DEFAULT_DATA);
       }
@@ -835,25 +871,99 @@
           return `<span class="${cls}">${b}</span>`;
         }).join("");
         const per = Math.round((it.costTotal || 0) / n);
+        const hasMenus = Array.isArray(it.menus) && it.menus.length > 0;
+        const picked = hasMenus ? it.menus.filter(m => m.qty > 0) : [];
+        const pickedText = picked.length ? picked.map(m => `${m.name}×${m.qty}`).join(" · ") : "";
         return `
-          <div class="card">
+          <div class="card" ${hasMenus ? `onclick="openMenuModal('${it.id}')" style="cursor:pointer;"` : ""}>
             <div class="tl-head">
               <span class="tl-time">${it.time}</span>
               <div class="tl-place">${it.place}</div>
               <span class="tl-stay">${it.stay}</span>
             </div>
-            <div class="tl-badges">${badges}</div>
+            <div class="tl-badges">${badges}${hasMenus ? `<span class="tag blue">🍽️ 메뉴 선택</span>` : ""}</div>
+            ${pickedText ? `<div style="font-size:12.5px;font-weight:700;color:var(--ocean-dark);background:var(--ocean-soft);padding:6px 9px;border-radius:8px;margin-bottom:6px;">🍴 ${pickedText} (${fmt(it.costTotal)})</div>` : ""}
             <div class="tl-memo">${it.memo || ""}</div>
             <div class="tl-meta">
               <div class="tl-move">🚶 ${it.moveMode} (${it.moveMin}분 · ${fmt(it.moveCost)})</div>
               <div style="display:flex;align-items:center;gap:8px;">
                 <span class="tl-cost">${fmt(it.costTotal)} <span style="font-weight:500;color:var(--muted);">(1인 ${fmt(per)})</span></span>
-                <a class="map-btn" href="${it.mapUrl}" target="_blank">지도</a>
+                <a class="map-btn" href="${it.mapUrl}" target="_blank" onclick="event.stopPropagation()">지도</a>
               </div>
             </div>
           </div>
         `;
       }).join("");
+    }
+
+    let editingMenuDayIdx = -1;
+    let editingMenuItemId = null;
+    let draftMenus = [];
+
+    function openMenuModal(itemId) {
+      const dIdx = state.days.findIndex(d => d.day === currentDay);
+      if (dIdx < 0) return;
+      const item = state.days[dIdx].items.find(x => x.id === itemId);
+      if (!item || !item.menus) return;
+      editingMenuDayIdx = dIdx;
+      editingMenuItemId = itemId;
+      draftMenus = item.menus.map(m => ({ ...m }));
+      document.getElementById("menu-modal-title").textContent = `🍽️ ${item.place} 메뉴`;
+      renderMenuDraft();
+      document.getElementById("menu-modal").classList.add("open");
+    }
+
+    function closeMenuModal() { document.getElementById("menu-modal").classList.remove("open"); }
+
+    function renderMenuDraft() {
+      const listEl = document.getElementById("menu-modal-list");
+      listEl.innerHTML = draftMenus.map((m, i) => `
+        <div class="expense-item" style="padding:8px 0;">
+          <div style="flex:1;">
+            <div style="font-size:13.5px;font-weight:700;">${m.name}</div>
+            <div style="font-size:12px;color:var(--muted);">${fmt(m.price)}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="btn btn-soft btn-sm" onclick="chgMenuQty(${i}, -1)">-</button>
+            <strong style="min-width:18px;text-align:center;">${m.qty}</strong>
+            <button class="btn btn-soft btn-sm" onclick="chgMenuQty(${i}, 1)">+</button>
+          </div>
+        </div>
+      `).join("");
+      const sum = draftMenus.reduce((s, m) => s + m.price * m.qty, 0);
+      document.getElementById("menu-modal-total").textContent = fmt(sum);
+    }
+
+    function chgMenuQty(idx, delta) {
+      draftMenus[idx].qty = Math.max(0, (draftMenus[idx].qty || 0) + delta);
+      renderMenuDraft();
+    }
+
+    function addCustomMenuItem() {
+      const n = document.getElementById("menu-custom-name").value.trim();
+      const p = Number(document.getElementById("menu-custom-price").value);
+      if (!n || !p) return alert("메뉴명과 가격을 입력해 주세요.");
+      draftMenus.push({ name: n, price: p, qty: 1 });
+      document.getElementById("menu-custom-name").value = "";
+      document.getElementById("menu-custom-price").value = "";
+      renderMenuDraft();
+    }
+
+    function saveMenuSelection() {
+      const dayObj = state.days[editingMenuDayIdx];
+      const item = dayObj?.items.find(x => x.id === editingMenuItemId);
+      if (!item) return;
+      item.menus = draftMenus;
+      item.costTotal = draftMenus.reduce((s, m) => s + m.price * m.qty, 0);
+
+      // 해당 일차 식비 경비 항목도 자동 동기화
+      const foodSum = dayObj.items.filter(x => Array.isArray(x.menus)).reduce((s, x) => s + (x.costTotal || 0), 0);
+      const expId = dayObj.day === 1 ? "e5" : dayObj.day === 2 ? "e6" : "e7";
+      const expRow = state.expenses.find(e => e.id === expId);
+      if (expRow) expRow.amount = foodSum;
+
+      closeMenuModal();
+      saveState();
     }
 
     function setDay(d) { currentDay = d; renderTimeline(); renderDayMap(); }
@@ -1308,7 +1418,7 @@
       const { data, error } = await sbClient.from("trip_dashboards").select("data, updated_at").eq("sync_id", currentSyncId).maybeSingle();
       if (error) return setSyncStatus("백업 불러오기 오류: " + error.message, false);
       if (data && data.data) {
-        state = data.data;
+        state = hydrateDefaults(data.data);
         localStorage.setItem(getLocalKey(), JSON.stringify(state));
         renderAll();
         checkLockScreen();
