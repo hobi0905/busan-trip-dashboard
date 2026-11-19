@@ -482,6 +482,57 @@
       100% { transform: translate(80px, -20px) rotate(4deg) scale(0.95); opacity: 0.15; }
     }
 
+    /* 지도 아래 3버튼 액션 줄 + 마지막 업데이트 줄 */
+    .map-action-row { display: flex; gap: 6px; margin: 0 0 4px; }
+    .map-action-row .btn {
+      flex: 1 1 0; min-width: 0;
+      padding: 9px 4px; font-size: 11.5px; font-weight: 800;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      border: 1px solid var(--border); background: #fff; color: var(--text);
+    }
+    .map-stamp-line { text-align: center; font-size: 10.5px; color: var(--muted); margin: 0 0 12px; }
+    .map-head-btn {
+      padding: 4px 8px; font-size: 10.5px; font-weight: 800; white-space: nowrap;
+      border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--ocean-dark); cursor: pointer;
+    }
+    /* 큰 지도 모달 */
+    .big-map-sheet {
+      width: 100%; max-width: 900px; height: 94vh; height: 94dvh;
+      background: #fff; border-radius: 18px; padding: 10px;
+      display: flex; flex-direction: column; gap: 8px;
+      box-shadow: 0 12px 32px rgba(15,23,42,0.25);
+    }
+    .big-map-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-shrink: 0; }
+    #big-map-canvas { flex: 1 1 auto; min-height: 140px; border-radius: 14px; border: 1px solid var(--border); z-index: 1; }
+    .big-map-nav { display: flex; align-items: stretch; gap: 8px; flex-shrink: 0; }
+    .big-arrow {
+      width: 46px; flex-shrink: 0; border-radius: 12px; border: 1px solid var(--border);
+      background: var(--ocean-soft); color: var(--ocean-dark);
+      font-size: 15px; font-weight: 800; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .big-arrow:active { background: #bae6fd; }
+    .big-arrow:disabled { opacity: .35; cursor: default; }
+    .big-map-info { flex: 1 1 auto; min-width: 0; background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 7px 10px; }
+    .bm-top { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 800; }
+    .bm-step { background: var(--ocean-dark); color: #fff; border-radius: 999px; font-size: 10.5px; padding: 1px 7px; flex-shrink: 0; }
+    .bm-place { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bm-sub { font-size: 11.5px; color: #334155; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bm-do { font-size: 10.5px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pin-num.active { background: #f97316; box-shadow: 0 0 0 4px rgba(249,115,22,.3), 0 2px 6px rgba(249,115,22,.5); }
+    /* 변수·혜택 체크 모달 */
+    .vc-item { border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin-bottom: 8px; background: #fff; }
+    .vc-head { display: flex; align-items: flex-start; gap: 6px; }
+    .vc-title { font-size: 12.5px; font-weight: 800; flex: 1; min-width: 0; line-height: 1.35; }
+    .vc-desc { font-size: 11.5px; color: #334155; margin-top: 4px; line-height: 1.5; }
+    .vc-tip { font-size: 11px; color: var(--ocean-dark); background: var(--ocean-soft); border-radius: 8px; padding: 6px 8px; margin-top: 6px; line-height: 1.45; }
+    .vc-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+    .vc-actions .btn { flex: 1 1 46%; font-size: 11.5px; padding: 7px 6px; }
+    .vc-day-sel { flex: 1 1 100%; padding: 7px 8px; font-size: 11.5px; border-radius: 9px; border: 1px solid var(--border); background: #fff; font-family: inherit; }
+    .vc-empty { font-size: 12.5px; color: var(--muted); padding: 12px 4px; text-align: center; }
+    .vc-summary { font-size: 11.5px; color: var(--muted); margin-bottom: 8px; line-height: 1.55; }
+    .vc-sec { font-size: 11.5px; font-weight: 800; color: var(--ocean-dark); margin: 12px 0 6px; }
+
     /* 국내 / 해외 여행 선택 (분할 카드) */
     .type-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .type-card {
@@ -713,12 +764,21 @@
         </div>
         <div id="planb-content" class="planb-box" style="display:none;"></div>
         <div class="card" style="padding:10px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:0 2px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:0 2px;gap:6px;">
             <span id="map-card-title" style="font-size:12.5px;font-weight:800;color:var(--ocean-dark);">🗺️ 오늘의 부산 동선 지도</span>
-            <span style="font-size:11px;color:var(--muted);">핀을 눌러 장소 확인 · 확대하면 겹친 핀이 벌어져요</span>
+            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+              <span style="font-size:10.5px;color:var(--muted);">핀 눌러 확인</span>
+              <button class="map-head-btn" onclick="openBigMap(0)">🔍 크게 보기</button>
+            </div>
           </div>
           <div id="day-map" style="margin-bottom:0;"></div>
         </div>
+        <div class="map-action-row">
+          <button class="btn hours-refresh-btn compact" data-default-label="🔄 영업시간" onclick="refreshBusinessHours()">🔄 영업시간</button>
+          <button class="btn" id="btn-var-check" data-default-label="🎭 변수 체크" onclick="checkTripVariables()">🎭 변수 체크</button>
+          <button class="btn" id="btn-benefit-check" data-default-label="🎁 혜택 체크" onclick="checkTripBenefits()">🎁 혜택 체크</button>
+        </div>
+        <div class="hours-note hours-updated-label map-stamp-line" id="map-hours-stamp" style="text-align:center;margin:0 0 12px;">아직 업데이트 전</div>
         <div id="add-btns-row" style="display:none;gap:8px;margin-bottom:12px;">
           <button class="btn btn-soft" style="flex:1;" onclick="openPlaceModal(null)">+ 일정 추가</button>
           <button class="btn btn-primary" style="flex:1;" onclick="openTransitModal()">🚆 교통편 추가</button>
@@ -1181,6 +1241,47 @@
         <input id="theme-custom-picker" type="color" value="#0284c7" style="width:48px;height:34px;border:none;background:none;cursor:pointer;" oninput="selectThemeColor(this.value, false)" onchange="selectThemeColor(this.value, true)" />
       </div>
       <button class="btn btn-primary" style="width:100%;" onclick="closeThemeModal()">적용 완료</button>
+    </div>
+  </div>
+
+  <!-- BIG MAP MODAL (◀ ▶ 스텝 투어) -->
+  <div id="big-map-modal" class="modal-backdrop center" style="padding:8px;" onclick="if(event.target===this)closeBigMap()">
+    <div class="big-map-sheet">
+      <div class="big-map-head">
+        <div id="big-map-title" style="font-size:14.5px;font-weight:800;">🗺️ 동선 크게 보기</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeBigMap()">✕ 닫기</button>
+      </div>
+      <div id="big-map-canvas"></div>
+      <div class="big-map-nav">
+        <button class="big-arrow" id="big-prev" onclick="bigMapStep(-1)" aria-label="이전 장소">◀</button>
+        <div class="big-map-info" id="big-map-info"></div>
+        <button class="big-arrow" id="big-next" onclick="bigMapStep(1)" aria-label="다음 장소">▶</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VARIABLE CHECK MODAL -->
+  <div id="var-modal" class="modal-backdrop center" onclick="if(event.target===this)closeVarModal()">
+    <div class="modal-sheet" style="max-width:540px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-size:16px;font-weight:800;">🎭 여행 변수 체크</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeVarModal()">닫기</button>
+      </div>
+      <div class="vc-summary" id="var-modal-summary"></div>
+      <div id="var-modal-list" style="max-height:64vh;overflow-y:auto;padding-right:2px;"></div>
+    </div>
+  </div>
+
+  <!-- BENEFIT CHECK MODAL -->
+  <div id="benefit-modal" class="modal-backdrop center" onclick="if(event.target===this)closeBenefitModal()">
+    <div class="modal-sheet" style="max-width:540px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-size:16px;font-weight:800;">🎁 혜택 체크</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeBenefitModal()">닫기</button>
+      </div>
+      <div class="vc-summary" id="benefit-modal-summary"></div>
+      <div id="benefit-modal-list" style="max-height:58vh;overflow-y:auto;padding-right:2px;"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="applyAllBenefits()">🎁 전체 일정에 혜택 반영</button>
     </div>
   </div>
 
@@ -2853,6 +2954,7 @@
     let leafletMap = null;
     let mapLayerGroup = null;
     let dayMapPts = [];
+    let dayMapPopupAt = 0;
 
     function renderDayMap() {
       if (!window.L) return;
@@ -2865,6 +2967,12 @@
         }).addTo(leafletMap);
         mapLayerGroup = L.layerGroup().addTo(leafletMap);
         leafletMap.on("zoomend", () => { if (dayMapPts.length) drawDayPins(dayMapPts); });
+        // 지도 카드(빈 곳)를 탭하면 큰 지도로 — 핀 팝업을 닫는 탭은 제외
+        leafletMap.on("popupopen", () => { dayMapPopupAt = Date.now(); });
+        leafletMap.on("click", () => {
+          if (Date.now() - dayMapPopupAt < 600) return;
+          openBigMap(0);
+        });
       }
       const dayObj = state.days.find(d => d.day === currentDay) || state.days[0];
       dayMapPts = (dayObj.items || []).map(it => {
@@ -2919,6 +3027,123 @@
         L.polyline(shown, { color: "#0284c7", weight: 3.5, dashArray: "6, 6", opacity: 0.85 }).addTo(mapLayerGroup);
       }
     }
+
+    /* =====================================================================
+       🗺️ 큰 지도 모달 + ◀ ▶ 스텝 투어 (시간·장소·체류·할 일 스트립)
+       ===================================================================== */
+    let bigMap = null, bigMapLayer = null, bigMapPts = [], bigMapMarkers = [];
+    let bigMapIdx = 0;
+
+    function activeDayGeoPts() {
+      const dayObj = state.days.find(d => d.day === currentDay) || state.days[0];
+      return (dayObj?.items || []).map(it => {
+        const ll = (typeof it.lat === "number" && typeof it.lng === "number") ? [it.lat, it.lng] : (COORD_BY_ID[it.id] || null);
+        return ll ? { it, ll } : null;
+      }).filter(Boolean);
+    }
+
+    function bigMapDetailHtml(p, idx, total) {
+      const it = p.it;
+      const menus = Array.isArray(it.menus) ? it.menus.filter(m => Number(m.qty) > 0) : [];
+      const menuTxt = menus.length ? menus.map(m => `${m.name}×${m.qty}`).join(" · ") : "";
+      const doParts = [];
+      if (it.memo) doParts.push(it.memo);
+      if (menuTxt) doParts.push(`🍴 ${menuTxt}`);
+      if (it.moveMode) doParts.push(`🚶 ${it.moveMode}${it.moveMin ? ` (${it.moveMin}분)` : ""}`);
+      return `
+        <div class="bm-top">
+          <span class="bm-step">${idx + 1} / ${total}</span>
+          <span class="bm-place">${escapeAttr(it.place || "")}</span>
+        </div>
+        <div class="bm-sub">🕒 ${escapeAttr(it.time || "")}${it.stay ? ` · ${escapeAttr(it.stay)}` : ""}${it.costTotal ? ` · ${fmt(it.costTotal)}` : ""}</div>
+        <div class="bm-do">${escapeAttr(doParts.join(" · ") || "메모 없음")}</div>`;
+    }
+
+    function drawBigPins() {
+      if (!bigMap || !bigMapLayer) return;
+      bigMapLayer.clearLayers();
+      bigMapMarkers = bigMapPts.map((p, idx) => {
+        const active = idx === bigMapIdx;
+        const icon = L.divIcon({
+          className: "",
+          html: `<div class="pin-num${active ? " active" : ""}">${idx + 1}</div>`,
+          iconSize: active ? [28, 28] : [22, 22],
+          iconAnchor: active ? [14, 14] : [11, 11]
+        });
+        return L.marker(p.ll, { icon, zIndexOffset: active ? 1000 : 0 })
+          .bindPopup(`<strong>${idx + 1}. ${escapeAttr(p.it.place || "")}</strong><br>${escapeAttr(p.it.time || "")}${p.it.stay ? ` · ${escapeAttr(p.it.stay)}` : ""}`)
+          .addTo(bigMapLayer);
+      });
+      if (bigMapPts.length > 1) {
+        L.polyline(bigMapPts.map(p => p.ll), { color: "#0284c7", weight: 3.5, dashArray: "6, 6", opacity: 0.85 }).addTo(bigMapLayer);
+      }
+    }
+
+    function bigMapGoto(idx, fly = true) {
+      if (!bigMapPts.length) return;
+      bigMapIdx = Math.max(0, Math.min(bigMapPts.length - 1, idx));
+      const p = bigMapPts[bigMapIdx];
+      const info = document.getElementById("big-map-info");
+      if (info) info.innerHTML = bigMapDetailHtml(p, bigMapIdx, bigMapPts.length);
+      const prev = document.getElementById("big-prev");
+      const next = document.getElementById("big-next");
+      if (prev) prev.disabled = bigMapIdx === 0;
+      if (next) next.disabled = bigMapIdx === bigMapPts.length - 1;
+      if (!bigMap || !window.L) return;
+      if (fly) bigMap.flyTo(p.ll, 15, { duration: 0.5 });
+      drawBigPins();
+      const mk = bigMapMarkers[bigMapIdx];
+      if (mk) setTimeout(() => { try { mk.openPopup(); } catch (e) {} }, fly ? 520 : 80);
+    }
+
+    function bigMapStep(delta) { bigMapGoto(bigMapIdx + delta, true); }
+
+    function openBigMap(startIdx = 0) {
+      if (!window.L) return alert("지도를 아직 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
+      const pts = activeDayGeoPts();
+      if (!pts.length) return alert("이 날은 좌표가 잡힌 장소가 없어서 큰 지도를 열 수 없어요.\n장소 수정에서 위치를 지정하면 크게 보기와 화살표 투어가 됩니다.");
+      bigMapPts = pts;
+      bigMapIdx = Math.max(0, Math.min(pts.length - 1, startIdx));
+      const dayObj = state.days.find(d => d.day === currentDay) || state.days[0];
+      const titleEl = document.getElementById("big-map-title");
+      if (titleEl) titleEl.textContent = `🗺️ ${dayObj?.label || currentDay + "일차"} 동선 · ${bigMapPts.length}곳`;
+      document.getElementById("big-map-modal").classList.add("open");
+      if (!bigMap) {
+        bigMap = L.map("big-map-canvas", { zoomControl: true }).setView([35.15, 129.11], 13);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "© OpenStreetMap" }).addTo(bigMap);
+        bigMapLayer = L.layerGroup().addTo(bigMap);
+        bigMap.on("zoomend", () => { if (bigMapPts.length) drawBigPins(); });
+      }
+      setTimeout(() => {
+        try {
+          bigMap.invalidateSize();
+          document.getElementById("big-map-info").innerHTML = bigMapDetailHtml(bigMapPts[bigMapIdx], bigMapIdx, bigMapPts.length);
+          const prev = document.getElementById("big-prev");
+          const next = document.getElementById("big-next");
+          if (prev) prev.disabled = bigMapIdx === 0;
+          if (next) next.disabled = bigMapIdx === bigMapPts.length - 1;
+          if (bigMapPts.length > 1) bigMap.fitBounds(bigMapPts.map(p => p.ll), { padding: [40, 40], maxZoom: 16 });
+          else bigMap.setView(bigMapPts[0].ll, 15);
+          drawBigPins();
+          const mk = bigMapMarkers[bigMapIdx];
+          if (mk) setTimeout(() => { try { mk.openPopup(); } catch (e) {} }, 200);
+        } catch (e) { console.warn("big map open", e); }
+      }, 90);
+    }
+
+    function closeBigMap() {
+      const el = document.getElementById("big-map-modal");
+      if (el) el.classList.remove("open");
+      if (bigMap) bigMap.closePopup();
+    }
+
+    document.addEventListener("keydown", (e) => {
+      const el = document.getElementById("big-map-modal");
+      if (!el || !el.classList.contains("open")) return;
+      if (e.key === "ArrowRight") { e.preventDefault(); bigMapStep(1); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); bigMapStep(-1); }
+      else if (e.key === "Escape") closeBigMap();
+    });
 
     function renderExpenses() {
       document.getElementById("travelers-input").value = state.meta.travelers;
@@ -5524,10 +5749,14 @@
 
     function setHoursButtonsState(running, progressTxt = "") {
       document.querySelectorAll(".hours-refresh-btn").forEach(btn => {
+        const compact = btn.classList.contains("compact");
         if (running) {
           btn.classList.add("btn-updating");
           btn.disabled = true;
-          btn.innerHTML = `<span class="hours-spinner"></span>${progressTxt || "업데이트 중..."}`;
+          const label = compact
+            ? (progressTxt ? progressTxt.replace("업데이트 중", "확인") : "확인 중...")
+            : (progressTxt || "업데이트 중...");
+          btn.innerHTML = `<span class="hours-spinner"></span>${label}`;
         } else {
           btn.classList.remove("btn-updating");
           btn.disabled = false;
@@ -5545,6 +5774,7 @@
       hoursRefreshing = true;
       setHoursButtonsState(true, "영업시간 확인 중...");
       let ok = 0, fail = 0;
+      const updatedNames = [];
       try {
         const cityHint = String(state.meta?.destination || "").split(/[(\s]/)[0] || "";
         const uniq = [];
@@ -5555,14 +5785,26 @@
           setHoursButtonsState(true, `업데이트 중 (${i + 1}/${capped.length})`);
           const info = await lookupOpeningHours(t.name, cityHint);
           const related = targets.filter(x => x.key === t.key);
-          const applied = related.some(r => applyHoursToItem(r.it, info));
-          if (applied) ok++; else fail++;
+          const applied = related.filter(r => applyHoursToItem(r.it, info));
+          if (applied.length) {
+            ok++;
+            applied.forEach(r => { if (!updatedNames.includes(r.it.place)) updatedNames.push(r.it.place); });
+          } else {
+            fail++;
+          }
           await new Promise(res => setTimeout(res, 220));
         }
         state.meta.hoursUpdatedAt = new Date().toISOString();
-        state.meta.hoursChecked = { ok, fail, total: capped.length, remaining: Math.max(0, uniq.length - capped.length) };
+        state.meta.hoursChecked = {
+          ok, fail, total: capped.length,
+          remaining: Math.max(0, uniq.length - capped.length),
+          names: updatedNames.slice(0, 12)
+        };
         saveState();
-        alert(`✅ 영업시간 최신 정보 업데이트 완료!\n\n확인한 장소: ${capped.length}곳\n• 최신 정보 반영: ${ok}곳\n• 미등록(기존 정보 유지): ${fail}곳`);
+        const nameLine = updatedNames.length
+          ? `• 반영된 곳 (${updatedNames.length}곳): ${updatedNames.slice(0, 8).join(", ")}${updatedNames.length > 8 ? ` 외 ${updatedNames.length - 8}곳` : ""}`
+          : "• 반영된 곳: 없음 (기존 정보 유지)";
+        alert(`✅ 영업시간 최신 정보 업데이트 완료!\n\n확인한 장소: ${capped.length}곳\n${nameLine}\n• 미등록(기존 유지): ${fail}곳`);
       } catch (e) {
         console.error("hours refresh", e);
         alert("영업시간을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
@@ -5581,10 +5823,574 @@
       if (detail) {
         const d = diningSpotNames().length;
         const c = state.meta?.hoursChecked;
+        const nm = (c && Array.isArray(c.names) && c.names.length) ? ` · 반영: ${c.names.slice(0, 4).join(", ")}${c.names.length > 4 ? " 외" : ""}` : "";
         detail.textContent = `맛집·카페 ${d}곳` +
-          (c ? ` · 확인 ${c.total}곳 (정보 반영 ${c.ok} · 미확인 ${c.fail})` : "") +
+          (c ? ` · 확인 ${c.total}곳 (정보 반영 ${c.ok} · 미확인 ${c.fail})` : "") + nm +
           " · OSM/내부 DB 기준이라 방문 전 전화 확인이 가장 정확해요.";
       }
+    }
+
+    /* =====================================================================
+       🎭 변수 체크 · 🎁 혜택 체크 (공휴일 API + 시즌/축제 캘린더 + 할인 DB)
+       ===================================================================== */
+    async function runSoftButton(btnId, label, work) {
+      const btn = document.getElementById(btnId);
+      if (!btn || btn.classList.contains("btn-updating")) return;
+      const def = btn.dataset.defaultLabel || btn.textContent;
+      btn.classList.add("btn-updating");
+      btn.disabled = true;
+      btn.innerHTML = `<span class="hours-spinner"></span>${label}`;
+      try {
+        await work();
+      } catch (e) {
+        console.error("button task", btnId, e);
+        alert("처리 중 문제가 생겼어요. 잠시 후 다시 시도해 주세요.");
+      } finally {
+        btn.classList.remove("btn-updating");
+        btn.disabled = false;
+        btn.textContent = def;
+      }
+    }
+
+    function isoDateLocal(d) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
+    function tripDateList() {
+      const ds = (state.days || []).map(d => d.date).filter(Boolean).sort();
+      if (ds.length) return ds;
+      const s = state.meta?.startDate, e = state.meta?.endDate;
+      if (!s) return [];
+      const out = [];
+      const cur = new Date(s + "T00:00:00");
+      const end = e ? new Date(e + "T00:00:00") : cur;
+      for (let i = 0; i < 40 && cur <= end; i++) {
+        out.push(isoDateLocal(cur));
+        cur.setDate(cur.getDate() + 1);
+      }
+      return out;
+    }
+
+    const CC_BY_NAME = {
+      "대한민국": "KR", "한국": "KR", "일본": "JP", "호주": "AU", "미국": "US", "프랑스": "FR",
+      "영국": "GB", "태국": "TH", "베트남": "VN", "대만": "TW", "싱가포르": "SG", "스페인": "ES",
+      "이탈리아": "IT", "독일": "DE", "캐나다": "CA", "뉴질랜드": "NZ", "중국": "CN", "홍콩": "HK",
+      "필리핀": "PH", "말레이시아": "MY", "인도네시아": "ID", "터키": "TR", "튀르키예": "TR", "괌": "US", "하와이": "US"
+    };
+
+    function tripCountryCodes() {
+      const meta = state.meta || {};
+      if (meta.tripType !== "overseas") return ["KR"];
+      const codes = [];
+      const raw = String(meta.countryCode || meta.country || "");
+      const hit = Object.keys(CC_BY_NAME).find(k => raw.includes(k));
+      if (hit) codes.push(CC_BY_NAME[hit]);
+      const up = raw.trim().toUpperCase();
+      if (/^[A-Z]{2}$/.test(up) && !codes.includes(up)) codes.push(up);
+      if (!codes.length) {
+        const dest = String(meta.destination || "") + " " + String(meta.title || "");
+        const h2 = Object.keys(CC_BY_NAME).find(k => dest.includes(k));
+        if (h2) codes.push(CC_BY_NAME[h2]);
+      }
+      if (!codes.length) codes.push("KR");
+      return codes;
+    }
+
+    const holidayCache = {};
+    async function fetchHolidays(cc, year) {
+      const key = `${cc}-${year}`;
+      if (Object.prototype.hasOwnProperty.call(holidayCache, key)) return holidayCache[key];
+      try {
+        const ac = new AbortController();
+        const tid = setTimeout(() => ac.abort(), 7000);
+        const r = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${cc}`, { signal: ac.signal });
+        clearTimeout(tid);
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        const arr = await r.json();
+        holidayCache[key] = Array.isArray(arr) ? arr : [];
+      } catch (e) {
+        holidayCache[key] = null;
+      }
+      return holidayCache[key];
+    }
+
+    // API가 막혔을 때를 위한 내장 공휴일(법정 고정일 + 확인된 음력 설·추석)
+    const KR_FALLBACK_HOLIDAYS = {
+      "2026": ["01-01 신정", "02-16 설날 연휴", "02-17 설날", "03-01 삼일절", "05-05 어린이날", "06-06 현충일", "08-15 광복절", "09-24 추석 연휴", "09-25 추석", "10-03 개천절", "10-09 한글날", "12-25 성탄절"],
+      "2027": ["01-01 신정", "02-06 설날", "02-07 설날 연휴", "02-08 설날 연휴", "03-01 삼일절", "05-05 어린이날", "06-06 현충일", "08-15 광복절", "09-14 추석 연휴", "09-15 추석", "10-03 개천절", "10-09 한글날", "12-25 성탄절"]
+    };
+
+    // 시즌·축제 캘린더 (from~to는 월-일, 연말연시처럼 해를 넘기는 구간도 지원)
+    const SEASON_EVENTS = [
+      { id: "kr-haeundae-light", region: "KR", dest: /부산|해운대|광안리|기장/, type: "festival", from: "12-01", to: "02-28",
+        title: "해운대 빛축제 · 겨울 조명",
+        desc: "12월~2월 해운대해수욕장 일대를 조명·미디어아트로 꾸미는 겨울 축제. 해변 산책로가 밤에 화려해져요. 해마다 연출·기간이 달라 공식 공지를 확인하세요.",
+        tip: "일몰(1월 말 18:00 전후) 이후가 절정. 광안리 야경과 같은 날 저녁에 묶으면 이동이 줄어요. 무료 구간 위주, 일부 체험 유료.",
+        suggestTime: "19:30", stay: "체류 60분", cost: 0, packing: ["보조배터리", "편한 신발", "여분 겉옷"] },
+      { id: "kr-winter-cold", region: "KR", type: "crowd", from: "12-10", to: "02-25",
+        title: "한파·해풍 시즌 (야외 일정 변수)",
+        desc: "1월 말~2월 초 부산 해변은 체감 -5~0°C, 바닷바람 14~21km/h. 스카이캡슐·해변열차는 강풍에 운행이 멈출 수 있어요.",
+        tip: "출발 3일 전 예보에서 강풍을 확인하고, 강풍이면 스카이캡슐을 오전으로 당기거나 플랜 B(실내·온천)로 전환하세요." },
+      { id: "kr-seollal-2027", region: "KR", type: "crowd", yearDates: { "2027": ["02-06", "02-08"] },
+        title: "설 연휴 (2027-02-06 설날)",
+        desc: "설 연휴에는 KTX·고속버스가 조기 매진되고 시장·맛집이 휴무하거나 대기가 길어져요. 2027년 설날은 2월 6일(토), 연휴는 2/6~2/8 예상.",
+        tip: "여행 기간과는 겹치지 않지만 귀성은 2/5 전후부터 시작돼요. KTX는 오픈 즉시(12/31) 확정해 두세요." },
+      { id: "kr-cherry", region: "KR", type: "festival", from: "03-20", to: "04-15", title: "벚꽃 시즌",
+        desc: "전국 벚꽃 명소가 붐비고 주말 숙소 가격이 오르는 시기예요.", tip: "평일 오전 방문, 숙소는 2달 전 예약이 유리해요.", suggestTime: "10:00", stay: "체류 90분", cost: 0, packing: ["보조배터리", "편한 신발"] },
+      { id: "kr-summer", region: "KR", type: "crowd", from: "07-10", to: "08-20", title: "휴가철·장마 혼잡",
+        desc: "해수욕장·숙소가 가장 붐비고 장마·태풍 변수가 큰 시기예요.", tip: "숙소·해변열차는 조기 예약, 우천 플랜 B를 미리 정해 두세요." },
+      { id: "kr-chuseok-2027", region: "KR", type: "crowd", yearDates: { "2027": ["09-14", "09-16"] }, title: "추석 연휴 (2027-09-15 추석)",
+        desc: "추석 연휴에는 시장·맛집 상당수가 휴무하고 KTX가 매진돼요.", tip: "연휴 전후로 잡고, 휴무 공지를 미리 확인하세요." },
+      { id: "kr-autumn", region: "KR", type: "festival", from: "10-15", to: "11-15", title: "단풍 시즌",
+        desc: "단풍 명소·온천지가 붐비는 시기예요.", tip: "주말 오전 방문, 주차보다 대중교통이 빨라요.", suggestTime: "10:00", stay: "체류 90분", cost: 0, packing: ["편한 신발", "보조배터리"] },
+      { id: "kr-busan-fireworks", region: "KR", dest: /부산/, type: "festival", from: "11-01", to: "11-15", title: "부산 불꽃축제 (11월)",
+        desc: "광안리 일대가 통제되고 숙소가 조기 매진되는 대형 축제예요.", tip: "축제 당일은 광안리 숙소·식당 예약이 필수, 귀가 교통이 마비됩니다.", suggestTime: "19:00", stay: "체류 120분", cost: 0, packing: ["보조배터리", "방석", "여분 겉옷"] },
+      { id: "kr-newyear", region: "KR", type: "crowd", from: "12-30", to: "01-01", title: "연말연시 휴무·혼잡",
+        desc: "연말·신정에는 맛집·시장이 쉬고 해돋이 명소·KTX가 붐벼요.", tip: "1/1 휴무 매장이 많으니 당일 영업 여부를 전날 확인하세요." },
+      { id: "au-sydneyfest", region: "AU", dest: /시드니|sydney/i, type: "festival", from: "01-05", to: "01-26", title: "시드니 페스티벌 (Sydney Festival)",
+        desc: "1월 한 달 시드니 곳곳에서 공연·전시가 열려요.", tip: "무료 야외 공연 위주로 골라 넣으면 좋아요.", suggestTime: "19:00", stay: "체류 90분", cost: 0, packing: ["보조배터리", "편한 신발"] },
+      { id: "au-australiaday", region: "AU", type: "crowd", from: "01-26", to: "01-26", title: "Australia Day (1/26)",
+        desc: "공휴일이라 관광지·식당이 붐비고 일부 매장이 휴무해요.", tip: "불꽃·행사 구역은 교통 통제가 있어요." },
+      { id: "au-mardigras", region: "AU", dest: /시드니|sydney/i, type: "festival", from: "02-10", to: "03-10", title: "시드니 Mardi Gras",
+        desc: "2~3월 시드니에서 열리는 대형 퍼레이드·파티 축제예요.", tip: "퍼레이드 당일 시내 숙소·교통이 매우 붐벼요.", suggestTime: "19:00", stay: "체류 120분", cost: 0, packing: ["보조배터리", "편한 신발"] },
+      { id: "au-lunar", region: "AU", dest: /시드니|sydney/i, type: "festival", yearDates: { "2027": ["02-05", "02-08"] }, title: "설날 축제 (Lunar New Year)",
+        desc: "차이나타운·달링하버 일대 설 축제와 퍼레이드.", tip: "주말 저녁 달링하버는 인파가 몰려요.", suggestTime: "18:30", stay: "체류 90분", cost: 0, packing: ["보조배터리", "편한 신발"] },
+      { id: "au-summer-holiday", region: "AU", type: "crowd", from: "12-20", to: "01-28", title: "호주 여름 방학·휴가 성수기",
+        desc: "해변·숙소가 가장 붐비고 가격이 오르는 시기예요.", tip: "숙소·투어는 미리 예약하고 해변은 오전에 가세요." },
+      { id: "jp-newyear", region: "JP", type: "crowd", from: "12-29", to: "01-03", title: "오쇼가쓰(일본 설) 휴무",
+        desc: "12/29~1/3은 상점·식당이 대거 휴무하고 신사·공항이 붐벼요.", tip: "이 기간엔 편의점·체인점 위주로 일정을 짜세요." },
+      { id: "jp-setsubun", region: "JP", type: "festival", from: "02-01", to: "02-04", title: "절분(節分) 2/3",
+        desc: "절분 행사와 마키즈시 문화를 즐길 수 있어요.", tip: "유명 신사는 저녁에 붐벼요.", suggestTime: "17:00", stay: "체류 60분", cost: 0, packing: ["보조배터리"] },
+      { id: "jp-sapporo", region: "JP", dest: /삿포로|홋카이도/, type: "festival", from: "02-04", to: "02-11", title: "삿포로 눈축제",
+        desc: "2월 초 삿포로 오도리공원 눈조각 축제.", tip: "숙소가 몇 배로 뛰니 지금 바로 잡아야 해요.", suggestTime: "18:00", stay: "체류 120분", cost: 0, packing: ["핫팩", "보조배터리"] },
+      { id: "jp-hanami", region: "JP", type: "festival", from: "03-20", to: "04-10", title: "벚꽃 시즌",
+        desc: "벚꽃 명소가 붐비고 숙소 가격이 최고치예요.", tip: "평일 아침 방문, 숙소는 조기 예약.", suggestTime: "09:00", stay: "체류 90분", cost: 0, packing: ["보조배터리", "편한 신발"] },
+      { id: "jp-gw", region: "JP", type: "crowd", from: "04-29", to: "05-05", title: "골든위크",
+        desc: "일본 최대 연휴로 교통·숙소가 매진돼요.", tip: "GW는 피하거나 최소 2달 전 예약하세요." },
+      { id: "jp-obon", region: "JP", type: "crowd", from: "08-13", to: "08-16", title: "오봉 연휴",
+        desc: "귀성·여행 인파로 신간선·숙소가 붐벼요.", tip: "이동일을 피하고 지정석을 미리 잡으세요." },
+      { id: "th-songkran", region: "TH", type: "festival", from: "04-13", to: "04-15", title: "송크란 (물축제)",
+        desc: "태국 전역에서 물을 뿌리는 신년 축제.", tip: "전자기기 방수, 귀중품은 호텔에 두세요.", suggestTime: "13:00", stay: "체류 120분", cost: 0, packing: ["방수팩", "여분 옷", "수건"] },
+      { id: "th-cny", region: "TH", type: "crowd", yearDates: { "2027": ["02-05", "02-08"] }, title: "중국설날 혼잡",
+        desc: "차이나타운·관광지가 매우 붐비고 일부 상점이 휴무해요.", tip: "예약·이동 시간을 여유 있게 잡세요." },
+      { id: "tw-cny", region: "TW", type: "crowd", yearDates: { "2027": ["02-05", "02-10"] }, title: "설날 연휴 (Lunar New Year)",
+        desc: "대만 최대 연휴로 야시장·관광지가 혼잡하고 상점 휴무가 많아요.", tip: "연휴 마지막 날은 귀경 교통이 막혀요." },
+      { id: "vn-tet", region: "VN", type: "crowd", yearDates: { "2027": ["02-05", "02-09"] }, title: "뗏(Tết) 연휴",
+        desc: "베트남 설 연휴로 상당수 상점·식당이 문을 닫아요.", tip: "연휴엔 호텔 식당 위주로 계획하세요." },
+      { id: "sg-cny", region: "SG", type: "festival", yearDates: { "2027": ["02-05", "02-08"] }, title: "중국설날 · Chingay",
+        desc: "차이나타운 야시장과 Chingay 퍼레이드.", tip: "퍼레이드 구간은 교통 통제가 있어요.", suggestTime: "19:30", stay: "체류 90분", cost: 0, packing: ["보조배터리", "편한 신발"] },
+      { id: "us-thanksgiving", region: "US", type: "crowd", yearDates: { "2026": ["11-26", "11-27"], "2027": ["11-25", "11-26"] }, title: "추수감사절 연휴",
+        desc: "미국 최대 이동 연휴 — 항공·도로가 극도로 붐빕니다.", tip: "이 기간 항공권은 일찍, 렌터카는 필수 예약하세요." },
+      { id: "us-july4", region: "US", type: "festival", from: "07-04", to: "07-04", title: "독립기념일",
+        desc: "불꽃놀이·퍼레이드가 열리고 관광지가 붐빕니다.", tip: "불꽃 명소는 일찍 자리잡아야 해요.", suggestTime: "20:00", stay: "체류 90분", cost: 0, packing: ["보조배터리", "방석"] },
+      { id: "fr-bastille", region: "FR", type: "festival", from: "07-14", to: "07-14", title: "바스티유의 날",
+        desc: "에펠탑 불꽃놀이와 퍼레이드가 열려요.", tip: "지하철 통제·인파에 대비하세요.", suggestTime: "20:00", stay: "체류 90분", cost: 0, packing: ["보조배터리"] },
+      { id: "gb-xmas", region: "GB", type: "crowd", from: "12-24", to: "12-26", title: "크리스마스 휴무",
+        desc: "12/25은 대부분 상점·교통이 멈춰요.", tip: "당일은 호텔 식사 위주로 준비하세요." }
+    ];
+
+    function mdInRange(md, from, to) {
+      if (from <= to) return md >= from && md <= to;
+      return md >= from || md <= to;
+    }
+
+    function daysBetween(a, b) {
+      const d1 = new Date(a + "T00:00:00"), d2 = new Date(b + "T00:00:00");
+      return Math.round((d2 - d1) / 86400000);
+    }
+
+    let varFindings = [];
+    let varCheckedAtLabel = "";
+
+    async function checkTripVariables() {
+      return runSoftButton("btn-var-check", "확인 중...", async () => {
+        const dates = tripDateList();
+        if (!dates.length) return alert("여행 날짜가 없어서 변수를 확인할 수 없어요.");
+        const years = [...new Set(dates.map(d => d.slice(0, 4)))];
+        const codes = tripCountryCodes();
+        let apiOk = 0, apiFail = 0;
+        const holidays = [];
+        for (const cc of codes) {
+          for (const y of years) {
+            const arr = await fetchHolidays(cc, y);
+            if (arr === null) {
+              apiFail++;
+              if (cc === "KR" && KR_FALLBACK_HOLIDAYS[y]) {
+                KR_FALLBACK_HOLIDAYS[y].forEach(s => {
+                  const [md, name] = [s.slice(0, 5), s.slice(6)];
+                  holidays.push({ date: `${y}-${md}`, localName: name, name, cc, fallback: true });
+                });
+              }
+            } else {
+              apiOk++;
+              arr.forEach(h => holidays.push({ ...h, cc }));
+            }
+          }
+        }
+
+        const out = [];
+        const seen = {};
+        const push = (f) => { if (!seen[f.key]) { seen[f.key] = 1; out.push(f); } };
+        const ccLabel = (cc) => codes.length > 1 || cc !== "KR" ? ` (${cc})` : "";
+
+        holidays.forEach(h => {
+          const iso = String(h.date || "").slice(0, 10);
+          if (!iso) return;
+          if (!dates.includes(iso)) return;
+          push({
+            key: `hol-${h.cc}-${iso}`,
+            kind: "crowd",
+            near: false,
+            days: [iso],
+            title: `${h.localName || h.name}${ccLabel(h.cc)} 공휴일`,
+            desc: `${iso}은(는) 공휴일이라 관광지·맛집 대기가 길고 일부 매장이 휴무해요. 교통도 평일보다 붐빕니다.`,
+            tip: "오픈 직후 방문하고, 예약 가능한 곳은 미리 잡으세요. 휴무 공지를 확인."
+          });
+        });
+
+        const destBlob = [state.meta?.destination, state.meta?.country, state.meta?.title, ...(state.days || []).map(d => d.area || d.subtitle || "")].join(" ");
+        SEASON_EVENTS.forEach(ev => {
+          if (!codes.includes(ev.region)) return;
+          if (ev.dest && !ev.dest.test(destBlob)) return;
+          const hits = [];
+          dates.forEach(iso => {
+            const md = iso.slice(5);
+            if (ev.yearDates) {
+              const list = ev.yearDates[iso.slice(0, 4)] || [];
+              if (list.length && md >= list[0] && md <= list[1]) hits.push(iso);
+            } else if (ev.from && mdInRange(md, ev.from, ev.to)) {
+              hits.push(iso);
+            }
+          });
+          let near = false;
+          if (!hits.length) {
+            // 여행 직후 5일 내 시작하는 축제인지 확인
+            for (let k = 1; k <= 5; k++) {
+              const d = new Date(dates[dates.length - 1] + "T00:00:00");
+              d.setDate(d.getDate() + k);
+              const md = isoDateLocal(d).slice(5);
+              if (ev.yearDates) {
+                const list = ev.yearDates[String(d.getFullYear())] || [];
+                if (list.length && md === list[0]) { near = true; break; }
+              } else if (ev.from && md === ev.from) { near = true; break; }
+            }
+          }
+          if (!hits.length && !near) return;
+          push({
+            key: ev.id,
+            kind: ev.type,
+            near,
+            days: hits,
+            title: ev.title,
+            desc: ev.desc,
+            tip: ev.tip,
+            place: ev.title.split("(")[0].replace(/\s*·.*$/, "").trim(),
+            suggestTime: ev.suggestTime,
+            stay: ev.stay,
+            cost: ev.cost,
+            packing: ev.packing || []
+          });
+        });
+
+        // 주말 혼잡 (토·일이 끼는 경우)
+        const weekendDays = dates.filter(iso => [0, 6].includes(new Date(iso + "T00:00:00").getDay()));
+        if (weekendDays.length) {
+          push({
+            key: "weekend-crowd", kind: "crowd", days: weekendDays,
+            title: `주말 혼잡 (${weekendDays.map(d => d.slice(5).replace("-", "/")).join(", ")})`,
+            desc: "주말에는 해변·맛집·해변열차 대기가 평일보다 길어요. 일요일 휴무 매장도 있어요.",
+            tip: "인기 맛집은 오픈 직후 또는 15시 이후로 잡고, 원격대기(캐치테이블·테이블링)를 미리 걸어 두세요."
+          });
+        }
+
+        out.sort((a, b) => (Number(a.near) - Number(b.near)) || (a.kind === b.kind ? 0 : a.kind === "festival" ? -1 : 1));
+        varFindings = out;
+        varCheckedAtLabel = fmtStamp(new Date().toISOString());
+        const apiNote = apiFail && !apiOk
+          ? `공휴일 API 응답 없음 — 내장 공휴일 표 사용`
+          : `공휴일 ${codes.join("/")} ${years.join(",")}년 · API ${apiOk}건 확인${apiFail ? ` (실패 ${apiFail})` : ""}`;
+        renderVarModal(apiNote, dates);
+      });
+    }
+
+    function renderVarModal(apiNote, dates) {
+      const sum = document.getElementById("var-modal-summary");
+      const list = document.getElementById("var-modal-list");
+      const overlap = varFindings.filter(f => !f.near);
+      const near = varFindings.filter(f => f.near);
+      const fmtD = (iso) => `${Number(iso.slice(5, 7))}/${Number(iso.slice(8, 10))}`;
+      const dest = String(state.meta?.destination || "").split("(")[0].trim();
+      if (sum) {
+        sum.innerHTML = `📅 ${fmtD(dates[0])}~${fmtD(dates[dates.length - 1])} · ${escapeAttr(dest)}<br>${escapeAttr(apiNote)}` +
+          (varCheckedAtLabel ? `<br><span style="font-size:10.5px;">체크 시각 ${varCheckedAtLabel}</span>` : "");
+      }
+      if (!list) return;
+      const dayOptions = (state.days || []).map(d => `<option value="${d.day}">${escapeAttr(d.label || d.day + "일차")}${d.date ? ` (${fmtD(d.date)})` : ""}</option>`).join("");
+      const itemHtml = (f) => {
+        const sid = f.key.replace(/[^a-zA-Z0-9_-]/g, "");
+        const badge = f.kind === "festival"
+          ? `<span class="tag blue">🎉 즐길 만한 축제</span>`
+          : `<span class="tag warn">🚨 혼잡·휴무 주의</span>`;
+        const dayLine = f.days && f.days.length ? `<span class="tag">${f.days.map(fmtD).join(" · ")}</span>` : `<span class="tag">여행 직후 참고</span>`;
+        const canAdd = f.kind === "festival" && !f.near && f.place;
+        return `<div class="vc-item">
+          <div class="vc-head"><div class="vc-title">${escapeAttr(f.title)}</div></div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">${badge}${dayLine}</div>
+          <div class="vc-desc">${escapeAttr(f.desc || "")}</div>
+          <div class="vc-tip">💡 ${escapeAttr(f.tip || "")}</div>
+          <div class="vc-actions">
+            ${canAdd ? `<select class="vc-day-sel" id="vc-day-${sid}">${dayOptions}</select>` : ""}
+            ${canAdd ? `<button class="btn btn-primary" onclick="addVariableToItinerary('${f.key}')">➕ 축제 일정에 추가</button>` : ""}
+            <button class="btn btn-soft" onclick="applyCrowdMemo('${f.key}')">🔄 혼잡 우회 메모 반영</button>
+          </div>
+        </div>`;
+      };
+      const block = (arr, title) => arr.length ? `<div class="vc-sec">${title}</div>` + arr.map(itemHtml).join("") : "";
+      const html = block(overlap, "🎯 여행 기간 중 변수") + block(near, "📎 여행 바로 앞뒤 참고") +
+        (!overlap.length && !near.length ? `<div class="vc-empty">여행 기간에 잡히는 공휴일·축제 변수가 없어요. 좋은 뜻이에요!</div>` : "");
+      list.innerHTML = html;
+      document.getElementById("var-modal").classList.add("open");
+    }
+
+    function closeVarModal() {
+      const el = document.getElementById("var-modal");
+      if (el) el.classList.remove("open");
+    }
+
+    function addPackingNames(names) {
+      if (!Array.isArray(names) || !names.length) return [];
+      const p = getPacking();
+      if (!Array.isArray(p.items)) p.items = [];
+      const added = [];
+      names.forEach(name => {
+        if (p.items.some(i => i.name === name)) return;
+        p.items.push({ id: "pk-" + Date.now().toString(36) + "-" + (++packingDraftSeq), name, qty: 1, group: "🎒 기타", checked: false });
+        added.push(name);
+      });
+      return added;
+    }
+
+    function addVariableToItinerary(key) {
+      if (!canEdit()) return alert("읽기 전용 권한이라 일정을 수정할 수 없어요.");
+      const f = varFindings.find(x => x.key === key);
+      if (!f) return;
+      const sid = key.replace(/[^a-zA-Z0-9_-]/g, "");
+      const sel = document.getElementById("vc-day-" + sid);
+      const dayNum = Number(sel?.value) || state.days[0].day;
+      const day = state.days.find(d => d.day === dayNum) || state.days[0];
+      if (!Array.isArray(day.items)) day.items = [];
+      const place = f.place || f.title;
+      if (day.items.some(it => String(it.place || "").includes(place))) {
+        return alert(`이미 ${day.label || dayNum + "일차"}에 '${place}'가 들어 있어요.`);
+      }
+      const time = f.suggestTime || "19:30";
+      const item = {
+        id: "var-" + Date.now().toString(36),
+        time,
+        place,
+        stay: f.stay || "체류 60분",
+        moveMode: "일정에 맞춰 조정",
+        moveMin: 0,
+        moveCost: 0,
+        costTotal: Number(f.cost) || 0,
+        badges: ["🎉 축제", Number(f.cost) ? "유료 예상" : "무료"],
+        mapUrl: "https://map.naver.com/p/search/" + encodeURIComponent(place),
+        memo: f.tip || f.desc || ""
+      };
+      const idx = day.items.findIndex(x => String(x.time || "23:59") > time);
+      if (idx < 0) day.items.push(item); else day.items.splice(idx, 0, item);
+      const addedPacking = addPackingNames(f.packing || []);
+      saveState();
+      closeVarModal();
+      const costLine = Number(f.cost) ? `\n• 경비 탭에 ${fmt(f.cost)} 자동 반영` : "\n• 무료 일정이라 경비 변동 없음";
+      alert(`✅ '${place}' 일정에 추가 완료!\n• ${day.label || dayNum + "일차"} ${time} ${f.stay || ""}${costLine}` +
+        (addedPacking.length ? `\n• 짐 목록에 ${addedPacking.join(", ")} 추가` : "\n• 짐 목록은 이미 준비돼 있어요"));
+    }
+
+    function applyCrowdMemo(key) {
+      if (!canEdit()) return alert("읽기 전용 권한이라 일정을 수정할 수 없어요.");
+      const f = varFindings.find(x => x.key === key);
+      if (!f) return;
+      const sel = document.getElementById("vc-day-" + key.replace(/[^a-zA-Z0-9_-]/g, ""));
+      let days = (f.days || []).map(iso => state.days.find(d => d.date === iso)).filter(Boolean);
+      if (sel) {
+        const picked = state.days.find(d => d.day === Number(sel.value));
+        if (picked) days = [picked];
+      }
+      if (!days.length) days = [state.days[state.days.length - 1]];
+      let touched = 0;
+      days.forEach(day => {
+        const items = day.items || [];
+        const marks = items.filter(it => /⚡|스카이캡슐|해변열차|야경|전망대|피자|떡볶이|시장/.test(`${it.place} ${it.memo || ""}`));
+        const targets = (marks.length ? marks : items).slice(0, 2);
+        targets.forEach(it => {
+          const memo = String(it.memo || "");
+          if (memo.includes(f.title)) return;
+          it.memo = (memo ? memo + " · " : "") + `🎭 ${f.title} 대비: ${f.tip || ""}`;
+          it.badges = it.badges || [];
+          if (!it.badges.includes("🎭 혼잡 대비")) it.badges.push("🎭 혼잡 대비");
+          touched++;
+        });
+      });
+      if (!touched) return alert("이미 반영돼 있어요. 일정 메모를 확인해 보세요.");
+      saveState();
+      alert(`🔄 ${days.length}일치 일정 ${touched}개 항목에 혼잡 우회 메모를 넣었어요.`);
+    }
+
+    /* =====================================================================
+       🎁 혜택 체크 (국내·해외 할인/패스/멤버십 DB)
+       ===================================================================== */
+    const BENEFIT_RULES = [
+      { id: "ktx", scope: "KR", test: (it, txt) => /KTX|SRT|기차|열차|코레일|광명/.test(txt) && (Number(it.costTotal) || 0) >= 10000,
+        title: "KTX 청년·힘내라 청춘 / N카드 / 조조할인", low: 0.05, high: 0.3,
+        tip: "코레일 앱에서 청년(만 24세 이하)·힘내라 청춘·N카드(2인 동반석)·조조할인(5~20%) 중 가장 유리한 것만 골라 적용. 카드사 할인은 별도.",
+        where: "letskorail.com" },
+      { id: "blueline", scope: "KR", test: (it, txt) => /해변열차|스카이캡슐|블루라인/.test(txt),
+        title: "블루라인파크 온라인 사전예매·패키지", low: 0.05, high: 0.2,
+        tip: "공식 홈페이지 사전예매와 해변열차+스카이캡슐 패키지가 현장가보다 저렴한 경우가 많아요. 2인 동반권도 확인.",
+        where: "bluelinepark.com" },
+      { id: "hotel", scope: "KR", test: (it, txt) => /호텔|숙소|리조트|펜션|체크인/.test(txt) && (Number(it.costTotal) || 0) >= 50000,
+        title: "숙소 카드사 프로모션·캐시백", low: 0.03, high: 0.1,
+        tip: "아고다·부킹 앱 전용 쿠폰, 결제 카드사 캐시백, 호텔 공식 예약가를 나란히 비교. 취소 불가 요금이 가장 싸요.",
+        where: "예약처 앱" },
+      { id: "dining", scope: "KR", test: (it, txt) => (Array.isArray(it.menus) || /식당|국밥|피자|떡볶이|카페|커피|베이커리|맛집|시장/.test(txt)) && (Number(it.costTotal) || 0) >= 10000,
+        title: "통신사 멤버십·카드사 외식 할인", low: 0.03, high: 0.1,
+        tip: "SKT T멤버십·카드사 외식 브랜드 할인, 캐치테이블·테이블링 예약 쿠폰 확인. 현장 결제 전에 앱에서 매장을 찾아보세요.",
+        where: "멤버십 앱" },
+      { id: "transit", scope: "KR", test: (it, txt) => /버스|지하철|1호선|2호선|전철|환승|대중교통|급행/.test(txt) && (Number(it.moveCost) || 0) > 0,
+        title: "대중교통 교통카드·정액권", low: 0, high: 0.06,
+        tip: "1회권 대신 교통카드(환승 할인). 하루 3회 이상 타면 1일권·K-패스가 유리한지 계산해 보세요.",
+        where: "부산 교통카드" },
+      { id: "pass", scope: "KR", test: (it, txt) => /전망대|박물관|미술관|투어|입장|관광|해수욕장|타워/.test(txt) && (Number(it.costTotal) || 0) >= 8000,
+        title: "관광지 온라인 예매·지역 패스", low: 0.05, high: 0.25,
+        tip: "공식 온라인 예매 할인. 2곳 이상 유료 관광지를 가면 Visit Busan Pass·시티투어 패스가 이득인지 계산.",
+        where: "visitbusan.net" },
+      { id: "au-opal", scope: "AU", test: (it, txt) => /Opal|교통|버스|전철|페리|트레인|Train/.test(txt),
+        title: "Opal 카드 주말·일요일 상한", low: 0.1, high: 0.35,
+        tip: "주말·일요일은 Opal 일일 상한 요금이 적용돼요. 1회권 대신 카드 태그온, 같은 카드로 계속 타면 상한까지만 나가요.",
+        where: "transportnsw.info" },
+      { id: "au-opera", scope: "AU", test: (it, txt) => /오페라하우스|Opera|블루마운틴|Blue Mountain|타워|전망대|투어/.test(txt),
+        title: "오페라하우스 콤보패스·투어 패스", low: 0.05, high: 0.2,
+        tip: "오페라하우스 투어+공연 콤보, 블루마운틴 Explorer 패스로 교통+명소를 한 번에.", where: "공식 예매" },
+      { id: "jp-pass", scope: "JP", test: (it, txt) => /신간선|주유|JR|전철|지하철|버스|패스/.test(txt),
+        title: "JR 패스·지하철 패스·IC카드", low: 0.05, high: 0.25,
+        tip: "이동 구간이 많으면 JR 패스, 도시 내는 24/48/72시간 지하철 패스, 짧은 구간은 Suica·ICOCA가 유리해요.", where: "JR / 지하철" },
+      { id: "jp-taxfree", scope: "JP", test: (it, txt) => /돈키호테|면세|쇼핑|약국|드러그/.test(txt),
+        title: "면세(Tax Free)·쿠폰", low: 0.08, high: 0.1,
+        tip: "5,000엔 이상이면 면세. 여권 지참, 돈키호테는 쿠폰 앱을 같이 보여 주세요.", where: "매장 면세 카운터" },
+      { id: "ov-card", scope: "overseas", test: (it, txt) => (Number(it.costTotal) || 0) >= 30000,
+        title: "해외결제 카드 수수료·캐시백", low: 0.01, high: 0.05,
+        tip: "해외 결제 수수료 면제 카드·트래블로그 같은 환전 카드로 결제하면 1~2% 수수료와 환율 우대를 같이 챙길 수 있어요.", where: "카드사" },
+      { id: "membership", scope: "any", test: (it, txt) => /카페|커피|베이커리|디저트/.test(txt),
+        title: "카페 멤버십·앱 쿠폰", low: 0.05, high: 0.2,
+        tip: "브랜드 앱 적립·첫 방문 쿠폰, 텀블러 할인 확인.", where: "브랜드 앱" }
+    ];
+
+    let benefitFindings = [];
+
+    function checkTripBenefits() {
+      return runSoftButton("btn-benefit-check", "확인 중...", async () => {
+        const cc = (tripCountryCodes()[0] || "KR");
+        const overseas = state.meta?.tripType === "overseas";
+        const out = [];
+        (state.days || []).forEach(day => (day.items || []).forEach(it => {
+          const txt = `${it.place || ""} ${it.moveMode || ""} ${(it.badges || []).join(" ")} ${it.memo || ""}`;
+          BENEFIT_RULES.forEach(rule => {
+            if (rule.scope === "KR" && cc !== "KR") return;
+            if (rule.scope === "AU" && cc !== "AU") return;
+            if (rule.scope === "JP" && cc !== "JP") return;
+            if (rule.scope === "overseas" && !overseas) return;
+            let hit = false;
+            try { hit = rule.test(it, txt); } catch (e) { hit = false; }
+            if (!hit) return;
+            const base = rule.id === "transit" ? (Number(it.moveCost) || 0) : (Number(it.costTotal) || 0);
+            if (!base) return;
+            const low = Math.round(base * rule.low), high = Math.round(base * rule.high);
+            out.push({
+              key: `${rule.id}|${day.day}|${it.id}`,
+              ruleId: rule.id, day: day.day, dayLabel: day.label || `${day.day}일차`,
+              itemId: it.id, place: it.place || "",
+              title: rule.title, tip: rule.tip, where: rule.where,
+              low, high,
+              saveText: low > 0 ? `${fmt(low)}~${fmt(high)}` : "환승·정액 할인",
+              applied: Boolean(it.benefitApplied)
+            });
+          });
+        }));
+        out.sort((a, b) => (Number(a.applied) - Number(b.applied)) || (b.high - a.high));
+        benefitFindings = out;
+        renderBenefitModal(cc, overseas);
+      });
+    }
+
+    function renderBenefitModal(cc, overseas) {
+      const sum = document.getElementById("benefit-modal-summary");
+      const list = document.getElementById("benefit-modal-list");
+      if (!list) return;
+      const totalLow = benefitFindings.filter(f => !f.applied).reduce((s, f) => s + f.low, 0);
+      const totalHigh = benefitFindings.filter(f => !f.applied).reduce((s, f) => s + f.high, 0);
+      if (sum) {
+        sum.innerHTML = benefitFindings.length
+          ? `일정 ${benefitFindings.length}건에서 혜택을 찾았어요 · 예상 절감 ${fmt(totalLow)}~${fmt(totalHigh)}<br>` +
+            `<span style="font-size:10.5px;">${overseas ? `해외(${escapeAttr(cc)})` : "국내"} 기준 · 카드·멤버십 조건에 따라 실제 금액은 달라요</span>`
+          : `할인 대상이 없어요. 일정에 교통·숙소·식비·관광 항목이 있는지 확인해 주세요.`;
+      }
+      list.innerHTML = benefitFindings.length ? benefitFindings.map((f, i) => `
+        <div class="vc-item">
+          <div class="vc-head"><div class="vc-title">🎁 ${escapeAttr(f.title)}</div></div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
+            <span class="tag blue">${escapeAttr(f.dayLabel)}</span>
+            <span class="tag">${escapeAttr(f.place)}</span>
+            <span class="tag" style="font-weight:800;">예상 절감 ${f.saveText}</span>
+          </div>
+          <div class="vc-tip">💡 ${escapeAttr(f.tip)}</div>
+          <div class="vc-actions">
+            ${f.applied
+              ? `<button class="btn btn-soft" disabled style="opacity:.7;">✅ 반영됨</button>`
+              : `<button class="btn btn-primary" onclick="applyBenefitIdx(${i})">🎁 일정·경비에 혜택 반영</button>`}
+          </div>
+        </div>
+      `).join("") : `<div class="vc-empty">반영할 혜택이 없어요.</div>`;
+      document.getElementById("benefit-modal").classList.add("open");
+    }
+
+    function closeBenefitModal() {
+      const el = document.getElementById("benefit-modal");
+      if (el) el.classList.remove("open");
+    }
+
+    function applyBenefitTo(f) {
+      const day = state.days.find(d => d.day === f.day);
+      const it = day && (day.items || []).find(x => x.id === f.itemId);
+      if (!it) return false;
+      if (it.benefitApplied) return false;
+      it.badges = it.badges || [];
+      if (!it.badges.includes("🎁 할인 가능")) it.badges.push("🎁 할인 가능");
+      const note = `🎁 ${f.title} (예상 절감 ${f.saveText}) — ${f.tip}`;
+      it.memo = String(it.memo || "");
+      if (!it.memo.includes(f.title)) it.memo = (it.memo ? it.memo + " · " : "") + note;
+      it.benefitApplied = { title: f.title, saveText: f.saveText, where: f.where, at: new Date().toISOString() };
+      return true;
+    }
+
+    function applyBenefitIdx(i) {
+      if (!canEdit()) return alert("읽기 전용 권한이라 일정을 수정할 수 없어요.");
+      const f = benefitFindings[i];
+      if (!f) return;
+      if (!applyBenefitTo(f)) return alert("이미 반영됐거나 해당 일정 항목을 찾지 못했어요.");
+      f.applied = true;
+      saveState();
+      renderBenefitModal((tripCountryCodes()[0] || "KR"), state.meta?.tripType === "overseas");
+    }
+
+    function applyAllBenefits() {
+      if (!canEdit()) return alert("읽기 전용 권한이라 일정을 수정할 수 없어요.");
+      let n = 0;
+      benefitFindings.forEach(f => { if (!f.applied && applyBenefitTo(f)) { f.applied = true; n++; } });
+      if (!n) return alert("이미 모든 혜택이 반영돼 있어요.");
+      saveState();
+      renderBenefitModal((tripCountryCodes()[0] || "KR"), state.meta?.tripType === "overseas");
+      alert(`🎁 ${n}개 항목에 혜택 배지와 팁을 일정에 반영했어요.\n경비 탭 금액은 그대로 두고 '할인 가능' 메모만 남겼어요.`);
     }
 
     /* =====================================================================
