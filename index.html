@@ -680,7 +680,11 @@
         <input id="tr-cost" type="number" class="input" placeholder="총 비용(원)" style="width:110px;" />
       </div>
       <div class="row" style="margin-bottom:6px;">
-        <button class="btn btn-soft btn-sm" style="flex:1;" onclick="calcTransitEstimate()">🛣️ 예상 택시비·소요시간 계산</button>
+        <button class="btn btn-soft btn-sm" style="flex:1;" onclick="calcTransitEstimate()">🛣️ 예상 택시비·소요시간</button>
+        <label class="btn btn-soft btn-sm" style="flex:1;cursor:pointer;">
+          📷 길찾기 캡처 (OCR)
+          <input type="file" accept="image/*" style="display:none;" onchange="handleTransitCapture(this.files[0])" />
+        </label>
         <a id="tr-naver-dir" class="btn btn-soft btn-sm" style="text-decoration:none;" href="https://map.naver.com/p/directions" target="_blank">네이버 길찾기</a>
       </div>
       <div id="tr-est-box" style="font-size:12px;color:var(--ocean-dark);margin-bottom:8px;"></div>
@@ -1093,6 +1097,53 @@
       const t = encodeURIComponent(document.getElementById("tr-to").value.trim());
       if (f && t) document.getElementById("tr-naver-dir").href = `https://map.naver.com/p/search/${t}`;
     }
+
+    async function handleTransitCapture(file) {
+      if (!file) return;
+      const box = document.getElementById("tr-est-box");
+      if (!window.Tesseract) { box.textContent = "OCR 라이브러리 로드 중입니다."; return; }
+      box.textContent = "📷 길찾기 캡처에서 시간·요금·노선 읽는 중...";
+      try {
+        const res = await window.Tesseract.recognize(file, "kor+eng", {
+          logger: m => {
+            if (m.status === "recognizing text") box.textContent = `📷 길찾기 분석 중... ${Math.round((m.progress || 0) * 100)}%`;
+          }
+        });
+        const txt = res?.data?.text || "";
+        const mFare = txt.match(/([0-9][0-9,]{2,})\s*원/);
+        const mTimeRange = txt.match(/(\d{1,2}:\d{2})\s*[~\-→]\s*(\d{1,2}:\d{2})/);
+        const mMin = txt.match(/(\d+)\s*분/);
+        const linesFound = [];
+        const mSub = txt.match(/([1-9]호선|수인분당선|신분당선|공항철도|경의중앙선|동해선)/g);
+        const mBus = txt.match(/(\d{2,4}번?)/g);
+        if (mSub) linesFound.push(...new Set(mSub));
+        else if (mBus) linesFound.push(mBus[0]);
+
+        if (mFare) document.getElementById("tr-cost").value = mFare[1].replace(/,/g, "");
+        if (mTimeRange) {
+          document.getElementById("tr-dep").value = mTimeRange[1];
+          document.getElementById("tr-arr").value = mTimeRange[2];
+        }
+        if (linesFound.length) {
+          document.getElementById("tr-type").value = "지하철/버스";
+          document.getElementById("tr-code").value = linesFound.join(" → ");
+        }
+        box.textContent = `✓ 캡처 분석 완료 (${mMin ? mMin[0] + " · " : ""}${mFare ? mFare[0] + " · " : ""}${linesFound.join(" ") || "세부 내용 확인 후 저장"})`;
+      } catch {
+        box.textContent = "캡처 분석 중 오류가 발생했습니다.";
+      }
+    }
+
+    document.getElementById("transit-modal")?.addEventListener("paste", (ev) => {
+      const items = ev.clipboardData?.items || [];
+      for (const it of items) {
+        if (it.type.startsWith("image/")) {
+          ev.preventDefault();
+          handleTransitCapture(it.getAsFile());
+          break;
+        }
+      }
+    });
 
     async function calcTransitEstimate() {
       const box = document.getElementById("tr-est-box");
