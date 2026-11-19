@@ -1296,26 +1296,6 @@
 
     const fmt = (n) => "₩" + Math.round(Number(n) || 0).toLocaleString("ko-KR");
 
-    function renderHeader() {
-      const m = state.meta;
-      if (document.body.classList.contains("unlocked") && !isNewFlow) {
-        document.title = `${m.title} 대시보드`;
-      } else {
-        document.title = "완벽한 여행계획을 위한 웹사이트";
-      }
-      document.getElementById("hdr-title").textContent = m.title;
-      document.getElementById("hdr-sub").textContent = `${m.startDate} ~ ${m.endDate} · 성인 ${m.travelers}명`;
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const start = new Date(m.startDate + "T00:00:00");
-      const diff = Math.ceil((start - today) / 86400000);
-      document.getElementById("hdr-dday").textContent = diff > 0 ? `D-${diff}` : diff === 0 ? "D-Day" : `D+${Math.abs(diff)}`;
-
-      const totalMin = state.days.reduce((acc, d) => acc + d.items.reduce((s, it) => s + (it.moveMin || 0), 0), 0);
-      const h = Math.floor(totalMin / 60), min = totalMin % 60;
-      document.getElementById("hdr-travel-time").textContent = `총 이동 ${h}시간 ${min}분`;
-
     function inferItemExpenseCategory(it) {
       const text = `${it.place || ""} ${(it.badges || []).join(" ")} ${it.moveMode || ""}`;
       if (/호텔|숙소|펜션|리조트|체크인|에어비앤비|모텔|게스트하우스/.test(text)) return "숙소";
@@ -1379,6 +1359,26 @@
       });
       return list;
     }
+
+    function renderHeader() {
+      const m = state.meta;
+      if (document.body.classList.contains("unlocked") && !isNewFlow) {
+        document.title = `${m.title} 대시보드`;
+      } else {
+        document.title = "완벽한 여행계획을 위한 웹사이트";
+      }
+      document.getElementById("hdr-title").textContent = m.title;
+      document.getElementById("hdr-sub").textContent = `${m.startDate} ~ ${m.endDate} · 성인 ${m.travelers}명`;
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const start = new Date(m.startDate + "T00:00:00");
+      const diff = Math.ceil((start - today) / 86400000);
+      document.getElementById("hdr-dday").textContent = diff > 0 ? `D-${diff}` : diff === 0 ? "D-Day" : `D+${Math.abs(diff)}`;
+
+      const totalMin = state.days.reduce((acc, d) => acc + d.items.reduce((s, it) => s + (it.moveMin || 0), 0), 0);
+      const h = Math.floor(totalMin / 60), min = totalMin % 60;
+      document.getElementById("hdr-travel-time").textContent = `총 이동 ${h}시간 ${min}분`;
 
       const synced = getSyncedExpenses();
       const totalExp = synced.reduce((s, e) => s + (Number(e.amount) || 0), 0);
@@ -3802,17 +3802,17 @@
       checkInviteFlow();
     }
 
-    renderAll();
-    initSupabaseFromStorage();
+    try { renderAll(); } catch (e) { console.error("renderAll error:", e); }
+    try { initSupabaseFromStorage(); } catch (e) { console.error("supabase init error:", e); }
     setTimeout(() => {
       splashDone = true;
       const sp = document.getElementById("splash-screen");
       if (sp) {
         sp.classList.add("hide");
-        setTimeout(() => { sp.style.display = "none"; }, 420);
+        setTimeout(() => { sp.style.display = "none"; }, 250);
       }
       updateAccessGate();
-    }, 1150);
+    }, 450);
   </script>
 </body>
 </html>
