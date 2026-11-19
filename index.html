@@ -5008,15 +5008,16 @@
 
     try { renderAll(); } catch (e) { console.error("renderAll error:", e); }
     try { initSupabaseFromStorage(); } catch (e) { console.error("supabase init error:", e); }
-    setTimeout(() => {
+    // 렌더링이 끝난 즉시 스플래시를 걷어내고 바로 진입 (0.2초 페이드아웃)
+    (function finishSplash() {
       splashDone = true;
       const sp = document.getElementById("splash-screen");
       if (sp) {
         sp.classList.add("hide");
-        setTimeout(() => { sp.style.display = "none"; }, 220);
+        setTimeout(() => { sp.style.display = "none"; }, 200);
       }
       updateAccessGate();
-    }, 260);
+    })();
   </script>
 </body>
 </html>
