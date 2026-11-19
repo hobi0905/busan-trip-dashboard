@@ -408,7 +408,7 @@
     }
     .pin-num {
       background: #0284c7; color: #fff;
-      width: 24px; height: 24px; border-radius: 50%;
+      width: 22px; height: 22px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-weight: 800; font-size: 12px;
       border: 2px solid #fff;
@@ -971,6 +971,8 @@
 
     let leafletMap = null;
     let mapLayerGroup = null;
+    let dayMapPts = [];
+
     function renderDayMap() {
       if (!window.L) return;
       const mapEl = document.getElementById("day-map");
@@ -981,45 +983,58 @@
           attribution: "© OpenStreetMap"
         }).addTo(leafletMap);
         mapLayerGroup = L.layerGroup().addTo(leafletMap);
+        leafletMap.on("zoomend", () => { if (dayMapPts.length) drawDayPins(dayMapPts); });
       }
-      mapLayerGroup.clearLayers();
       const dayObj = state.days.find(d => d.day === currentDay) || state.days[0];
-      const pts = (dayObj.items || []).map(it => {
+      dayMapPts = (dayObj.items || []).map(it => {
         const ll = (typeof it.lat === "number" && typeof it.lng === "number") ? [it.lat, it.lng] : COORD_BY_ID[it.id];
         return ll ? { it, ll } : null;
       }).filter(Boolean);
-      if (!pts.length) return;
-      leafletMap.fitBounds(pts.map(p => p.ll), { padding: [26, 26] });
-      setTimeout(() => leafletMap.invalidateSize(), 80);
-      // 같은 지점(예: 미포 정거장 출발·도착)이 완전히 겹쳐 번호가 가려지지 않도록 45m 이내 좌표만 살짝 벗어나게 둔다.
+      mapLayerGroup.clearLayers();
+      if (!dayMapPts.length) return;
+      leafletMap.fitBounds(dayMapPts.map(p => p.ll), { padding: [26, 26] });
+      drawDayPins(dayMapPts);
+      setTimeout(() => { leafletMap.invalidateSize(); if (dayMapPts.length) drawDayPins(dayMapPts); }, 60);
+    }
+
+    // 번호 핀이 서로 가려지지 않도록, 지금 확대 수준에서 겹치는 핀만 화면상에서 조금씩 떼어 놓는다.
+    // 실제 위치에서 벗어나는 거리는 최대 약 330m로 묶어 두고, 확대하면 실제 좌표로 돌아간다.
+    function drawDayPins(pts) {
+      if (!leafletMap) return;
+      mapLayerGroup.clearLayers();
+      const zoom = leafletMap.getZoom();
+      const MAX_DEG = 0.003;
+      const GAP = 16;
       const placed = [];
       const shown = pts.map(p => {
-        let ll = p.ll.slice();
-        let k = 1;
-        while (k <= 6 && placed.some(q => Math.abs(q[0] - ll[0]) < 0.0004 && Math.abs(q[1] - ll[1]) < 0.0004)) {
-          const ang = (k - 1) * (Math.PI * 2 / 3) + 0.5;
-          const r = 0.00045 * k;
-          ll = [p.ll[0] + Math.sin(ang) * r, p.ll[1] + Math.cos(ang) * r];
-          k++;
+        const base = leafletMap.project(L.latLng(p.ll), zoom);
+        let pt = base;
+        for (let k = 1; k <= 14; k++) {
+          if (!placed.some(q => q.distanceTo(pt) < GAP)) break;
+          const ang = k * 2.399963;
+          const r = 7 * Math.sqrt(k);
+          pt = L.point(base.x + Math.cos(ang) * r, base.y + Math.sin(ang) * r);
         }
-        placed.push(ll);
-        return ll;
+        const ll = leafletMap.unproject(pt, zoom);
+        const dLat = Math.min(MAX_DEG, Math.max(-MAX_DEG, ll.lat - p.ll[0]));
+        const dLng = Math.min(MAX_DEG, Math.max(-MAX_DEG, ll.lng - p.ll[1]));
+        const out = [p.ll[0] + dLat, p.ll[1] + dLng];
+        placed.push(leafletMap.project(L.latLng(out), zoom));
+        return out;
       });
-      const coords = [];
       pts.forEach((p, idx) => {
-        coords.push(shown[idx]);
         const icon = L.divIcon({
           className: "",
           html: `<div class="pin-num">${idx + 1}</div>`,
-          iconSize: [24, 24],
-          iconAnchor: [12, 12]
+          iconSize: [22, 22],
+          iconAnchor: [11, 11]
         });
         L.marker(shown[idx], { icon, riseOnHover: true })
           .bindPopup(`<strong>${idx + 1}. ${p.it.place}</strong><br>${p.it.time}${p.it.moveMode ? " · " + p.it.moveMode : ""}`)
           .addTo(mapLayerGroup);
       });
-      if (coords.length > 1) {
-        L.polyline(coords, { color: "#0284c7", weight: 3.5, dashArray: "6, 6", opacity: 0.85 }).addTo(mapLayerGroup);
+      if (shown.length > 1) {
+        L.polyline(shown, { color: "#0284c7", weight: 3.5, dashArray: "6, 6", opacity: 0.85 }).addTo(mapLayerGroup);
       }
     }
 
