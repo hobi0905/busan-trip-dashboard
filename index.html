@@ -577,10 +577,8 @@
         </div>
 
         <div class="card">
-          <h3 class="sec-title">✨ 새 여행 계획 개설</h3>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-            새로운 여행을 만들 때 <strong>비밀번호</strong>를 걸어두면, 공유 링크를 받은 사람도 비밀번호를 입력해야 볼 수 있어요.
-          </div>
+          <h3 class="sec-title">📂 내 여행 목록</h3>
+          <div id="my-trips-list" style="margin-bottom:10px;"></div>
           <button class="btn btn-soft" style="width:100%;" onclick="openNewTripModal()">+ 새 여행 만들기 (비밀번호 설정)</button>
         </div>
 
@@ -750,6 +748,7 @@
     }));
 
     const STORAGE_KEY = "busan_trip_dashboard_v1";
+    const MY_TRIPS_KEY = "busan_trip_my_trips_v1";
     const SB_CONF_KEY = "busan_trip_supabase_conf_v1";
     const DEFAULT_SB = {
       url: "https://dwsvrpxppmicykxuhkhg.supabase.co",
@@ -1203,11 +1202,70 @@
         checklist: []
       };
       if (passHash) sessionStorage.setItem("unlocked_" + currentSyncId, passHash);
+      registerMyTrip(currentSyncId, state.meta);
       history.replaceState(null, "", getShareUrl());
       closeNewTripModal();
       saveState();
       await startSupabase(DEFAULT_SB.url, DEFAULT_SB.key, currentSyncId);
       alert(`새 여행 '${title}'이 개설됐어요! 상단 '공유' 버튼으로 링크를 보낼 수 있습니다.`);
+    }
+
+    function getMyTrips() {
+      try {
+        const raw = localStorage.getItem(MY_TRIPS_KEY);
+        const list = raw ? JSON.parse(raw) : [];
+        if (!list.some(t => t.syncId === DEFAULT_SB.syncId)) {
+          list.unshift({
+            syncId: DEFAULT_SB.syncId,
+            title: DEFAULT_DATA.meta.title,
+            startDate: DEFAULT_DATA.meta.startDate,
+            endDate: DEFAULT_DATA.meta.endDate,
+            locked: false
+          });
+        }
+        return list;
+      } catch {
+        return [{ syncId: DEFAULT_SB.syncId, title: DEFAULT_DATA.meta.title, startDate: DEFAULT_DATA.meta.startDate, endDate: DEFAULT_DATA.meta.endDate, locked: false }];
+      }
+    }
+
+    function registerMyTrip(syncId, meta) {
+      const list = getMyTrips().filter(t => t.syncId !== syncId);
+      list.unshift({
+        syncId,
+        title: meta.title || syncId,
+        startDate: meta.startDate || "",
+        endDate: meta.endDate || "",
+        locked: Boolean(meta.passHash)
+      });
+      localStorage.setItem(MY_TRIPS_KEY, JSON.stringify(list));
+    }
+
+    function renderMyTrips() {
+      const el = document.getElementById("my-trips-list");
+      if (!el) return;
+      const list = getMyTrips();
+      el.innerHTML = list.map(t => {
+        const active = t.syncId === currentSyncId;
+        return `
+          <div class="expense-item" style="padding:8px 0;">
+            <div style="flex:1;">
+              <div style="font-size:13.5px;font-weight:700;">${t.locked ? "🔒 " : "🗺️ "}${t.title} ${active ? '<span class="tag blue">현재</span>' : ""}</div>
+              <div style="font-size:11.5px;color:var(--muted);">${t.startDate} ~ ${t.endDate}</div>
+            </div>
+            ${active ? "" : `<button class="btn btn-soft btn-sm" onclick="switchTrip('${t.syncId}')">열기</button>`}
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function switchTrip(syncId) {
+      currentSyncId = syncId;
+      state = loadState();
+      history.replaceState(null, "", getShareUrl());
+      renderAll();
+      checkLockScreen();
+      await startSupabase(DEFAULT_SB.url, DEFAULT_SB.key, currentSyncId);
     }
 
     /* Supabase Cloud Sync */
@@ -1313,12 +1371,14 @@
     });
 
     function renderAll() {
+      registerMyTrip(currentSyncId, state.meta);
       renderHeader();
       renderTimeline();
       renderDayMap();
       renderExpenses();
       renderWeather();
       renderChecklist();
+      renderMyTrips();
     }
 
     renderAll();
