@@ -3773,13 +3773,13 @@
       document.getElementById("trip-type-modal").classList.add("open");
       document.getElementById("welcome-host-modal")?.classList.remove("open");
     }
-    function closeTripTypeModal() {
+    function closeTripTypeModal(reopenGate = true) {
       document.getElementById("trip-type-modal").classList.remove("open");
-      setTimeout(() => { try { updateAccessGate(); } catch {} }, 30);
+      if (reopenGate) setTimeout(() => { try { updateAccessGate(); } catch {} }, 30);
     }
 
     function pickTripType(type) {
-      closeTripTypeModal();
+      closeTripTypeModal(false);
       if (type === "overseas") { openOverseasSetupModal(); return; }
       openNewTripSetupModal(false);
     }
