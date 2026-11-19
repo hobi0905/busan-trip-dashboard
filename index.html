@@ -840,23 +840,31 @@
   <div id="profile-modal" class="modal-backdrop center" onclick="if(event.target===this && myProfile.nickname)closeProfileModal()">
     <div class="modal-sheet">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <div style="font-size:16px;font-weight:800;">👤 내 프로필 설정</div>
+        <div style="font-size:16px;font-weight:800;">👤 내 프로필</div>
         <button id="prof-close-btn" class="btn btn-sm" style="background:#f1f5f9;" onclick="closeProfileModal()">닫기</button>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+      <div class="row" style="gap:6px;margin-bottom:12px;">
+        <button id="prof-tab-create" class="btn btn-primary btn-sm" style="flex:1;" onclick="setProfileMode('create')">✨ 새 프로필 만들기</button>
+        <button id="prof-tab-login" class="btn btn-soft btn-sm" style="flex:1;" onclick="setProfileMode('login')">🔑 기존 프로필 불러오기</button>
+      </div>
+      <div id="prof-avatar-row" style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
         <div id="prof-avatar-preview" class="avatar-md" style="width:54px;height:54px;font-size:20px;">👤</div>
         <div style="flex:1;">
           <label class="btn btn-soft btn-sm" style="cursor:pointer;">
             📷 프로필 사진 선택
             <input type="file" accept="image/*" style="display:none;" onchange="handleAvatarUpload(this.files[0])" />
           </label>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;">닉네임과 사진은 동반인에게 함께 보여요.</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">닉네임·비밀번호로 다른 기기/링크에서도 그대로 불러올 수 있어요.</div>
         </div>
       </div>
       <div class="row">
-        <input id="prof-nickname" class="input" placeholder="닉네임 입력 (예: 가연)" maxlength="20" />
+        <input id="prof-nickname" class="input" placeholder="예: 홍길동" maxlength="20" />
       </div>
-      <button class="btn btn-primary" style="width:100%;" onclick="saveMyProfile()">프로필 저장하기</button>
+      <div class="row">
+        <input id="prof-password" type="password" class="input" placeholder="비밀번호 설정 (다른 기기에서 불러올 때 필요)" maxlength="40" />
+      </div>
+      <div id="prof-msg" style="font-size:12px;color:var(--danger);margin-bottom:8px;display:none;"></div>
+      <button id="prof-submit-btn" class="btn btn-primary" style="width:100%;" onclick="submitProfileModal()">프로필 저장하기</button>
     </div>
   </div>
 
@@ -2070,15 +2078,49 @@
     }
 
     /* Profile, Invite & Member Approval */
+    let profileModalMode = "create";
+
+    function setProfileMode(mode) {
+      profileModalMode = mode;
+      const isCreate = mode === "create";
+      document.getElementById("prof-tab-create").className = `btn btn-sm ${isCreate ? "btn-primary" : "btn-soft"}`;
+      document.getElementById("prof-tab-login").className = `btn btn-sm ${!isCreate ? "btn-primary" : "btn-soft"}`;
+      document.getElementById("prof-avatar-row").style.display = isCreate ? "flex" : "none";
+      document.getElementById("prof-password").placeholder = isCreate
+        ? "비밀번호 설정 (다른 기기·링크에서 불러올 때 필요)"
+        : "설정했던 비밀번호 입력";
+      document.getElementById("prof-submit-btn").textContent = isCreate
+        ? (myProfile.nickname ? "프로필 저장하기" : "프로필 만들고 시작하기")
+        : "내 프로필 불러오기";
+      const msg = document.getElementById("prof-msg");
+      if (msg) { msg.style.display = "none"; msg.textContent = ""; }
+    }
+
     function openProfileModal(forced = false) {
       draftAvatarDataUrl = myProfile.avatar || "";
       document.getElementById("prof-nickname").value = myProfile.nickname || "";
+      document.getElementById("prof-password").value = "";
       document.getElementById("prof-close-btn").style.display = forced ? "none" : "inline-flex";
       const prev = document.getElementById("prof-avatar-preview");
       prev.innerHTML = draftAvatarDataUrl ? `<img src="${draftAvatarDataUrl}" style="width:100%;height:100%;object-fit:cover;" />` : "👤";
+      setProfileMode(myProfile.nickname ? "create" : "create");
       document.getElementById("profile-modal").classList.add("open");
     }
     function closeProfileModal() { document.getElementById("profile-modal").classList.remove("open"); }
+
+    function showProfError(text) {
+      const msg = document.getElementById("prof-msg");
+      if (!msg) return alert(text);
+      msg.textContent = text;
+      msg.style.display = "block";
+    }
+
+    function ensureSbClient() {
+      if (!sbClient && window.supabase) {
+        sbClient = window.supabase.createClient(DEFAULT_SB.url, DEFAULT_SB.key);
+      }
+      return sbClient;
+    }
 
     function handleAvatarUpload(file) {
       if (!file) return;
@@ -2101,18 +2143,89 @@
       reader.readAsDataURL(file);
     }
 
-    function saveMyProfile() {
+    async function submitProfileModal() {
       const nick = document.getElementById("prof-nickname").value.trim();
-      if (!nick) return alert("닉네임을 입력해 주세요.");
-      myProfile.nickname = nick;
-      myProfile.avatar = draftAvatarDataUrl || "";
-      localStorage.setItem(PROFILE_KEY, JSON.stringify(myProfile));
-      if (!state.meta.hostId && !isInviteLink) state.meta.hostId = myProfile.id;
-      const meInMembers = (state.members || []).find(m => m.id === myProfile.id);
-      if (meInMembers) { meInMembers.nickname = nick; meInMembers.avatar = myProfile.avatar; }
-      closeProfileModal();
-      saveState();
-      checkInviteFlow();
+      const pw = document.getElementById("prof-password").value;
+      if (!nick) return showProfError("닉네임을 입력해 주세요.");
+      if (!pw) return showProfError("비밀번호를 입력해 주세요.");
+
+      const btn = document.getElementById("prof-submit-btn");
+      btn.disabled = true;
+      const prevTxt = btn.textContent;
+      btn.textContent = "확인 중...";
+      const nickKey = "__profile__:" + nick.toLowerCase();
+      const passHash = await sha256(pw);
+      const client = ensureSbClient();
+
+      try {
+        if (profileModalMode === "login") {
+          if (!client) { showProfError("클라우드 연결 중입니다. 잠시 후 다시 눌러주세요."); return; }
+          const { data, error } = await client.from("trip_dashboards").select("data").eq("sync_id", nickKey).maybeSingle();
+          if (error) { showProfError("불러오기 오류: " + error.message); return; }
+          if (!data || !data.data) { showProfError("등록된 닉네임이 없어요. '새 프로필 만들기'로 먼저 만들어 주세요."); return; }
+          if (data.data.passHash !== passHash) { showProfError("비밀번호가 맞지 않아요."); return; }
+          myProfile = {
+            id: data.data.id,
+            nickname: data.data.nickname,
+            avatar: data.data.avatar || "",
+            passHash: data.data.passHash
+          };
+          localStorage.setItem(PROFILE_KEY, JSON.stringify(myProfile));
+          closeProfileModal();
+          renderAll();
+          checkInviteFlow();
+          return;
+        }
+
+        // create / update mode
+        if (client) {
+          const { data: existing } = await client.from("trip_dashboards").select("data").eq("sync_id", nickKey).maybeSingle();
+          if (existing && existing.data && existing.data.id !== myProfile.id) {
+            if (existing.data.passHash === passHash) {
+              // Same nickname + same password -> log right in seamlessly!
+              myProfile = {
+                id: existing.data.id,
+                nickname: existing.data.nickname,
+                avatar: draftAvatarDataUrl || existing.data.avatar || "",
+                passHash
+              };
+              localStorage.setItem(PROFILE_KEY, JSON.stringify(myProfile));
+              closeProfileModal();
+              renderAll();
+              checkInviteFlow();
+              return;
+            }
+            showProfError("이미 사용 중인 닉네임이에요. 내 프로필이라면 위에서 '🔑 기존 프로필 불러오기'를 눌러주세요.");
+            return;
+          }
+          const profileDoc = {
+            id: myProfile.id,
+            nickname: nick,
+            avatar: draftAvatarDataUrl || "",
+            passHash,
+            updatedAt: new Date().toISOString()
+          };
+          await client.from("trip_dashboards").upsert({
+            sync_id: nickKey,
+            data: profileDoc,
+            updated_at: new Date().toISOString()
+          }, { onConflict: "sync_id" });
+        }
+
+        myProfile.nickname = nick;
+        myProfile.avatar = draftAvatarDataUrl || "";
+        myProfile.passHash = passHash;
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(myProfile));
+        if (!state.meta.hostId && !isInviteLink) state.meta.hostId = myProfile.id;
+        const meInMembers = (state.members || []).find(m => m.id === myProfile.id);
+        if (meInMembers) { meInMembers.nickname = nick; meInMembers.avatar = myProfile.avatar; }
+        closeProfileModal();
+        saveState();
+        checkInviteFlow();
+      } finally {
+        btn.disabled = false;
+        btn.textContent = prevTxt;
+      }
     }
 
     function openInviteShare() {
