@@ -645,9 +645,10 @@
       <!-- TAB 6: RECOMMEND -->
       <section id="tab-recommend" class="tab-panel">
         <div class="card" style="padding:10px 12px;">
-          <div class="row" style="gap:6px;margin-bottom:0;">
-            <button id="rec-mode-spot" class="btn btn-primary btn-sm" style="flex:1;" onclick="setRecommendMode('spot')">📍 1. 기존 동선 맞춤 추천</button>
-            <button id="rec-mode-route" class="btn btn-soft btn-sm" style="flex:1;" onclick="setRecommendMode('route')">🗺️ 2. 신규 루트 추천</button>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
+            <button id="rec-mode-spot" class="btn btn-primary btn-sm" style="padding:7px 4px;font-size:11.5px;" onclick="setRecommendMode('spot')">📍 1. 동선 맞춤</button>
+            <button id="rec-mode-route" class="btn btn-soft btn-sm" style="padding:7px 4px;font-size:11.5px;" onclick="setRecommendMode('route')">🗺️ 2. 신규 루트</button>
+            <button id="rec-mode-must" class="btn btn-soft btn-sm" style="padding:7px 4px;font-size:11.5px;" onclick="setRecommendMode('must')">📌 3. 필수 장소</button>
           </div>
         </div>
 
@@ -717,6 +718,41 @@
             <button class="btn btn-primary" style="width:100%;" onclick="generateNewRoute()">🗺️ AI 추천 루트 생성하기</button>
           </div>
           <div id="route-results"></div>
+        </div>
+
+        <div id="rec-must-panel" style="display:none;">
+          <div class="card">
+            <div class="sec-title">📌 필수 장소 포함 최적 루트 추천</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+              꼭 가야 하는 곳을 여러 개 추가하면 <strong>휴무일 자동 회피 → 권역별 묶기 → 최단 동선 정렬</strong>까지 여러 번 검증해 최적의 루트를 짜 드려요!
+            </div>
+            <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:4px;">여행 지역 & 날짜</div>
+            <div class="row" style="margin-bottom:6px;">
+              <input id="must-dest" class="input" placeholder="예: 부산, 제주, 강릉, 경주" value="부산" />
+            </div>
+            <div class="row" style="margin-bottom:10px;">
+              <input id="must-start" type="date" class="input" style="flex:1;" />
+              <input id="must-end" type="date" class="input" style="flex:1;" />
+            </div>
+            <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:4px;">꼭 가야 하는 장소 추가 (여러 개 가능)</div>
+            <div class="row" style="margin-bottom:6px;">
+              <input id="must-spot-input" class="input" style="flex:1;" placeholder="예: 이재모피자, 이가네 떡볶이, 광안리" onkeydown="if(event.key==='Enter'){event.preventDefault();addMustSpot();}" />
+              <select id="must-spot-closed" class="input" style="width:98px;">
+                <option value="">휴무 없음</option>
+                <option value="일">일요일 휴무</option>
+                <option value="월">월요일 휴무</option>
+                <option value="화">화요일 휴무</option>
+                <option value="수">수요일 휴무</option>
+                <option value="목">목요일 휴무</option>
+                <option value="금">금요일 휴무</option>
+                <option value="토">토요일 휴무</option>
+              </select>
+              <button class="btn btn-soft btn-sm" onclick="addMustSpot()">+ 추가</button>
+            </div>
+            <div id="must-spots-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+            <button class="btn btn-primary" style="width:100%;" onclick="optimizeMustVisitRoute()">🧠 휴무·동선 검증해 최적 루트 만들기</button>
+          </div>
+          <div id="must-results"></div>
         </div>
       </section>
 
@@ -2896,6 +2932,10 @@
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
+    function haversineKm(lat1, lng1, lat2, lng2) {
+      return calcDistKm(lat1, lng1, lat2, lng2);
+    }
+
     function updateRecommendCount() {
       const cnt = document.querySelectorAll(".rec-pick:checked").length;
       const btn = document.getElementById("rec-save-btn");
@@ -3213,12 +3253,14 @@
     }
 
     function setRecommendMode(mode) {
-      const isSpot = mode === "spot";
+      const isSpot = mode === "spot", isRoute = mode === "route", isMust = mode === "must";
       document.getElementById("rec-mode-spot").className = `btn btn-sm ${isSpot ? "btn-primary" : "btn-soft"}`;
-      document.getElementById("rec-mode-route").className = `btn btn-sm ${!isSpot ? "btn-primary" : "btn-soft"}`;
+      document.getElementById("rec-mode-route").className = `btn btn-sm ${isRoute ? "btn-primary" : "btn-soft"}`;
+      document.getElementById("rec-mode-must").className = `btn btn-sm ${isMust ? "btn-primary" : "btn-soft"}`;
       document.getElementById("rec-spot-panel").style.display = isSpot ? "block" : "none";
-      document.getElementById("rec-route-panel").style.display = !isSpot ? "block" : "none";
-      if (!isSpot) {
+      document.getElementById("rec-route-panel").style.display = isRoute ? "block" : "none";
+      document.getElementById("rec-must-panel").style.display = isMust ? "block" : "none";
+      if (isRoute) {
         const rs = document.getElementById("route-start"), re = document.getElementById("route-end");
         if (!rs.value) rs.value = state.meta?.startDate || "2027-01-31";
         if (!re.value) re.value = state.meta?.endDate || "2027-02-02";
@@ -3226,6 +3268,242 @@
           document.getElementById("route-dest").value = (state.meta?.destination || "부산").split(/[(\s]/)[0];
         }
       }
+      if (isMust) {
+        const ms = document.getElementById("must-start"), me = document.getElementById("must-end");
+        if (!ms.value) ms.value = state.meta?.startDate || "2027-01-31";
+        if (!me.value) me.value = state.meta?.endDate || "2027-02-02";
+        if (!document.getElementById("must-dest").value) {
+          document.getElementById("must-dest").value = (state.meta?.destination || "부산").split(/[(\s]/)[0];
+        }
+        renderMustSpotsList();
+      }
+    }
+
+    const KNOWN_SPOT_META = {
+      "이재모피자": { closed: "일", lat: 35.1558, lng: 129.0628, cat: "음식점", cost: 32000, stay: "체류 70분", desc: "전포점 추천 (일요일 전 지점 휴무 회피)" },
+      "이가네": { closed: "일", lat: 35.0998, lng: 129.0273, cat: "음식점", cost: 12000, stay: "체류 35분", desc: "부평깡통시장 떡볶이 (일요일 휴무 회피)" },
+      "다리집": { closed: "", lat: 35.1436, lng: 129.1103, cat: "음식점", cost: 18000, stay: "체류 45분", desc: "남천동 떡볶이·오징어튀김" },
+      "본전돼지국밥": { closed: "", lat: 35.1165, lng: 129.0432, cat: "음식점", cost: 22000, stay: "체류 45분", desc: "부산역 인근 돼지국밥" },
+      "광안리": { closed: "", lat: 35.1532, lng: 129.1187, cat: "관광", cost: 0, stay: "체류 60분", desc: "광안대교 정면 해변 산책" },
+      "스카이캡슐": { closed: "", lat: 35.1617, lng: 129.1912, cat: "관광", cost: 35000, stay: "체류 40분", desc: "해운대 블루라인파크" },
+      "흰여울": { closed: "", lat: 35.0789, lng: 129.0445, cat: "관광", cost: 0, stay: "체류 70분", desc: "영도 바다 절벽 산책로" },
+      "동화가든": { closed: "수", lat: 37.7911, lng: 128.9144, cat: "음식점", cost: 24000, stay: "체류 50분", desc: "초당순두부마을 (수요일 휴무 회피)" }
+    };
+
+    let mustVisitSpots = [];
+
+    function renderMustSpotsList() {
+      const box = document.getElementById("must-spots-list");
+      if (!box) return;
+      if (!mustVisitSpots.length) {
+        box.innerHTML = `<span style="font-size:11.5px;color:var(--muted);">아직 추가된 필수 장소가 없어요. 위에서 입력해 주세요!</span>`;
+        return;
+      }
+      box.innerHTML = mustVisitSpots.map((s, i) => `
+        <span class="pill" style="gap:6px;">
+          📌 ${s.name}${s.closed ? ` <span style="color:var(--danger);">(${s.closed} 휴무)</span>` : ""}
+          <button style="border:none;background:none;color:var(--muted);cursor:pointer;font-weight:800;padding:0 2px;" onclick="removeMustSpot(${i})">×</button>
+        </span>
+      `).join("");
+    }
+
+    function addMustSpot() {
+      const inp = document.getElementById("must-spot-input");
+      const sel = document.getElementById("must-spot-closed");
+      const raw = inp.value.trim();
+      if (!raw) return;
+      const parts = raw.split(",").map(x => x.trim()).filter(Boolean);
+      parts.forEach(name => {
+        const knownKey = Object.keys(KNOWN_SPOT_META).find(k => name.includes(k));
+        const autoClosed = sel.value || (knownKey ? KNOWN_SPOT_META[knownKey].closed : "");
+        if (!mustVisitSpots.some(x => x.name === name)) {
+          mustVisitSpots.push({ name, closed: autoClosed });
+        }
+      });
+      inp.value = "";
+      sel.value = "";
+      renderMustSpotsList();
+    }
+
+    function removeMustSpot(idx) {
+      mustVisitSpots.splice(idx, 1);
+      renderMustSpotsList();
+    }
+
+    async function geocodeSpot(name, destHint) {
+      const knownKey = Object.keys(KNOWN_SPOT_META).find(k => name.includes(k));
+      if (knownKey) {
+        const m = KNOWN_SPOT_META[knownKey];
+        return { name, lat: m.lat, lng: m.lng, cat: m.cat, cost: m.cost, stay: m.stay, desc: m.desc };
+      }
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(destHint + " " + name)}`;
+        const r = await fetch(url);
+        const arr = await r.json();
+        if (arr && arr[0]) {
+          return { name, lat: parseFloat(arr[0].lat), lng: parseFloat(arr[0].lon), cat: "필수", cost: 0, stay: "체류 60분", desc: "필수 방문 장소" };
+        }
+      } catch {}
+      return { name, lat: null, lng: null, cat: "필수", cost: 0, stay: "체류 60분", desc: "필수 방문 장소" };
+    }
+
+    async function optimizeMustVisitRoute() {
+      if (!mustVisitSpots.length) {
+        const pending = document.getElementById("must-spot-input").value.trim();
+        if (pending) addMustSpot();
+      }
+      if (!mustVisitSpots.length) return alert("꼭 가야 하는 장소를 1개 이상 추가해 주세요!");
+      const destRaw = document.getElementById("must-dest").value.trim() || "부산";
+      const startStr = document.getElementById("must-start").value;
+      const endStr = document.getElementById("must-end").value;
+      if (!startStr || !endStr || endStr < startStr) return alert("여행 시작일과 종료일을 확인해 주세요.");
+
+      const resBox = document.getElementById("must-results");
+      resBox.innerHTML = `<div class="card" style="text-align:center;color:var(--muted);padding:20px;">🧠 1차 휴무일 검증 → 2차 권역 클러스터링 → 3차 최단 동선 정렬 중...</div>`;
+
+      // Pass 1: Resolve coordinates & closed days
+      const resolved = [];
+      for (const s of mustVisitSpots) {
+        const geo = await geocodeSpot(s.name, destRaw);
+        resolved.push({ ...geo, closed: s.closed || "" });
+      }
+
+      const days = buildDateRangeDays(startStr, endStr, destRaw);
+      const wdays = ["일","월","화","수","목","금","토"];
+      const dayBuckets = days.map(d => {
+        const wd = wdays[new Date(d.date + "T00:00:00").getDay()];
+        return { dayObj: d, weekday: wd, spots: [] };
+      });
+
+      const warnings = [];
+      // Pass 2: Assign spots respecting closed days + nearest cluster centroid
+      const maxPerDay = Math.max(2, Math.ceil(resolved.length / days.length));
+      // Sort constrained spots (those with closed days) first so they get priority placement
+      const orderedInput = [...resolved].sort((a, b) => (b.closed ? 1 : 0) - (a.closed ? 1 : 0));
+
+      orderedInput.forEach(spot => {
+        const openBuckets = dayBuckets.filter(b => !spot.closed || b.weekday !== spot.closed);
+        const candidates = openBuckets.length ? openBuckets : dayBuckets;
+        if (!openBuckets.length) {
+          warnings.push(`⚠️ '${spot.name}'은(는) ${spot.closed}요일 휴무이나 여행 기간 전체가 해당 요일입니다.`);
+        }
+
+        // Score each candidate day: prefer balanced count + geographic closeness to spots already on that day
+        let bestBucket = candidates[0];
+        let bestScore = Infinity;
+        candidates.forEach(b => {
+          let distPenalty = 0;
+          const withCoords = b.spots.filter(x => x.lat && spot.lat);
+          if (withCoords.length) {
+            const avgLat = withCoords.reduce((s, x) => s + x.lat, 0) / withCoords.length;
+            const avgLng = withCoords.reduce((s, x) => s + x.lng, 0) / withCoords.length;
+            distPenalty = haversineKm(avgLat, avgLng, spot.lat, spot.lng);
+          }
+          const loadPenalty = b.spots.length * 4.5 + (b.spots.length >= maxPerDay ? 20 : 0);
+          const score = distPenalty + loadPenalty;
+          if (score < bestScore) { bestScore = score; bestBucket = b; }
+        });
+        bestBucket.spots.push({
+          ...spot,
+          holidayNote: spot.closed ? `${spot.closed} 휴무 회피 배치` : ""
+        });
+      });
+
+      // Pass 3: Nearest-Neighbor TSP ordering within each day + enrich with nearby curated filler spots if a day has < 2 spots
+      const cityKey = Object.keys(CITY_ROUTE_SPOTS).find(k => destRaw.includes(k));
+      const cityPool = cityKey ? CITY_ROUTE_SPOTS[cityKey] : [];
+      const timeSlots = ["10:30", "12:30", "14:40", "17:30", "19:30"];
+
+      dayBuckets.forEach(b => {
+        // Nearest neighbor order starting from first spot with coords
+        const ordered = [];
+        const rem = [...b.spots];
+        if (rem.length) {
+          ordered.push(rem.shift());
+          while (rem.length) {
+            const last = ordered[ordered.length - 1];
+            let bestIdx = 0, bestD = Infinity;
+            rem.forEach((cand, idx) => {
+              const d = (last.lat && cand.lat) ? haversineKm(last.lat, last.lng, cand.lat, cand.lng) : 999;
+              if (d < bestD) { bestD = d; bestIdx = idx; }
+            });
+            ordered.push(rem.splice(bestIdx, 1)[0]);
+          }
+        }
+
+        // If fewer than 3 items on a day and we have cityPool, add closest non-duplicate spot (respecting closed days)
+        while (ordered.length < 3 && cityPool.length) {
+          const usedNames = new Set(dayBuckets.flatMap(x => x.spots.map(s => s.name)).concat(ordered.map(s => s.name)));
+          const anchor = ordered[ordered.length - 1];
+          const avail = cityPool.filter(p => {
+            if (usedNames.has(p.name)) return false;
+            const kk = Object.keys(KNOWN_SPOT_META).find(k => p.name.includes(k));
+            if (kk && KNOWN_SPOT_META[kk].closed === b.weekday) return false;
+            return true;
+          });
+          if (!avail.length) break;
+          avail.sort((a, c) => {
+            if (!anchor || !anchor.lat) return 0;
+            return haversineKm(anchor.lat, anchor.lng, a.lat, a.lng) - haversineKm(anchor.lat, anchor.lng, c.lat, c.lng);
+          });
+          const pick = avail[0];
+          ordered.push({ ...pick, closed: "", holidayNote: "주변 동선 보완 추천" });
+        }
+
+        b.dayObj.items = ordered.map((sp, idx) => {
+          const prev = idx > 0 ? ordered[idx - 1] : null;
+          let moveTxt = idx === 0 ? "일정 시작" : "도보·대중교통";
+          let moveMin = idx === 0 ? 0 : 12;
+          if (prev && prev.lat && sp.lat) {
+            const km = haversineKm(prev.lat, prev.lng, sp.lat, sp.lng);
+            if (km <= 1.0) {
+              moveMin = Math.max(2, Math.round(km * 15));
+              moveTxt = `도보 ${moveMin}분`;
+            } else {
+              moveMin = Math.max(5, Math.round(km * 3));
+              moveTxt = `대중교통/택시 약 ${moveMin}분 (${km.toFixed(1)}km)`;
+            }
+          }
+          const badges = [sp.cat || "필수"];
+          if (sp.holidayNote) badges.push(sp.holidayNote);
+          return {
+            id: `must-${Date.now()}-${b.dayObj.day}-${idx}`,
+            time: timeSlots[idx] || "20:30",
+            place: sp.name,
+            stay: sp.stay || "체류 60분",
+            moveMode: moveTxt,
+            moveMin,
+            moveCost: 0,
+            costTotal: sp.cost || 0,
+            badges,
+            lat: sp.lat,
+            lng: sp.lng,
+            mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(sp.name)}`,
+            memo: sp.desc || ""
+          };
+        });
+      });
+
+      window._generatedRoutePlan = { dest: destRaw, startDate: startStr, endDate: endStr, days };
+      resBox.innerHTML = (warnings.length ? `<div class="card" style="background:var(--warn-bg);border-color:#fde68a;font-size:12px;">${warnings.join("<br>")}</div>` : "") +
+        days.map(d => `
+          <div class="card">
+            <div style="font-weight:800;font-size:14px;color:var(--ocean-dark);margin-bottom:6px;">📅 ${d.label} · ${d.date}</div>
+            ${d.items.map(it => `
+              <div style="padding:6px 0;border-bottom:1px dashed var(--border);font-size:12.5px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <div><strong>${it.time}</strong> ${it.place}</div>
+                  <div style="font-weight:700;color:var(--ocean-dark);">${it.costTotal ? fmt(it.costTotal) : ""}</div>
+                </div>
+                <div style="font-size:11px;color:var(--muted);margin-top:2px;">
+                  ${it.moveMode} · ${(it.badges || []).join(" · ")}
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        `).join("") + `
+        <button class="btn btn-primary" style="width:100%;margin-bottom:12px;" onclick="applyGeneratedRoute()">🗓️ 이 최적 루트로 내 일정 채우기</button>
+      `;
     }
 
     const CITY_ROUTE_SPOTS = {
