@@ -3033,6 +3033,12 @@
        ===================================================================== */
     let bigMap = null, bigMapLayer = null, bigMapPts = [], bigMapMarkers = [];
     let bigMapIdx = 0;
+    let bigMapFlyToken = 0;
+
+    function bigMapOpenPopup() {
+      const mk = bigMapMarkers[bigMapIdx];
+      if (mk) { try { mk.openPopup(); } catch (e) {} }
+    }
 
     function activeDayGeoPts() {
       const dayObj = state.days.find(d => d.day === currentDay) || state.days[0];
@@ -3090,10 +3096,25 @@
       if (prev) prev.disabled = bigMapIdx === 0;
       if (next) next.disabled = bigMapIdx === bigMapPts.length - 1;
       if (!bigMap || !window.L) return;
-      if (fly) bigMap.flyTo(p.ll, 15, { duration: 0.5 });
+      if (fly) {
+        // fly가 끝난 뒤(zoomend 재그리기 포함)에 활성 핀 팝업을 연다
+        bigMapFlyToken++;
+        const token = bigMapFlyToken;
+        let done = false;
+        const finish = () => {
+          if (done || token !== bigMapFlyToken) return;
+          done = true;
+          drawBigPins();
+          bigMapOpenPopup();
+        };
+        bigMap.flyTo(p.ll, 15, { duration: 0.5 });
+        bigMap.once("moveend", finish);
+        setTimeout(finish, 1150);
+        drawBigPins();
+        return;
+      }
       drawBigPins();
-      const mk = bigMapMarkers[bigMapIdx];
-      if (mk) setTimeout(() => { try { mk.openPopup(); } catch (e) {} }, fly ? 520 : 80);
+      setTimeout(bigMapOpenPopup, 80);
     }
 
     function bigMapStep(delta) { bigMapGoto(bigMapIdx + delta, true); }
@@ -3125,8 +3146,7 @@
           if (bigMapPts.length > 1) bigMap.fitBounds(bigMapPts.map(p => p.ll), { padding: [40, 40], maxZoom: 16 });
           else bigMap.setView(bigMapPts[0].ll, 15);
           drawBigPins();
-          const mk = bigMapMarkers[bigMapIdx];
-          if (mk) setTimeout(() => { try { mk.openPopup(); } catch (e) {} }, 200);
+          setTimeout(bigMapOpenPopup, 260);
         } catch (e) { console.warn("big map open", e); }
       }, 90);
     }
