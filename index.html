@@ -1588,7 +1588,7 @@
           it.time = time; it.place = place; it.moveMode = moveMode; it.stay = stay; it.memo = memo; it.mapUrl = mapUrl;
           if (costNum !== null) {
             it.costTotal = costNum;
-            if (placeEditMode === "route" || it.moveCost) it.moveCost = costNum;
+            if (placeEditMode === "route") it.moveCost = costNum;
           }
           if (placeEditMode === "route") { it.fromPlace = fromPlace; it.toPlace = toPlace; }
           else { delete it.fromPlace; delete it.toPlace; }
