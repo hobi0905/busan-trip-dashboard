@@ -1866,7 +1866,7 @@
     const urlParams = new URLSearchParams(location.search);
     const urlTripParam = urlParams.get("trip");
     const isInviteLink = urlParams.get("invite") === "1";
-    const isNewFlow = urlParams.get("new") === "1";
+    let isNewFlow = urlParams.get("new") === "1";
     let pendingNewTripSetup = isNewFlow;
     let currentSyncId = urlTripParam || DEFAULT_SB.syncId;
     let myProfile = loadMyProfile();
@@ -3923,12 +3923,18 @@
     }
 
     async function openSampleTrip(syncId = "au-sydney-4n5d") {
-      closeTripTypeModal();
-      closeTripsModal();
-      closeNewTripSetupModal();
-      closeOverseasSetupModal();
+      // 게이트 재평가 없이 바로 예시 여행으로 이동 (모달만 정리)
+      closeTripTypeModal(false);
+      ["trips-modal", "new-trip-setup-modal", "overseas-setup-modal", "share-modal"].forEach(id => {
+        document.getElementById(id)?.classList.remove("open");
+      });
+      isNewFlow = false;
+      const cleanUrl = new URL(location.href);
+      cleanUrl.searchParams.delete("new");
+      history.replaceState(null, "", cleanUrl.toString());
       await switchTrip(syncId);
       document.querySelector('.nav-btn[data-tab="timeline"]')?.click();
+      renderHeader();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
