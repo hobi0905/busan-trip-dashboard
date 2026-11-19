@@ -5718,8 +5718,15 @@
 
     function packingDraftInit() {
       const p = getPacking();
+      const ctx = packingContext();
       if (!packingDraft || packingDraftTrip !== currentSyncId) {
-        packingDraft = { gender: p.gender || "female", age: p.age || "20", style: p.tripStyle || "couple" };
+        const defaultDips = (ctx.sea && ctx.maxT >= 20) ? 1 : 0;
+        packingDraft = {
+          gender: p.gender || "female",
+          age: p.age || "20",
+          style: p.tripStyle || "couple",
+          waterDips: typeof p.waterDips === "number" ? p.waterDips : defaultDips
+        };
         packingDraftTrip = currentSyncId;
       }
       return packingDraft;
@@ -5755,7 +5762,9 @@
       const prevChecked = {};
       (p.items || []).forEach(it => { if (it && it.name) prevChecked[it.name] = Boolean(it.checked); });
       const sets = ctx.nights + 1;
-      const extra = ctx.sea ? 2 : 0;
+      const dips = Math.max(0, Math.min(3, Number(d.waterDips) || 0));
+      const extra = dips;
+      const hasWaterDip = dips > 0;
       const cold = ctx.maxT <= 10, hot = ctx.maxT >= 26;
       const rows = [];
       const add = (group, name, qty = 1) => rows.push({ group, name, qty: Math.max(1, Math.round(qty)) });
@@ -5764,12 +5773,12 @@
       add("👕 의류·신발", "양말", sets + extra);
       add("👕 의류·신발", "상의", ctx.days);
       add("👕 의류·신발", "하의", Math.max(2, Math.ceil(ctx.days / 2)));
-      add("👕 의류·신발", "여벌 옷", ctx.sea ? 2 : 1);
+      add("👕 의류·신발", "여벌 옷", hasWaterDip ? Math.max(1, dips) : 1);
       add("👕 의류·신발", "잠옷", 1);
-      if (ctx.sea) {
+      if (hasWaterDip) {
         add("👕 의류·신발", "수영복", 1);
         add("👕 의류·신발", "래시가드", 1);
-        add("👕 의류·신발", "비치타월", 2);
+        add("👕 의류·신발", "비치타월·여분 수건", dips);
         add("👕 의류·신발", "슬리퍼·아쿠아슈즈", 1);
       }
       if (cold) {
@@ -5796,12 +5805,12 @@
       add("📱 전자기기", "보조배터리", 1);
       add("📱 전자기기", "충전기·케이블", 2);
       add("📱 전자기기", "이어폰", 1);
-      if (ctx.sea || hot) add("📱 전자기기", "방수팩", 1);
+      if (hasWaterDip || hot) add("📱 전자기기", "방수팩", 1);
 
       add("💊 건강·상비약", "상비약 (소화제·진통제·밴드)", 1);
       add("💊 건강·상비약", "마스크", Math.max(2, ctx.days));
       if (cold) add("💊 건강·상비약", "감기약·비타민", 1);
-      if (ctx.sea) add("💊 건강·상비약", "멀미약·연고", 1);
+      if (hasWaterDip) add("💊 건강·상비약", "멀미약·연고", 1);
 
       if (ctx.overseas) {
         add("📄 서류·결제", "여권", 1);
@@ -5850,9 +5859,10 @@
       p.gender = d.gender;
       p.age = d.age;
       p.tripStyle = d.style;
+      p.waterDips = dips;
       p.setupDone = true;
       p.generatedAt = new Date().toISOString();
-      p.summary = { nights: ctx.nights, days: ctx.days, sea: ctx.sea, overseas: ctx.overseas, minT: ctx.minT, maxT: ctx.maxT };
+      p.summary = { nights: ctx.nights, days: ctx.days, sea: hasWaterDip, waterDips: dips, overseas: ctx.overseas, minT: ctx.minT, maxT: ctx.maxT };
       p.items = rows.map((r) => ({
         id: "pk-" + Date.now().toString(36) + "-" + (++packingDraftSeq),
         name: r.name,
@@ -5869,6 +5879,7 @@
       if (kind === "gender") d.gender = value;
       if (kind === "age") d.age = value;
       if (kind === "style") d.style = value;
+      if (kind === "waterDips") d.waterDips = Number(value) || 0;
       renderPacking();
     }
 
@@ -5987,7 +5998,12 @@
             <div style="font-size:11.5px;font-weight:800;color:var(--ocean-dark);margin-bottom:4px;">연령대</div>
             <div class="pk-setup-chips" style="grid-template-columns:repeat(4,1fr);margin-bottom:10px;">${PACKING_AGES.map(a => chip("age", a.key, a.label, draft.age === a.key)).join("")}</div>
             <div style="font-size:11.5px;font-weight:800;color:var(--ocean-dark);margin-bottom:4px;">여행 성격</div>
-            <div class="pk-setup-chips" style="margin-bottom:14px;">${PACKING_STYLES.map(s => chip("style", s.key, s.label, draft.style === s.key)).join("")}</div>
+            <div class="pk-setup-chips" style="margin-bottom:10px;">${PACKING_STYLES.map(s => chip("style", s.key, s.label, draft.style === s.key)).join("")}</div>
+            <div style="font-size:11.5px;font-weight:800;color:var(--ocean-dark);margin-bottom:4px;">🏖️ 바다·물놀이 입수 예정</div>
+            <div class="pk-setup-chips" style="grid-template-columns:repeat(4,1fr);margin-bottom:6px;">
+              ${[{ k: 0, l: "안 들어감" }, { k: 1, l: "1회" }, { k: 2, l: "2회" }, { k: 3, l: "3회+" }].map(w => chip("waterDips", w.k, w.l, Number(draft.waterDips) === w.k)).join("")}
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">${ctx.maxT < 18 ? "쌀쌀/겨울 일정이라 기본 ‘안 들어감’으로 맞춰 뒀어요. 들어갈 예정이면 횟수를 골라 주세요!" : "입수 횟수만큼 속옷·양말·수건·수영복이 자동 추가돼요."}</div>
             <button class="btn btn-primary" style="width:100%;" onclick="confirmPackingSetup()">✨ 짐 목록 자동 만들기</button>
             ${hasItems ? `<button class="btn btn-soft btn-sm" style="width:100%;margin-top:8px;" onclick="cancelPackingSetup()">그대로 두기 (기존 목록 유지)</button>` : ""}
           </div>`;
@@ -6025,9 +6041,9 @@
           <div class="pk-progress"><span style="width:${pct}%"></span></div>
           <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;">
             <span class="tag blue">${seasonLabel}</span>
-            ${ctx.sea ? `<span class="tag blue">🌊 바다 일정 +2세트</span>` : ""}
+            ${(Number(p.waterDips) || 0) > 0 ? `<span class="tag blue">🏖️ 입수 ${p.waterDips >= 3 ? "3회+" : p.waterDips + "회"} (+${p.waterDips}세트)</span>` : `<span class="tag">🏖️ 물놀이 없음</span>`}
             <span class="tag">${ctx.overseas ? "✈️ 해외" : "🇰🇷 국내"}</span>
-            <span class="tag">속옷·양말 ${ctx.nights + 1 + (ctx.sea ? 2 : 0)}세트</span>
+            <span class="tag">속옷·양말 ${ctx.nights + 1 + Math.min(3, Number(p.waterDips) || 0)}세트</span>
           </div>
           <div class="pk-toolbar">
             <button class="btn btn-soft btn-sm" onclick="reopenPackingSetup()">⚙️ 조건 다시 고르기</button>
