@@ -1023,9 +1023,9 @@
       setPlaceMode(isRoute ? "route" : "single");
 
       if (isRoute) {
-        const parts = it.place.split("→").map(s => s.trim());
+        const parts = it.place.split("→").map(s => s.trim().replace(/\s*(출발|도착)$/, "").replace(/\(.*?\)/g, "").trim());
         document.getElementById("pm-from").value = it.fromPlace || parts[0] || "";
-        document.getElementById("pm-to").value = it.toPlace || (parts[1] || "").replace(/\(.*?\)/g, "").trim();
+        document.getElementById("pm-to").value = it.toPlace || parts[1] || "";
       } else {
         document.getElementById("pm-search-q").value = it ? it.place : "";
         document.getElementById("pm-place").value = it ? it.place : "";
