@@ -3461,7 +3461,9 @@
             return haversineKm(anchor.lat, anchor.lng, a.lat, a.lng) - haversineKm(anchor.lat, anchor.lng, c.lat, c.lng);
           });
           const pick = avail[0];
-          ordered.push({ ...pick, closed: "", holidayNote: "주변 동선 보완 추천" });
+          const filler = { ...pick, closed: "", holidayNote: "주변 동선 보완 추천" };
+          ordered.push(filler);
+          b.spots.push(filler);
         }
 
         b.dayObj.items = ordered.map((sp, idx) => {
