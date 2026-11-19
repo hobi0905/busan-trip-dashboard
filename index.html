@@ -978,7 +978,7 @@
   </div>
 
   <!-- NEW TRIP GUIDED SETUP MODAL -->
-  <div id="new-trip-setup-modal" class="modal-backdrop center" onclick="if(event.target===this && myProfile.nickname && document.body.classList.contains('unlocked'))closeNewTripSetupModal()">
+  <div id="new-trip-setup-modal" class="modal-backdrop center" onclick="if(event.target===this && document.getElementById('nts-close-btn').style.display !== 'none')closeNewTripSetupModal()">
     <div class="modal-sheet">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
         <div style="font-size:16px;font-weight:800;">🗺️ 새 여행 기본 설정</div>
@@ -2529,8 +2529,8 @@
       }
       if (pendingNewTripSetup) {
         pendingNewTripSetup = false;
-        document.body.classList.remove("unlocked");
-        openNewTripSetupModal(true);
+        openNewTripSetupModal(false);
+        updateAccessGate();
         return;
       }
       const needsApproval = Boolean(
