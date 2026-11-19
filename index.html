@@ -476,7 +476,10 @@
           <div id="day-map" style="margin-bottom:0;"></div>
         </div>
         <div id="timeline-list"></div>
-        <button id="add-place-btn" class="btn btn-soft" style="width:100%;margin-bottom:12px;display:none;" onclick="openPlaceModal(null)">+ 이 날 일정 추가하기</button>
+        <div id="add-btns-row" style="display:none;gap:8px;margin-bottom:12px;">
+          <button class="btn btn-soft" style="flex:1;" onclick="openPlaceModal(null)">+ 일반 일정 추가</button>
+          <button class="btn btn-primary" style="flex:1;" onclick="openTransitModal()">🚆 교통편 추가</button>
+        </div>
       </section>
 
       <!-- TAB 2: EXPENSES -->
@@ -638,6 +641,50 @@
         비밀번호를 입력하면 공유 링크를 열 때 비밀번호를 물어봅니다.
       </div>
       <button class="btn btn-primary" style="width:100%;" onclick="createNewTrip()">개설하고 클라우드에 저장</button>
+    </div>
+  </div>
+
+  <!-- TRANSIT ADD MODAL -->
+  <div id="transit-modal" class="modal-backdrop" onclick="if(event.target===this)closeTransitModal()">
+    <div class="modal-sheet">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:16px;font-weight:800;">🚆 예약 교통편 / 이동 추가</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeTransitModal()">닫기</button>
+      </div>
+      <div class="row">
+        <select id="tr-pos" class="input" style="flex:1;"></select>
+      </div>
+      <div class="row">
+        <select id="tr-type" class="input" style="width:130px;">
+          <option value="KTX/SRT">KTX / SRT</option>
+          <option value="항공편">항공편</option>
+          <option value="시외/고속버스">시외·고속버스</option>
+          <option value="지하철/버스">지하철·시내버스</option>
+          <option value="택시">택시</option>
+        </select>
+        <input id="tr-code" class="input" placeholder="편명/노선 (예: KTX 25열차)" />
+      </div>
+      <div class="row">
+        <input id="tr-from" class="input" placeholder="출발지 (예: 광명역)" onkeydown="if(event.key==='Enter')searchTransitPlace('from')" />
+        <button class="btn btn-soft btn-sm" style="white-space:nowrap;" onclick="searchTransitPlace('from')">출발 검색</button>
+      </div>
+      <div class="row">
+        <input id="tr-to" class="input" placeholder="도착지 (예: 부산역)" onkeydown="if(event.key==='Enter')searchTransitPlace('to')" />
+        <button class="btn btn-soft btn-sm" style="white-space:nowrap;" onclick="searchTransitPlace('to')">도착 검색</button>
+      </div>
+      <div id="tr-search-results" style="max-height:110px;overflow-y:auto;margin-bottom:6px;"></div>
+      <div class="row" style="align-items:center;">
+        <input id="tr-dep" class="input" placeholder="출발 (10:17)" style="flex:1;" />
+        <span style="font-weight:800;color:var(--muted);">→</span>
+        <input id="tr-arr" class="input" placeholder="도착 (12:46)" style="flex:1;" />
+        <input id="tr-cost" type="number" class="input" placeholder="총 비용(원)" style="width:110px;" />
+      </div>
+      <div class="row" style="margin-bottom:6px;">
+        <button class="btn btn-soft btn-sm" style="flex:1;" onclick="calcTransitEstimate()">🛣️ 예상 택시비·소요시간 계산</button>
+        <a id="tr-naver-dir" class="btn btn-soft btn-sm" style="text-decoration:none;" href="https://map.naver.com/p/directions" target="_blank">네이버 길찾기</a>
+      </div>
+      <div id="tr-est-box" style="font-size:12px;color:var(--ocean-dark);margin-bottom:8px;"></div>
+      <button class="btn btn-primary" style="width:100%;" onclick="saveTransitItem()">일정에 추가하기</button>
     </div>
   </div>
 
@@ -968,8 +1015,8 @@
           </div>
         `;
       }).join("");
-      const addBtn = document.getElementById("add-place-btn");
-      if (addBtn) addBtn.style.display = editMode ? "flex" : "none";
+      const addRow = document.getElementById("add-btns-row");
+      if (addRow) addRow.style.display = editMode ? "flex" : "none";
       const emBtn = document.getElementById("edit-mode-btn");
       if (emBtn) {
         emBtn.textContent = editMode ? "✓ 편집 완료" : "✏️ 일정 편집";
@@ -980,6 +1027,137 @@
     function toggleEditMode() {
       editMode = !editMode;
       renderTimeline();
+    }
+
+    let trFromCoord = null, trToCoord = null, trSearchSide = "from";
+
+    function openTransitModal() {
+      const dayObj = state.days.find(d => d.day === currentDay);
+      const items = dayObj?.items || [];
+      const sel = document.getElementById("tr-pos");
+      sel.innerHTML = `<option value="0">1번째 (맨 위)에 넣기</option>` +
+        items.map((it, idx) => `<option value="${idx + 1}">${idx + 2}번째 (${it.place} 다음)</option>`).join("");
+      sel.value = String(items.length);
+      document.getElementById("tr-code").value = "";
+      document.getElementById("tr-from").value = "";
+      document.getElementById("tr-to").value = "";
+      document.getElementById("tr-dep").value = "10:00";
+      document.getElementById("tr-arr").value = "11:00";
+      document.getElementById("tr-cost").value = "";
+      document.getElementById("tr-search-results").innerHTML = "";
+      document.getElementById("tr-est-box").textContent = "";
+      trFromCoord = null; trToCoord = null;
+      document.getElementById("transit-modal").classList.add("open");
+    }
+
+    function closeTransitModal() { document.getElementById("transit-modal").classList.remove("open"); }
+
+    async function searchTransitPlace(side) {
+      trSearchSide = side;
+      const q = document.getElementById(side === "from" ? "tr-from" : "tr-to").value.trim();
+      if (!q) return alert("검색할 역·공항·장소명을 입력해 주세요.");
+      const resEl = document.getElementById("tr-search-results");
+      resEl.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:4px;">'${q}' 검색 중...</div>`;
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=kr&limit=4&q=${encodeURIComponent(q)}`);
+        const list = await r.json();
+        if (!list.length) {
+          resEl.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:4px;">검색 결과가 없습니다.</div>`;
+          return;
+        }
+        window._trResults = list;
+        resEl.innerHTML = list.map((p, i) => `
+          <div class="expense-item" style="padding:5px 4px;cursor:pointer;" onclick="pickTransitPlace(${i})">
+            <div style="font-size:11.5px;"><strong>${p.name || q}</strong> <span style="color:var(--muted);">${p.display_name}</span></div>
+            <span class="tag blue">선택</span>
+          </div>
+        `).join("");
+      } catch {
+        resEl.innerHTML = `<div style="font-size:12px;color:var(--danger);padding:4px;">검색 오류가 발생했습니다.</div>`;
+      }
+    }
+
+    function pickTransitPlace(i) {
+      const p = (window._trResults || [])[i];
+      if (!p) return;
+      const coord = { lat: parseFloat(p.lat), lng: parseFloat(p.lon), name: p.name || "" };
+      if (trSearchSide === "from") {
+        trFromCoord = coord;
+        if (coord.name) document.getElementById("tr-from").value = coord.name;
+      } else {
+        trToCoord = coord;
+        if (coord.name) document.getElementById("tr-to").value = coord.name;
+      }
+      document.getElementById("tr-search-results").innerHTML = `<div style="font-size:12px;color:var(--success);padding:4px;">✓ ${trSearchSide === "from" ? "출발지" : "도착지"} 좌표 선택됨</div>`;
+      const f = encodeURIComponent(document.getElementById("tr-from").value.trim());
+      const t = encodeURIComponent(document.getElementById("tr-to").value.trim());
+      if (f && t) document.getElementById("tr-naver-dir").href = `https://map.naver.com/p/search/${t}`;
+    }
+
+    async function calcTransitEstimate() {
+      const box = document.getElementById("tr-est-box");
+      if (!trFromCoord || !trToCoord) {
+        box.textContent = "먼저 '출발 검색'과 '도착 검색'으로 두 곳을 선택해 주세요.";
+        return;
+      }
+      box.textContent = "도로 경로 계산 중...";
+      try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${trFromCoord.lng},${trFromCoord.lat};${trToCoord.lng},${trToCoord.lat}?overview=false`;
+        const r = await fetch(url);
+        const data = await r.json();
+        const route = data?.routes?.[0];
+        if (!route) { box.textContent = "경로를 계산할 수 없습니다."; return; }
+        const km = route.distance / 1000;
+        const mins = Math.max(1, Math.round(route.duration / 60));
+        // 한국 택시 기본요금 약 4,800원(1.6km) + 131m당 100원 추정
+        const estTaxi = Math.round((4800 + Math.max(0, route.distance - 1600) / 131 * 100) / 100) * 100;
+        box.textContent = `🚕 도로 약 ${km.toFixed(1)}km · 차량 약 ${mins}분 · 예상 택시비 약 ${fmt(estTaxi)} (추정치)`;
+      } catch {
+        box.textContent = "예상 경로 계산에 실패했습니다.";
+      }
+    }
+
+    function parseMinDiff(dep, arr) {
+      const m1 = dep.match(/^(\d{1,2}):(\d{2})$/), m2 = arr.match(/^(\d{1,2}):(\d{2})$/);
+      if (!m1 || !m2) return 30;
+      const t1 = Number(m1[1]) * 60 + Number(m1[2]), t2 = Number(m2[1]) * 60 + Number(m2[2]);
+      return t2 >= t1 ? (t2 - t1) : (1440 - t1 + t2);
+    }
+
+    function saveTransitItem() {
+      const dayObj = state.days.find(d => d.day === currentDay);
+      if (!dayObj) return;
+      const idx = Number(document.getElementById("tr-pos").value) || 0;
+      const type = document.getElementById("tr-type").value;
+      const code = document.getElementById("tr-code").value.trim();
+      const fromPlace = document.getElementById("tr-from").value.trim();
+      const toPlace = document.getElementById("tr-to").value.trim();
+      const dep = document.getElementById("tr-dep").value.trim() || "10:00";
+      const arr = document.getElementById("tr-arr").value.trim() || "11:00";
+      const cost = Number(document.getElementById("tr-cost").value) || 0;
+      if (!fromPlace || !toPlace) return alert("출발지와 도착지를 입력해 주세요.");
+
+      const dur = parseMinDiff(dep, arr);
+      const titleSuffix = code ? ` (${code})` : ` (${type})`;
+      const newItem = {
+        id: "tr-" + Date.now(),
+        time: dep,
+        place: `${fromPlace} → ${toPlace}${titleSuffix}`,
+        fromPlace,
+        toPlace,
+        stay: `${dep}→${arr} (${dur}분)`,
+        moveMode: code ? `${type} ${code}` : type,
+        moveMin: dur,
+        moveCost: cost,
+        costTotal: cost,
+        badges: [type, "직접 추가"],
+        mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(toPlace)}`,
+        memo: `${dep} 출발 → ${arr} 도착`
+      };
+      if (trToCoord) { newItem.lat = trToCoord.lat; newItem.lng = trToCoord.lng; }
+      dayObj.items.splice(Math.max(0, Math.min(idx, dayObj.items.length)), 0, newItem);
+      closeTransitModal();
+      saveState();
     }
 
     function moveItem(idx, delta) {
