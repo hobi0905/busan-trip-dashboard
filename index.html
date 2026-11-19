@@ -537,7 +537,7 @@
         <div id="planb-content" class="planb-box" style="display:none;"></div>
         <div class="card" style="padding:10px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:0 2px;">
-            <span style="font-size:12.5px;font-weight:800;color:var(--ocean-dark);">🗺️ 오늘의 부산 동선 지도</span>
+            <span id="map-card-title" style="font-size:12.5px;font-weight:800;color:var(--ocean-dark);">🗺️ 오늘의 부산 동선 지도</span>
             <span style="font-size:11px;color:var(--muted);">핀을 눌러 장소 확인 · 확대하면 겹친 핀이 벌어져요</span>
           </div>
           <div id="day-map" style="margin-bottom:0;"></div>
@@ -598,7 +598,7 @@
 
       <!-- TAB 3: WEATHER & OUTFIT -->
       <section id="tab-weather" class="tab-panel">
-        <div class="card" style="background:var(--ocean-soft);border-color:#bae6fd;">
+        <div class="card" id="weather-climate-card" style="background:var(--ocean-soft);border-color:#bae6fd;">
           <div style="font-weight:800;font-size:14px;color:var(--ocean-dark);">🌊 1월 말~2월 초 부산 해변 체감 날씨 포인트</div>
           <div style="font-size:12.5px;color:#334155;margin-top:4px;">
             광안리·청사포 해변은 바닷바람(14~21km/h) 때문에 체감온도가 2~3°C 더 낮아요. 실외는 방풍+보온, 실내(지하철·카페)는 따뜻하므로 <strong>벗기 쉬운 겹겹이 레이어드</strong>가 핵심입니다.
@@ -1270,6 +1270,7 @@
 
     function renderHeader() {
       const m = state.meta;
+      document.title = `${m.title} 대시보드`;
       document.getElementById("hdr-title").textContent = m.title;
       document.getElementById("hdr-sub").textContent = `${m.startDate} ~ ${m.endDate} · 성인 ${m.travelers}명`;
 
@@ -1309,6 +1310,12 @@
     }
 
     function renderTimeline() {
+      const destShort = String(state.meta?.destination || "부산").split(/[(\s]/)[0] || "부산";
+      const mapTitleEl = document.getElementById("map-card-title");
+      if (mapTitleEl) mapTitleEl.textContent = `🗺️ 오늘의 ${destShort} 동선 지도`;
+      const climateCard = document.getElementById("weather-climate-card");
+      if (climateCard) climateCard.style.display = destShort.includes("부산") ? "block" : "none";
+
       const tabsEl = document.getElementById("day-tabs");
       tabsEl.innerHTML = state.days.map(d =>
         `<button class="day-btn ${d.day === currentDay ? "active" : ""}" onclick="setDay(${d.day})">${d.label}</button>`
