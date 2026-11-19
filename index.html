@@ -451,6 +451,16 @@
       transition: opacity 0.4s ease;
     }
     #splash-screen.hide { opacity: 0; pointer-events: none; }
+    @keyframes spin360 { to { transform: rotate(360deg); } }
+    .hours-spinner {
+      display: inline-block; width: 12px; height: 12px;
+      border: 2px solid rgba(15,23,42,.2); border-top-color: var(--ocean-dark);
+      border-radius: 50%; animation: spin360 .75s linear infinite; vertical-align: -2px; margin-right: 4px;
+    }
+    .btn-updating {
+      background: #e2e8f0 !important; color: #64748b !important;
+      opacity: 0.78 !important; cursor: wait !important; pointer-events: none !important;
+    }
     .splash-sky {
       position: relative; width: 220px; height: 90px; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
@@ -716,7 +726,7 @@
         <div id="timeline-list"></div>
         <div style="margin-top:16px;margin-bottom:6px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-soft btn-sm" onclick="openThemeModal()" style="padding:8px 18px;">⚙️ 설정 · 색감 변경</button>
-          <button class="btn btn-soft btn-sm" onclick="refreshBusinessHours()" style="padding:8px 14px;">🔄 영업시간 업데이트</button>
+          <button class="btn btn-soft btn-sm hours-refresh-btn" data-default-label="🔄 영업시간 업데이트" onclick="refreshBusinessHours()" style="padding:8px 14px;">🔄 영업시간 업데이트</button>
         </div>
         <div class="hours-note hours-updated-label" style="text-align:center;margin-bottom:8px;">아직 업데이트 전</div>
       </section>
@@ -795,7 +805,7 @@
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
             <h3 class="sec-title" style="margin:0;">🕒 맛집·카페·관광지 영업시간</h3>
-            <button class="btn btn-soft btn-sm" id="hours-refresh-btn" onclick="refreshBusinessHours()">🔄 영업시간 최신 정보로 업데이트</button>
+            <button class="btn btn-soft btn-sm hours-refresh-btn" id="hours-refresh-btn" data-default-label="🔄 영업시간 최신 정보로 업데이트" onclick="refreshBusinessHours()">🔄 영업시간 최신 정보로 업데이트</button>
           </div>
           <div class="hours-note hours-updated-label" id="hours-updated-label">아직 업데이트 전</div>
           <div class="hours-note" id="hours-detail-label"></div>
@@ -5476,7 +5486,10 @@
       let url = `https://nominatim.openstreetmap.org/search?format=json&extratags=1&limit=1&addressdetails=0&q=${encodeURIComponent(q)}`;
       if (countryCode && /^[a-z]{2}$/.test(countryCode)) url += `&countrycodes=${countryCode}`;
       try {
-        const r = await fetch(url);
+        const ac = new AbortController();
+        const tid = setTimeout(() => ac.abort(), 5000);
+        const r = await fetch(url, { signal: ac.signal });
+        clearTimeout(tid);
         if (!r.ok) return "";
         const arr = await r.json();
         return arr?.[0]?.extratags?.opening_hours || "";
@@ -5509,6 +5522,20 @@
       return out;
     }
 
+    function setHoursButtonsState(running, progressTxt = "") {
+      document.querySelectorAll(".hours-refresh-btn").forEach(btn => {
+        if (running) {
+          btn.classList.add("btn-updating");
+          btn.disabled = true;
+          btn.innerHTML = `<span class="hours-spinner"></span>${progressTxt || "업데이트 중..."}`;
+        } else {
+          btn.classList.remove("btn-updating");
+          btn.disabled = false;
+          btn.textContent = btn.dataset.defaultLabel || "🔄 영업시간 최신 정보로 업데이트";
+        }
+      });
+    }
+
     let hoursRefreshing = false;
     async function refreshBusinessHours() {
       if (hoursRefreshing) return;
@@ -5516,8 +5543,7 @@
       const targets = hoursTargets();
       if (!targets.length) return alert("영업시간을 확인할 맛집·카페·관광지가 일정에 없어요.");
       hoursRefreshing = true;
-      const btn = document.getElementById("hours-refresh-btn");
-      const prevLabel = btn ? btn.textContent : "";
+      setHoursButtonsState(true, "영업시간 확인 중...");
       let ok = 0, fail = 0;
       try {
         const cityHint = String(state.meta?.destination || "").split(/[(\s]/)[0] || "";
@@ -5526,22 +5552,23 @@
         const capped = uniq.slice(0, 18);
         for (let i = 0; i < capped.length; i++) {
           const t = capped[i];
-          if (btn) btn.textContent = `⏳ 확인 중 ${i + 1}/${capped.length}`;
+          setHoursButtonsState(true, `업데이트 중 (${i + 1}/${capped.length})`);
           const info = await lookupOpeningHours(t.name, cityHint);
           const related = targets.filter(x => x.key === t.key);
           const applied = related.some(r => applyHoursToItem(r.it, info));
           if (applied) ok++; else fail++;
-          await new Promise(res => setTimeout(res, 380));
+          await new Promise(res => setTimeout(res, 220));
         }
         state.meta.hoursUpdatedAt = new Date().toISOString();
         state.meta.hoursChecked = { ok, fail, total: capped.length, remaining: Math.max(0, uniq.length - capped.length) };
         saveState();
+        alert(`✅ 영업시간 최신 정보 업데이트 완료!\n\n확인한 장소: ${capped.length}곳\n• 최신 정보 반영: ${ok}곳\n• 미등록(기존 정보 유지): ${fail}곳`);
       } catch (e) {
         console.error("hours refresh", e);
         alert("영업시간을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
       } finally {
         hoursRefreshing = false;
-        if (btn) btn.textContent = prevLabel || "🔄 영업시간 최신 정보로 업데이트";
+        setHoursButtonsState(false);
         updateHoursLabels();
       }
     }
