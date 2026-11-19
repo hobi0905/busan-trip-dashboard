@@ -6,6 +6,8 @@
   <title>부산 2박 3일 뚜벅이 여행 대시보드</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
@@ -399,6 +401,19 @@
       color: var(--text); cursor: pointer; text-decoration: none;
     }
     .share-opt:active { background: var(--ocean-soft); }
+    #day-map {
+      width: 100%; height: 220px;
+      border-radius: 14px; border: 1px solid var(--border);
+      margin-bottom: 12px; z-index: 1;
+    }
+    .pin-num {
+      background: #0284c7; color: #fff;
+      width: 24px; height: 24px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 12px;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 6px rgba(2,132,199,0.45);
+    }
   </style>
 </head>
 <body>
@@ -449,6 +464,13 @@
           </label>
         </div>
         <div id="planb-content" class="planb-box" style="display:none;"></div>
+        <div class="card" style="padding:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:0 2px;">
+            <span style="font-size:12.5px;font-weight:800;color:var(--ocean-dark);">🗺️ 오늘의 부산 동선 지도</span>
+            <span style="font-size:11px;color:var(--muted);">번호 핀을 눌러 장소 확인</span>
+          </div>
+          <div id="day-map" style="margin-bottom:0;"></div>
+        </div>
         <div id="timeline-list"></div>
       </section>
 
@@ -656,12 +678,12 @@
           planBDesc: "비나 강풍이 심하면 해변 산책 대신 호텔 아쿠아 펠리스 21층 스카이전망대·해수온천·찜질방(24시간)으로 전환하세요. 저녁 다리집은 택시(5분)로 이동하면 비를 거의 맞지 않습니다.",
           items: [
             { id: "d1-1", time: "08:11", place: "숭의역 출발 → 광명역", stay: "이동 80분", moveMode: "수인분당선→1호선", moveMin: 80, moveCost: 4900, costTotal: 4900, badges: ["출발"], mapUrl: "https://map.naver.com/p/search/%EA%B4%91%EB%AA%85%EC%97%AD", memo: "09:31 광명역 도착 후 KTX 승강장 이동" },
-            { id: "d1-2", time: "10:17", place: "KTX 25열차 (광명 → 부산역)", stay: "탑승 149분", moveMode: "KTX 일반실", moveMin: 149, moveCost: 104400, costTotal: 104400, badges: ["예매 필수", "12/31 오픈"], mapUrl: "https://map.naver.com/p/search/%EB%B6%80%EC%82%B0%EC%97%AD", memo: "12:46 부산역 도착 · 순방향 2인 연석 (유아동반석 앞뒤칸·4인석 제외)" },
-            { id: "d1-3", time: "12:55", place: "본전돼지국밥", stay: "체류 45분", moveMode: "부산역 6번 출구 도보 3분", moveMin: 3, moveCost: 0, costTotal: 22000, badges: ["일요일 영업", "08:40~21:00"], mapUrl: "https://map.naver.com/p/search/%EB%B3%B8%EC%A0%84%EB%8F%BC%EC%A7%80%EA%B5%AD%EB%B0%A5", memo: "돼지국밥 11,000원×2 · 캐리어 동반 가능" },
-            { id: "d1-4", time: "14:35", place: "호텔 아쿠아 펠리스 체크인", stay: "체크인 15:00", moveMode: "41번 버스 (부산역→광안리)", moveMin: 44, moveCost: 3100, costTotal: 211411, badges: ["예약 완료", "광안대교 정면뷰"], mapUrl: "https://map.naver.com/p/search/%ED%98%B8%ED%85%94%20%EC%95%84%EC%BF%A0%EC%95%84%20%ED%8E%A0%EB%A6%AC%EC%8A%A4", memo: "디럭스 오션뷰 더블 2박 · 1/24 모임통장 카드 결제 예정" },
-            { id: "d1-5", time: "15:40", place: "카페 차선책 (광안리)", stay: "체류 60분", moveMode: "호텔 도보 3분", moveMin: 3, moveCost: 0, costTotal: 13000, badges: ["연중무휴", "11:00~22:00"], mapUrl: "https://map.naver.com/p/search/%EC%B0%A8%EC%84%A0%EC%B1%85%20%EA%B4%91%EC%95%88%EB%A6%AC", memo: "3층 한옥 오션뷰 · 아메리카노 5,500 + 인절미라떼 7,500" },
-            { id: "d1-6", time: "17:40", place: "다리집 (남천동 떡볶이)", stay: "체류 50분", moveMode: "도보 20분 (택시 5분)", moveMin: 20, moveCost: 0, costTotal: 22200, badges: ["일요일 영업", "11:30~20:50"], mapUrl: "https://map.naver.com/p/search/%EB%8B%A4%EB%A6%AC%EC%A7%91", memo: "떡볶이·오징어튀김·국물어묵 · 일요일 휴무 대체" },
-            { id: "d1-7", time: "18:50", place: "광안대교 야경 & 뚜벅스 광안점", stay: "체류 60분+", moveMode: "해변 도보 복귀", moveMin: 15, moveCost: 0, costTotal: 14000, badges: ["일몰 18:00", "21층 전망대"], mapUrl: "https://map.naver.com/p/search/%EB%9A%9C%EB%B2%85%EC%8A%A4%20%EA%B4%91%EC%95%88%EC%A0%90", memo: "호텔 스카이전망대·해수온천 또는 7층 카페 뚜벅스" }
+            { id: "d1-2", time: "10:17", place: "KTX 25열차 (광명 → 부산역)", stay: "탑승 149분", moveMode: "KTX 일반실", moveMin: 149, moveCost: 104400, costTotal: 104400, badges: ["예매 필수", "12/31 오픈"], lat: 35.1152, lng: 129.0422, mapUrl: "https://map.naver.com/p/search/%EB%B6%80%EC%82%B0%EC%97%AD", memo: "12:46 부산역 도착 · 순방향 2인 연석 (유아동반석 앞뒤칸·4인석 제외)" },
+            { id: "d1-3", time: "12:55", place: "본전돼지국밥", stay: "체류 45분", moveMode: "부산역 6번 출구 도보 3분", moveMin: 3, moveCost: 0, costTotal: 22000, badges: ["일요일 영업", "08:40~21:00"], lat: 35.1165, lng: 129.0432, mapUrl: "https://map.naver.com/p/search/%EB%B3%B8%EC%A0%84%EB%8F%BC%EC%A7%80%EA%B5%AD%EB%B0%A5", memo: "돼지국밥 11,000원×2 · 캐리어 동반 가능" },
+            { id: "d1-4", time: "14:35", place: "호텔 아쿠아 펠리스 체크인", stay: "체크인 15:00", moveMode: "41번 버스 (부산역→광안리)", moveMin: 44, moveCost: 3100, costTotal: 211411, badges: ["예약 완료", "광안대교 정면뷰"], lat: 35.1538, lng: 129.1190, mapUrl: "https://map.naver.com/p/search/%ED%98%B8%ED%85%94%20%EC%95%84%EC%BF%A0%EC%95%84%20%ED%8E%A0%EB%A6%AC%EC%8A%A4", memo: "디럭스 오션뷰 더블 2박 · 1/24 모임통장 카드 결제 예정" },
+            { id: "d1-5", time: "15:40", place: "카페 차선책 (광안리)", stay: "체류 60분", moveMode: "호텔 도보 3분", moveMin: 3, moveCost: 0, costTotal: 13000, badges: ["연중무휴", "11:00~22:00"], lat: 35.1533, lng: 129.1186, mapUrl: "https://map.naver.com/p/search/%EC%B0%A8%EC%84%A0%EC%B1%85%20%EA%B4%91%EC%95%88%EB%A6%AC", memo: "3층 한옥 오션뷰 · 아메리카노 5,500 + 인절미라떼 7,500" },
+            { id: "d1-6", time: "17:40", place: "다리집 (남천동 떡볶이)", stay: "체류 50분", moveMode: "도보 20분 (택시 5분)", moveMin: 20, moveCost: 0, costTotal: 22200, badges: ["일요일 영업", "11:30~20:50"], lat: 35.1436, lng: 129.1103, mapUrl: "https://map.naver.com/p/search/%EB%8B%A4%EB%A6%AC%EC%A7%91", memo: "떡볶이·오징어튀김·국물어묵 · 일요일 휴무 대체" },
+            { id: "d1-7", time: "18:50", place: "광안대교 야경 & 뚜벅스 광안점", stay: "체류 60분+", moveMode: "해변 도보 복귀", moveMin: 15, moveCost: 0, costTotal: 14000, badges: ["일몰 18:00", "21층 전망대"], lat: 35.1536, lng: 129.1191, mapUrl: "https://map.naver.com/p/search/%EB%9A%9C%EB%B2%85%EC%8A%A4%20%EA%B4%91%EC%95%88%EC%A0%90", memo: "호텔 스카이전망대·해수온천 또는 7층 카페 뚜벅스" }
           ]
         },
         {
@@ -669,12 +691,12 @@
           planBTitle: "우천·한파 플랜 B: 해운대 제외 실내·전포 코스",
           planBDesc: "강풍·우천 시 오전엔 호텔 해수온천·찜질방에서 쉬고, 2호선 광안→전포(15분)로 바로 이동해 전포카페거리와 이재모피자 전포점을 즐기세요.",
           items: [
-            { id: "d2-1", time: "09:40", place: "해변열차 (미포 → 청사포)", stay: "탑승 10분", moveMode: "1003번 급행버스", moveMin: 47, moveCost: 4200, costTotal: 20000, badges: ["동절기 09:00~19:00"], mapUrl: "https://www.bluelinepark.com/", memo: "10:30 탑승 · 1인 10,000원×2" },
-            { id: "d2-2", time: "10:45", place: "다릿돌전망대 & 카페 바다당", stay: "체류 55분", moveMode: "청사포정거장 도보 1분", moveMin: 1, moveCost: 0, costTotal: 16500, badges: ["월요일 영업", "09:30~21:00"], mapUrl: "https://map.naver.com/p/search/%EB%B0%94%EB%8B%A4%EB%8B%B9%20%EC%B2%AD%EC%82%AC%ED%8F%AC", memo: "쌍둥이 등대 뷰 · 11:10까지 입장" },
-            { id: "d2-3", time: "12:00", place: "스카이캡슐 (청사포 → 미포)", stay: "탑승 30분", moveMode: "블루라인파크", moveMin: 30, moveCost: 0, costTotal: 50000, badges: ["예약 필수", "1/5 07:00 오픈"], mapUrl: "https://www.bluelinepark.com/", memo: "2인 1대 50,000원 · 청사포 출발 추천" },
-            { id: "d2-4", time: "13:00", place: "상국이네 (해운대시장)", stay: "체류 45분", moveMode: "미포→해운대 도보 15분", moveMin: 15, moveCost: 0, costTotal: 19500, badges: ["월요일 영업", "수요일 휴무"], mapUrl: "https://map.naver.com/p/search/%EC%83%81%EA%B5%AD%EC%9D%B4%EB%84%A4", memo: "떡볶이+순대+튀김 · 10:00~01:00" },
-            { id: "d2-5", time: "14:05", place: "워킹홀리데이 해운대", stay: "체류 35분", moveMode: "도보 5분", moveMin: 5, moveCost: 0, costTotal: 11000, badges: ["5층 통창 오션뷰", "08:00~21:30"], mapUrl: "https://map.naver.com/p/search/%EC%9B%8C%ED%82%B9%ED%99%80%EB%A6%AC%EB%8D%B0%EC%9D%B4%20%ED%95%B4%EC%9A%B4%EB%8C%80", memo: "14:40 해운대역 5번 출구로 이동" },
-            { id: "d2-6", time: "17:00", place: "이재모피자 전포점", stay: "체류 70분", moveMode: "2호선 해운대→전포", moveMin: 49, moveCost: 3300, costTotal: 44000, badges: ["일요일 휴무 주의", "원격 줄서기 가능"], mapUrl: "https://map.naver.com/p/search/%EC%9D%B4%EC%9E%AC%EB%AA%A8%ED%94%BC%EC%9E%90%20%EC%A0%84%ED%8F%AC%EC%A0%90", memo: "이재모크러스트 L+김치볶음밥+음료 · 도착 전 캐치테이블 확인" }
+            { id: "d2-1", time: "09:40", place: "해변열차 (미포 → 청사포)", stay: "탑승 10분", moveMode: "1003번 급행버스", moveMin: 47, moveCost: 4200, costTotal: 20000, badges: ["동절기 09:00~19:00"], lat: 35.1586, lng: 129.1704, mapUrl: "https://www.bluelinepark.com/", memo: "10:30 탑승 · 1인 10,000원×2" },
+            { id: "d2-2", time: "10:45", place: "다릿돌전망대 & 카페 바다당", stay: "체류 55분", moveMode: "청사포정거장 도보 1분", moveMin: 1, moveCost: 0, costTotal: 16500, badges: ["월요일 영업", "09:30~21:00"], lat: 35.1618, lng: 129.1917, mapUrl: "https://map.naver.com/p/search/%EB%B0%94%EB%8B%A4%EB%8B%B9%20%EC%B2%AD%EC%82%AC%ED%8F%AC", memo: "쌍둥이 등대 뷰 · 11:10까지 입장" },
+            { id: "d2-3", time: "12:00", place: "스카이캡슐 (청사포 → 미포)", stay: "탑승 30분", moveMode: "블루라인파크", moveMin: 30, moveCost: 0, costTotal: 50000, badges: ["예약 필수", "1/5 07:00 오픈"], lat: 35.1586, lng: 129.1704, mapUrl: "https://www.bluelinepark.com/", memo: "2인 1대 50,000원 · 청사포 출발 추천" },
+            { id: "d2-4", time: "13:00", place: "상국이네 (해운대시장)", stay: "체류 45분", moveMode: "미포→해운대 도보 15분", moveMin: 15, moveCost: 0, costTotal: 19500, badges: ["월요일 영업", "수요일 휴무"], lat: 35.1615, lng: 129.1620, mapUrl: "https://map.naver.com/p/search/%EC%83%81%EA%B5%AD%EC%9D%B4%EB%84%A4", memo: "떡볶이+순대+튀김 · 10:00~01:00" },
+            { id: "d2-5", time: "14:05", place: "워킹홀리데이 해운대", stay: "체류 35분", moveMode: "도보 5분", moveMin: 5, moveCost: 0, costTotal: 11000, badges: ["5층 통창 오션뷰", "08:00~21:30"], lat: 35.1597, lng: 129.1604, mapUrl: "https://map.naver.com/p/search/%EC%9B%8C%ED%82%B9%ED%99%80%EB%A6%AC%EB%8D%B0%EC%9D%B4%20%ED%95%B4%EC%9A%B4%EB%8C%80", memo: "14:40 해운대역 5번 출구로 이동" },
+            { id: "d2-6", time: "17:00", place: "이재모피자 전포점", stay: "체류 70분", moveMode: "2호선 해운대→전포", moveMin: 49, moveCost: 3300, costTotal: 44000, badges: ["일요일 휴무 주의", "원격 줄서기 가능"], lat: 35.1563, lng: 129.0628, mapUrl: "https://map.naver.com/p/search/%EC%9D%B4%EC%9E%AC%EB%AA%A8%ED%94%BC%EC%9E%90%20%EC%A0%84%ED%8F%AC%EC%A0%90", memo: "이재모크러스트 L+김치볶음밥+음료 · 도착 전 캐치테이블 확인" }
           ]
         },
         {
@@ -682,10 +704,10 @@
           planBTitle: "우천·한파 플랜 B: 남포동 실내 아케이드 + 15:17 열차",
           planBDesc: "비가 오면 남포동 국제시장·보수동책방골목·BIFF광장 실내 위주로 둘러보고, 귀가 열차를 15:17 KTX 110열차로 늦추면 여유롭습니다.",
           items: [
-            { id: "d3-1", time: "08:30", place: "까사부사노 테라스 (모닝 커피)", stay: "체류 50분", moveMode: "호텔 도보 5분", moveMin: 5, moveCost: 0, costTotal: 9500, badges: ["화요일 영업", "08:30 오픈"], mapUrl: "https://map.naver.com/p/search/%EA%B9%8C%EC%82%AC%EB%B6%80%EC%82%AC%EB%85%B8%20%ED%85%8C%EB%9D%BC%EC%8A%A4", memo: "광안리 바닷가 1층 테라스" },
-            { id: "d3-2", time: "11:00", place: "체크아웃 → 부산역 물품보관함", stay: "짐 보관", moveMode: "41번 버스", moveMin: 42, moveCost: 3100, costTotal: 6000, badges: ["11:00 체크아웃"], mapUrl: "https://map.naver.com/p/search/%EB%B6%80%EC%82%B0%EC%97%AD", memo: "11:45 부산역 물품보관함 이용" },
-            { id: "d3-3", time: "12:15", place: "이가네 떡볶이 (부평깡통시장)", stay: "체류 25분", moveMode: "1호선 부산역→남포역", moveMin: 9, moveCost: 3000, costTotal: 13000, badges: ["일요일 휴무 주의", "월~토 10:00~17:00"], mapUrl: "https://map.naver.com/p/search/%EC%9D%B4%EA%B0%80%EB%84%A4%20%EB%96%A1%EB%B3%B6%EC%9D%B4", memo: "떡튀세트 5,000×2 + 오뎅 3,000" },
-            { id: "d3-4", time: "13:22", place: "KTX 108열차 (부산역 → 광명역)", stay: "탑승 181분", moveMode: "KTX 일반실", moveMin: 181, moveCost: 94400, costTotal: 94400, badges: ["예매 필수", "1/2 오픈"], mapUrl: "https://map.naver.com/p/search/%EA%B4%91%EB%AA%85%EC%97%AD", memo: "16:23 광명역 → 18:14 숭의역 (여유 플랜 15:17 KTX)" }
+            { id: "d3-1", time: "08:30", place: "까사부사노 테라스 (모닝 커피)", stay: "체류 50분", moveMode: "호텔 도보 5분", moveMin: 5, moveCost: 0, costTotal: 9500, badges: ["화요일 영업", "08:30 오픈"], lat: 35.1544, lng: 129.1198, mapUrl: "https://map.naver.com/p/search/%EA%B9%8C%EC%82%AC%EB%B6%80%EC%82%AC%EB%85%B8%20%ED%85%8C%EB%9D%BC%EC%8A%A4", memo: "광안리 바닷가 1층 테라스" },
+            { id: "d3-2", time: "11:00", place: "체크아웃 → 부산역 물품보관함", stay: "짐 보관", moveMode: "41번 버스", moveMin: 42, moveCost: 3100, costTotal: 6000, badges: ["11:00 체크아웃"], lat: 35.1152, lng: 129.0422, mapUrl: "https://map.naver.com/p/search/%EB%B6%80%EC%82%B0%EC%97%AD", memo: "11:45 부산역 물품보관함 이용" },
+            { id: "d3-3", time: "12:15", place: "이가네 떡볶이 (부평깡통시장)", stay: "체류 25분", moveMode: "1호선 부산역→남포역", moveMin: 9, moveCost: 3000, costTotal: 13000, badges: ["일요일 휴무 주의", "월~토 10:00~17:00"], lat: 35.1008, lng: 129.0260, mapUrl: "https://map.naver.com/p/search/%EC%9D%B4%EA%B0%80%EB%84%A4%20%EB%96%A1%EB%B3%B6%EC%9D%B4", memo: "떡튀세트 5,000×2 + 오뎅 3,000" },
+            { id: "d3-4", time: "13:22", place: "KTX 108열차 (부산역 → 광명역)", stay: "탑승 181분", moveMode: "KTX 일반실", moveMin: 181, moveCost: 94400, costTotal: 94400, badges: ["예매 필수", "1/2 오픈"], lat: 35.1152, lng: 129.0422, mapUrl: "https://map.naver.com/p/search/%EA%B4%91%EB%AA%85%EC%97%AD", memo: "16:23 광명역 → 18:14 숭의역 (여유 플랜 15:17 KTX)" }
           ]
         }
       ],
@@ -828,8 +850,45 @@
       }).join("");
     }
 
-    function setDay(d) { currentDay = d; renderTimeline(); }
+    function setDay(d) { currentDay = d; renderTimeline(); renderDayMap(); }
     document.getElementById("planb-toggle").addEventListener("change", renderTimeline);
+
+    let leafletMap = null;
+    let mapLayerGroup = null;
+    function renderDayMap() {
+      if (!window.L) return;
+      const mapEl = document.getElementById("day-map");
+      if (!mapEl) return;
+      if (!leafletMap) {
+        leafletMap = L.map("day-map", { zoomControl: false }).setView([35.15, 129.11], 12);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "© OpenStreetMap"
+        }).addTo(leafletMap);
+        mapLayerGroup = L.layerGroup().addTo(leafletMap);
+      }
+      mapLayerGroup.clearLayers();
+      const dayObj = state.days.find(d => d.day === currentDay) || state.days[0];
+      const pts = (dayObj.items || []).filter(it => typeof it.lat === "number" && typeof it.lng === "number");
+      if (!pts.length) return;
+      const coords = [];
+      pts.forEach((it, idx) => {
+        coords.push([it.lat, it.lng]);
+        const icon = L.divIcon({
+          className: "",
+          html: `<div class="pin-num">${idx + 1}</div>`,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+        L.marker([it.lat, it.lng], { icon })
+          .bindPopup(`<strong>${idx + 1}. ${it.place}</strong><br>${it.time} · ${it.moveMode}`)
+          .addTo(mapLayerGroup);
+      });
+      if (coords.length > 1) {
+        L.polyline(coords, { color: "#0284c7", weight: 3.5, dashArray: "6, 6", opacity: 0.85 }).addTo(mapLayerGroup);
+      }
+      leafletMap.fitBounds(coords, { padding: [24, 24] });
+      setTimeout(() => leafletMap.invalidateSize(), 80);
+    }
 
     function renderExpenses() {
       document.getElementById("travelers-input").value = state.meta.travelers;
@@ -1237,6 +1296,7 @@
     function renderAll() {
       renderHeader();
       renderTimeline();
+      renderDayMap();
       renderExpenses();
       renderWeather();
       renderChecklist();
