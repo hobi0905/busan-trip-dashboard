@@ -695,9 +695,9 @@
       </div>
       <div id="tr-search-results" style="max-height:110px;overflow-y:auto;margin-bottom:6px;"></div>
       <div class="row" style="align-items:center;">
-        <input id="tr-dep" class="input" placeholder="출발 (10:17)" style="flex:1;" />
+        <input id="tr-dep" class="input" placeholder="출발 (10:17)" style="flex:1;" oninput="renderTransitPredictions()" />
         <span style="font-weight:800;color:var(--muted);">→</span>
-        <input id="tr-arr" class="input" placeholder="도착 (12:46)" style="flex:1;" />
+        <input id="tr-arr" class="input" placeholder="도착 (자동/직접입력)" style="flex:1;" />
         <input id="tr-cost" type="number" class="input" placeholder="총 비용(원)" style="width:110px;" />
       </div>
       <div class="row" style="margin-bottom:6px;">
@@ -1157,7 +1157,7 @@
       renderTimeline();
     }
 
-    let trFromCoord = null, trToCoord = null, trSearchSide = "from";
+    let trFromCoord = null, trToCoord = null, trSearchSide = "from", trRouteCache = null;
 
     function openTransitModal() {
       const dayObj = state.days.find(d => d.day === currentDay);
@@ -1170,11 +1170,11 @@
       document.getElementById("tr-from").value = "";
       document.getElementById("tr-to").value = "";
       document.getElementById("tr-dep").value = "10:00";
-      document.getElementById("tr-arr").value = "11:00";
+      document.getElementById("tr-arr").value = "";
       document.getElementById("tr-cost").value = "";
       document.getElementById("tr-search-results").innerHTML = "";
-      document.getElementById("tr-est-box").textContent = "";
-      trFromCoord = null; trToCoord = null;
+      document.getElementById("tr-est-box").innerHTML = "";
+      trFromCoord = null; trToCoord = null; trRouteCache = null;
       document.getElementById("transit-modal").classList.add("open");
     }
 
@@ -1220,6 +1220,7 @@
       const f = encodeURIComponent(document.getElementById("tr-from").value.trim());
       const t = encodeURIComponent(document.getElementById("tr-to").value.trim());
       if (f && t) document.getElementById("tr-naver-dir").href = `https://map.naver.com/p/search/${t}`;
+      if (trFromCoord && trToCoord) calcTransitEstimate();
     }
 
     function applyTransitText(txt) {
@@ -1293,24 +1294,90 @@
       }
     });
 
+    function addMinsToTime(hhmm, addMins) {
+      const m = String(hhmm || "").match(/^(\d{1,2}):(\d{2})$/);
+      if (!m) return "";
+      const total = (Number(m[1]) * 60 + Number(m[2]) + addMins) % 1440;
+      const hh = String(Math.floor(total / 60)).padStart(2, "0");
+      const mm = String(total % 60).padStart(2, "0");
+      return `${hh}:${mm}`;
+    }
+
+    function predictTaxiForTime(depStr, baseDistM, baseDurS) {
+      const m = String(depStr || "").match(/^(\d{1,2}):(\d{2})$/);
+      const minsOfDay = m ? (Number(m[1]) * 60 + Number(m[2])) : 600;
+      let factor = 1.05, label = "낮 평시", night = false;
+      if ((minsOfDay >= 450 && minsOfDay <= 570) || (minsOfDay >= 1050 && minsOfDay <= 1200)) {
+        factor = 1.28; label = "출퇴근 혼잡";
+      } else if (minsOfDay >= 1320 || minsOfDay < 240) {
+        factor = 0.85; label = "심야(할증)"; night = true;
+      }
+      const mins = Math.max(2, Math.round((baseDurS / 60) * factor));
+      const baseFare = 4800 + Math.max(0, baseDistM - 1600) / 131 * 100;
+      const estFare = Math.round((baseFare * (night ? 1.2 : 1.0)) / 100) * 100;
+      const arrStr = addMinsToTime(depStr, mins) || "11:00";
+      return { dep: depStr, arr: arrStr, mins, fare: estFare, label };
+    }
+
+    function applyTaxiPrediction(dep, arr, fare) {
+      document.getElementById("tr-type").value = "택시";
+      document.getElementById("tr-dep").value = dep;
+      document.getElementById("tr-arr").value = arr;
+      document.getElementById("tr-cost").value = String(fare);
+      saveTransitItem();
+    }
+
+    function renderTransitPredictions() {
+      const box = document.getElementById("tr-est-box");
+      if (!trRouteCache) return;
+      const depVal = (document.getElementById("tr-dep").value.trim() || "10:00");
+      const { distM, durS, km } = trRouteCache;
+      const cur = predictTaxiForTime(depVal, distM, durS);
+      const slots = [
+        { icon: "🌅", tag: "출근", dep: "08:30" },
+        { icon: "☀️", tag: "낮", dep: "14:00" },
+        { icon: "🌆", tag: "퇴근", dep: "18:30" },
+        { icon: "🌙", tag: "심야", dep: "23:00" }
+      ].map(s => ({ ...s, ...predictTaxiForTime(s.dep, distM, durS) }));
+
+      box.innerHTML = `
+        <div style="background:#f0f9ff;border:1.5px solid #38bdf8;border-radius:10px;padding:8px 10px;margin-top:4px;">
+          <div style="font-size:11px;font-weight:700;color:var(--ocean-dark);margin-bottom:6px;">
+            🚕 도로 ${km.toFixed(1)}km · 누르면 도착시각·비용 자동 입력 후 바로 일정 추가!
+          </div>
+          <button type="button" class="btn btn-primary" style="width:100%;margin-bottom:6px;text-align:left;display:flex;justify-content:space-between;align-items:center;"
+            onclick="applyTaxiPrediction('${cur.dep}','${cur.arr}',${cur.fare})">
+            <span>⏱️ ${cur.dep} 출발 → ${cur.arr} 도착 (${cur.mins}분 · ${cur.label})</span>
+            <strong>${fmt(cur.fare)} 추가 →</strong>
+          </button>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+            ${slots.map(s => `
+              <button type="button" class="btn btn-soft btn-sm" style="text-align:left;padding:6px 8px;line-height:1.3;"
+                onclick="applyTaxiPrediction('${s.dep}','${s.arr}',${s.fare})">
+                <div style="font-weight:800;">${s.icon} ${s.tag} ${s.dep}→${s.arr}</div>
+                <div style="font-size:10.5px;color:var(--muted);">약 ${s.mins}분 · ${fmt(s.fare)}</div>
+              </button>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }
+
     async function calcTransitEstimate() {
       const box = document.getElementById("tr-est-box");
       if (!trFromCoord || !trToCoord) {
         box.textContent = "먼저 '출발 검색'과 '도착 검색'으로 두 곳을 선택해 주세요.";
         return;
       }
-      box.textContent = "도로 경로 계산 중...";
+      box.textContent = "도로 경로 및 시간대별 예측 계산 중...";
       try {
         const url = `https://router.project-osrm.org/route/v1/driving/${trFromCoord.lng},${trFromCoord.lat};${trToCoord.lng},${trToCoord.lat}?overview=false`;
         const r = await fetch(url);
         const data = await r.json();
         const route = data?.routes?.[0];
         if (!route) { box.textContent = "경로를 계산할 수 없습니다."; return; }
-        const km = route.distance / 1000;
-        const mins = Math.max(1, Math.round(route.duration / 60));
-        // 한국 택시 기본요금 약 4,800원(1.6km) + 131m당 100원 추정
-        const estTaxi = Math.round((4800 + Math.max(0, route.distance - 1600) / 131 * 100) / 100) * 100;
-        box.textContent = `🚕 도로 약 ${km.toFixed(1)}km · 차량 약 ${mins}분 · 예상 택시비 약 ${fmt(estTaxi)} (추정치)`;
+        trRouteCache = { distM: route.distance, durS: route.duration, km: route.distance / 1000 };
+        renderTransitPredictions();
       } catch {
         box.textContent = "예상 경로 계산에 실패했습니다.";
       }
