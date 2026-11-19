@@ -551,6 +551,83 @@
       color: #4338ca; background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 999px; padding: 2px 8px;
     }
     .w-src { font-size: 10px; color: var(--muted); }
+
+    /* 6탭 하단 네비 (360px 폭에서도 한 줄) */
+    .nav-inner { grid-template-columns: repeat(6, 1fr); }
+    .nav-btn { font-size: 9.6px; padding: 7px 1px 9px; gap: 1px; letter-spacing: -0.03em; }
+    .nav-btn .ico { font-size: 16px; }
+    .nav-badge { top: 1px; right: calc(50% - 24px); }
+
+    .hidden { display: none !important; }
+
+    /* 🧳 짐 챙기기 */
+    .pk-setup-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .pk-chip {
+      padding: 9px 6px; border-radius: 10px; border: 1px solid var(--border);
+      background: #fff; font-family: inherit; font-size: 12px; font-weight: 700;
+      color: var(--text); cursor: pointer; text-align: center;
+    }
+    .pk-chip.active { background: var(--ocean); border-color: var(--ocean); color: #fff; }
+    .pk-item {
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 0; border-bottom: 1px dashed var(--border);
+    }
+    .pk-item:last-child { border-bottom: none; }
+    .pk-item.done .pk-name { color: var(--muted); text-decoration: line-through; }
+    .pk-name {
+      flex: 1; min-width: 0; width: 100%; border: none; background: transparent;
+      font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text);
+      padding: 3px 2px; border-radius: 6px;
+    }
+    .pk-name:focus { background: var(--ocean-soft); outline: 1px solid var(--ocean-border); }
+    .pk-qty { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+    .pk-qty button {
+      width: 23px; height: 23px; border-radius: 7px; border: 1px solid var(--border);
+      background: #f8fafc; font-family: inherit; font-size: 13px; font-weight: 800;
+      color: var(--muted); cursor: pointer; line-height: 1; padding: 0;
+    }
+    .pk-qty input {
+      width: 32px; padding: 3px 1px; text-align: center; border: 1px solid var(--border);
+      border-radius: 7px; font-family: inherit; font-size: 12px; font-weight: 700;
+    }
+    .pk-del { border: none; background: none; color: var(--muted); font-size: 15px; font-weight: 800; cursor: pointer; padding: 0 1px; }
+    .pk-progress { height: 7px; border-radius: 999px; background: #e2e8f0; overflow: hidden; margin-top: 8px; }
+    .pk-progress > span { display: block; height: 100%; background: var(--ocean); border-radius: 999px; transition: width .25s; }
+    .pk-toolbar { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+
+    /* 💱 환율 카드 */
+    .fx-mid { font-size: 15px; font-weight: 800; color: var(--ocean-dark); margin-top: 6px; }
+    .fx-sub { font-size: 10.5px; color: var(--muted); font-weight: 600; }
+    .fx-two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .fx-box { background: var(--ocean-soft); border: 1px solid var(--ocean-border); border-radius: 10px; padding: 7px 9px; }
+    .fx-box .lb { font-size: 10.5px; color: var(--muted); font-weight: 700; }
+    .fx-box .vl { font-size: 14px; font-weight: 800; color: var(--ocean-dark); }
+    .fx-conv { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+    .fx-conv input {
+      flex: 1; min-width: 0; padding: 7px 9px; border: 1px solid var(--border);
+      border-radius: 9px; font-family: inherit; font-size: 12.5px;
+    }
+    .fx-out { font-size: 11.5px; font-weight: 800; color: var(--ocean-dark); white-space: nowrap; }
+
+    /* 🕒 영업시간 */
+    .hours-note { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+
+    /* 신규 루트 스타일 칩 */
+    .style-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+    .style-chip {
+      padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border);
+      background: #fff; font-family: inherit; font-size: 11.5px; font-weight: 700;
+      color: var(--text); cursor: pointer;
+    }
+    .style-chip.active { background: var(--ocean); border-color: var(--ocean); color: #fff; }
+
+    /* 🧥 공항 환복 알림 */
+    .airport-alert {
+      background: linear-gradient(135deg, #fff7ed 0%, #fef2f2 100%);
+      border: 1.5px solid #fdba74; border-radius: 14px; padding: 12px 14px; margin-bottom: 12px;
+    }
+    .airport-alert .ttl { font-size: 13.5px; font-weight: 800; color: #b45309; line-height: 1.45; }
+    .airport-alert .body { font-size: 12px; color: #7c2d12; margin-top: 5px; line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -614,8 +691,8 @@
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
           <div class="planb-bar" style="flex:1;margin-bottom:0;padding:8px 12px;">
             <div>
-              <div style="font-weight:800;font-size:13px;">☔ 플랜 B</div>
-              <div style="font-size:11px;color:var(--muted);">우천·한파 대체</div>
+              <div style="font-weight:800;font-size:13px;" id="planb-bar-title">☔ 플랜 B</div>
+              <div style="font-size:11px;color:var(--muted);" id="planb-bar-sub">우천·한파 대체</div>
             </div>
             <label class="switch">
               <input type="checkbox" id="planb-toggle" />
@@ -637,13 +714,16 @@
           <button class="btn btn-primary" style="flex:1;" onclick="openTransitModal()">🚆 교통편 추가</button>
         </div>
         <div id="timeline-list"></div>
-        <div style="margin-top:16px;margin-bottom:6px;display:flex;justify-content:center;">
+        <div style="margin-top:16px;margin-bottom:6px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-soft btn-sm" onclick="openThemeModal()" style="padding:8px 18px;">⚙️ 설정 · 색감 변경</button>
+          <button class="btn btn-soft btn-sm" onclick="refreshBusinessHours()" style="padding:8px 14px;">🔄 영업시간 업데이트</button>
         </div>
+        <div class="hours-note hours-updated-label" style="text-align:center;margin-bottom:8px;">아직 업데이트 전</div>
       </section>
 
       <!-- TAB 2: EXPENSES -->
       <section id="tab-expenses" class="tab-panel">
+        <div class="card" id="fx-card-2" data-fx-idx="1"></div>
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
             <h3 class="sec-title" style="margin:0;">카테고리별 지출 비중</h3>
@@ -703,12 +783,23 @@
             광안리·청사포 해변은 바닷바람(14~21km/h) 때문에 체감온도가 2~3°C 더 낮아요. 실외는 방풍+보온, 실내(지하철·카페)는 따뜻하므로 <strong>벗기 쉬운 겹겹이 레이어드</strong>가 핵심입니다.
           </div>
         </div>
+        <div id="weather-alert-box"></div>
         <div id="weather-list"></div>
       </section>
 
       <!-- TAB 4: CHECKLIST & ALERTS -->
       <section id="tab-checklist" class="tab-panel">
         <div id="chk-overseas-box"></div>
+        <div id="chk-weather-box"></div>
+        <div class="card" id="fx-card" data-fx-idx="0"></div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+            <h3 class="sec-title" style="margin:0;">🕒 맛집·카페·관광지 영업시간</h3>
+            <button class="btn btn-soft btn-sm" id="hours-refresh-btn" onclick="refreshBusinessHours()">🔄 영업시간 최신 정보로 업데이트</button>
+          </div>
+          <div class="hours-note hours-updated-label" id="hours-updated-label">아직 업데이트 전</div>
+          <div class="hours-note" id="hours-detail-label"></div>
+        </div>
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
             <h3 class="sec-title" style="margin:0;">⏰ 예매 오픈일 알림 (중복 선택)</h3>
@@ -742,6 +833,11 @@
           </div>
           <div id="checklist-items"></div>
         </div>
+      </section>
+
+      <!-- TAB: PACKING -->
+      <section id="tab-packing" class="tab-panel">
+        <div id="packing-body"></div>
       </section>
 
       <!-- TAB 6: RECOMMEND -->
@@ -795,7 +891,7 @@
             </div>
             <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:4px;">어디로 떠나나요?</div>
             <div class="row" style="margin-bottom:6px;">
-              <input id="route-dest" class="input" placeholder="예: 부산, 제주, 강릉, 여수, 경주, 서울" value="부산" />
+              <input id="route-dest" class="input" placeholder="예: 부산, 제주, 강릉, 여수, 경주, 서울" value="부산" oninput="renderRouteStyleChips()" />
             </div>
             <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;">
               <button class="btn btn-soft btn-sm" onclick="document.getElementById('route-dest').value='부산'">부산</button>
@@ -810,13 +906,7 @@
               <input id="route-start" type="date" class="input" style="flex:1;" />
               <input id="route-end" type="date" class="input" style="flex:1;" />
             </div>
-            <div class="row" style="margin-bottom:10px;">
-              <select id="route-style" class="input">
-                <option value="balanced">✨ 뚜벅이·맛집·감성카페 균형 코스</option>
-                <option value="ocean">🌊 오션뷰·힐링·야경 위주</option>
-                <option value="food">🍜 로컬 맛집·먹방 위주</option>
-              </select>
-            </div>
+            <div id="route-style-chips" class="style-chips"></div>
             <button class="btn btn-primary" style="width:100%;" onclick="generateNewRoute()">🗺️ AI 추천 루트 생성하기</button>
           </div>
           <div id="route-results"></div>
@@ -863,8 +953,7 @@
         <div class="card">
           <h3 class="sec-title">📂 내 여행 목록</h3>
           <div id="my-trips-list" style="margin-bottom:10px;"></div>
-          <button class="btn btn-soft" style="width:100%;margin-bottom:8px;" onclick="openNewTripModal()">+ 새 여행 만들기 (국내 / 해외 선택)</button>
-          <button class="btn btn-soft" style="width:100%;" onclick="openSampleTrip('au-sydney-4n5d')">📚 예시 여행 열기 · 🇦🇺 호주 시드니·블루마운틴 4박 5일</button>
+          <button class="btn btn-soft" style="width:100%;" onclick="openNewTripModal()">+ 새 여행 만들기 (국내 / 해외 선택)</button>
         </div>
 
         <details class="card" style="padding:12px 14px;">
@@ -1099,11 +1188,10 @@
       </div>
       <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">내 여행 목록</div>
       <div id="trips-modal-list" style="max-height:32vh;overflow-y:auto;margin-bottom:10px;"></div>
-      <div class="row" style="margin-bottom:8px;">
+      <div class="row" style="margin-bottom:0;">
         <button class="btn btn-primary" style="flex:1;" onclick="closeTripsModal();openTripTypeModal()">+ 새 여행 만들기</button>
         <button class="btn btn-soft" style="flex:1;" onclick="copyNewUserStartUrl()">🆕 시작 링크 복사</button>
       </div>
-      <button class="btn btn-soft" style="width:100%;" onclick="closeTripsModal();openSampleTrip('au-sydney-4n5d')">📚 예시 여행 열기 · 🇦🇺 호주 시드니·블루마운틴 4박 5일</button>
     </div>
   </div>
 
@@ -1163,7 +1251,6 @@
           <span class="type-cta">국가 선택 →</span>
         </button>
       </div>
-      <button class="btn btn-soft" style="width:100%;margin-top:12px;" onclick="closeTripTypeModal();openSampleTrip('au-sydney-4n5d')">📚 예시 여행 열기 · 🇦🇺 호주 시드니·블루마운틴 4박 5일</button>
     </div>
   </div>
 
@@ -1268,6 +1355,7 @@
       <button class="nav-btn" data-tab="expenses"><span class="ico">💰</span>경비</button>
       <button class="nav-btn" data-tab="weather"><span class="ico">🧥</span>날씨·옷</button>
       <button class="nav-btn" data-tab="checklist"><span class="ico">✅</span>알림·체크<span class="nav-badge" id="nav-check-badge" style="display:none;">0</span></button>
+      <button class="nav-btn" data-tab="packing"><span class="ico">🧳</span>짐</button>
     </div>
   </nav>
 
@@ -1950,7 +2038,9 @@
     }
 
     function saveState(skipCloud = false) {
+      try { syncDiningChecklist(); ensureAirportOutfitAlert(); } catch (e) { console.warn("checklist sync error", e); }
       localStorage.setItem(getLocalKey(), JSON.stringify(state));
+      try { registerMyTrip(currentSyncId, state.meta, true); } catch (e) {}
       renderAll();
       if (!skipCloud && sbClient) {
         clearTimeout(saveTimer);
@@ -2083,11 +2173,12 @@
       ).join("");
 
       const dayObj = state.days.find(d => d.day === currentDay) || state.days[0];
+      updatePlanBBar();
       const showPlanB = document.getElementById("planb-toggle").checked;
       const pbBox = document.getElementById("planb-content");
       if (showPlanB) {
         pbBox.style.display = "block";
-        pbBox.innerHTML = `<strong>${dayObj.planBTitle}</strong>${dayObj.planBDesc}`;
+        pbBox.innerHTML = `<strong>${dynamicPlanBTitle(dayObj)}</strong>${dayObj.planBDesc}${planBTipLine()}`;
       } else {
         pbBox.style.display = "none";
       }
@@ -2913,10 +3004,12 @@
         emptyBox.innerHTML = list.map(w => {
           const hasTemp = typeof w.minTemp === "number" && typeof w.maxTemp === "number";
           const temps = hasTemp ? `${w.minTemp}° / ${w.maxTemp}°` : "—";
+          const sun = sunTimesForEntry(w);
           const metaBits = [];
           if (w.wind) metaBits.push(`💨 ${w.wind}`);
           if (w.feelsLike) metaBits.push(w.feelsLike);
-          if (w.sunset) metaBits.push(`🌅 일몰 ${w.sunset}`);
+          if (sun.sunrise) metaBits.push(`🌅 일출 ${sun.sunrise}`);
+          if (sun.sunset) metaBits.push(`🌇 일몰 ${sun.sunset}`);
           return `
             <div class="card">
               <div class="weather-top">
@@ -2941,8 +3034,9 @@
         const isOverseas = state.meta?.tripType === "overseas";
         note.textContent = isOverseas
           ? "일정의 도시를 읽어 그날 그 도시 날씨로 보여드려요 (예보 → 작년 같은 기간 → 계절 평년 순)."
-          : "일정의 도시를 읽어 그날 그 도시 날씨를 보여드려요.";
+          : "일정의 도시를 읽어 그날 그 도시 날씨를 보여드려요 — 출발 16일 전부터는 실시간 예보로 자동 전환됩니다.";
       }
+      renderAirportAlert();
     }
 
     /* =====================================================================
@@ -3029,11 +3123,50 @@
       return m ? m[1] : "";
     }
 
+    /* 일출·일몰 계산 (예보에 값이 없을 때 쓰는 계절 추정) */
+    function estimateSunTimes(lat, lon, dateStr) {
+      const d = new Date(String(dateStr || "") + "T12:00:00");
+      if (isNaN(d)) return { sunrise: "", sunset: "" };
+      const N = Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000);
+      const rad = Math.PI / 180;
+      const decl = -23.44 * Math.cos(2 * Math.PI * (N + 10) / 365) * rad;
+      const phi = (typeof lat === "number" ? lat : 37) * rad;
+      const lonN = typeof lon === "number" ? lon : 127;
+      const B = 2 * Math.PI * (N - 81) / 364;
+      const eotMin = 9.87 * Math.sin(2 * B) - 7.53 * Math.cos(B) - 1.5 * Math.sin(B);
+      const tzGuess = Math.round(lonN / 15);
+      const solarNoon = 12 + (tzGuess * 15 - lonN) / 15 - eotMin / 60;
+      const cosH = -Math.tan(phi) * Math.tan(decl);
+      const H = Math.acos(Math.max(-1, Math.min(1, cosH))) / rad;
+      const halfDay = H / 15;
+      const fmtH = (h) => {
+        let hh = Math.floor(h), mm = Math.round((h - hh) * 60);
+        if (mm === 60) { hh += 1; mm = 0; }
+        hh = ((hh % 24) + 24) % 24;
+        return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+      };
+      if (!isFinite(halfDay)) return { sunrise: "", sunset: "" };
+      return { sunrise: fmtH(solarNoon - halfDay), sunset: fmtH(solarNoon + halfDay) };
+    }
+
+    function sunTimesForEntry(w) {
+      const sun = { sunrise: w.sunrise || "", sunset: w.sunset || "" };
+      if (sun.sunrise && sun.sunset) return sun;
+      const dayObj = (state.days || []).find(d => d.day === w.dayNum);
+      const dateStr = dayObj?.date || state.meta?.startDate;
+      if (!dateStr) return sun;
+      const dest = String(state.meta?.destination || "부산");
+      const key = Object.keys(CITY_GEO).find(k => dest.includes(k));
+      const geo = key ? CITY_GEO[key] : { lat: 35.17, lon: 129.07 };
+      const est = estimateSunTimes(geo.lat, geo.lon, dateStr);
+      return { sunrise: sun.sunrise || est.sunrise, sunset: sun.sunset || est.sunset };
+    }
+
     async function fetchDayWeather(geo, dateStr) {
       // 1) 실시간 예보 (오늘부터 16일 이내)
       try {
         const u = `https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}` +
-          `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,sunset` +
+          `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,sunrise,sunset` +
           `&timezone=auto&start_date=${dateStr}&end_date=${dateStr}`;
         const r = await fetch(u);
         if (r.ok) {
@@ -3047,6 +3180,7 @@
               code: j.daily.weather_code?.[0],
               wind: j.daily.wind_speed_10m_max?.[0],
               rainProb: j.daily.precipitation_probability_max?.[0],
+              sunrise: fmtSunset(j.daily.sunrise?.[0]),
               sunset: fmtSunset(j.daily.sunset?.[0])
             };
           }
@@ -3059,7 +3193,7 @@
         const to = new Date(d.getFullYear() - 1, d.getMonth(), d.getDate() + 2);
         const u = `https://archive-api.open-meteo.com/v1/archive?latitude=${geo.lat}&longitude=${geo.lon}` +
           `&start_date=${ymdLocal(from)}&end_date=${ymdLocal(to)}` +
-          `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,sunset&timezone=auto`;
+          `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,sunrise,sunset&timezone=auto`;
         const r = await fetch(u);
         if (r.ok) {
           const j = await r.json();
@@ -3076,6 +3210,7 @@
               min: avg(mins), max: avg(maxes), code,
               wind: winds.length ? avg(winds) : null,
               rainProb: rains.length ? Math.min(90, Math.round(rains.filter(r => r > 0.5).length / rains.length * 100)) : null,
+              sunrise: fmtSunset((j.daily?.sunrise || [])[0]),
               sunset: fmtSunset((j.daily?.sunset || [])[0])
             };
           }
@@ -3120,6 +3255,7 @@
           const minT = got ? got.min : est.min;
           const maxT = got ? got.max : est.max;
           const [icon, condition] = got ? wmoInfo(got.code) : ["🌤️", "계절 평년 기준"];
+          const sunTimes = geo ? estimateSunTimes(geo.lat, geo.lon, day.date) : { sunrise: "", sunset: "" };
           entries.push({
             dayNum: day.day, day: dayLabel,
             cityLabel: city.label, area: [city.label, day.areaDetail].filter(Boolean).join(" · "),
@@ -3127,7 +3263,8 @@
             minTemp: Math.round(minT), maxTemp: Math.round(maxT),
             wind: got && typeof got.wind === "number" ? `${Math.round(got.wind)}km/h` : "",
             feelsLike: `체감 ${Math.round(minT - 1)}~${Math.round(maxT + 1)}°C`,
-            sunset: got?.sunset || "",
+            sunrise: got?.sunrise || sunTimes.sunrise,
+            sunset: got?.sunset || sunTimes.sunset,
             outfit: outfitFor(minT, maxT, got?.rainProb || 0),
             tip: got
               ? `${city.label} ${got.sourceLabel} 기준` + (typeof got.rainProb === "number" ? ` · 강수확률 ${Math.round(got.rainProb)}%` : "")
@@ -3159,9 +3296,12 @@
       return (days || []).map(d => {
         const label = d.cityLabel || preset?.defaultCityLabel || "";
         const known = Object.keys(CITY_GEO).find(k => label.includes(k));
-        const lat = d.lat ?? (known ? CITY_GEO[known].lat : (preset?.code === "AU" ? -33.87 : undefined));
+        const baseGeo = known ? CITY_GEO[known] : (preset?.code === "AU" ? { lat: -33.87, lon: 151.21 } : null);
+        const lat = d.lat ?? baseGeo?.lat;
+        const lon = d.lng ?? baseGeo?.lon;
         const month = new Date(d.date + "T00:00:00").getMonth();
         const est = seasonalEstimate(label, month, lat);
+        const sun = estimateSunTimes(lat, lon, d.date);
         return {
           dayNum: d.day,
           day: `${d.day}일차 · ${fmtMD(d.date)}`,
@@ -3170,6 +3310,7 @@
           icon: "🌤️", condition: "계절 평년 기준",
           minTemp: est.min, maxTemp: est.max,
           feelsLike: `체감 ${est.min - 1}~${est.max + 1}°C`,
+          sunrise: sun.sunrise, sunset: sun.sunset,
           outfit: outfitFor(est.min, est.max, 0),
           tip: `${label ? label + " " : ""}계절 평년값이에요. '일정 도시별 날씨 새로고침'을 누르면 실제 예보로 바뀝니다.`,
           source: "seasonal", sourceLabel: "계절 평년 추정"
@@ -3205,7 +3346,7 @@
         if (!map[g]) { map[g] = []; order.push(g); }
         map[g].push(c);
       });
-      const priority = ["🚨 필수 출국·비자", "📱 통신·결제"];
+      const priority = ["🚨 필수 출국·비자", "🧥 날씨·환복", "📱 통신·결제"];
       order.sort((a, b) => {
         const ia = priority.indexOf(a), ib = priority.indexOf(b);
         return (ia === -1 ? 90 : ia) - (ib === -1 ? 90 : ib);
@@ -3214,6 +3355,8 @@
     }
 
     function renderChecklist() {
+      try { syncDiningChecklist(); } catch (e) { console.warn(e); }
+      updateHoursLabels();
       document.getElementById("alerts-list").innerHTML = (state.bookingAlerts || []).map(a => {
         const chips = OFFSET_OPTIONS.map(o => {
           const on = (a.offsets || []).includes(o.key);
@@ -3260,6 +3403,7 @@
         }).join("");
       }
       renderOverseasEmphasis();
+      renderExchangeRate();
     }
 
     /* =====================================================================
@@ -3514,11 +3658,7 @@
           };
           localStorage.setItem(PROFILE_KEY, JSON.stringify(myProfile));
           closeProfileModal();
-          if (pendingNewTripSetup) {
-            pendingNewTripSetup = false;
-            openTripTypeModal();
-            return;
-          }
+          await openMostRecentTrip();
           renderAll();
           checkInviteFlow();
           return;
@@ -3538,11 +3678,7 @@
               };
               localStorage.setItem(PROFILE_KEY, JSON.stringify(myProfile));
               closeProfileModal();
-              if (pendingNewTripSetup) {
-                pendingNewTripSetup = false;
-                openTripTypeModal();
-                return;
-              }
+              await openMostRecentTrip();
               renderAll();
               checkInviteFlow();
               return;
@@ -4016,7 +4152,7 @@
     function getMyTrips() {
       try {
         const raw = localStorage.getItem(MY_TRIPS_KEY);
-        const list = raw ? JSON.parse(raw) : [];
+        const list = (raw ? JSON.parse(raw) : []).filter(t => t && !t.sample);
         if (!list.some(t => t.syncId === DEFAULT_SB.syncId)) {
           list.unshift({
             syncId: DEFAULT_SB.syncId,
@@ -4026,25 +4162,63 @@
             locked: false
           });
         }
-        SAMPLE_TRIP_LIST.forEach(s => {
-          if (!list.some(t => t.syncId === s.syncId)) list.push({ ...s });
-        });
         return list;
       } catch {
-        return [{ syncId: DEFAULT_SB.syncId, title: DEFAULT_DATA.meta.title, startDate: DEFAULT_DATA.meta.startDate, endDate: DEFAULT_DATA.meta.endDate, locked: false }, ...SAMPLE_TRIP_LIST.map(s => ({ ...s }))];
+        return [{ syncId: DEFAULT_SB.syncId, title: DEFAULT_DATA.meta.title, startDate: DEFAULT_DATA.meta.startDate, endDate: DEFAULT_DATA.meta.endDate, locked: false }];
       }
     }
 
-    function registerMyTrip(syncId, meta) {
-      const list = getMyTrips().filter(t => t.syncId !== syncId);
+    function registerMyTrip(syncId, meta, stamp = false) {
+      const current = getMyTrips();
+      const prev = current.find(t => t.syncId === syncId) || {};
+      const list = current.filter(t => t.syncId !== syncId);
       list.unshift({
         syncId,
-        title: meta.title || syncId,
-        startDate: meta.startDate || "",
-        endDate: meta.endDate || "",
-        locked: Boolean(meta.passHash)
+        title: meta?.title || prev.title || syncId,
+        startDate: meta?.startDate || prev.startDate || "",
+        endDate: meta?.endDate || prev.endDate || "",
+        locked: Boolean(meta?.passHash),
+        updatedAt: stamp ? new Date().toISOString() : (prev.updatedAt || ""),
+        lastOpenedAt: prev.lastOpenedAt || ""
       });
       localStorage.setItem(MY_TRIPS_KEY, JSON.stringify(list));
+    }
+
+    function markTripOpened(syncId) {
+      try {
+        const list = getMyTrips();
+        const t = list.find(x => x.syncId === syncId);
+        if (t) {
+          t.lastOpenedAt = new Date().toISOString();
+          localStorage.setItem(MY_TRIPS_KEY, JSON.stringify(list));
+        }
+      } catch {}
+    }
+
+    function tripRecencyScore(t) {
+      const a = new Date(t.lastOpenedAt || 0).getTime() || 0;
+      const b = new Date(t.updatedAt || 0).getTime() || 0;
+      return Math.max(a, b);
+    }
+
+    /* 기존 프로필로 로그인하면 국내/해외 선택 없이 가장 최근 여행을 바로 연다 */
+    async function openMostRecentTrip() {
+      isNewFlow = false;
+      pendingNewTripSetup = false;
+      const cleanUrl = new URL(location.href);
+      cleanUrl.searchParams.delete("new");
+      cleanUrl.searchParams.delete("invite");
+      history.replaceState(null, "", cleanUrl.toString());
+      const list = getMyTrips().filter(t => t.syncId !== "au-sydney-4n5d");
+      list.sort((a, b) => tripRecencyScore(b) - tripRecencyScore(a));
+      let target = (list[0] && list[0].syncId) || DEFAULT_SB.syncId;
+      if (target !== DEFAULT_SB.syncId && !localStorage.getItem(STORAGE_KEY + "_" + target)) {
+        const fallback = list.find(t => t.syncId === DEFAULT_SB.syncId);
+        target = fallback ? fallback.syncId : DEFAULT_SB.syncId;
+      }
+      await switchTrip(target);
+      document.querySelector('.nav-btn[data-tab="timeline"]')?.click();
+      updateAccessGate();
     }
 
     function renderMyTrips() {
@@ -4053,11 +4227,11 @@
       const list = getMyTrips();
       el.innerHTML = list.map(t => {
         const active = t.syncId === currentSyncId;
-        const icon = t.sample ? "📚" : (t.locked ? "🔒" : "🗺️");
+        const icon = t.locked ? "🔒" : "🗺️";
         return `
           <div class="expense-item" style="padding:8px 0;">
             <div style="flex:1;">
-              <div style="font-size:13.5px;font-weight:700;">${icon} ${t.title} ${active ? '<span class="tag blue">현재</span>' : ""}${t.sample ? '<span class="tag blue">예시</span>' : ""}</div>
+              <div style="font-size:13.5px;font-weight:700;">${icon} ${t.title} ${active ? '<span class="tag blue">현재</span>' : ""}</div>
               <div style="font-size:11.5px;color:var(--muted);">${t.startDate} ~ ${t.endDate}</div>
             </div>
             ${active ? "" : `<button class="btn btn-soft btn-sm" onclick="switchTrip('${t.syncId}')">열기</button>`}
@@ -4069,14 +4243,12 @@
     async function switchTrip(syncId) {
       currentSyncId = syncId;
       state = loadState();
+      markTripOpened(syncId);
       history.replaceState(null, "", getShareUrl());
       renderAll();
       checkLockScreen();
       await startSupabase(DEFAULT_SB.url, DEFAULT_SB.key, currentSyncId);
-      if (state.meta?.tripType === "overseas" && !weatherAutoFetched[currentSyncId]) {
-        weatherAutoFetched[currentSyncId] = true;
-        setTimeout(() => refreshCityWeather(true), 700);
-      }
+      autoRefreshWeather();
     }
 
     /* Supabase Cloud Sync */
@@ -4185,6 +4357,8 @@
         document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
         btn.classList.add("active");
         document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+        if (btn.dataset.tab === "weather") autoRefreshWeather();
+        if (btn.dataset.tab === "packing") renderPacking();
       });
     });
 
@@ -4441,11 +4615,11 @@
       const box = document.getElementById("trips-modal-list");
       box.innerHTML = list.map(t => {
         const active = t.syncId === currentSyncId;
-        const icon = t.sample ? "📚" : (t.locked ? "🔒" : "🗺️");
+        const icon = t.locked ? "🔒" : "🗺️";
         return `
           <div class="expense-item" style="padding:7px 0;">
             <div style="flex:1;">
-              <div style="font-size:13.5px;font-weight:700;">${icon} ${t.title} ${active ? '<span class="tag blue">현재</span>' : ""}${t.sample ? '<span class="tag blue">예시</span>' : ""}</div>
+              <div style="font-size:13.5px;font-weight:700;">${icon} ${t.title} ${active ? '<span class="tag blue">현재</span>' : ""}</div>
               <div style="font-size:11.5px;color:var(--muted);">${t.startDate} ~ ${t.endDate}</div>
             </div>
             ${active ? "" : `<button class="btn btn-soft btn-sm" onclick="closeTripsModal();switchTrip('${t.syncId}')">열기</button>`}
@@ -4581,6 +4755,7 @@
         if (!document.getElementById("route-dest").value) {
           document.getElementById("route-dest").value = (state.meta?.destination || "부산").split(/[(\s]/)[0];
         }
+        renderRouteStyleChips();
       }
       if (isMust) {
         const ms = document.getElementById("must-start"), me = document.getElementById("must-end");
@@ -4957,13 +5132,37 @@
         ];
       }
 
-      const styleKey = document.getElementById("route-style").value || "balanced";
+      const styleKey = routeStyleKey || "balanced";
       const styleRank = {
         balanced: null,
         ocean: { "관광": 0, "카페": 1, "음식점": 2 },
-        food: { "음식점": 0, "카페": 1, "관광": 2 }
+        food: { "음식점": 0, "카페": 1, "관광": 2 },
+        landmark: { "관광": 0, "음식점": 1, "카페": 2 },
+        citynight: { "관광": 0, "카페": 1, "음식점": 2 },
+        nature: { "관광": 0, "카페": 1, "음식점": 2 },
+        shopping: { "관광": 0, "음식점": 1, "카페": 2 },
+        beach: { "관광": 0, "카페": 1, "음식점": 2 }
       }[styleKey];
-      if (styleRank) {
+      const styleKeywords = {
+        ocean: /오션|바다|해변|해수욕|비치|야경|전망/,
+        beach: /해변|해수욕|비치|바다|해안|서핑/,
+        landmark: /궁|유적|사찰|랜드마크|타워|박물관|미술관|고분|성당|광장|사찰|신사/,
+        citynight: /야경|전망|타워|스카이|루프탑|야시장|야경/,
+        nature: /공원|산책|숲|호수|정원|둘레길|해변|산책/,
+        shopping: /쇼핑|시장|거리|아울렛|백화점|핫플|소품|편집샵/,
+        food: /맛집|국밥|피자|떡볶이|분식|식당|시장|먹방/
+      };
+      const kw = styleKeywords[styleKey];
+      if (kw) {
+        pool = pool
+          .map((p, i) => ({ p, i }))
+          .sort((a, b) => {
+            const sa = kw.test(a.p.name + " " + (a.p.desc || "")) ? 0 : 1;
+            const sb = kw.test(b.p.name + " " + (b.p.desc || "")) ? 0 : 1;
+            return sa - sb || a.i - b.i;
+          })
+          .map((x) => x.p);
+      } else if (styleRank) {
         pool = pool
           .map((p, i) => ({ p, i }))
           .sort((a, b) => (styleRank[a.p.cat] ?? 3) - (styleRank[b.p.cat] ?? 3) || a.i - b.i)
@@ -4972,7 +5171,12 @@
       const styleSlots = {
         balanced: ["10:30", "12:30", "14:30", "18:00"],
         ocean: ["10:30", "13:00", "16:30", "19:30"],
-        food: ["11:00", "13:30", "18:00", "20:30"]
+        food: ["11:00", "13:30", "18:00", "20:30"],
+        beach: ["10:00", "13:30", "16:00", "19:00"],
+        landmark: ["09:30", "12:30", "15:00", "18:00"],
+        citynight: ["11:00", "15:00", "18:30", "21:00"],
+        nature: ["09:00", "11:30", "15:30", "18:30"],
+        shopping: ["11:00", "14:00", "17:00", "20:00"]
       };
       const timeSlots = styleSlots[styleKey] || styleSlots.balanced;
 
@@ -5033,9 +5237,886 @@
       alert(`${plan.dest} ${plan.days.length}일 추천 루트를 일정에 적용했어요!`);
     }
 
+    /* =====================================================================
+       공통 유틸 · 여행 기온 · 플랜 B 문구
+       ===================================================================== */
+    function escapeAttr(s) {
+      return String(s == null ? "" : s)
+        .replace(/&/g, "&amp;").replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function fmtStamp(iso) {
+      const d = new Date(iso);
+      if (isNaN(d)) return "";
+      const p = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    }
+
+    function tripTempRange() {
+      const ws = (state.weather || []).filter(w => typeof w.maxTemp === "number" && typeof w.minTemp === "number");
+      if (ws.length) {
+        return {
+          min: Math.min(...ws.map(w => w.minTemp)),
+          max: Math.max(...ws.map(w => w.maxTemp))
+        };
+      }
+      const dates = (state.days || []).map(d => d.date).filter(Boolean);
+      const month = dates.length ? new Date(dates[0] + "T00:00:00").getMonth() : new Date().getMonth();
+      const dest = String(state.meta?.destination || "부산");
+      const key = Object.keys(CITY_GEO).find(k => dest.includes(k));
+      return seasonalEstimate(dest, month, key ? CITY_GEO[key].lat : undefined);
+    }
+
+    function planBHeadline() {
+      const t = tripTempRange();
+      if (!t || typeof t.max !== "number") return { title: "☔ 플랜 B", sub: "우천·실내 대체", full: "☔ 플랜 B (우천·실내 대체)" };
+      if (t.max <= 10) return { title: "☔ 플랜 B", sub: "우천·한파 대체", full: "☔ 플랜 B (우천·한파 대체)" };
+      if (t.max >= 26) return { title: "☀️ 플랜 B", sub: "우천·폭염 대체", full: "☀️ 플랜 B (우천·폭염 대체)" };
+      return { title: "☔ 플랜 B", sub: "우천·실내 대체", full: "☔ 플랜 B (우천·실내 대체)" };
+    }
+
+    function updatePlanBBar() {
+      const h = planBHeadline();
+      const titleEl = document.getElementById("planb-bar-title");
+      const subEl = document.getElementById("planb-bar-sub");
+      if (titleEl) titleEl.textContent = h.title;
+      if (subEl) subEl.textContent = h.sub;
+    }
+
+    function dynamicPlanBTitle(dayObj) {
+      const h = planBHeadline();
+      const tail = String(dayObj?.planBTitle || "").replace(/^.*?플랜\s*B\s*:?\s*/, "").trim();
+      return tail ? `${h.full} — ${tail}` : h.full;
+    }
+
+    function planBTipLine() {
+      const t = tripTempRange();
+      if (!t || typeof t.max !== "number") return "";
+      if (t.max <= 10) {
+        return `<div style="margin-top:7px;font-size:12px;color:#1e40af;line-height:1.5;">🧊 최고 ${t.max}°C · 한파 대비 — 야외 일정은 실내 온천·전시·카페로 돌리고, 대기 시간엔 핫팩·장갑을 챙기세요.</div>`;
+      }
+      if (t.max >= 26) {
+        return `<div style="margin-top:7px;font-size:12px;color:#1e40af;line-height:1.5;">🔥 최고 ${t.max}°C · 폭염 대비 — 12~16시 야외 일정은 실내로 옮기고 물·양산·선크림을 챙기세요.</div>`;
+      }
+      return `<div style="margin-top:7px;font-size:12px;color:#1e40af;line-height:1.5;">🌦️ 최고 ${t.max}°C · 무난한 편 — 비만 피하면 실내·실외 모두 가능해요.</div>`;
+    }
+
+    /* =====================================================================
+       공항 환복 체크 (한국 ↔ 현지 기온 차)
+       ===================================================================== */
+    function koreaSeasonal(month) {
+      const t = CLIMATE_TABLE["서울"];
+      const m = Math.max(0, Math.min(11, Number(month) || 0));
+      return { min: t.tmin[m], max: t.tmax[m] };
+    }
+
+    function airportOutfitInfo() {
+      if (state.meta?.tripType !== "overseas") return null;
+      const first = (state.weather || []).find(w => typeof w.maxTemp === "number");
+      if (!first) return null;
+      const dateStr = state.days?.[0]?.date || state.meta?.startDate;
+      const md = dateStr ? new Date(dateStr + "T00:00:00") : new Date();
+      const month = isNaN(md) ? new Date().getMonth() : md.getMonth();
+      const k = koreaSeasonal(month);
+      const destMax = Math.round(first.maxTemp);
+      const destMin = Math.round(typeof first.minTemp === "number" ? first.minTemp : first.maxTemp);
+      const gap = destMax - k.max;
+      const coldToWarm = k.min <= 5 && destMax >= 18;
+      const warmToCold = k.max >= 18 && destMax <= 10;
+      if (gap < 8 && !coldToWarm && !warmToCold) return null;
+      const direction = destMax >= k.max ? "한국(추움) ↔ 현지(따뜻/더움)" : "한국(따뜻) ↔ 현지(추움)";
+      return {
+        k, destMax, destMin, gap, direction,
+        text: `🧥 공항 환복 체크: ${direction} — 기내용 얇은 옷·외투 보관 준비`
+      };
+    }
+
+    function ensureAirportOutfitAlert() {
+      if (!Array.isArray(state.checklist)) state.checklist = [];
+      const id = "airport-outfit-check";
+      const idx = state.checklist.findIndex(c => c.id === id);
+      const info = airportOutfitInfo();
+      if (!info) {
+        if (idx >= 0) state.checklist.splice(idx, 1);
+        return;
+      }
+      const note = `한국(서울) ${info.k.min}~${info.k.max}°C · 현지 ${info.destMin}~${info.destMax}°C (최고기온 차 ${info.gap >= 0 ? "+" : ""}${info.gap}°C)`;
+      if (idx >= 0) {
+        const c = state.checklist[idx];
+        c.text = info.text; c.note = note; c.urgent = true; c.group = "🧥 날씨·환복";
+      } else {
+        state.checklist.push({ id, text: info.text, note, done: false, urgent: true, group: "🧥 날씨·환복" });
+      }
+    }
+
+    function renderAirportAlert() {
+      const info = airportOutfitInfo();
+      const html = info
+        ? `<div class="airport-alert"><div class="ttl">${info.text}</div><div class="body">한국(서울) ${info.k.min}~${info.k.max}°C · 현지 ${info.destMin}~${info.destMax}°C — 최고기온 ${info.gap >= 0 ? "+" : ""}${info.gap}°C 차이<br>공항에서 외투를 벗어 캐리어에 넣고, 기내·실내용 얇은 옷을 겉에 입고 타세요.</div></div>`
+        : "";
+      ["weather-alert-box", "chk-weather-box"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = html;
+      });
+    }
+
+    /* =====================================================================
+       맛집·카페 개수 자동 동기화 & 영업시간 최신화
+       ===================================================================== */
+    const DINING_RE = /음식점|카페|커피|국밥|피자|떡볶이|분식|맛집|식당|레스토랑|브런치|베이커리|디저트|이자카야|술집|호프|주점|바다당|뚜벅스/;
+
+    function diningSpotNames() {
+      const keys = [];
+      (state.days || []).forEach(day => (day.items || []).forEach(it => {
+        if (!it.place || it.fromPlace || it.toPlace) return;
+        if (/→|체크인|체크아웃|보관함|공항/.test(it.place)) return;
+        const isDining = Array.isArray(it.menus) || DINING_RE.test(it.place);
+        if (!isDining) return;
+        const key = String(it.place).replace(/\(.*?\)/g, "").replace(/\s+/g, "").trim();
+        if (key && !keys.includes(key)) keys.push(key);
+      }));
+      return keys;
+    }
+
+    function syncDiningChecklist() {
+      const n = diningSpotNames().length;
+      if (!n) return;
+      if (!Array.isArray(state.checklist)) state.checklist = [];
+      const list = state.checklist;
+      let item = list.find(c => /^맛집·카페 \d+곳 영업시간 재확인/.test(String(c.text || "")));
+      if (!item) item = list.find(c => /영업시간 재확인/.test(String(c.text || "")) && /맛집|카페/.test(String(c.text || "")));
+      const suffixMatch = String(item?.text || "").match(/\s*\(출발[^)]*\)/);
+      const suffix = suffixMatch ? suffixMatch[0] : " (출발 3일 전)";
+      if (item) {
+        item.text = `맛집·카페 ${n}곳 영업시간 재확인${suffix}`;
+        item.count = n;
+      } else {
+        list.push({ id: "c-dining-hours", text: `맛집·카페 ${n}곳 영업시간 재확인${suffix}`, done: false, count: n });
+      }
+    }
+
+    function hoursTargets() {
+      const out = [];
+      (state.days || []).forEach(day => (day.items || []).forEach(it => {
+        if (!it.place || it.fromPlace || it.toPlace) return;
+        if (/→|체크인|체크아웃|보관함/.test(it.place)) return;
+        const cat = inferItemExpenseCategory(it);
+        const dining = Array.isArray(it.menus) || DINING_RE.test(it.place);
+        const attraction = cat === "관광" || /전망대|해수욕장|박물관|미술관|공원|사찰|시장|타워|해변|거리|마을/.test(it.place);
+        if (!dining && !attraction) return;
+        const name = String(it.place).replace(/\(.*?\)/g, "").replace(/\s+/g, " ").trim();
+        if (!name) return;
+        out.push({ it, name, key: name.replace(/\s+/g, ""), kind: dining ? "dining" : "spot" });
+      }));
+      return out;
+    }
+
+    function shortenOpeningHours(oh) {
+      if (!oh) return "";
+      let s = String(oh).trim();
+      if (/^24\/7$/.test(s)) return "24시간";
+      const dm = { Mo: "월", Tu: "화", We: "수", Th: "목", Fr: "금", Sa: "토", Su: "일" };
+      s = s.replace(/\b(Mo|Tu|We|Th|Fr|Sa|Su)\b/g, m => dm[m]);
+      s = s.replace(/([월화수목금토일])\s*-\s*([월화수목금토일])/g, "$1~$2");
+      s = s.replace(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/g, "$1:$2~$3:$4");
+      s = s.replace(/월~일/g, "매일");
+      return s.replace(/\s+/g, " ").slice(0, 42);
+    }
+
+    function applyHoursToItem(it, info) {
+      const oh = info.oh || "";
+      const short = shortenOpeningHours(oh);
+      it.badges = (it.badges || []).filter(b =>
+        !/^🕒/.test(b) &&
+        !/^\d{1,2}:\d{2}~\d{1,2}:\d{2}$/.test(b) &&
+        !/요일 (영업|휴무)/.test(b) &&
+        !/휴무 주의$/.test(b) &&
+        b !== "연중무휴" && b !== "휴무일 미확인" && b !== "영업시간 확인 필요"
+      );
+      if (short) it.badges.unshift(`🕒 ${short}`);
+      if (info.closed) it.badges.unshift(`${info.closed} 휴무`);
+      if (!short && !info.closed) it.badges.push("영업시간 확인 필요");
+      if (short && !info.closed) {
+        const m0 = String(it.memo || "");
+        if (!m0.includes("휴무일은 방문 전")) it.memo = (m0 ? m0 + " · " : "") + "휴무일은 방문 전 확인";
+      }
+      it.hoursUpdatedAt = new Date().toISOString();
+      it.hoursSource = info.source || "";
+      if (short) {
+        const memo = String(it.memo || "");
+        if (!memo.includes(short)) it.memo = (memo ? memo + " · " : "") + `영업시간 ${short}`;
+      }
+    }
+
+    async function lookupOpeningHours(name, cityHint) {
+      const clean = String(name).replace(/\(.*?\)/g, "").split(/[·,]/)[0].trim();
+      const knownKey = Object.keys(KNOWN_SPOT_META).find(k => clean.includes(k));
+      const known = knownKey ? KNOWN_SPOT_META[knownKey] : null;
+      const out = { oh: "", closed: known?.closed || "", source: known ? "내부 DB" : "" };
+      try {
+        const q = encodeURIComponent(`${clean} ${cityHint || ""}`.trim());
+        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&extratags=1&limit=1&addressdetails=0&q=${q}`);
+        if (r.ok) {
+          const arr = await r.json();
+          const oh = arr?.[0]?.extratags?.opening_hours || "";
+          if (oh) {
+            out.oh = oh;
+            out.closed = parseOsmClosedDay(oh) || out.closed;
+            out.source = "OSM";
+          }
+        }
+      } catch {}
+      return out;
+    }
+
+    let hoursRefreshing = false;
+    async function refreshBusinessHours() {
+      if (hoursRefreshing) return;
+      if (!canEdit()) return alert("읽기 전용 권한이라 영업시간을 수정할 수 없어요.");
+      const targets = hoursTargets();
+      if (!targets.length) return alert("영업시간을 확인할 맛집·카페·관광지가 일정에 없어요.");
+      hoursRefreshing = true;
+      const btn = document.getElementById("hours-refresh-btn");
+      const prevLabel = btn ? btn.textContent : "";
+      let ok = 0, fail = 0;
+      try {
+        const cityHint = String(state.meta?.destination || "").split(/[(\s]/)[0] || "";
+        const uniq = [];
+        targets.forEach(t => { if (!uniq.some(u => u.key === t.key)) uniq.push(t); });
+        const capped = uniq.slice(0, 24);
+        for (let i = 0; i < capped.length; i++) {
+          const t = capped[i];
+          if (btn) btn.textContent = `⏳ 확인 중 ${i + 1}/${capped.length}`;
+          const info = await lookupOpeningHours(t.name, cityHint);
+          targets.filter(x => x.key === t.key).forEach(r => {
+            applyHoursToItem(r.it, info);
+            if (info.oh || info.closed) ok++; else fail++;
+          });
+          await new Promise(res => setTimeout(res, 380));
+        }
+        state.meta.hoursUpdatedAt = new Date().toISOString();
+        state.meta.hoursChecked = { ok, fail, total: capped.length, remaining: Math.max(0, uniq.length - capped.length) };
+        saveState();
+      } catch (e) {
+        console.error("hours refresh", e);
+        alert("영업시간을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
+      } finally {
+        hoursRefreshing = false;
+        if (btn) btn.textContent = prevLabel || "🔄 영업시간 최신 정보로 업데이트";
+        updateHoursLabels();
+      }
+    }
+
+    function updateHoursLabels() {
+      const at = state.meta?.hoursUpdatedAt;
+      const label = at ? `마지막 업데이트: ${fmtStamp(at)}` : "아직 업데이트 전";
+      document.querySelectorAll(".hours-updated-label").forEach(el => { el.textContent = label; });
+      const detail = document.getElementById("hours-detail-label");
+      if (detail) {
+        const d = diningSpotNames().length;
+        const c = state.meta?.hoursChecked;
+        detail.textContent = `맛집·카페 ${d}곳` +
+          (c ? ` · 확인 ${c.total}곳 (반영 ${c.ok} · 미확인 ${c.fail})` : "") +
+          " · OSM/내부 DB 기준이라 방문 전 전화 확인이 가장 정확해요.";
+      }
+    }
+
+    /* =====================================================================
+       해외여행 실시간 환율 (살 때 / 팔 때 현찰 예상가 + 미니 환산기)
+       ===================================================================== */
+    const FX_BY_COUNTRY = {
+      "호주": "AUD", "일본": "JPY", "미국": "USD", "유럽": "EUR", "유럽 (솅겐)": "EUR",
+      "태국": "THB", "베트남": "VND", "대만": "TWD", "싱가포르": "SGD"
+    };
+    const FX_FALLBACK = { AUD: 950, JPY: 9.4, USD: 1450, EUR: 1570, THB: 42.5, VND: 0.057, TWD: 45, SGD: 1080 };
+    const FX_META = {
+      AUD: { sym: "A$", dec: 2 }, JPY: { sym: "¥", dec: 0 }, USD: { sym: "$", dec: 2 },
+      EUR: { sym: "€", dec: 2 }, THB: { sym: "฿", dec: 2 }, VND: { sym: "₫", dec: 0 },
+      TWD: { sym: "NT$", dec: 2 }, SGD: { sym: "S$", dec: 2 }
+    };
+    const FX_SPREAD = 0.0175;
+    let fxFetching = false;
+
+    function fxCurrency() {
+      if (state.meta?.tripType !== "overseas") return null;
+      const c = String(state.meta?.country || "");
+      if (FX_BY_COUNTRY[c]) return FX_BY_COUNTRY[c];
+      const hit = Object.keys(FX_BY_COUNTRY).find(k => c && (c.includes(k.replace(" (솅겐)", "")) || k.includes(c)));
+      return hit ? FX_BY_COUNTRY[hit] : null;
+    }
+
+    function fxNumbers() {
+      const code = fxCurrency();
+      if (!code) return null;
+      const fx = state.meta?.fx;
+      const mid = (fx && fx.code === code && Number(fx.mid)) ? Number(fx.mid) : (FX_FALLBACK[code] || 1000);
+      const meta = FX_META[code] || { sym: code, dec: 2 };
+      return {
+        code, mid,
+        dec: meta.dec,
+        sym: meta.sym,
+        buy: mid * (1 + FX_SPREAD),
+        sell: mid * (1 - FX_SPREAD),
+        at: fx && fx.code === code ? fx.at : null,
+        stale: !(fx && fx.code === code) || fx.source === "fallback"
+      };
+    }
+
+    async function refreshExchangeRate(force = false) {
+      const code = fxCurrency();
+      if (!code || fxFetching) return;
+      const fx = state.meta?.fx;
+      if (!force && fx && fx.code === code && Date.now() - new Date(fx.at).getTime() < 30 * 60 * 1000) return;
+      fxFetching = true;
+      try {
+        const r = await fetch("https://open.er-api.com/v6/latest/KRW");
+        if (!r.ok) throw new Error("fx http " + r.status);
+        const j = await r.json();
+        const perKrw = j?.rates?.[code];
+        if (typeof perKrw !== "number" || !perKrw) throw new Error("no rate for " + code);
+        state.meta.fx = { code, perKrw, mid: 1 / perKrw, at: new Date().toISOString(), source: "open.er-api.com" };
+      } catch (e) {
+        console.warn("fx fetch", e);
+        if (!state.meta.fx || state.meta.fx.code !== code) {
+          state.meta.fx = { code, mid: FX_FALLBACK[code] || 1000, at: new Date().toISOString(), source: "fallback" };
+        }
+      } finally {
+        fxFetching = false;
+        renderExchangeRate();
+        try { localStorage.setItem(getLocalKey(), JSON.stringify(state)); } catch {}
+      }
+    }
+
+    function renderExchangeRate() {
+      const boxes = document.querySelectorAll("[data-fx-idx]");
+      if (!boxes.length) return;
+      const fx = fxNumbers();
+      if (!fx) {
+        boxes.forEach(b => { b.style.display = "none"; b.innerHTML = ""; });
+        return;
+      }
+      const fmtKrw = (v) => v >= 100 ? Math.round(v).toLocaleString("ko-KR") : v >= 10 ? v.toFixed(2) : v.toFixed(4);
+      const perUnit = fx.mid >= 1;
+      const unitLabel = perUnit ? `1 ${fx.code}` : "₩1,000";
+      const buyVal = perUnit ? `₩${fmtKrw(fx.buy)}` : `${fx.sym}${Math.round(1000 / fx.buy).toLocaleString("ko-KR")}`;
+      const sellVal = perUnit ? `₩${fmtKrw(fx.sell)}` : `${fx.sym}${Math.round(1000 / fx.sell).toLocaleString("ko-KR")}`;
+      const primary = perUnit
+        ? `1 ${fx.code} = ₩${fmtKrw(fx.mid)}`
+        : `₩1,000 = ${fx.sym}${Math.round(1000 / fx.buy).toLocaleString("ko-KR")}`;
+      const stamp = fx.at ? fmtStamp(fx.at) : "불러오는 중";
+      const srcLabel = fx.stale ? "저장된 기준환율 기반" : "실시간 기준환율 기반";
+      boxes.forEach(box => {
+        box.style.display = "block";
+        const ix = box.getAttribute("data-fx-idx") || "0";
+        box.innerHTML = `
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <div style="font-size:13.5px;font-weight:800;">💱 실시간 환율 · ${fx.code}</div>
+            <button class="btn btn-soft btn-sm" onclick="refreshExchangeRate(true)">🔄 새로고침</button>
+          </div>
+          <div class="fx-mid">${primary}</div>
+          <div class="fx-sub">${srcLabel} · ${stamp} 조회</div>
+          <div class="fx-two">
+            <div class="fx-box"><div class="lb">살 때 (현찰) · ${unitLabel}</div><div class="vl">${buyVal}</div></div>
+            <div class="fx-box"><div class="lb">팔 때 (현찰) · ${unitLabel}</div><div class="vl">${sellVal}</div></div>
+          </div>
+          <div class="fx-conv">
+            <input type="number" inputmode="numeric" placeholder="₩ 원화" oninput="fxConvert(this, 'krw')" />
+            <span class="fx-out fx-out-krw-${ix}">→ ${fx.sym}0</span>
+          </div>
+          <div class="fx-conv">
+            <input type="number" inputmode="numeric" placeholder="${fx.code} 현지화폐" oninput="fxConvert(this, 'loc')" />
+            <span class="fx-out fx-out-loc-${ix}">→ ₩0</span>
+          </div>
+          <div class="fx-sub" style="margin-top:7px;">실시간 기준환율(매매기준율)에 은행 현찰 스프레드 ±${(FX_SPREAD * 100).toFixed(2)}%를 반영한 <b>예상가</b>예요. 실제 은행·환전소 고시 환율과 다를 수 있어요.</div>
+        `;
+      });
+      try { maybeRefreshExchangeRate(); } catch (e) {}
+    }
+
+    function maybeRefreshExchangeRate() {
+      const code = fxCurrency();
+      if (!code) return;
+      const fx = state.meta?.fx;
+      if (fx && fx.code === code && Date.now() - new Date(fx.at).getTime() < 30 * 60 * 1000) return;
+      refreshExchangeRate(true);
+    }
+
+    function fxConvert(inp, dir) {
+      const box = inp.closest("[data-fx-idx]");
+      const fx = fxNumbers();
+      if (!box || !fx) return;
+      const ix = box.getAttribute("data-fx-idx") || "0";
+      const v = Number(inp.value) || 0;
+      const outKrw = box.querySelector(`.fx-out-krw-${ix}`);
+      const outLoc = box.querySelector(`.fx-out-loc-${ix}`);
+      if (dir === "krw") {
+        if (outKrw) outKrw.textContent = `→ ${fx.sym}${(v / fx.buy).toLocaleString("ko-KR", { maximumFractionDigits: fx.dec })}`;
+      } else if (outLoc) {
+        outLoc.textContent = `→ ₩${Math.round(v * fx.sell).toLocaleString("ko-KR")}`;
+      }
+    }
+
+    /* =====================================================================
+       🧳 짐 챙기기 (스마트 패킹 리스트)
+       ===================================================================== */
+    const PACKING_GENDERS = [
+      { key: "female", label: "👩 여성" },
+      { key: "male", label: "👨 남성" }
+    ];
+    const PACKING_AGES = [
+      { key: "10", label: "10대" }, { key: "20", label: "20대" },
+      { key: "30", label: "30대" }, { key: "40", label: "40대+" }
+    ];
+    const PACKING_STYLES = [
+      { key: "couple", label: "💑 커플여행" },
+      { key: "honeymoon", label: "💍 신혼여행" },
+      { key: "anniversary", label: "💐 부부기념일" },
+      { key: "friends", label: "👯 친구끼리" },
+      { key: "solo", label: "🧳 혼자여행" },
+      { key: "family", label: "👨‍👩‍👧 가족여행" }
+    ];
+    const PACKING_GROUPS = ["👕 의류·신발", "🧴 세면·뷰티", "📱 전자기기", "💊 건강·상비약", "📄 서류·결제", "🎒 기타"];
+    const PERIOD_ITEM_NAMES = ["생리대 중형", "생리대 대형", "오버나이트 생리대", "생리통 진통제", "여분 속옷 (생리 대비)"];
+    let packingDraft = null;
+    let packingDraftTrip = "";
+    let packingDraftSeq = 0;
+
+    function getPacking() {
+      if (!state.packing || typeof state.packing !== "object") state.packing = {};
+      return state.packing;
+    }
+
+    function packingDraftInit() {
+      const p = getPacking();
+      if (!packingDraft || packingDraftTrip !== currentSyncId) {
+        packingDraft = { gender: p.gender || "female", age: p.age || "20", style: p.tripStyle || "couple" };
+        packingDraftTrip = currentSyncId;
+      }
+      return packingDraft;
+    }
+
+    function packingContext() {
+      const nights = Math.max(1, (state.days || []).length - 1);
+      const days = nights + 1;
+      const dateStr = state.days?.[0]?.date || state.meta?.startDate;
+      const d0 = dateStr ? new Date(dateStr + "T00:00:00") : new Date();
+      const month = isNaN(d0) ? new Date().getMonth() : d0.getMonth();
+      const overseas = state.meta?.tripType === "overseas";
+      const dest = String(state.meta?.destination || "부산").split(/[(\s]/)[0] || "부산";
+      let minT = null, maxT = null;
+      const ws = (state.weather || []).filter(w => typeof w.minTemp === "number" && typeof w.maxTemp === "number");
+      if (ws.length) {
+        minT = Math.round(ws.reduce((a, w) => a + w.minTemp, 0) / ws.length);
+        maxT = Math.round(ws.reduce((a, w) => a + w.maxTemp, 0) / ws.length);
+      } else {
+        const g = Object.keys(CITY_GEO).find(k => dest.includes(k));
+        const est = seasonalEstimate(dest, month, g ? CITY_GEO[g].lat : undefined);
+        minT = est.min; maxT = est.max;
+      }
+      const blob = JSON.stringify((state.days || []).map(d => [d.area, d.areaDetail, d.subtitle, (d.items || []).map(i => `${i.place} ${i.memo || ""}`)]));
+      const sea = /바다|해변|해수욕|광안리|해운대|본다이|맨리|워터파크|수영|오션|비치|beach/i.test(blob);
+      return { nights, days, month, overseas, dest, minT, maxT, sea };
+    }
+
+    function generatePackingList() {
+      const d = packingDraftInit();
+      const ctx = packingContext();
+      const p = getPacking();
+      const prevChecked = {};
+      (p.items || []).forEach(it => { if (it && it.name) prevChecked[it.name] = Boolean(it.checked); });
+      const sets = ctx.nights + 1;
+      const extra = ctx.sea ? 2 : 0;
+      const cold = ctx.maxT <= 10, hot = ctx.maxT >= 26;
+      const rows = [];
+      const add = (group, name, qty = 1) => rows.push({ group, name, qty: Math.max(1, Math.round(qty)) });
+
+      add("👕 의류·신발", "속옷", sets + extra);
+      add("👕 의류·신발", "양말", sets + extra);
+      add("👕 의류·신발", "상의", ctx.days);
+      add("👕 의류·신발", "하의", Math.max(2, Math.ceil(ctx.days / 2)));
+      add("👕 의류·신발", "여벌 옷", ctx.sea ? 2 : 1);
+      add("👕 의류·신발", "잠옷", 1);
+      if (ctx.sea) {
+        add("👕 의류·신발", "수영복", 1);
+        add("👕 의류·신발", "래시가드", 1);
+        add("👕 의류·신발", "비치타월", 2);
+        add("👕 의류·신발", "슬리퍼·아쿠아슈즈", 1);
+      }
+      if (cold) {
+        add("👕 의류·신발", "패딩·코트", 1);
+        add("👕 의류·신발", "기모 이너", ctx.days);
+        add("👕 의류·신발", "목도리", 1);
+        add("👕 의류·신발", "장갑", 1);
+        add("👕 의류·신발", "핫팩", ctx.days * 2);
+      } else if (hot) {
+        add("👕 의류·신발", "모자", 1);
+        add("👕 의류·신발", "선글라스", 1);
+      } else {
+        add("👕 의류·신발", "얇은 겉옷", 1);
+      }
+      add("👕 의류·신발", "편한 운동화", 1);
+
+      add("🧴 세면·뷰티", "세면도구 (칫솔·치약)", 1);
+      add("🧴 세면·뷰티", "스킨케어·화장품", 1);
+      add("🧴 세면·뷰티", "선크림", 1);
+      add("🧴 세면·뷰티", "보습제·립밤", 1);
+      if (d.gender === "female") add("🧴 세면·뷰티", "생리대 (예비용)", 3);
+      if (ctx.overseas) add("🧴 세면·뷰티", "어댑터·멀티탭", 1);
+
+      add("📱 전자기기", "보조배터리", 1);
+      add("📱 전자기기", "충전기·케이블", 2);
+      add("📱 전자기기", "이어폰", 1);
+      if (ctx.sea || hot) add("📱 전자기기", "방수팩", 1);
+
+      add("💊 건강·상비약", "상비약 (소화제·진통제·밴드)", 1);
+      add("💊 건강·상비약", "마스크", Math.max(2, ctx.days));
+      if (cold) add("💊 건강·상비약", "감기약·비타민", 1);
+      if (ctx.sea) add("💊 건강·상비약", "멀미약·연고", 1);
+
+      if (ctx.overseas) {
+        add("📄 서류·결제", "여권", 1);
+        add("📄 서류·결제", "eSIM·유심", 1);
+        add("📄 서류·결제", "해외결제 카드·현지 화폐", 1);
+        add("📄 서류·결제", "여행자보험 증서", 1);
+        add("📄 서류·결제", "숙소·항공 바우처 (오프라인 저장)", 1);
+      } else {
+        add("📄 서류·결제", "신분증", 1);
+        add("📄 서류·결제", "교통카드", 1);
+        add("📄 서류·결제", "숙소·교통 예약 내역", 1);
+      }
+
+      add("🎒 기타", "물병·텀블러", 1);
+      add("🎒 기타", "비닐봉지·지퍼백", 3);
+      add("🎒 기타", "우산", 1);
+      add("🎒 기타", "작은 크로스백", 1);
+
+      if (d.gender === "female" && p.periodMode) {
+        add("💊 건강·상비약", "생리대 중형", ctx.days * 4);
+        add("💊 건강·상비약", "생리대 대형", ctx.days * 2);
+        add("💊 건강·상비약", "오버나이트 생리대", ctx.nights);
+        add("💊 건강·상비약", "생리통 진통제", 1);
+        add("👕 의류·신발", "여분 속옷 (생리 대비)", 2);
+      }
+
+      if (d.age === "10") add("📄 서류·결제", "학생증·용돈", 1);
+      if (d.age === "20") add("📄 서류·결제", "학생증·신분증", 1);
+      if (d.age === "30") add("💊 건강·상비약", "피로회복제", 1);
+      if (d.age === "40") {
+        add("💊 건강·상비약", "정기 복용약", 1);
+        add("👕 의류·신발", "여분 안경", 1);
+      }
+
+      const styleExtra = {
+        couple: [["🎒 기타", "커플룩·커플 소품"], ["🎒 기타", "셀카봉·삼각대"], ["🎒 기타", "공용 지출 메모"]],
+        honeymoon: [["👕 의류·신발", "신혼 촬영 드레스·정장"], ["🎒 기타", "부케·리본 소품"], ["🎒 기타", "기념 편지"]],
+        anniversary: [["🎒 기타", "기념 선물"], ["🎒 기타", "케이크 초·파티 소품"], ["👕 의류·신발", "기념일 한 벌"]],
+        friends: [["🎒 기타", "보드게임·카드"], ["🎒 기타", "공금 통장·더치페이 앱"], ["💊 건강·상비약", "공용 상비약"]],
+        solo: [["📄 서류·결제", "비상 연락처 메모"], ["🎒 기타", "소형 자물쇠"], ["🎒 기타", "일정 캡처 공유"]],
+        family: [["🎒 기타", "아이 간식·물티슈"], ["💊 건강·상비약", "유아 상비약"], ["👕 의류·신발", "아이 여벌 옷"]]
+      };
+      (styleExtra[d.style] || []).forEach(([g, n]) => add(g, n, 1));
+      if (ctx.overseas) add("🎒 기타", "돌아오는 날 캐리어 여유 공간", 1);
+
+      p.gender = d.gender;
+      p.age = d.age;
+      p.tripStyle = d.style;
+      p.setupDone = true;
+      p.generatedAt = new Date().toISOString();
+      p.summary = { nights: ctx.nights, days: ctx.days, sea: ctx.sea, overseas: ctx.overseas, minT: ctx.minT, maxT: ctx.maxT };
+      p.items = rows.map((r) => ({
+        id: "pk-" + Date.now().toString(36) + "-" + (++packingDraftSeq),
+        name: r.name,
+        qty: r.qty,
+        group: r.group,
+        checked: Boolean(prevChecked[r.name]),
+        period: PERIOD_ITEM_NAMES.includes(r.name)
+      }));
+      saveState();
+    }
+
+    function pickPackingChip(kind, value) {
+      const d = packingDraftInit();
+      if (kind === "gender") d.gender = value;
+      if (kind === "age") d.age = value;
+      if (kind === "style") d.style = value;
+      renderPacking();
+    }
+
+    function confirmPackingSetup() {
+      generatePackingList();
+    }
+
+    function reopenPackingSetup() {
+      getPacking().setupDone = false;
+      saveState();
+    }
+
+    function cancelPackingSetup() {
+      const p = getPacking();
+      if ((p.items || []).length) p.setupDone = true;
+      renderPacking();
+    }
+
+    function togglePeriodMode() {
+      const p = getPacking();
+      p.periodMode = !p.periodMode;
+      if (!Array.isArray(p.items)) p.items = [];
+      if (p.periodMode) {
+        const ctx = packingContext();
+        const addIfMissing = (name, qty, group) => {
+          if (!p.items.some(i => i.name === name)) {
+            p.items.push({ id: "pk-" + Date.now().toString(36) + "-" + (++packingDraftSeq), name, qty, group, checked: false, period: true });
+          }
+        };
+        addIfMissing("생리대 중형", ctx.days * 4, "💊 건강·상비약");
+        addIfMissing("생리대 대형", ctx.days * 2, "💊 건강·상비약");
+        addIfMissing("오버나이트 생리대", ctx.nights, "💊 건강·상비약");
+        addIfMissing("생리통 진통제", 1, "💊 건강·상비약");
+        addIfMissing("여분 속옷 (생리 대비)", 2, "👕 의류·신발");
+      } else {
+        p.items = p.items.filter(i => !i.period);
+      }
+      saveState();
+    }
+
+    function packingItem(id) {
+      const p = getPacking();
+      return (p.items || []).find(i => i.id === id);
+    }
+    function togglePackingItem(id) {
+      const it = packingItem(id);
+      if (!it) return;
+      it.checked = !it.checked;
+      saveState();
+    }
+    function setPackingName(id, name) {
+      const it = packingItem(id);
+      if (!it) return;
+      const next = String(name || "").trim();
+      if (!next) { renderPacking(); return; }
+      it.name = next.slice(0, 40);
+      saveState();
+    }
+    function setPackingQty(id, qty) {
+      const it = packingItem(id);
+      if (!it) return;
+      it.qty = Math.max(1, Math.min(99, Math.round(Number(qty) || 1)));
+      saveState();
+    }
+    function chgPackingQty(id, delta) {
+      const it = packingItem(id);
+      if (!it) return;
+      it.qty = Math.max(1, Math.min(99, (Number(it.qty) || 1) + delta));
+      saveState();
+    }
+    function delPackingItem(id) {
+      const p = getPacking();
+      p.items = (p.items || []).filter(i => i.id !== id);
+      saveState();
+    }
+    function addPackingItem() {
+      const input = document.getElementById("pk-new-name");
+      const sel = document.getElementById("pk-new-group");
+      const name = (input?.value || "").trim();
+      if (!name) return alert("추가할 짐 이름을 입력해 주세요.");
+      const p = getPacking();
+      if (!Array.isArray(p.items)) p.items = [];
+      p.items.push({
+        id: "pk-" + Date.now().toString(36) + "-" + (++packingDraftSeq),
+        name: name.slice(0, 40),
+        qty: 1,
+        group: sel?.value || "🎒 기타",
+        checked: false
+      });
+      if (input) input.value = "";
+      saveState();
+    }
+    function resetPackingChecks() {
+      const p = getPacking();
+      (p.items || []).forEach(i => { i.checked = false; });
+      saveState();
+    }
+
+    function renderPacking() {
+      const host = document.getElementById("packing-body");
+      if (!host) return;
+      const p = getPacking();
+      const ctx = packingContext();
+      const draft = packingDraftInit();
+
+      if (!p.setupDone) {
+        const chip = (kind, key, label, active) =>
+          `<button class="pk-chip ${active ? "active" : ""}" onclick="pickPackingChip('${kind}','${key}')">${label}</button>`;
+        const hasItems = (p.items || []).length > 0;
+        host.innerHTML = `
+          <div class="card">
+            <div style="font-size:15px;font-weight:800;">🧳 짐 챙기기 설정</div>
+            <div style="font-size:12px;color:var(--muted);margin:4px 0 12px;line-height:1.5;">조건을 고르면 <b>${ctx.nights}박 ${ctx.days}일</b> 일정·날씨·바다 일정까지 계산해서 짐 목록을 자동으로 만들어 드려요.</div>
+            <div style="font-size:11.5px;font-weight:800;color:var(--ocean-dark);margin-bottom:4px;">성별</div>
+            <div class="pk-setup-chips" style="margin-bottom:10px;">${PACKING_GENDERS.map(g => chip("gender", g.key, g.label, draft.gender === g.key)).join("")}</div>
+            <div style="font-size:11.5px;font-weight:800;color:var(--ocean-dark);margin-bottom:4px;">연령대</div>
+            <div class="pk-setup-chips" style="grid-template-columns:repeat(4,1fr);margin-bottom:10px;">${PACKING_AGES.map(a => chip("age", a.key, a.label, draft.age === a.key)).join("")}</div>
+            <div style="font-size:11.5px;font-weight:800;color:var(--ocean-dark);margin-bottom:4px;">여행 성격</div>
+            <div class="pk-setup-chips" style="margin-bottom:14px;">${PACKING_STYLES.map(s => chip("style", s.key, s.label, draft.style === s.key)).join("")}</div>
+            <button class="btn btn-primary" style="width:100%;" onclick="confirmPackingSetup()">✨ 짐 목록 자동 만들기</button>
+            ${hasItems ? `<button class="btn btn-soft btn-sm" style="width:100%;margin-top:8px;" onclick="cancelPackingSetup()">그대로 두기 (기존 목록 유지)</button>` : ""}
+          </div>`;
+        return;
+      }
+
+      const items = p.items || [];
+      const done = items.filter(i => i.checked).length;
+      const pct = items.length ? Math.round(done / items.length * 100) : 0;
+      const seasonLabel = ctx.maxT <= 10
+        ? `❄️ 겨울·한파 (최고 ${ctx.maxT}°C)`
+        : ctx.maxT >= 26
+          ? `☀️ 더위 (최고 ${ctx.maxT}°C)`
+          : `${ctx.maxT >= 17 ? "🌤️ 선선" : "🍂 쌀쌀"} (최고 ${ctx.maxT}°C)`;
+      const styleLabel = (PACKING_STYLES.find(s => s.key === p.tripStyle) || {}).label || "";
+      const genderLabel = (PACKING_GENDERS.find(g => g.key === p.gender) || {}).label || "";
+      const ageLabel = (PACKING_AGES.find(a => a.key === p.age) || {}).label || "";
+      const groups = [];
+      const gmap = {};
+      items.forEach(it => {
+        const g = it.group || "🎒 기타";
+        if (!gmap[g]) { gmap[g] = []; groups.push(g); }
+        gmap[g].push(it);
+      });
+
+      host.innerHTML = `
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+            <div>
+              <div style="font-size:15px;font-weight:800;">🧳 짐 챙기기</div>
+              <div style="font-size:11.5px;color:var(--muted);margin-top:2px;">${ctx.nights}박 ${ctx.days}일 · ${styleLabel} · ${genderLabel} ${ageLabel}</div>
+            </div>
+            <div style="font-size:13px;font-weight:800;color:var(--ocean-dark);white-space:nowrap;">${done}/${items.length}</div>
+          </div>
+          <div class="pk-progress"><span style="width:${pct}%"></span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;">
+            <span class="tag blue">${seasonLabel}</span>
+            ${ctx.sea ? `<span class="tag blue">🌊 바다 일정 +2세트</span>` : ""}
+            <span class="tag">${ctx.overseas ? "✈️ 해외" : "🇰🇷 국내"}</span>
+            <span class="tag">속옷·양말 ${ctx.nights + 1 + (ctx.sea ? 2 : 0)}세트</span>
+          </div>
+          <div class="pk-toolbar">
+            <button class="btn btn-soft btn-sm" onclick="reopenPackingSetup()">⚙️ 조건 다시 고르기</button>
+            <button class="btn btn-soft btn-sm" onclick="resetPackingChecks()">↺ 체크 초기화</button>
+          </div>
+          ${p.gender === "female" ? `
+          <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-sm ${p.periodMode ? "btn-primary" : "btn-soft"}" onclick="togglePeriodMode()">🩸 생리예정 ${p.periodMode ? "ON" : "OFF"}</button>
+            <span style="font-size:11px;color:var(--muted);flex:1;min-width:120px;">${p.periodMode ? "생리대·진통제·여분 속옷까지 자동 반영됐어요" : "켜면 생리용품이 일정 일수에 맞춰 자동 추가돼요"}</span>
+          </div>` : ""}
+        </div>
+        ${groups.map(g => `
+          <div class="card">
+            <div class="chk-group-head"><span>${g}</span><span class="cnt">${gmap[g].filter(i => i.checked).length}/${gmap[g].length}</span></div>
+            ${gmap[g].map(it => `
+              <div class="pk-item ${it.checked ? "done" : ""}">
+                <input type="checkbox" ${it.checked ? "checked" : ""} onchange="togglePackingItem('${it.id}')" style="width:17px;height:17px;flex-shrink:0;" />
+                <input class="pk-name" value="${escapeAttr(it.name)}" onchange="setPackingName('${it.id}', this.value)" />
+                <div class="pk-qty">
+                  <button onclick="chgPackingQty('${it.id}', -1)">−</button>
+                  <input type="number" min="1" max="99" value="${Number(it.qty) || 1}" onchange="setPackingQty('${it.id}', this.value)" />
+                  <button onclick="chgPackingQty('${it.id}', 1)">+</button>
+                </div>
+                <button class="pk-del" onclick="delPackingItem('${it.id}')" aria-label="삭제">×</button>
+              </div>
+            `).join("")}
+          </div>
+        `).join("")}
+        <div class="card">
+          <div style="font-size:12.5px;font-weight:800;margin-bottom:6px;">＋ 항목 추가</div>
+          <div class="row" style="margin-bottom:0;">
+            <input id="pk-new-name" class="input" placeholder="예: 우비, 보조배터리" maxlength="40" onkeydown="if(event.key==='Enter'){event.preventDefault();addPackingItem();}" />
+            <select id="pk-new-group" class="input" style="width:118px;">
+              ${PACKING_GROUPS.map(g => `<option>${g}</option>`).join("")}
+            </select>
+          </div>
+          <button class="btn btn-soft btn-sm" style="width:100%;margin-top:8px;" onclick="addPackingItem()">＋ 목록에 추가</button>
+        </div>`;
+    }
+
+    /* =====================================================================
+       신규 루트 스타일 칩 (여행지 성격에 맞춰 변경)
+       ===================================================================== */
+    const COASTAL_DESTS = ["부산", "제주", "강릉", "여수", "속초", "시드니", "오키나와", "해운대", "광안리", "다낭", "푸켓", "하와이", "호놀룰루", "산토리니", "니스", "보라카이", "세부"];
+    const INLAND_DESTS = ["서울", "경주", "대구", "대전", "전주", "교토", "파리", "방콕", "런던", "도쿄", "오사카", "로마", "프라하", "타이베이", "하노이", "뉴욕"];
+    let routeStyleKey = "balanced";
+
+    function routeStyleOptions(dest) {
+      const d = String(dest || "");
+      const coastal = COASTAL_DESTS.some(k => d.includes(k)) || /바다|해변|해수욕|비치|beach|오션/i.test(d);
+      const inland = INLAND_DESTS.some(k => d.includes(k));
+      if (coastal) {
+        return { type: "coastal", opts: [
+          { key: "balanced", label: "✨ 균형 코스" },
+          { key: "ocean", label: "🌊 오션뷰 위주" },
+          { key: "beach", label: "🏖️ 해변·액티비티 위주" },
+          { key: "nature", label: "🌿 산책·자연 위주" },
+          { key: "food", label: "🍜 로컬 맛집 위주" }
+        ] };
+      }
+      if (inland) {
+        return { type: "inland", opts: [
+          { key: "balanced", label: "✨ 균형 코스" },
+          { key: "landmark", label: "🏛️ 랜드마크·유적 위주" },
+          { key: "citynight", label: "🏙️ 시티뷰·야경 위주" },
+          { key: "nature", label: "🌿 공원·산책 위주" },
+          { key: "shopping", label: "🛍️ 쇼핑·핫플 위주" },
+          { key: "food", label: "🍜 로컬 맛집 위주" }
+        ] };
+      }
+      return { type: "any", opts: [
+        { key: "balanced", label: "✨ 균형 코스" },
+        { key: "landmark", label: "🏛️ 랜드마크·유적 위주" },
+        { key: "citynight", label: "🏙️ 시티뷰·야경 위주" },
+        { key: "nature", label: "🌿 공원·산책 위주" },
+        { key: "shopping", label: "🛍️ 쇼핑·핫플 위주" },
+        { key: "food", label: "🍜 로컬 맛집 위주" }
+      ] };
+    }
+
+    function renderRouteStyleChips() {
+      const box = document.getElementById("route-style-chips");
+      if (!box) return;
+      const dest = document.getElementById("route-dest")?.value || state.meta?.destination || "부산";
+      const { type, opts } = routeStyleOptions(dest);
+      if (!opts.some(o => o.key === routeStyleKey)) routeStyleKey = "balanced";
+      const note = type === "coastal"
+        ? "🌊 바다 여행지로 인식했어요 — 오션뷰·해변 코스를 고를 수 있어요"
+        : type === "inland"
+          ? "🏛️ 도심·유적 여행지로 인식했어요 — 랜드마크·야경·쇼핑 코스를 골라 보세요"
+          : "여행지를 입력하면 그 성격에 맞는 스타일을 보여드려요";
+      box.innerHTML = opts.map(o =>
+        `<button class="style-chip ${o.key === routeStyleKey ? "active" : ""}" onclick="pickRouteStyle('${o.key}')">${o.label}</button>`
+      ).join("") + `<span style="font-size:10.5px;color:var(--muted);width:100%;margin-top:2px;">${note}</span>`;
+    }
+
+    function pickRouteStyle(key) {
+      routeStyleKey = key;
+      renderRouteStyleChips();
+    }
+
+    /* =====================================================================
+       도시별 날씨 자동 갱신 (국내·해외 동일: 출발 16일 전부터 실시간 예보)
+       ===================================================================== */
+    function autoRefreshWeather() {
+      const key = `${currentSyncId}|${state.meta?.startDate || ""}|${(state.days || []).length}`;
+      const last = weatherAutoFetched[key];
+      if (last && Date.now() - last < 10 * 60 * 1000) return;
+      weatherAutoFetched[key] = Date.now();
+      setTimeout(() => {
+        try { if (!weatherFetching) refreshCityWeather(true); } catch (e) { console.warn(e); }
+      }, 500);
+    }
+
     function renderAll() {
       applyThemeColor(state.meta?.themeColor || "#0284c7");
       registerMyTrip(currentSyncId, state.meta);
+      try { ensureAirportOutfitAlert(); } catch (e) { console.warn(e); }
       renderHeader();
       renderTimeline();
       renderDayMap();
@@ -5043,12 +6124,18 @@
       renderWeather();
       renderChecklist();
       renderMyTrips();
+      renderPacking();
+      renderExchangeRate();
       initRecommendSelectors();
       checkInviteFlow();
     }
 
     try { renderAll(); } catch (e) { console.error("renderAll error:", e); }
     try { initSupabaseFromStorage(); } catch (e) { console.error("supabase init error:", e); }
+    setTimeout(() => {
+      try { autoRefreshWeather(); } catch (e) { console.warn(e); }
+      try { renderRouteStyleChips(); } catch (e) { console.warn(e); }
+    }, 900);
     // 렌더링이 끝난 즉시 스플래시를 걷어내고 바로 진입 (0.2초 페이드아웃)
     (function finishSplash() {
       splashDone = true;
