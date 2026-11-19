@@ -434,9 +434,47 @@
       border-radius: 999px; font-size: 10px; font-weight: 800;
       padding: 1px 5px; margin-left: 3px;
     }
+    body:not(.unlocked) .container,
+    body:not(.unlocked) .bottom-nav {
+      display: none !important;
+    }
+    #splash-screen {
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(155deg, #e0f2fe 0%, #f0f9ff 55%, #dbeafe 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: opacity 0.4s ease;
+    }
+    #splash-screen.hide { opacity: 0; pointer-events: none; }
+    .splash-sky {
+      position: relative; width: 220px; height: 90px; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .splash-trail {
+      position: absolute; left: 20px; right: 20px; top: 52%;
+      border-top: 2px dashed rgba(14, 165, 233, 0.35);
+    }
+    .splash-plane {
+      font-size: 42px;
+      display: inline-block;
+      animation: flyPlane 1.35s ease-in-out infinite;
+      filter: drop-shadow(0 6px 10px rgba(14, 165, 233, 0.25));
+    }
+    @keyframes flyPlane {
+      0% { transform: translate(-75px, 14px) rotate(-12deg) scale(0.9); opacity: 0.2; }
+      35% { opacity: 1; }
+      55% { transform: translate(0px, -8px) rotate(-4deg) scale(1.08); opacity: 1; }
+      100% { transform: translate(80px, -20px) rotate(4deg) scale(0.95); opacity: 0.15; }
+    }
   </style>
 </head>
 <body>
+  <div id="splash-screen">
+    <div class="splash-sky">
+      <div class="splash-trail"></div>
+      <div class="splash-plane">✈️</div>
+    </div>
+    <div style="font-size:15px;font-weight:800;color:var(--ocean-dark);margin-top:4px;letter-spacing:-0.02em;">여행 준비 중...</div>
+  </div>
   <div class="container">
     <header class="sticky-header">
       <div class="header-top">
@@ -2318,26 +2356,46 @@
       saveState();
     }
 
-    function checkInviteFlow() {
+    let splashDone = false;
+
+    function updateAccessGate() {
+      if (!splashDone) return;
       const jm = document.getElementById("join-modal");
-      if (!jm) return;
       if (!myProfile.nickname) {
+        document.body.classList.remove("unlocked");
+        if (jm) jm.classList.remove("open");
         openProfileModal(true);
         return;
       }
-      if (!isInviteLink || isHost() || (state.members || []).some(m => m.id === myProfile.id)) {
-        jm.classList.remove("open");
+      const needsApproval = Boolean(
+        (state.meta && state.meta.hostId && !isHost() && !(state.members || []).some(m => m.id === myProfile.id)) ||
+        (isInviteLink && !isHost() && !(state.members || []).some(m => m.id === myProfile.id))
+      );
+      if (needsApproval) {
+        document.body.classList.remove("unlocked");
+        if (jm) {
+          document.getElementById("join-trip-desc").textContent = `${myProfile.nickname} 님으로 여행 동반인 참여 승인을 요청합니다. 승인 전까지 일정 내용은 비공개로 보호됩니다.`;
+          const alreadyPending = (state.joinRequests || []).some(r => r.id === myProfile.id);
+          const box = document.getElementById("join-status-box");
+          if (alreadyPending) {
+            box.innerHTML = `<div style="padding:12px;background:var(--ocean-soft);border-radius:10px;font-size:13px;font-weight:700;color:var(--ocean-dark);text-align:center;">⏳ 호스트의 승인을 기다리는 중입니다...<br><span style="font-size:11.5px;font-weight:500;">승인되면 자동으로 일정이 열려요!</span></div>`;
+          } else {
+            box.innerHTML = `<button class="btn btn-primary" style="width:100%;" onclick="sendJoinRequest()">🙋 호스트에게 동반인 승인 요청 보내기</button>`;
+          }
+          jm.classList.add("open");
+        }
         return;
       }
-      document.getElementById("join-trip-desc").textContent = `'${state.meta.title}' 일정에 ${myProfile.nickname} 님으로 참여합니다.`;
-      const alreadyPending = (state.joinRequests || []).some(r => r.id === myProfile.id);
-      const box = document.getElementById("join-status-box");
-      if (alreadyPending) {
-        box.innerHTML = `<div style="padding:12px;background:var(--ocean-soft);border-radius:10px;font-size:13px;font-weight:700;color:var(--ocean-dark);text-align:center;">⏳ 호스트의 승인을 기다리는 중입니다...<br><span style="font-size:11.5px;font-weight:500;">승인되면 자동으로 일정이 열려요!</span></div>`;
-      } else {
-        box.innerHTML = `<button class="btn btn-primary" style="width:100%;" onclick="sendJoinRequest()">🙋 호스트에게 동반인 승인 요청 보내기</button>`;
+      if (jm) jm.classList.remove("open");
+      const wasLocked = !document.body.classList.contains("unlocked");
+      document.body.classList.add("unlocked");
+      if (wasLocked && typeof dayMap !== "undefined" && dayMap) {
+        setTimeout(() => dayMap.invalidateSize(), 60);
       }
-      jm.classList.add("open");
+    }
+
+    function checkInviteFlow() {
+      updateAccessGate();
     }
 
     function sendJoinRequest() {
@@ -2834,6 +2892,15 @@
 
     renderAll();
     initSupabaseFromStorage();
+    setTimeout(() => {
+      splashDone = true;
+      const sp = document.getElementById("splash-screen");
+      if (sp) {
+        sp.classList.add("hide");
+        setTimeout(() => { sp.style.display = "none"; }, 420);
+      }
+      updateAccessGate();
+    }, 1150);
   </script>
 </body>
 </html>
