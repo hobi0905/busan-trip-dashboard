@@ -966,7 +966,7 @@
       <div style="font-size:12px;font-weight:700;color:var(--ocean-dark);margin-bottom:4px;">✏️ 현재 일정 이름 수정</div>
       <div class="row" style="margin-bottom:12px;">
         <input id="tm-rename-input" class="input" placeholder="여행 계획 이름" maxlength="40" />
-        <button class="btn btn-primary btn-sm" onclick="renameCurrentTrip()">저장</button>
+        <button class="btn btn-primary btn-sm" style="white-space:nowrap;flex-shrink:0;min-width:56px;" onclick="renameCurrentTrip()">저장</button>
       </div>
       <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">내 여행 목록</div>
       <div id="trips-modal-list" style="max-height:32vh;overflow-y:auto;margin-bottom:10px;"></div>
@@ -3117,10 +3117,14 @@
       openProfileModal(true, "create");
     }
 
+    function toLocalIso(d) {
+      const p = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    }
     function openNewTripSetupModal(forced = false) {
       const today = new Date();
-      const d1 = new Date(today.getTime() + 7 * 86400000).toISOString().slice(0, 10);
-      const d3 = new Date(today.getTime() + 9 * 86400000).toISOString().slice(0, 10);
+      const d1 = toLocalIso(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7));
+      const d3 = toLocalIso(new Date(today.getFullYear(), today.getMonth(), today.getDate() + 9));
       document.getElementById("nts-title").value = "";
       document.getElementById("nts-dest").value = "";
       document.getElementById("nts-start").value = d1;
@@ -3137,8 +3141,8 @@
       const wdays = ["일","월","화","수","목","금","토"];
       const days = [];
       for (let i = 0; i < diff; i++) {
-        const d = new Date(s.getTime() + i * 86400000);
-        const iso = d.toISOString().slice(0, 10);
+        const d = new Date(s.getFullYear(), s.getMonth(), s.getDate() + i);
+        const iso = toLocalIso(d);
         days.push({
           day: i + 1,
           date: iso,
@@ -3310,8 +3314,26 @@
         ];
       }
 
+      const styleKey = document.getElementById("route-style").value || "balanced";
+      const styleRank = {
+        balanced: null,
+        ocean: { "관광": 0, "카페": 1, "음식점": 2 },
+        food: { "음식점": 0, "카페": 1, "관광": 2 }
+      }[styleKey];
+      if (styleRank) {
+        pool = pool
+          .map((p, i) => ({ p, i }))
+          .sort((a, b) => (styleRank[a.p.cat] ?? 3) - (styleRank[b.p.cat] ?? 3) || a.i - b.i)
+          .map((x) => x.p);
+      }
+      const styleSlots = {
+        balanced: ["10:30", "12:30", "14:30", "18:00"],
+        ocean: ["10:30", "13:00", "16:30", "19:30"],
+        food: ["11:00", "13:30", "18:00", "20:30"]
+      };
+      const timeSlots = styleSlots[styleKey] || styleSlots.balanced;
+
       const days = buildDateRangeDays(startStr, endStr, destRaw);
-      const timeSlots = ["10:30", "12:30", "14:30", "18:00"];
       let idx = 0;
       days.forEach((d) => {
         const count = d.day === days.length ? Math.min(3, pool.length) : Math.min(4, pool.length);
