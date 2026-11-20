@@ -5614,12 +5614,33 @@
           }
         } catch { /* 다음 서버로 */ }
       }
-      return [];
+      // 3) Overpass가 모두 실패하면 위키백과 지리검색으로 마저 찾기
+      const wiki = await nearbyStationsFromWiki(lat, lng, radius, limit);
+      if (wiki.length) stationCache.set(cacheKey, wiki);
+      return wiki;
     }
 
     async function nearestSubwayStation(lat, lng, radius = 3000) {
       const list = await nearbySubwayStations(lat, lng, radius, 1);
       return list.length ? list[0] : null;
+    }
+
+    // Overpass가 모두 막혔을 때 쓰는 보조 경로 — 위키백과 지리검색으로 주변 ‘~역’ 문서 찾기
+    async function nearbyStationsFromWiki(lat, lng, radius = 3000, limit = 6) {
+      try {
+        const url = `https://ko.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}%7C${lng}&gsradius=${radius}&gslimit=50&gsnamespace=0&format=json&origin=*`;
+        const r = await fetch(url);
+        if (!r.ok) return [];
+        const d = await r.json();
+        const seen = new Set();
+        const rows = (d?.query?.geosearch || [])
+          .map(g => ({ title: String(g.title || "").replace(/\s*[（(].*?[)）]$/, "").trim(), lat: g.lat, lon: g.lon, dist: g.dist }))
+          .filter(g => /역$/.test(g.title) && typeof g.lat === "number")
+          .filter(g => { if (seen.has(g.title)) return false; seen.add(g.title); return true; })
+          .map(g => ({ name: g.title.replace(/역$/, ""), lat: g.lat, lng: g.lon, distM: Math.round(Number(g.dist) || 0) }))
+          .sort((a, b) => a.distM - b.distM);
+        return rows.slice(0, limit);
+      } catch { return []; }
     }
 
     function renderBookingScheduleCoordNote() {
