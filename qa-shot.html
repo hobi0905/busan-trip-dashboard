@@ -20,7 +20,7 @@
       var off = Number(p.get("off") || 0);
       var day = Number(p.get("day") || 0);
       var frame = document.getElementById("qa-frame");
-      if (p.get("trip")) frame.src = "./?trip=" + encodeURIComponent(p.get("trip")) + "&cb=" + Date.now();
+      frame.src = "./?trip=" + encodeURIComponent(p.get("trip") || "qa-hotel-auto-20261120") + "&cb=" + Date.now();
       frame.style.marginTop = (-off) + "px";
       document.getElementById("bar").textContent = "390px 폭 · offset " + off + "px" + (day ? " · " + day + "일차" : "");
       if (day) {
