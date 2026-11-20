@@ -392,9 +392,18 @@
       margin: 0;
       padding: 0 1px;
     }
-    input::-webkit-calendar-picker-indicator {
-      margin: 0 0 0 2px;
+    /* 달력·시계 아이콘은 흐름에서 빼서 오른쪽에 띄운다 — 아이콘 몫만큼 값이 왼쪽으로 밀리지 않게 */
+    input[type="date"]::-webkit-calendar-picker-indicator,
+    input[type="time"]::-webkit-calendar-picker-indicator,
+    input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+    input[type="month"]::-webkit-calendar-picker-indicator {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      margin: 0;
       padding: 0;
+      opacity: .5;
     }
     /* 모달 시트도 flex 아이템이라 min-content 만큼 넓어질 수 있다 — 0으로 막아 화면 밖으로 못 나가게 */
     .modal-sheet { min-width: 0; }
