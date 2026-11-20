@@ -7291,7 +7291,7 @@
       const btn = document.getElementById("prof-delete-btn");
       const prevTxt = btn ? btn.textContent : "";
       if (btn) { btn.disabled = true; btn.textContent = "정리하는 중..."; }
-      const trips = getMyTrips().slice();
+      const trips = getStoredTrips().slice(); // 목록에 실제로 있는 여행만(기본 데모·샘플 제외)
       let hostCount = 0, guestCount = 0, failed = 0;
       try {
         for (const t of trips) {
@@ -8213,6 +8213,9 @@
         const cloud = data && data.data && typeof data.data === "object" ? data.data : null;
         if (!cloud) return { ok: true, mode: "no-cloud-row" };
         if (cloud.deleted === true) return { ok: true, mode: "already-deleted" };
+        const inMembers = (cloud.members || []).some(m => m && m.id === myProfile.id);
+        const inReqs = (cloud.joinRequests || []).some(r => r && r.id === myProfile.id);
+        if (!inMembers && !inReqs) return { ok: true, mode: "noop" }; // 이미 빠져 있으면 굳이 쓰지 않는다
         const next = {
           ...cloud,
           members: (cloud.members || []).filter(m => m && m.id !== myProfile.id),
