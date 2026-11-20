@@ -8182,9 +8182,12 @@
     // 짐 카테고리는 국내·해외 공통으로 📷 촬영과 📦 기타를 분리해 쓴다
     const PACKING_CAMERA_GROUP = "📷 촬영";
     const PACKING_ETC_GROUP = "📦 기타";
-    const PACKING_GROUPS = ["👕 의류·신발", "🧴 세면·뷰티", "📱 전자기기", PACKING_CAMERA_GROUP, "💊 건강·상비약", "📄 서류·결제", PACKING_ETC_GROUP];
+    const PACKING_VISION_GROUP = "👓 안경·렌즈";
+    const PACKING_GROUPS = ["👕 의류·신발", "🧴 세면·뷰티", "📱 전자기기", PACKING_CAMERA_GROUP, PACKING_VISION_GROUP, "💊 건강·상비약", "📄 서류·결제", PACKING_ETC_GROUP];
     // 촬영 장비로 보이는 이름(삼각대·셀카봉 등)은 📷 촬영으로 모은다
     const PACKING_CAMERA_RE = /(삼각대|셀카봉|카메라|짐벌|액션캠|고프로|gopro|촬영|플래시|메모리카드|sd카드|드론)/i;
+    // 안경·렌즈 용품은 👓 안경·렌즈로 따로 모은다 (카메라 렌즈는 제외)
+    const PACKING_VISION_RE = /(안경|콘택트|인공눈물|보존액|렌즈\s*케이스|렌즈\s*세척|렌즈\s*용품|소프트렌즈|하드렌즈|도수)/i;
     const PACKING_VISION = [
       { key: "none", label: "해당 없음" },
       { key: "glasses", label: "👓 안경" },
@@ -8234,9 +8237,12 @@
     // 예전 카테고리(📷 촬영·기타 · 🎒 기타)로 저장된 목록을 📷 촬영 / 📦 기타로 정리
     function normalizePackingGroup(name, group) {
       const g = String(group || "");
+      const nm = String(name || "");
+      // 안경·콘택트렌즈 용품은 언제나 👓 안경·렌즈 칸으로
+      if (PACKING_VISION_RE.test(nm) && !PACKING_CAMERA_RE.test(nm)) return PACKING_VISION_GROUP;
       // 예전 두 카테고리는 이름을 보고 📷 촬영 / 📦 기타로 나눈다 (삼각대·셀카봉은 촬영)
       if (g === "🎒 기타" || g === "📷 촬영·기타") {
-        return PACKING_CAMERA_RE.test(String(name || "")) ? PACKING_CAMERA_GROUP : PACKING_ETC_GROUP;
+        return PACKING_CAMERA_RE.test(nm) ? PACKING_CAMERA_GROUP : PACKING_ETC_GROUP;
       }
       return g || PACKING_ETC_GROUP;
     }
@@ -8378,17 +8384,17 @@
       add(PACKING_ETC_GROUP, "우산", 1);
       add(PACKING_ETC_GROUP, "작은 크로스백", 1);
 
-      // 👓 렌즈 / 안경 조건
+      // 👓 안경·렌즈 조건
       if (wantGlasses) {
-        addUnique(PACKING_ETC_GROUP, "안경 클리너", 1);
-        addUnique(PACKING_ETC_GROUP, "안경집", 1);
-        addUnique(PACKING_ETC_GROUP, "안경(여분)", 1);
+        addUnique(PACKING_VISION_GROUP, "안경 클리너", 1);
+        addUnique(PACKING_VISION_GROUP, "안경집", 1);
+        addUnique(PACKING_VISION_GROUP, "안경(여분)", 1);
       }
       if (wantLens) {
-        addUnique(PACKING_ETC_GROUP, "콘택트렌즈(일정 일수+여분)", Math.max(2, ctx.days + 2));
-        addUnique(PACKING_ETC_GROUP, "렌즈 세척·보존액", 1);
-        addUnique(PACKING_ETC_GROUP, "렌즈 케이스", 1);
-        addUnique("💊 건강·상비약", "인공눈물", 1);
+        addUnique(PACKING_VISION_GROUP, "콘택트렌즈(일정 일수+여분)", Math.max(2, ctx.days + 2));
+        addUnique(PACKING_VISION_GROUP, "렌즈 세척·보존액", 1);
+        addUnique(PACKING_VISION_GROUP, "렌즈 케이스", 1);
+        addUnique(PACKING_VISION_GROUP, "인공눈물", 1);
       }
 
       if (d.gender === "female" && p.periodMode) {
@@ -8404,7 +8410,7 @@
       if (d.age === "30") add("💊 건강·상비약", "피로회복제", 1);
       if (d.age === "40") {
         add("💊 건강·상비약", "정기 복용약", 1);
-        if (!wantGlasses) add("👕 의류·신발", "여분 안경", 1);
+        if (!wantGlasses) add(PACKING_VISION_GROUP, "여분 안경", 1);
       }
 
       const styleExtra = {
@@ -8571,7 +8577,7 @@
             <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">${ctx.maxT < 18 ? "쌀쌀/겨울 일정이라 기본 ‘안 들어감’으로 맞춰 뒀어요. 들어갈 예정이면 횟수를 골라 주세요!" : "입수 횟수만큼 속옷·양말·수건·수영복이 자동 추가돼요."}</div>
             <div style="font-size:11.5px;font-weight:800;color:var(--ocean-dark);margin-bottom:4px;">👓 렌즈 / 안경</div>
             <div class="pk-setup-chips" style="margin-bottom:6px;">${PACKING_VISION.map(v => chip("vision", v.key, v.label, (draft.vision || "none") === v.key)).join("")}</div>
-            <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">${(draft.vision || "none") === "none" ? "안경이나 콘택트렌즈를 쓰면 클리너·여분렌즈 등이 같이 담겨요." : (draft.vision === "glasses" ? "안경 클리너·안경집·여분 안경을 넣어 드려요." : draft.vision === "lens" ? "콘택트렌즈·보존액·렌즈 케이스·인공눈물을 넣어 드려요." : "안경과 콘택트렌즈 용품을 모두 넣어 드려요.")}</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">${(draft.vision || "none") === "none" ? "안경이나 콘택트렌즈를 쓰면 ‘👓 안경·렌즈’ 칸에 따로 담아드려요." : (draft.vision === "glasses" ? "‘👓 안경·렌즈’ 칸에 안경 클리너·안경집·여분 안경을 넣어 드려요." : draft.vision === "lens" ? "‘👓 안경·렌즈’ 칸에 콘택트렌즈·보존액·렌즈 케이스·인공눈물을 넣어 드려요." : "‘👓 안경·렌즈’ 칸에 안경과 콘택트렌즈 용품을 모두 넣어 드려요.")}</div>
             <button class="btn btn-primary" style="width:100%;" onclick="confirmPackingSetup()">✨ 짐 목록 자동 만들기</button>
             ${hasItems ? `<button class="btn btn-soft btn-sm" style="width:100%;margin-top:8px;" onclick="cancelPackingSetup()">그대로 두기 (기존 목록 유지)</button>` : ""}
           </div>`;
