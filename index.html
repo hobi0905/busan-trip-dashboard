@@ -2152,12 +2152,18 @@
   </div>
 
   <!-- INVITE JOIN REQUEST MODAL -->
-  <div id="join-modal" class="modal-backdrop center" style="background:rgba(15,23,42,0.75);">
+  <div id="join-modal" class="modal-backdrop center" style="background:rgba(15,23,42,0.75);" onclick="if(event.target===this)exitJoinGate()">
     <div class="modal-sheet">
-      <div style="font-size:16.5px;font-weight:800;">💌 여행 동반인 초대</div>
-      <div id="join-trip-desc" style="font-size:13px;color:var(--muted);margin-top:4px;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <div style="font-size:16.5px;font-weight:800;">💌 여행 동반인 초대</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="exitJoinGate()">닫기</button>
+      </div>
+      <div id="join-trip-desc" style="font-size:13px;color:var(--muted);margin-top:6px;"></div>
       <div id="join-status-box" style="margin-top:12px;"></div>
-      <button class="btn btn-soft" style="width:100%;margin-top:10px;font-size:11.5px;" onclick="switchProfileFromJoin()">👤 다른 프로필로 전환</button>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button class="btn btn-soft" style="flex:1;font-size:12px;" onclick="exitJoinGate()">← 내 여행으로</button>
+        <button class="btn btn-soft" style="flex:1;font-size:12px;" onclick="switchProfileFromJoin()">👤 프로필 전환</button>
+      </div>
     </div>
   </div>
 
@@ -8079,6 +8085,21 @@
     function switchProfileFromJoin() {
       document.getElementById("join-modal")?.classList.remove("open");
       openProfileModal(false);
+    }
+
+    function exitJoinGate() {
+      document.getElementById("join-modal")?.classList.remove("open");
+      const list = getMyTrips().filter(t => t && t.syncId && t.syncId !== currentSyncId);
+      const fallback = list.find(t => t.role === "host") || list[0];
+      if (fallback) {
+        switchTrip(fallback.syncId);
+        return;
+      }
+      if (typeof openTripsModal === "function") {
+        openTripsModal();
+      } else {
+        openTripTypeModal();
+      }
     }
 
     function showProfError(text) {
