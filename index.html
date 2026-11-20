@@ -1611,6 +1611,10 @@
     .tl-edit-row.tl-edit-virtual { opacity: 0.95; }
     .tl-edit-row.tl-edit-virtual .tl-edit-card { background: #e0f2fe; }
     .tl-edit-hint { font-size: 11px; color: var(--muted); margin: 0 0 10px; text-align: center; }
+    /* 좁은 화면에서 '✏️ 일정 편집' 버튼이 잘리지 않게 */
+    @media (max-width: 430px) {
+      #edit-mode-btn { font-size: 12px !important; padding: 0 9px !important; }
+    }
 
     /* ===== 일정 카드 접힘/펼침 ===== */
     .card.tl-collapsible { cursor: pointer; }
