@@ -241,6 +241,31 @@
       border: 1px solid #bae6fd;
     }
 
+    /* 📷 장소 사진 썸네일 (위키백과·위키미디어 공용) */
+    .tl-body { display: flex; gap: 10px; align-items: flex-start; }
+    .tl-main { flex: 1; min-width: 0; }
+    .ph-slot { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; }
+    .ph-thumb {
+      width: 78px; height: 78px; object-fit: cover; display: block;
+      border-radius: 14px; border: 1px solid rgba(15,23,42,0.08);
+      background: var(--ocean-soft); cursor: zoom-in;
+      box-shadow: 0 2px 8px rgba(15,23,42,0.10);
+    }
+    .ph-thumb:active { opacity: 0.88; }
+    .ph-slot.ph-sm .ph-thumb { width: 54px; height: 54px; border-radius: 11px; }
+    .ph-btn {
+      display: inline-flex; align-items: center; gap: 3px; padding: 4px 9px;
+      border-radius: 999px; border: 1px solid var(--ocean-border);
+      background: var(--ocean-soft); color: var(--ocean-dark);
+      font-size: 11px; font-weight: 700; font-family: inherit;
+      cursor: pointer; white-space: nowrap; line-height: 1.2;
+    }
+    .ph-btn:active { transform: scale(0.96); }
+    .ph-col { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+    .ph-fade { animation: phFade 0.25s ease-out; }
+    @keyframes phFade { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+    #place-photo-img { width: 100%; max-height: 62vh; object-fit: contain; border-radius: 14px; background: #f1f5f9; display: block; }
+
     /* Donut & Expenses */
     .donut-wrap {
       display: flex;
@@ -1819,6 +1844,14 @@
         <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px;" onclick="saveMyPageInfo()">💾 내 프로필 저장</button>
       </div>
       <div style="height:1px;background:var(--border);margin:4px 0 12px;"></div>
+      <div id="prof-pw-box" style="margin-bottom:12px;padding:10px 11px;border:1px solid var(--border);border-radius:12px;background:#f8fafc;">
+        <div style="font-size:11.5px;font-weight:800;color:var(--ocean-dark);margin-bottom:6px;">🔐 비밀번호 변경</div>
+        <input id="prof-pw-cur" type="password" class="input" placeholder="현재 비밀번호" maxlength="40" autocomplete="current-password" style="margin-bottom:6px;" />
+        <input id="prof-pw-new" type="password" class="input" placeholder="새 비밀번호" maxlength="40" autocomplete="new-password" style="margin-bottom:6px;" />
+        <input id="prof-pw-new2" type="password" class="input" placeholder="새 비밀번호 확인" maxlength="40" autocomplete="new-password" style="margin-bottom:6px;" />
+        <div id="prof-pw-msg" style="font-size:11.5px;font-weight:600;margin-bottom:6px;display:none;line-height:1.45;"></div>
+        <button id="prof-pw-btn" class="btn btn-soft btn-sm" style="width:100%;" onclick="changeMyPassword()">🔐 비밀번호 변경</button>
+      </div>
       <div id="prof-saved-box" style="margin-bottom:10px;display:none;">
         <div style="font-size:11.5px;font-weight:800;color:var(--ocean-dark);margin-bottom:6px;">💾 이 기기에 저장된 프로필</div>
         <div id="prof-saved-list" style="max-height:24vh;overflow-y:auto;"></div>
@@ -1870,6 +1903,19 @@
       <div id="upc-bio" style="font-size:12.5px;color:var(--text);line-height:1.6;margin-top:10px;white-space:pre-wrap;"></div>
       <div id="upc-likes" class="chip-group" style="justify-content:center;margin-top:10px;"></div>
       <div id="upc-note" style="font-size:10.5px;color:var(--muted);margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <!-- PLACE PHOTO PREVIEW -->
+  <div id="place-photo-modal" class="modal-backdrop center" style="z-index:240;background:rgba(15,23,42,0.78);" onclick="if(event.target===this)closePlacePhoto()">
+    <div class="modal-sheet" style="max-width:460px;padding:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
+        <div id="place-photo-title" style="font-size:14px;font-weight:800;line-height:1.35;"></div>
+        <button class="btn btn-sm" style="background:#f1f5f9;flex-shrink:0;" onclick="closePlacePhoto()">닫기</button>
+      </div>
+      <img id="place-photo-img" alt="" />
+      <div id="place-photo-src" style="font-size:10.5px;color:var(--muted);margin-top:6px;"></div>
+      <div id="place-photo-links" style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;"></div>
     </div>
   </div>
 
@@ -3680,6 +3726,341 @@
       return out.sort((a, b) => a.time.localeCompare(b.time));
     }
 
+    /* =====================================================================
+       📷 장소 사진 자동 조회 (위키백과 한국어/영어 · 위키미디어 공용)
+       · 외부 유료 API 키 없이 브라우저에서 CORS(origin=*)로만 호출한다.
+       · 결과는 메모리 + localStorage(bsdash_photo_cache_v1)에만 저장한다.
+         (여행 데이터·클라우드에는 아무것도 쓰지 않는다)
+       · 위키백과/공용에서 확인되지 않는 작은 맛집·카페는 사진을 억지로
+         붙이지 않고 '📷 사진 보기'(네이버 사진 검색) 버튼으로 넘긴다.
+       ===================================================================== */
+    const PHOTO_MEM = new Map();
+    const PHOTO_STORE_KEY = "bsdash_photo_cache_v1";
+    const PHOTO_TTL_HIT = 30 * 24 * 60 * 60 * 1000;
+    const PHOTO_TTL_MISS = 7 * 24 * 60 * 60 * 1000;
+    let photoStoreCache = null;
+    let photoLastCallAt = 0;
+    let photoChain = Promise.resolve();
+
+    const PHOTO_REGION_EN = {
+      "부산": "busan", "서울": "seoul", "인천": "incheon", "제주": "jeju", "서귀포": "seogwipo",
+      "강릉": "gangneung", "여수": "yeosu", "경주": "gyeongju", "시드니": "sydney",
+      "카툼바": "katoomba", "블루마운틴": "blue mountains", "멜버른": "melbourne", "도쿄": "tokyo",
+      "오사카": "osaka", "교토": "kyoto", "파리": "paris", "런던": "london", "뉴욕": "new york"
+    };
+    const PHOTO_STOPWORDS = /(체크인|체크아웃|가이드\s*투어|투어|산책|야경|브런치|모닝\s*커피|점심|저녁|식사|구경|방문|선택|이동|탑승|환승|출발|도착|복귀|입국심사|세관|짐\s*보관|물품보관함|일정\s*시작|무료|체류\s*\d+분)/g;
+
+    function photoStore() {
+      if (photoStoreCache) return photoStoreCache;
+      try { photoStoreCache = JSON.parse(localStorage.getItem(PHOTO_STORE_KEY) || "{}") || {}; } catch { photoStoreCache = {}; }
+      return photoStoreCache;
+    }
+    function photoStoreSave() {
+      try {
+        const keys = Object.keys(photoStoreCache || {});
+        if (keys.length > 500) {
+          keys.sort((a, b) => (photoStoreCache[a].at || 0) - (photoStoreCache[b].at || 0));
+          keys.slice(0, keys.length - 500).forEach(k => { delete photoStoreCache[k]; });
+        }
+        localStorage.setItem(PHOTO_STORE_KEY, JSON.stringify(photoStoreCache));
+      } catch { /* 저장 공간이 없으면 메모리 캐시로만 동작 */ }
+    }
+
+    function photoNorm(s) {
+      return String(s == null ? "" : s).toLowerCase().replace(/[^0-9a-z가-힣]/g, "");
+    }
+    function photoLongestCommon(a, b) {
+      if (!a || !b) return 0;
+      let best = 0;
+      const prev = new Array(b.length + 1).fill(0);
+      for (let i = 1; i <= a.length; i++) {
+        let diag = 0;
+        for (let j = 1; j <= b.length; j++) {
+          const tmp = prev[j];
+          prev[j] = a[i - 1] === b[j - 1] ? diag + 1 : 0;
+          if (prev[j] > best) best = prev[j];
+          diag = tmp;
+        }
+      }
+      return best;
+    }
+    // 문서 제목이 장소명과 같은 곳을 가리키는지 점수화 (엉뚱한 사진 방지)
+    function photoTitleScore(cand, title) {
+      const a = photoNorm(cand), b = photoNorm(title);
+      if (!a || !b) return 0;
+      if (a === b) return 3;
+      const toks = String(cand).split(/[\s\-_·,.&/()]+/).map(photoNorm).filter(t => t.length >= 3);
+      for (const t of toks) {
+        if (b === t) return 2;
+        if (b.includes(t) && t.length / b.length >= 0.6) return 2;
+      }
+      const short = a.length <= b.length ? a : b;
+      const long = a.length <= b.length ? b : a;
+      if (short.length >= 4 && long.includes(short) && short.length / long.length >= 0.8) return 2;
+      if (photoLongestCommon(a, b) >= 3) return 1;
+      return 0;
+    }
+    function photoRegionTokens(region) {
+      const out = [];
+      const r = String(region || "").trim();
+      if (!r) return out;
+      out.push(r.toLowerCase());
+      const en = PHOTO_REGION_EN[r];
+      if (en) out.push(en);
+      return out;
+    }
+    function photoStripHtml(s) {
+      return String(s || "").replace(/<[^>]*>/g, " ").replace(/&[a-z]+;/gi, " ");
+    }
+    function naverPhotoUrl(name) {
+      return "https://search.naver.com/search.naver?ssc=tab.image.all&where=image&sm=tab_jum&query=" + encodeURIComponent(name || "");
+    }
+    function naverMapUrl(name) {
+      return "https://map.naver.com/p/search/" + encodeURIComponent(name || "");
+    }
+
+    // 이름에서 사진 조회에 쓸 후보 이름들을 뽑는다 (괄호 설명·수식어 제거)
+    function photoCandidates(placeName) {
+      const out = [];
+      const push = (v) => {
+        const s = String(v || "").replace(/\s+/g, " ").replace(/^[\s\-·,&/]+|[\s\-·,&/]+$/g, "").trim();
+        if (s.length >= 2 && photoNorm(s) && !out.some(x => photoNorm(x) === photoNorm(s))) out.push(s);
+      };
+      let raw = String(placeName || "");
+      // 1) 괄호 안은 보통 설명('광안리', '선택' 등)이라 기본 후보에서 제외
+      raw = raw.replace(/[\(\[（【][^\)\]）】]*[\)\]）】]/g, " ");
+      // 2) '& ' 와 '·' 로 이어진 복합 장소는 각각 시도
+      raw.split(/&|·|\s+[–—]\s+|,/).forEach(part => push(part));
+      // 3) 수식어 제거본도 후보로
+      const cleaned = raw.replace(PHOTO_STOPWORDS, " ").replace(/\s+/g, " ").trim();
+      push(cleaned);
+      // 4) 지점명 접미사 제거 (전포점·광안점 …)
+      push(cleaned.replace(/\s*[가-힣A-Za-z0-9]{1,6}점$/, ""));
+      // 5) 너무 긴 이름은 앞쪽 핵심어만
+      if (cleaned.split(" ").length > 3) push(cleaned.split(" ").slice(0, 3).join(" "));
+      return out.slice(0, 4);
+    }
+
+    // 이동·메모성 카드는 사진을 조회하지 않는다 (관광지·식당·카페·숙소 중심)
+    function shouldLookupPhoto(item) {
+      const p = String(item && item.place != null ? item.place : "").trim();
+      if (!p) return false;
+      if (/→|↔|⇄/.test(p)) return false;                       // A → B 이동 카드
+      if (/^(KTX|SRT|ITX|무궁화|새마을|누리로|항공|비행기|택시|버스|지하철)\b/.test(p)) return false;
+      if (/(KTX|SRT|ITX)\s*\d|\b[A-Z]{2}\s?\d{2,4}\b/.test(p)) return false;  // 열차·항공편명
+      if (/(출발|도착|복귀|이동|탑승|환승|체크아웃|물품보관|입국심사|세관|짐\s*보관|탑승구|게이트)/.test(p)) return false;
+      if (/(페리|선착장)\s*(이동|탑승)/.test(p)) return false;
+      if (/^(일정\s*시작|체류|메모)/.test(p)) return false;
+      return true;
+    }
+
+    function photoRegionOfDay(dayObj) {
+      const d = dayObj || {};
+      return String(d.cityLabel || d.area || state.meta?.destination || "").split(/[(\s·]/)[0] || "";
+    }
+
+    // 요청 간 최소 간격을 두고 순서대로 호출한다 (위키미디어 429 방지)
+    function photoGate() {
+      photoChain = photoChain.then(() => new Promise(resolve => {
+        const wait = Math.max(0, 140 - (Date.now() - photoLastCallAt));
+        setTimeout(() => { photoLastCallAt = Date.now(); resolve(); }, wait);
+      }));
+      return photoChain;
+    }
+    async function photoFetchJson(url, retry = 1) {
+      for (let attempt = 0; attempt <= retry; attempt++) {
+        await photoGate();
+        try {
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 7000);
+          const res = await fetch(url, { signal: ctrl.signal });
+          clearTimeout(timer);
+          if (res.status === 429 || res.status === 503) {
+            if (attempt < retry) { await new Promise(r => setTimeout(r, 1400)); continue; }
+            return null;
+          }
+          if (!res.ok) return null;
+          return await res.json();
+        } catch { return null; }
+      }
+      return null;
+    }
+
+    async function photoWikiLookup(lang, query) {
+      const url = `https://${lang}.wikipedia.org/w/api.php?action=query&generator=search`
+        + `&gsrsearch=${encodeURIComponent(query)}&gsrlimit=5&gsrnamespace=0`
+        + `&prop=pageimages%7Ccoordinates&piprop=thumbnail&pithumbsize=560&format=json&origin=*`;
+      const data = await photoFetchJson(url);
+      const pages = (data && data.query && data.query.pages) || {};
+      const rows = Object.keys(pages).map(k => pages[k]).sort((a, b) => (a.index || 9) - (b.index || 9));
+      for (const row of rows) {
+        const thumb = row.thumbnail && row.thumbnail.source;
+        if (!thumb) continue;
+        const hasCoord = Array.isArray(row.coordinates) && row.coordinates.length > 0;
+        const score = photoTitleScore(query, row.title);
+        if (!(score >= 2 || (score >= 1 && hasCoord))) continue;
+        return {
+          url: thumb,
+          title: row.title,
+          pageUrl: `https://${lang}.wikipedia.org/wiki/` + encodeURIComponent(String(row.title).replace(/\s/g, "_")),
+          source: lang === "ko" ? "위키백과" : "Wikipedia"
+        };
+      }
+      return null;
+    }
+
+    async function photoCommonsLookup(query, region) {
+      const url = "https://commons.wikimedia.org/w/api.php?action=query&list=search"
+        + `&srsearch=${encodeURIComponent(query + " filetype:bitmap")}&srlimit=6&srnamespace=6`
+        + "&srprop=snippet&format=json&origin=*";
+      const data = await photoFetchJson(url);
+      const rows = (data && data.query && data.query.search) || [];
+      if (!rows.length) return null;
+      const tokens = photoRegionTokens(region);
+      const qn = photoNorm(query);
+      const scored = [];
+      rows.forEach((row, i) => {
+        const file = String(row.title || "").replace(/^File:/, "");
+        const text = photoStripHtml(row.snippet) + " " + file;
+        const textNorm = photoNorm(text);
+        const hitName = (qn.length >= 2 && textNorm.includes(qn)) || photoTitleScore(query, file) >= 1;
+        if (!hitName) return;
+        const hitRegion = tokens.length ? tokens.some(t => text.toLowerCase().includes(t)) : true;
+        scored.push({ file, i, hitRegion });
+      });
+      if (!scored.length) return null;
+      // 지역명이 확인되는 사진을 우선하고, 지역 정보가 있고 하나도 안 맞으면 엉뚱한 사진을 붙이지 않는다
+      const pick = scored.find(x => x.hitRegion) || (tokens.length ? null : scored[0]);
+      if (!pick) return null;
+      return {
+        url: "https://commons.wikimedia.org/wiki/Special:FilePath/" + encodeURIComponent(pick.file) + "?width=560",
+        title: pick.file.replace(/\.(jpe?g|png|gif|webp|tiff?)$/i, "").replace(/_/g, " "),
+        pageUrl: "https://commons.wikimedia.org/wiki/File:" + encodeURIComponent(pick.file.replace(/\s/g, "_")),
+        source: "Wikimedia Commons"
+      };
+    }
+
+    async function photoLookup(name, region) {
+      for (const cand of photoCandidates(name)) {
+        if (cand.length < 2) continue;
+        const ko = await photoWikiLookup("ko", cand);
+        if (ko) return { ...ko, place: name };
+        const latin = (cand.match(/[A-Za-z][A-Za-z0-9'\.\-]*(?:\s+[A-Za-z0-9'\.\-]+)*/g) || [])
+          .map(s => s.trim()).filter(s => s.length >= 3).sort((a, b) => b.length - a.length)[0];
+        if (latin) {
+          const en = await photoWikiLookup("en", latin);
+          if (en) return { ...en, place: name };
+        }
+        const cm = await photoCommonsLookup(cand, region);
+        if (cm) return { ...cm, place: name };
+      }
+      return null;
+    }
+
+    async function fetchPlacePhotoUrl(placeName, region) {
+      const name = String(placeName || "").trim();
+      if (name.length < 2) return null;
+      const key = (photoNorm(name) + "|" + String(region || "").toLowerCase()).slice(0, 160);
+      if (PHOTO_MEM.has(key)) return PHOTO_MEM.get(key);
+      const store = photoStore();
+      const hit = store[key];
+      if (hit) {
+        const ttl = hit.u ? PHOTO_TTL_HIT : PHOTO_TTL_MISS;
+        if (Date.now() - (hit.at || 0) < ttl) {
+          const val = hit.u ? { url: hit.u, title: hit.t || name, pageUrl: hit.p || "", source: hit.s || "", place: name } : null;
+          PHOTO_MEM.set(key, val);
+          return val;
+        }
+      }
+      let result = null;
+      try { result = await photoLookup(name, String(region || "")); } catch { result = null; }
+      PHOTO_MEM.set(key, result);
+      store[key] = result
+        ? { u: result.url, t: result.title || "", p: result.pageUrl || "", s: result.source || "", at: Date.now() }
+        : { u: "", at: Date.now() };
+      photoStoreSave();
+      return result;
+    }
+
+    function photoSlotHtml(name, region, size) {
+      const safeName = escapeAttr(name);
+      return `<span class="ph-slot${size === "sm" ? " ph-sm" : ""}" data-ph="${safeName}" data-ph-region="${escapeAttr(region || "")}"></span>`;
+    }
+
+    function photoBtnElement(name) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "ph-btn";
+      b.textContent = "📷 사진 보기";
+      b.title = name + " 네이버 사진 검색";
+      b.addEventListener("click", (ev) => {
+        ev.preventDefault(); ev.stopPropagation();
+        window.open(naverPhotoUrl(name), "_blank", "noopener");
+      });
+      return b;
+    }
+
+    function photoThumbElement(name, res) {
+      const img = document.createElement("img");
+      img.className = "ph-thumb ph-fade";
+      img.loading = "lazy";
+      img.src = res.url;
+      img.alt = name;
+      img.title = name + " 사진 크게 보기";
+      img.addEventListener("click", (ev) => {
+        ev.preventDefault(); ev.stopPropagation();
+        openPlacePhotoPreview(name, res);
+      });
+      img.addEventListener("error", () => {
+        // 사진 주소가 깨졌으면 조용히 버튼으로 바꾼다
+        const slot = img.parentElement;
+        if (slot) { slot.innerHTML = ""; slot.appendChild(photoBtnElement(name)); }
+        PHOTO_MEM.delete((photoNorm(name) + "|").slice(0, 160));
+      });
+      return img;
+    }
+
+    // 렌더된 카드 안의 빈 사진 자리를 순서대로 채운다 (캐시에 있으면 즉시)
+    async function hydratePlacePhotos(root) {
+      const scope = root || document;
+      const slots = Array.from(scope.querySelectorAll(".ph-slot[data-ph]:not([data-ph-done])"));
+      for (const slot of slots) {
+        slot.setAttribute("data-ph-done", "1");
+        const name = slot.getAttribute("data-ph") || "";
+        const region = slot.getAttribute("data-ph-region") || "";
+        if (!name) continue;
+        let res = null;
+        try { res = await fetchPlacePhotoUrl(name, region); } catch { res = null; }
+        if (!slot.isConnected) continue;
+        slot.innerHTML = "";
+        if (res && res.url) slot.appendChild(photoThumbElement(name, res));
+        else slot.appendChild(photoBtnElement(name));
+      }
+    }
+
+    function openPlacePhotoPreview(name, res) {
+      const modal = document.getElementById("place-photo-modal");
+      if (!modal) return;
+      document.getElementById("place-photo-title").textContent = name;
+      const img = document.getElementById("place-photo-img");
+      img.src = res && res.url ? res.url : "";
+      img.alt = name;
+      const src = document.getElementById("place-photo-src");
+      if (src) src.textContent = res && res.source ? `사진 출처: ${res.source}${res.title ? " · " + res.title : ""}` : "";
+      const links = [];
+      if (res && res.pageUrl) links.push(`<a class="map-btn" href="${escapeAttr(res.pageUrl)}" target="_blank" rel="noopener">🖼️ 원본 사진</a>`);
+      links.push(`<a class="map-btn" href="${escapeAttr(naverMapUrl(name))}" target="_blank" rel="noopener">🗺️ 네이버 지도</a>`);
+      links.push(`<a class="map-btn" href="${escapeAttr(naverPhotoUrl(name))}" target="_blank" rel="noopener">📷 네이버 사진</a>`);
+      document.getElementById("place-photo-links").innerHTML = links.join("");
+      modal.classList.add("open");
+    }
+    function closePlacePhoto() {
+      const modal = document.getElementById("place-photo-modal");
+      if (modal) modal.classList.remove("open");
+      const img = document.getElementById("place-photo-img");
+      if (img) img.removeAttribute("src");
+    }
+
     function renderTimeline() {
       const destShort = String(state.meta?.destination || "부산").split(/[(\s]/)[0] || "부산";
       const mapTitleEl = document.getElementById("map-card-title");
@@ -3748,8 +4129,12 @@
               <button class="btn btn-soft btn-sm" style="flex:1;" onclick="openBookingModal('${it.bookingId}')">✏️ 예약 수정</button>
             </div>`
           : "";
+        const photoRegion = photoRegionOfDay(dayObj);
+        const photoSlot = shouldLookupPhoto(it) ? photoSlotHtml(it.place, photoRegion, "md") : "";
         return `
           <div class="card ${virtual ? "tl-virtual" : ""}" ${hasMenus ? `onclick="openMenuModal('${it.id}')" style="cursor:pointer;"` : ""}>
+            <div class="tl-body">
+            <div class="tl-main">
             <div class="tl-head">
               <span class="tl-time">${it.time}</span>
               <div class="tl-place">${it.place}</div>
@@ -3779,6 +4164,9 @@
               <button class="btn btn-soft btn-sm" style="flex:1;" onclick="openPlaceModal('${it.id}')">✏️ 장소 수정</button>
               <button class="btn btn-danger btn-sm" onclick="deleteItem('${it.id}')">삭제</button>
             </div>` : "")}
+            </div>
+            ${photoSlot}
+            </div>
           </div>
         `;
       });
@@ -3798,6 +4186,7 @@
         sunIdx++;
       }
       listEl.innerHTML = blocks.join("");
+      try { hydratePlacePhotos(listEl); } catch (e) { console.warn(e); }
       try { refineBookingRoutes(dayObj); } catch (e) { console.warn(e); }
       const addRow = document.getElementById("add-btns-row");
       if (addRow) addRow.style.display = editMode ? "flex" : "none";
@@ -7318,7 +7707,86 @@
         : "닉네임과 사진을 정하면 여행마다 표시돼요.";
       const bio = document.getElementById("prof-bio");
       if (bio) bio.value = myProfile.bio || "";
+      const pwBox = document.getElementById("prof-pw-box");
+      if (pwBox) pwBox.style.display = myProfile.nickname ? "block" : "none";
       renderLikesBox();
+    }
+
+    /* 🔐 내 비밀번호 변경 — 로컬(passHash)과 클라우드 __profile__:<닉네임>을 함께 갱신 */
+    async function changeMyPassword() {
+      const msgEl = document.getElementById("prof-pw-msg");
+      const say = (text, ok) => {
+        if (!msgEl) return;
+        msgEl.style.display = "block";
+        msgEl.textContent = text;
+        msgEl.style.color = ok ? "var(--success)" : "var(--danger)";
+      };
+      if (!myProfile || !myProfile.nickname) return say("먼저 프로필을 만들어 주세요.");
+      const cur = document.getElementById("prof-pw-cur")?.value || "";
+      const nw = document.getElementById("prof-pw-new")?.value || "";
+      const nw2 = document.getElementById("prof-pw-new2")?.value || "";
+      if (!cur) return say("현재 비밀번호를 입력해 주세요.");
+      if (!nw) return say("새 비밀번호를 입력해 주세요.");
+      if (/\s/.test(nw)) return say("비밀번호에는 공백을 쓸 수 없어요.");
+      if (nw.length < 4) return say("새 비밀번호는 4자 이상으로 정해 주세요.");
+      if (nw !== nw2) return say("새 비밀번호가 서로 달라요. 다시 확인해 주세요.");
+      if (nw === cur) return say("지금 쓰는 비밀번호와 다른 걸로 정해 주세요.");
+
+      const btn = document.getElementById("prof-pw-btn");
+      if (btn) { btn.disabled = true; btn.textContent = "확인 중..."; }
+      try {
+        const curHash = await sha256(cur);
+        const localHash = myProfile.passHash || "";
+        let cloudRow = null;
+        try { cloudRow = await fetchCloudProfileRow(myProfile.nickname); } catch { cloudRow = null; }
+        const cloudHash = cloudRow && cloudRow.passHash ? cloudRow.passHash : "";
+        if (!localHash && !cloudHash) return say("이 프로필에는 비밀번호가 없어요. 새 프로필로 다시 만들어 주세요.");
+        if (localHash !== curHash && cloudHash !== curHash) return say("현재 비밀번호가 일치하지 않아요.");
+
+        const newHash = await sha256(nw);
+        myProfile.passHash = newHash;
+        try { localStorage.setItem(PROFILE_KEY, JSON.stringify(myProfile)); } catch {}
+        addSavedProfile(myProfile);
+
+        let cloudNote = "";
+        try {
+          const client = ensureSbClient();
+          if (!client) {
+            cloudNote = " (오프라인 — 이 기기에만 저장했어요)";
+          } else {
+            const nickKey = "__profile__:" + String(myProfile.nickname || "").toLowerCase();
+            const { data: existing } = await client.from("trip_dashboards").select("data").eq("sync_id", nickKey).maybeSingle();
+            const base = existing && existing.data && typeof existing.data === "object" ? existing.data : {};
+            const doc = {
+              ...base,
+              id: myProfile.id || base.id,
+              nickname: myProfile.nickname,
+              avatar: myProfile.avatar || base.avatar || "",
+              passHash: newHash,
+              bio: myProfile.bio || base.bio || "",
+              likes: Array.isArray(myProfile.likes) ? myProfile.likes.slice() : (Array.isArray(base.likes) ? base.likes : []),
+              deleted: false,
+              updatedAt: new Date().toISOString()
+            };
+            delete doc.deletedAt;
+            const { error } = await client.from("trip_dashboards").upsert(
+              { sync_id: nickKey, data: doc, updated_at: new Date().toISOString() },
+              { onConflict: "sync_id" }
+            );
+            if (error) cloudNote = ` (클라우드 저장은 실패: ${error.message})`;
+          }
+        } catch { cloudNote = " (클라우드 저장 실패 — 이 기기에는 저장했어요)"; }
+
+        ["prof-pw-cur", "prof-pw-new", "prof-pw-new2"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = "";
+        });
+        renderSavedProfilesBox();
+        say(`✅ 비밀번호가 변경되었어요!${cloudNote}`, true);
+        alert(`✅ 비밀번호가 변경되었어요!${cloudNote}`);
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "🔐 비밀번호 변경"; }
+      }
     }
 
     async function saveMyPageInfo() {
@@ -9108,22 +9576,26 @@
         resEl.innerHTML = `<div class="card" style="font-size:12.5px;color:var(--muted);">주변 장소를 찾지 못했습니다.</div>`;
         return;
       }
+      const recRegion = photoRegionOfDay({ cityLabel: dayObj.cityLabel, area: dayObj.area });
       resEl.innerHTML = top5.map((s, i) => {
         const walkMin = Math.max(1, Math.round(s.distKm * 15));
         const taxiMin = Math.max(2, Math.round(s.distKm * 2.5));
         const distTxt = s.distKm < 1 ? `${Math.round(s.distKm * 1000)}m` : `${s.distKm.toFixed(1)}km`;
         const moveTxt = s.distKm <= 1.1 ? `도보 약 ${walkMin}분` : `택시 약 ${taxiMin}분`;
         return `
-          <div class="card" style="cursor:pointer;" onclick="if(event.target.tagName!=='A'&&event.target.tagName!=='INPUT'){const cb=document.getElementById('rec-cb-${i}');if(cb){cb.checked=!cb.checked;updateRecommendCount();}}">
+          <div class="card" style="cursor:pointer;" onclick="if(event.target.tagName!=='A'&&event.target.tagName!=='INPUT'&&event.target.tagName!=='IMG'&&event.target.tagName!=='BUTTON'){const cb=document.getElementById('rec-cb-${i}');if(cb){cb.checked=!cb.checked;updateRecommendCount();}}">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
-              <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;flex:1;">
+              <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;flex:1;min-width:0;">
                 ${readOnly ? "" : `<input type="checkbox" id="rec-cb-${i}" class="rec-pick" value="${i}" style="margin-top:3px;width:16px;height:16px;" onchange="updateRecommendCount()" />`}
-                <div>
+                <div style="min-width:0;">
                   <div style="font-size:14.5px;font-weight:800;">${i + 1}. ${s.name}</div>
                   <div style="font-size:12px;color:var(--muted);margin-top:2px;">${s.desc}</div>
                 </div>
               </label>
-              <span class="tag blue">${distTxt}</span>
+              <div class="ph-col">
+                <span class="tag blue">${distTxt}</span>
+                ${photoSlotHtml(s.name, recRegion, "sm")}
+              </div>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
               <span style="font-size:11.5px;color:var(--ocean-dark);">📍 직전 일정에서 ${moveTxt} · ${timeSlot} 추천</span>
@@ -9136,6 +9608,7 @@
           <button id="rec-save-btn" class="btn btn-primary" style="width:100%;" onclick="saveSelectedRecommendations()">저장할 장소를 선택해 주세요</button>
         </div>
       `);
+      try { hydratePlacePhotos(resEl); } catch (e) { console.warn(e); }
     }
 
     function saveSelectedRecommendations() {
@@ -9678,13 +10151,16 @@
           <div class="card">
             <div style="font-weight:800;font-size:14px;color:var(--ocean-dark);margin-bottom:6px;">📅 ${d.label} · ${d.date}</div>
             ${d.items.map(it => `
-              <div style="padding:6px 0;border-bottom:1px dashed var(--border);font-size:12.5px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                  <div><strong>${it.time}</strong> ${it.place}</div>
-                  <div style="font-weight:700;color:var(--ocean-dark);">${it.costTotal ? fmt(it.costTotal) : ""}</div>
-                </div>
-                <div style="font-size:11px;color:var(--muted);margin-top:2px;">
-                  ${it.moveMode} · ${(it.badges || []).join(" · ")}
+              <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed var(--border);font-size:12.5px;">
+                ${photoSlotHtml(it.place, photoRegionOfDay(d), "sm")}
+                <div style="flex:1;min-width:0;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div><strong>${it.time}</strong> ${it.place}</div>
+                    <div style="font-weight:700;color:var(--ocean-dark);">${it.costTotal ? fmt(it.costTotal) : ""}</div>
+                  </div>
+                  <div style="font-size:11px;color:var(--muted);margin-top:2px;">
+                    ${it.moveMode} · ${(it.badges || []).join(" · ")}
+                  </div>
                 </div>
               </div>
             `).join("")}
@@ -9692,6 +10168,7 @@
         `).join("") + `
         <button class="btn btn-primary" style="width:100%;margin-bottom:12px;" onclick="applyGeneratedRoute()">🗓️ 이 최적 루트로 내 일정 채우기</button>
       `;
+      try { hydratePlacePhotos(resBox); } catch (e) { console.warn(e); }
     }
 
     const CITY_ROUTE_SPOTS = {
@@ -9865,15 +10342,19 @@
         <div class="card">
           <div style="font-weight:800;font-size:14px;color:var(--ocean-dark);margin-bottom:6px;">📅 ${d.label} · ${d.date}</div>
           ${d.items.map(it => `
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px dashed var(--border);font-size:12.5px;">
-              <div><strong>${it.time}</strong> ${it.place} <span style="color:var(--muted);font-size:11px;">(${it.stay})</span></div>
-              <div style="font-weight:700;color:var(--ocean-dark);">${it.costTotal ? fmt(it.costTotal) : "무료"}</div>
+            <div style="display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px dashed var(--border);font-size:12.5px;">
+              ${photoSlotHtml(it.place, photoRegionOfDay(d), "sm")}
+              <div style="flex:1;min-width:0;display:flex;justify-content:space-between;align-items:center;gap:6px;">
+                <div><strong>${it.time}</strong> ${it.place} <span style="color:var(--muted);font-size:11px;">(${it.stay})</span></div>
+                <div style="font-weight:700;color:var(--ocean-dark);">${it.costTotal ? fmt(it.costTotal) : "무료"}</div>
+              </div>
             </div>
           `).join("")}
         </div>
       `).join("") + `
         <button class="btn btn-primary" style="width:100%;margin-bottom:12px;" onclick="applyGeneratedRoute()">🗓️ 이 루트로 내 일정 채우기</button>
       `;
+      try { hydratePlacePhotos(resBox); } catch (e) { console.warn(e); }
     }
 
     function applyGeneratedRoute() {
