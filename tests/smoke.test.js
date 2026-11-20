@@ -43,7 +43,7 @@ const ev = (code) => w.eval(code);
 const results = [];
 const ok = (name, cond, extra) => results.push({ name, pass: !!cond, extra });
 
-setTimeout(() => {
+setTimeout(async () => {
   try {
     const DOM = w.eval("ROULETTE_SPOTS.domestic");
     const OVER = w.eval("ROULETTE_SPOTS.overseas");
@@ -204,9 +204,12 @@ setTimeout(() => {
     const ntsOpts = [...w.document.querySelectorAll("#nts-out-mode option")].map((o) => o.value);
     const bkOpts = [...w.document.querySelectorAll("#bk-mode option")].map((o) => o.value);
     const trOpts = [...w.document.querySelectorAll("#tr-type option")].map((o) => o.value);
-    ok("새 여행 교통수단 옵션", ntsOpts.includes("지하철·전철") && ntsOpts.includes("시내·광역버스"), ntsOpts.join("|"));
-    ok("예약 교통편 옵션", bkOpts.includes("지하철·전철") && bkOpts.includes("시내·광역버스"), bkOpts.join("|"));
-    ok("일정 교통편 옵션", trOpts.includes("지하철·전철") && trOpts.includes("시내·광역버스") && trOpts.includes("도보"), trOpts.join("|"));
+    ok("새 여행 교통수단 옵션: 대중교통 통합", ntsOpts.includes("대중교통") && !ntsOpts.includes("지하철·전철") && !ntsOpts.includes("시내·광역버스"), ntsOpts.join("|"));
+    const osOpts = [...w.document.querySelectorAll("#os-out-mode option")].map((o) => o.value);
+    ok("해외 새 여행 교통수단 옵션: 대중교통 통합", osOpts.includes("대중교통") && !osOpts.includes("지하철·전철"), osOpts.join("|"));
+    ok("예약 교통편 옵션: 대중교통 통합", bkOpts.includes("대중교통") && !bkOpts.includes("지하철·전철") && !bkOpts.includes("시내·광역버스"), bkOpts.join("|"));
+    ok("일정 교통편 옵션: 대중교통 통합", trOpts.includes("대중교통") && !trOpts.includes("지하철·전철") && !trOpts.includes("시내·광역버스") && trOpts.includes("도보"), trOpts.join("|"));
+    ok("대중교통은 예매 불필요 판정", w.isBookingFreeTransit("대중교통") === true, "");
 
 
     // 16) 실제 저장 경로: 일정 교통편 모달로 지하철 추가 → 알림/배지 미생성
@@ -216,7 +219,7 @@ setTimeout(() => {
     const d0 = w.document;
     w.openTransitModal();
     d0.getElementById("tr-pos").value = String(ev("state.days[0].items.length"));
-    d0.getElementById("tr-type").value = "지하철·전철";
+    d0.getElementById("tr-type").value = "대중교통";
     d0.getElementById("tr-code").value = "2호선";
     d0.getElementById("tr-from").value = "부산역";
     d0.getElementById("tr-to").value = "광안역";
@@ -225,11 +228,11 @@ setTimeout(() => {
     d0.getElementById("tr-cost").value = "1700";
     w.eval('currentDay = 1');
     w.saveTransitItem();
-    const added = ev("state.days[0].items.find(i => i.transitType === '지하철·전철')");
-    ok("지하철 저장: 일정에 추가됨", ev("state.days[0].items.length") > itemsBefore && ev("state.days[0].items.some(i => i.transitType === '지하철·전철')"),
+    const added = ev("state.days[0].items.find(i => i.transitType === '대중교통')");
+    ok("대중교통 저장: 일정에 추가됨", ev("state.days[0].items.length") > itemsBefore && ev("state.days[0].items.some(i => i.transitType === '대중교통')"),
       `items ${itemsBefore} → ${ev("state.days[0].items.length")}`);
-    ok("지하철 저장: 예매 알림 미생성", alertCount() === nBefore, `${nBefore} → ${alertCount()}`);
-    ok("지하철 저장: '예매 불필요' 배지", (added.badges || []).includes("예매 불필요") && !(added.badges || []).some(b => /예매 필수/.test(b)),
+    ok("대중교통 저장: 예매 알림 미생성", alertCount() === nBefore, `${nBefore} → ${alertCount()}`);
+    ok("대중교통 저장: '예매 불필요' 배지", (added.badges || []).includes("예매 불필요") && !(added.badges || []).some(b => /예매 필수/.test(b)),
       (added.badges || []).join("|"));
 
     // KTX는 같은 경로에서 알림이 생겨야 한다
@@ -270,6 +273,171 @@ setTimeout(() => {
     // 14) 큰 지도 모달 z-index · PC 추천 폭
     ok("큰 지도 모달 z-index 상향", /id="big-map-modal"[^>]*z-index:3000/.test(html), "");
     ok("PC 추천 탭 1120px 규칙", /body\.view-pc #tab-recommend\.active \{ max-width: 1120px; \}/.test(html), "");
+    /* ================= 2026-11-21 추가 요구사항 ================= */
+
+    // 17) 🚌🚇 대중교통 통합 — 기존 저장 데이터('지하철·전철','시내·광역버스')도 예매 불필요로 유지
+    ok("대중교통 통합 + 하위 호환", w.isBookingFreeTransit("대중교통") && w.isBookingFreeTransit("지하철·전철") && w.isBookingFreeTransit("시내·광역버스"), "");
+    ok("대중교통 정적 안내 문구", /대중교통·자차는 알림 없이/.test(html), "");
+
+    // 18) 📱 빈 여행에서는 고정 부산 앱(블루라인파크)이 뜨지 않는다
+    ev("state.meta = { title:'빈 여행', destination:'강릉', startDate:'2027-06-01', endDate:'2027-06-02', travelers:2 }; state.days = buildDateRangeDays('2027-06-01','2027-06-02','강릉'); state.bookings = []; saveState();");
+    w.renderBookingAppLinks();
+    const emptyApp = w.document.getElementById("booking-apps-links").textContent;
+    ok("빈 여행 앱: 블루라인 없음", !/블루라인/.test(emptyApp), emptyApp.trim().slice(0, 60));
+    ok("빈 여행 앱: 안내 문구", /예매가 필요한 장소를 추가하면/.test(emptyApp), emptyApp.trim().slice(0, 60));
+    ok("정적 HTML에도 고정 앱 없음", !/bluelinepark/.test(html.slice(html.indexOf('id="booking-apps-links"'), html.indexOf('id="booking-apps-links"') + 400)), "");
+
+    // 19) 🎰 룰렛 인원·일정 길이·동행 유형
+    w.openNewTripSetupModal();
+    w.toggleRouletteBox(true);
+    ok("룰렛 인원/길이 UI", !!w.document.getElementById("roul-people") && !!w.document.getElementById("roul-length"), "");
+    ok("동행 유형 칩 6개", w.document.querySelectorAll("#roul-party-chips .roul-party").length === 6, String(w.document.querySelectorAll("#roul-party-chips .roul-party").length));
+    const busanSpot = ev("ROULETTE_SPOTS.domestic.find(d=>d.name==='부산')");
+    const costDefault = w.rouletteCost(busanSpot);
+    const cost4n3 = w.rouletteCost(busanSpot, { nights: 4, travelers: 3 });
+    ok("경비: 4박·3명 반영", cost4n3.nights === 4 && cost4n3.travelers === 3 && cost4n3.total > costDefault.total && cost4n3.groupTotal === cost4n3.total * 3,
+      `기본 ${costDefault.total} → ${cost4n3.total} (합계 ${cost4n3.groupTotal})`);
+    w.setRoulettePeople("3");
+    w.setRouletteLength("4");
+    w.setRouletteParty("friends");
+    ok("인원/길이/유형 선택 저장", ev("roulPeople") === 3 && ev("roulNights") === 4 && ev("roulParty") === "friends",
+      `${ev("roulPeople")}/${ev("roulNights")}/${ev("roulParty")}`);
+    w.renderRouletteResults([busanSpot], []);
+    const roulTxt = w.document.getElementById("roul-results").textContent;
+    ok("결과: 4박5일·3명·총액 표시", /4박 5일/.test(roulTxt) && /3명 합계/.test(roulTxt) && /1인 예상 경비/.test(roulTxt), roulTxt.replace(/\s+/g, " ").slice(0, 90));
+    ok("결과: 동행 유형 태그", /친구들과 함께/.test(roulTxt), "");
+    w.fillTripSetupFromRoulette("domestic", "부산");
+    ok("채우기: 인원·날짜·제목 반영", w.document.getElementById("nts-travelers").value === "3"
+      && w.document.getElementById("nts-title").value === "부산 4박 5일"
+      && (new Date(w.document.getElementById("nts-end").value) - new Date(w.document.getElementById("nts-start").value)) / 86400000 === 4,
+      `${w.document.getElementById("nts-title").value} / ${w.document.getElementById("nts-travelers").value}명 / ${w.document.getElementById("nts-start").value}~${w.document.getElementById("nts-end").value}`);
+    const partySorted = w.pickRouletteTop3(ev("ROULETTE_SPOTS.domestic"), [], "family");
+    ok("동행 유형이 추첨에 반영", partySorted.length === 3 && partySorted.every(d => w.roulettePartyFit(d, "family") >= 1), partySorted.map(d => d.name).join(","));
+    w.closeNewTripSetupModal();
+
+    // 20) 🇰🇷 내장 지명·역 DB + 검색 정확도
+    ok("내장 지명 DB 100곳 이상", ev("KR_PLACES.length") >= 100, String(ev("KR_PLACES.length")));
+    const myeong = w.krGazetteerSearch("명동역", 5);
+    ok("'명동역' → 명동역 최상단", myeong[0] && myeong[0].name === "명동역" && /4호선/.test(myeong[0].sub), JSON.stringify(myeong[0]));
+    ok("'서울역' 정확 매칭", w.krGazetteerSearch("서울역", 3)[0].name === "서울역", "");
+    ok("'해운대' 역·해변 매칭", w.krGazetteerSearch("해운대", 4).some(x => /해운대역|해운대해수욕장/.test(x.name)), w.krGazetteerSearch("해운대", 4).map(x => x.name).join(","));
+    ok("'만사장' 오타에도 결과 없음·안전", Array.isArray(w.krGazetteerSearch("ㅁㄴㅇㄹ", 3)), "");
+
+    // 21) 🔎 연관검색어 자동완성 — 입력 후 목록 → 클릭 시 좌표 입력
+    const acInput = w.document.getElementById("pm-search-q");
+    ok("자동완성 래퍼 부착", acInput.parentElement.classList.contains("ac-wrap") && !!w.document.getElementById("ac-pm-search-q"), "");
+    w.openPlaceModal(null);
+    acInput.value = "명동역";
+    acInput.dispatchEvent(new w.Event("input"));
+    await new Promise(r => setTimeout(r, 420));
+    const acList = w.document.getElementById("ac-pm-search-q");
+    ok("자동완성 목록 열림", acList.classList.contains("open") && /명동역/.test(acList.textContent), acList.textContent.replace(/\s+/g, " ").slice(0, 60));
+    acList.querySelector(".ac-item").dispatchEvent(new w.MouseEvent("mousedown", { bubbles: true }));
+    ok("자동완성 클릭 → 입력·좌표", acInput.value === "명동역" && ev("pickedLat") === 37.5609 && ev("pickedLng") === 126.9863,
+      `${acInput.value} / ${ev("pickedLat")},${ev("pickedLng")}`);
+    w.closePlaceModal();
+    ok("검색칸 자동완성 전수 부착", ["pm-place", "pm-from", "pm-to", "tr-from", "tr-to", "bk-sched-search", "bk-hotel-search-q", "place-address", "nts-dest", "route-dest", "must-dest"].every(id => w.document.getElementById("ac-" + id)), "");
+
+    // 22) 🗺️ 국내 빈 여행 지도는 대한민국 전체 뷰
+    ev("state.meta = { title:'서울 빈 여행', destination:'서울', startDate:'2027-05-01', endDate:'2027-05-03', travelers:2 }; state.days = buildDateRangeDays('2027-05-01','2027-05-03','서울'); state.bookings=[]; state.expenses=[]; saveState();");
+    const dv = w.defaultMapView();
+    ok("국내 빈 여행 기본 지도 뷰", dv.center[0] === 36.35 && dv.center[1] === 127.85 && dv.zoom >= 6 && dv.zoom <= 7, JSON.stringify(dv));
+    ev("state.meta.tripType='overseas'; state.meta.country='일본';");
+    ok("해외 여행은 대한민국 뷰 아님", w.defaultMapView().zoom < 4, JSON.stringify(w.defaultMapView()));
+    ev("state.meta.tripType='domestic'; delete state.meta.country;");
+
+    // 23) ✨ 서울 추천 탭 — 부산/바다 오인 제거
+    ok("추천 목적지 자동 동기화", w.document.getElementById("route-dest").value === "서울" && w.document.getElementById("must-dest").value === "서울",
+      `${w.document.getElementById("route-dest").value} / ${w.document.getElementById("must-dest").value}`);
+    ev("state.days[0].items = [{id:'se1',time:'10:00',place:'경복궁',lat:37.5796,lng:126.9770,costTotal:0},{id:'se2',time:'13:00',place:'익선동',lat:37.5746,lng:126.9900,costTotal:0}]; saveState();");
+    w.setRecommendMode("spot");
+    const recDaySel = w.document.getElementById("rec-day");
+    recDaySel.value = "1";
+    w.updateRecommendAfterOptions();
+    w.document.getElementById("rec-after").value = "1";
+    await w.runPlaceRecommend();
+    const seoulRec = w.document.getElementById("rec-results").textContent;
+    ok("서울 추천에 부산·바다 없음", !/광안리|해운대|광안대교|민락/.test(seoulRec), seoulRec.replace(/\s+/g, " ").slice(0, 80));
+    ok("서울 추천 결과 5곳", w.document.querySelectorAll("#rec-results .rec-pick").length === 5, String(w.document.querySelectorAll("#rec-results .rec-pick").length));
+    ok("서울 전용 추천 풀", ev("curatedSpotsForCity('서울').length") >= 15 && ev("curatedSpotsForCity('서울')").every(x => x.lat > 37 && x.lng > 126 && x.lng < 127.2), "");
+
+    // 24) 🗺️ 서울 2박 3일 신규 루트 — 3곳만 나오거나 전 일차 중복 금지
+    w.setRecommendMode("route");
+    w.document.getElementById("route-dest").value = "서울";
+    w.document.getElementById("route-start").value = "2027-03-06";
+    w.document.getElementById("route-end").value = "2027-03-08";
+    await w.generateNewRoute();
+    const plan = ev("window._generatedRoutePlan");
+    const allNames = plan.days.flatMap(d => d.items.map(i => i.place));
+    ok("서울 루트: 일차마다 3~4곳", plan.days.length === 3 && plan.days.every(d => d.items.length >= 3), plan.days.map(d => d.items.length).join(","));
+    ok("서울 루트: 전 일차 중복 없음", new Set(allNames).size === allNames.length && allNames.length >= 10, `${new Set(allNames).size}/${allNames.length}`);
+    ok("서울 루트: 서울 장소만", !/광안리|해운대|부산/.test(allNames.join(" ")), allNames.join(", ").slice(0, 100));
+
+    // 25) 🏨 숙박 미예약 동선 맞춤 권역 Top 3
+    w.renderTimeline();
+    const lodgingTxt = w.document.getElementById("lodging-rec-box").textContent;
+    ok("숙박 권역 추천 카드", /동선 맞춤 숙박 권역 추천 Top 3/.test(lodgingTxt), lodgingTxt.replace(/\s+/g, " ").slice(0, 80));
+    ok("권역 3곳 + 평균 이동거리", w.document.querySelectorAll("#lodging-rec-box .lr-row").length === 3 && /평균 이동/.test(lodgingTxt), "");
+    ok("권역 추천은 서울 역·권역", /서울역|명동|종로3가|홍대입구|강남|잠실|성수|이태원/.test(lodgingTxt), lodgingTxt.replace(/\s+/g, " ").slice(0, 120));
+    const lodgTop = w.recommendLodgingAreas(3);
+    ok("권역 점수 정렬", lodgTop.length === 3 && lodgTop[0].score <= lodgTop[1].score && lodgTop[1].score <= lodgTop[2].score, lodgTop.map(a => a.name).join(","));
+
+    // 26) ✏️ 편집 모드 — 컴팩트 행 [−][카드][≡] + 순서 변경
+    const d0items = ev("state.days[0].items.length");
+    w.toggleEditMode();
+    const editRows = w.document.querySelectorAll("#timeline-list .tl-edit-row[data-item-id]");
+    ok("편집 행 렌더", editRows.length === d0items, `${editRows.length}/${d0items}`);
+    ok("편집 행 구성: 삭제·핸들", w.document.querySelectorAll("#timeline-list .tl-edit-del").length === d0items
+      && w.document.querySelectorAll("#timeline-list .tl-edit-handle").length === d0items, "");
+    ok("편집 모드에 사진·메뉴 버튼 숨김", w.document.querySelectorAll("#timeline-list .ph-slot").length === 0
+      && !/메뉴 선택/.test(w.document.getElementById("timeline-list").textContent), "");
+    const beforeOrder = ev("state.days[0].items.map(i=>i.place)");
+    const listEl = w.document.getElementById("timeline-list");
+    const rowsArr = [...listEl.querySelectorAll(".tl-edit-row[data-item-id]")];
+    listEl.insertBefore(rowsArr[rowsArr.length - 1], rowsArr[0]);
+    w.commitTimelineEditOrder();
+    const afterOrder = ev("state.days[0].items.map(i=>i.place)");
+    ok("드래그 순서 반영", afterOrder[0] === beforeOrder[beforeOrder.length - 1] && afterOrder.length === beforeOrder.length,
+      `${beforeOrder.join(">")} → ${afterOrder.join(">")}`);
+    ok("순서 변경 후 시간 재배정", ev("state.days[0].items.map(i=>i.time).join(',')") === ev("state.days[0].items.map(i=>i.time).slice().sort().join(',')"), ev("state.days[0].items.map(i=>i.time).join(',')"));
+    w.toggleEditMode();
+
+    // 27) 📅 일반 일정 카드: 메모만 기본, 메뉴·가격은 펼치면
+    const plainCard = w.document.querySelector("#timeline-list .card.tl-collapsible");
+    ok("카드 기본 접힘", plainCard && !plainCard.classList.contains("tl-open") && !!plainCard.querySelector(".tl-extra") && /더 보기/.test(plainCard.textContent), "");
+    ok("접힘 CSS: 사진·체류·세부 숨김", /\.card\.tl-collapsible:not\(\.tl-open\) \.tl-stay/.test(html) && /\.card\.tl-collapsible:not\(\.tl-open\) \.ph-slot/.test(html) && /\.tl-extra \{ display: none; \}/.test(html), "");
+    plainCard.querySelector(".tl-place").click();
+    ok("카드 탭 → 펼침", plainCard.classList.contains("tl-open") && /접기/.test(plainCard.textContent), "");
+    plainCard.querySelector(".tl-place").click();
+    ok("다시 탭 → 접힘", !plainCard.classList.contains("tl-open"), "");
+
+    // 28) 📝 메모 입력칸 확대
+    const memoEl = w.document.getElementById("pm-memo");
+    ok("메모 textarea", memoEl.tagName === "TEXTAREA" && memoEl.getAttribute("rows") === "3" && /\.pm-memo \{[^}]*min-height: 88px/.test(html.replace(/\n/g, " ")), memoEl.tagName);
+
+    // 29) 🏨 숙소 검색 → 좌표 → 지도/카드 반영
+    w.openBookingModal(null, "hotel");
+    ok("숙소 검색칸 열림", w.document.getElementById("bk-hotel-search-wrap").style.display === "block" && !!w.document.getElementById("bk-hotel-search-q"), "");
+    w.document.getElementById("bk-hotel-search-q").value = "명동역";
+    await w.searchBookingHotelByName();
+    ok("숙소 이름 검색 결과", /명동역/.test(w.document.getElementById("bk-hotel-search-results").textContent), "");
+    w.pickBookingHotelName(0);
+    ok("숙소 좌표 선택", ev("bkSchedCoords && bkSchedCoords.lat") === 37.5609 && ev("bkSchedCoords.lng") === 126.9863, ev("JSON.stringify(bkSchedCoords)"));
+    w.document.getElementById("bk-name").value = "명동 테스트 호텔";
+    w.document.getElementById("bk-price").value = "200000";
+    w.document.getElementById("bk-booker").value = "__custom";
+    w.document.getElementById("bk-booker-name").value = "테스터";
+    w.document.getElementById("bk-in-date").value = "2027-05-01";
+    w.document.getElementById("bk-out-date").value = "2027-05-03";
+    await w.saveBooking();
+    const savedHotel = ev("(state.bookings||[]).find(b=>b.type==='hotel')");
+    ok("숙소 저장: 이름·좌표", savedHotel && savedHotel.name === "명동 테스트 호텔" && savedHotel.lat === 37.5609 && savedHotel.lng === 126.9863,
+      savedHotel && `${savedHotel.name} ${savedHotel.lat},${savedHotel.lng}`);
+    ok("숙소 좌표로 지도 핀 계산", (() => { const c = w.hotelCoordsForBooking(savedHotel); return c && c.lat === 37.5609; })(), "");
+    w.renderTimeline();
+    ok("숙소 저장 후 권역 추천 숨김", w.document.getElementById("lodging-rec-box").textContent.trim() === "", "");
+    ok("일정에 숙소 카드 반영", /명동 테스트 호텔/.test(w.document.getElementById("timeline-list").textContent), "");
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }

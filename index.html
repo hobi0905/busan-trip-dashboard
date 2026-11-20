@@ -1577,6 +1577,69 @@
     body.view-pc #tab-mypage.active { max-width: 860px; }
     body.view-pc #bookings-section { margin-bottom: 4px; }
 
+    /* ===== 🎰 룰렛 인원·기간·동행 유형 ===== */
+    .roul-set-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+    .roul-set-grid label { font-size: 10.5px; font-weight: 800; color: var(--muted); display: block; margin-bottom: 3px; }
+    .roul-set-grid select { width: 100%; font-size: 12px; padding: 7px 8px; border-radius: 9px; border: 1px solid var(--border); background: #fff; font-family: inherit; }
+    .roul-party-wrap { margin-bottom: 9px; }
+    .roul-party-wrap .rp-head { font-size: 10.5px; font-weight: 800; color: var(--muted); margin-bottom: 4px; }
+    .roul-party-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .roul-party { border: 1px solid var(--border); background: #fff; border-radius: 999px; padding: 5px 9px; font-size: 11px; font-weight: 700; color: #475569; font-family: inherit; cursor: pointer; line-height: 1.2; }
+    .roul-party.active { background: var(--ocean-soft); border-color: var(--ocean); color: var(--ocean-dark); }
+    .roul-cost-total { font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 3px; }
+
+    /* ===== 🏨 숙박 권역 추천 ===== */
+    .lodg-rec-card .lr-row { display: flex; gap: 8px; align-items: flex-start; padding: 9px 0; border-bottom: 1px dashed var(--border); }
+    .lodg-rec-card .lr-row:last-child { border-bottom: none; }
+    .lodg-rec-card .lr-rank { width: 24px; height: 24px; flex: 0 0 24px; border-radius: 50%; background: var(--ocean-soft); color: var(--ocean-dark); font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+    .lodg-rec-card .lr-name { font-size: 14px; font-weight: 800; }
+    .lodg-rec-card .lr-why { font-size: 11.5px; color: var(--muted); line-height: 1.5; margin-top: 2px; }
+    .lodg-rec-card .lr-meta { font-size: 11px; color: var(--ocean-dark); font-weight: 700; margin-top: 3px; }
+    .lodg-rec-card .lr-btn { font-size: 11px; padding: 6px 9px; border-radius: 8px; white-space: nowrap; }
+
+    /* ===== ✏️ 일정 편집 (컴팩트 행 + ≡ 드래그) ===== */
+    .tl-edit-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; background: transparent; }
+    .tl-edit-del { width: 30px; height: 30px; flex: 0 0 30px; border-radius: 50%; border: none; background: #ef4444; color: #fff; font-size: 19px; font-weight: 800; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0 0 3px; font-family: inherit; }
+    .tl-edit-del:active { transform: scale(0.94); }
+    .tl-edit-card { flex: 1; min-width: 0; background: #f3f4f6; border-radius: 14px; padding: 11px 14px; cursor: pointer; }
+    .tl-edit-cat { font-size: 11.5px; color: #94a3b8; font-weight: 700; margin-bottom: 3px; }
+    .tl-edit-place { font-size: 15px; font-weight: 700; color: #0f172a; line-height: 1.35; }
+    .tl-edit-handle { width: 34px; height: 44px; flex: 0 0 34px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #cbd5e1; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; letter-spacing: -1px; }
+    .tl-edit-handle:active { cursor: grabbing; }
+    .tl-edit-row.dragging { opacity: 0.55; }
+    .tl-edit-row.drag-over .tl-edit-card { box-shadow: inset 0 0 0 2px var(--ocean); }
+    .tl-edit-row.tl-edit-virtual { opacity: 0.95; }
+    .tl-edit-row.tl-edit-virtual .tl-edit-card { background: #e0f2fe; }
+    .tl-edit-hint { font-size: 11px; color: var(--muted); margin: 0 0 10px; text-align: center; }
+
+    /* ===== 일정 카드 접힘/펼침 ===== */
+    .card.tl-collapsible { cursor: pointer; }
+    .tl-fold-cue { font-size: 11px; color: var(--muted); font-weight: 700; margin-left: auto; white-space: nowrap; }
+    .tl-extra { display: none; }
+    .card.tl-open .tl-extra { display: block; }
+    /* 접힌 카드는 시간·장소·메모만 깔끔하게 */
+    .card.tl-collapsible:not(.tl-open) .tl-stay,
+    .card.tl-collapsible:not(.tl-open) .ph-slot { display: none; }
+    .card.tl-collapsible:not(.tl-open) { padding-top: 13px; padding-bottom: 13px; }
+    .card.tl-collapsible:not(.tl-open) .tl-memo { margin-bottom: 0; }
+    .tl-extra-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; padding-top: 8px; border-top: 1px solid #f1f5f9; }
+
+    /* ===== 🔎 연관검색어 (공통 자동완성) ===== */
+    .ac-wrap { position: relative; }
+    .ac-list { position: absolute; left: 0; right: 0; top: calc(100% + 2px); z-index: 60; background: #fff; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 26px rgba(15,23,42,0.16); max-height: 236px; overflow-y: auto; display: none; }
+    .ac-list.open { display: block; }
+    .ac-item { display: flex; align-items: center; gap: 7px; padding: 8px 10px; font-size: 12.5px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item.active, .ac-item:active { background: var(--ocean-soft); }
+    .ac-item .ac-ico { flex: 0 0 auto; font-size: 13px; }
+    .ac-item .ac-main { flex: 1; min-width: 0; }
+    .ac-item .ac-nm { font-weight: 800; color: #0f172a; }
+    .ac-item .ac-sub { font-size: 10.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ac-empty { padding: 9px 10px; font-size: 11.5px; color: var(--muted); }
+
+    /* ===== 메모 넉넉한 입력칸 ===== */
+    textarea.pm-memo { min-height: 88px; resize: vertical; line-height: 1.5; padding: 9px 11px; border-radius: 11px; }
+
   </style>
 </head>
 <body class="home-mode">
@@ -1723,6 +1786,7 @@
           <button class="btn btn-soft btn-sm" style="width:100%;" onclick="openPlacesModal()">🏠 자주 쓰는 거점 (집·공항·역·호텔) 관리</button>
         </div>
         <div id="timeline-list"></div>
+        <div id="lodging-rec-box"></div>
         <div id="bookings-section"></div>
         <div class="tl-foot-row" style="margin-top:16px;margin-bottom:6px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-soft btn-sm" onclick="openThemeModal()" style="padding:8px 18px;">⚙️ 설정</button>
@@ -1847,14 +1911,7 @@
           </div>
           <div class="hours-note" id="app-sync-status" style="margin:0 0 8px;">일정·예약을 보고 예매·줄서기가 필요한 항목의 앱만 모아 둡니다.</div>
           <div id="booking-apps-links">
-            <div class="row">
-              <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://app.catchtable.co.kr/" target="_blank">캐치테이블 (맛집 예약)</a>
-              <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://www.tabling.co.kr/" target="_blank">테이블링 (웨이팅)</a>
-            </div>
-            <div class="row" style="margin-bottom:0;">
-              <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://www.letskorail.com/" target="_blank">코레일 (KTX)</a>
-              <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://www.bluelinepark.com/" target="_blank">블루라인파크</a>
-            </div>
+            <div style="font-size:11.5px;color:var(--muted);line-height:1.5;">일정에 예매가 필요한 장소를 추가하면 바로가기가 자동으로 모입니다.</div>
           </div>
         </div>
 
@@ -2063,8 +2120,7 @@
           <option value="KTX/SRT">KTX / SRT</option>
           <option value="항공편">항공편</option>
           <option value="시외/고속버스">시외·고속버스</option>
-          <option value="지하철·전철">🚇 지하철·전철</option>
-          <option value="시내·광역버스">🚌 시내·광역버스</option>
+          <option value="대중교통">🚌🚇 대중교통 (예매 불필요)</option>
           <option value="도보">🚶 도보</option>
           <option value="택시">🚕 택시</option>
         </select>
@@ -2144,9 +2200,10 @@
         <input id="pm-move" class="input" placeholder="이동수단 (예: 도보 5분)" />
         <input id="pm-stay" class="input" placeholder="체류" style="width:90px;" />
       </div>
-      <div class="row">
-        <input id="pm-memo" class="input" placeholder="메모" style="flex:1;" />
-        <input id="pm-cost" type="number" class="input" placeholder="금액(원)" style="width:115px;" />
+      <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin:2px 0 3px;">메모 <span style="font-weight:500;color:var(--muted);">(설명·주의사항·예약 정보 등 넉넉히)</span></div>
+      <textarea id="pm-memo" class="input pm-memo" rows="3" placeholder="예: 11:30 웨이팅 등록 · 창가 자리 요청 · 일요일 휴무 확인"></textarea>
+      <div class="row" style="margin-top:6px;">
+        <input id="pm-cost" type="number" class="input" placeholder="금액(원)" style="width:130px;" />
       </div>
       <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;margin-bottom:10px;cursor:pointer;">
         <input type="checkbox" id="pm-has-menus" />
@@ -2314,6 +2371,32 @@
           <div class="roul-fill-note" id="roul-fill-note"></div>
           <div class="roul-body" id="roul-body" style="display:none;">
             <div class="roul-sub">취향을 하나만 골라도, 여러 개 골라도 돼요. 고른 취향과 잘 맞는 여행지만 골라 <b>1인 예상 경비</b>까지 보여 드려요. 하나도 안 고르면 알아서 돌려요!</div>
+            <div class="roul-set-grid">
+              <div>
+                <label for="roul-people">👥 인원수</label>
+                <select id="roul-people" onchange="setRoulettePeople(this.value)">
+                  <option value="1">1명 (혼자)</option>
+                  <option value="2" selected>2명</option>
+                  <option value="3">3~4명</option>
+                  <option value="5">5명 이상</option>
+                </select>
+              </div>
+              <div>
+                <label for="roul-length">🗓️ 일정 길이</label>
+                <select id="roul-length" onchange="setRouletteLength(this.value)">
+                  <option value="auto" selected>추천대로</option>
+                  <option value="0">당일치기 (0박)</option>
+                  <option value="1">1박 2일</option>
+                  <option value="2">2박 3일</option>
+                  <option value="3">3박 4일</option>
+                  <option value="4">4박 5일 이상</option>
+                </select>
+              </div>
+            </div>
+            <div class="roul-party-wrap">
+              <div class="rp-head">🧑‍🤝‍🧑 여행 동행 유형 <span style="font-weight:600;">(점수·태그에 반영)</span></div>
+              <div class="roul-party-chips" id="roul-party-chips"></div>
+            </div>
             <div class="roul-seg" id="roul-region-seg">
               <button type="button" class="roul-seg-btn active" data-region="domestic" onclick="setRouletteRegion('domestic')">🇰🇷 국내</button>
               <button type="button" class="roul-seg-btn" data-region="overseas" onclick="setRouletteRegion('overseas')">✈️ 해외</button>
@@ -2343,24 +2426,22 @@
       </div>
       <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:3px;">가는 날 · 오는 날 교통수단</div>
       <div class="row" style="gap:6px;">
-        <select id="nts-out-mode" class="input" style="flex:1;" title="가는 날 교통수단">
+        <select id="nts-out-mode" class="input" style="flex:1;" title="가는 곳 교통수단">
           <option value="기차">🚆 가는 날 · KTX·기차</option>
           <option value="버스">🚌 가는 날 · 고속·시외버스</option>
           <option value="비행기">✈️ 가는 날 · 비행기</option>
-          <option value="지하철·전철">🚇 가는 날 · 지하철·전철 (예매 불필요)</option>
-          <option value="시내·광역버스">🚌 가는 날 · 시내·광역버스 (예매 불필요)</option>
+          <option value="대중교통">🚌🚇 가는 날 · 대중교통 (예매 불필요)</option>
           <option value="자차">🚗 가는 날 · 자차·기타</option>
         </select>
         <select id="nts-in-mode" class="input" style="flex:1;" title="오는 날 교통수단">
           <option value="기차">🚆 오는 날 · KTX·기차</option>
           <option value="버스">🚌 오는 날 · 고속·시외버스</option>
           <option value="비행기">✈️ 오는 날 · 비행기</option>
-          <option value="지하철·전철">🚇 오는 날 · 지하철·전철 (예매 불필요)</option>
-          <option value="시내·광역버스">🚌 오는 날 · 시내·광역버스 (예매 불필요)</option>
+          <option value="대중교통">🚌🚇 오는 날 · 대중교통 (예매 불필요)</option>
           <option value="자차">🚗 오는 날 · 자차·기타</option>
         </select>
       </div>
-      <div style="font-size:10.5px;color:var(--muted);margin-bottom:8px;line-height:1.45;">기차·고속/시외버스·항공만 예매 오픈일 알림이 자동으로 들어가요 (기차 30일·버스 20일·항공 60일 전). 지하철·시내버스·자차는 알림 없이 일정에만 기록돼요.</div>
+      <div style="font-size:10.5px;color:var(--muted);margin-bottom:8px;line-height:1.45;">기차·고속/시외버스·항공만 예매 오픈일 알림이 자동으로 들어가요 (기차 30일·버스 20일·항공 60일 전). 🚌🚇 대중교통·자차는 알림 없이 일정에만 기록돼요.</div>
       <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:3px;">인원수 (명)</div>
       <div class="row"><input id="nts-travelers" type="number" min="1" max="20" value="2" class="input" /></div>
       <button class="btn btn-primary" style="width:100%;" onclick="createGuidedTrip()">🚀 이 설정으로 여행 시작하기</button>
@@ -2431,16 +2512,14 @@
           <option value="비행기">✈️ 가는 날 · 비행기</option>
           <option value="기차">🚆 가는 날 · KTX·기차</option>
           <option value="버스">🚌 가는 날 · 고속·시외버스</option>
-          <option value="지하철·전철">🚇 가는 날 · 지하철·전철 (예매 불필요)</option>
-          <option value="시내·광역버스">🚌 가는 날 · 시내·광역버스 (예매 불필요)</option>
+          <option value="대중교통">🚌🚇 가는 날 · 대중교통 (예매 불필요)</option>
           <option value="자차">🚗 가는 날 · 자차·기타</option>
         </select>
         <select id="os-in-mode" class="input" style="flex:1;" title="오는 날 교통수단">
           <option value="비행기">✈️ 오는 날 · 비행기</option>
           <option value="기차">🚆 오는 날 · KTX·기차</option>
           <option value="버스">🚌 오는 날 · 고속·시외버스</option>
-          <option value="지하철·전철">🚇 오는 날 · 지하철·전철 (예매 불필요)</option>
-          <option value="시내·광역버스">🚌 오는 날 · 시내·광역버스 (예매 불필요)</option>
+          <option value="대중교통">🚌🚇 오는 날 · 대중교통 (예매 불필요)</option>
           <option value="자차">🚗 오는 날 · 자차·기타</option>
         </select>
       </div>
@@ -2625,6 +2704,15 @@
       <div class="bk-label" id="bk-name-label">숙소 이름</div>
       <input id="bk-name" class="input" placeholder="예: OO 호텔" style="margin-bottom:8px;" oninput="onBookingNameInput()" />
 
+      <div id="bk-hotel-search-wrap" style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:8px 9px;margin-bottom:8px;">
+        <div class="bk-label" style="margin-bottom:4px;">🔎 숙소 이름·주소로 찾기 <span style="font-weight:500;color:var(--muted);">(지도·동선에 바로 반영)</span></div>
+        <div class="row" style="margin-bottom:4px;">
+          <input id="bk-hotel-search-q" class="input" style="flex:1;min-width:0;" placeholder="예: 롯데호텔 서울, 아쿠아펠리스, 해운대 OO호텔" onkeydown="if(event.key==='Enter'){event.preventDefault();searchBookingHotelByName();}" />
+          <button type="button" class="btn btn-primary btn-sm" style="flex:0 0 auto;white-space:nowrap;" onclick="searchBookingHotelByName()">숙소 검색</button>
+        </div>
+        <div id="bk-hotel-search-results" style="max-height:118px;overflow-y:auto;"></div>
+      </div>
+
       <div id="bk-hotel-fields">
         <div class="bk-grid2">
           <div><div class="bk-label">체크인 날짜</div><input id="bk-in-date" type="date" class="input" /></div>
@@ -2669,7 +2757,7 @@
       <div id="bk-transit-fields" style="display:none;">
         <div class="row" style="margin-bottom:6px;">
           <select id="bk-mode" class="input" style="width:132px;">
-            <option>KTX</option><option>SRT</option><option>항공편</option><option>시외·고속버스</option><option>기차</option><option>페리·크루즈</option><option>지하철·전철</option><option>시내·광역버스</option><option>렌터카</option><option>기타</option>
+            <option>KTX</option><option>SRT</option><option>항공편</option><option>시외·고속버스</option><option>기차</option><option>페리·크루즈</option><option>대중교통</option><option>렌터카</option><option>기타</option>
           </select>
           <input id="bk-code" class="input" placeholder="편명·열차 (예: KTX 101 / KE401)" />
         </div>
@@ -2742,7 +2830,8 @@
           <li>🔄 <b>일정 동기화</b>를 누르면 지금 일정·예약으로 다시 맞춰요.</li>
           <li>일정이나 예약을 저장하면 <b>알아서 다시 맞춰</b>지고, 버튼으로 바로 최신화할 수도 있어요.</li>
           <li>같은 앱은 <b>한 번만</b> 뜨고, 버튼에 그 항목 이름이 같이 적혀요. (예: 코레일톡 예매 · KTX 25열차)</li>
-          <li>해당 항목이 하나도 없으면 기본 앱(캐치테이블 · 테이블링 · 코레일 · 블루라인파크)만 보여 줘요.</li>
+          <li>해당 항목이 하나도 없으면 고정 앱을 늘어놓지 않고, <b>‘일정에 예매가 필요한 장소를 추가하면 바로가기가 자동으로 모입니다’</b> 안내만 보여 줘요.</li>
+          <li>🚌🚇 <b>대중교통</b>은 예매가 필요 없어서 배지·알림 없이 일정에만 기록돼요.</li>
         </ul>
         <div style="margin-top:10px;padding:8px 10px;background:var(--ocean-soft);border:1px solid var(--ocean-border);border-radius:10px;font-size:11.5px;color:var(--ocean-dark);line-height:1.6;">
           🔎 일정 카드의 배지·메모에 ‘예매’, ‘예약 필수’, ‘웨이팅’, ‘캐치테이블’처럼 적어 두면 동기화할 때 바로 잡아냅니다.
@@ -4312,7 +4401,8 @@
       const q = String(mode || "").trim();
       if (!q) return false;
       if (/고속\s*버스|시외\s*버스|시외·고속|시외\/고속|버스터미널|코버스|kobus|KTX|SRT|ITX|새마을|무궁화|기차|열차|항공|비행|공항|페리|크루즈|유람선/i.test(q)) return false;
-      return /지하철|전철|호선|시내\s*버스|시내·광역버스|광역버스|마을버스|급행버스|도보|자차|렌터카|택시|기타/.test(q);
+      // 🚌🚇 대중교통(지하철·전철+시내/광역버스 통합)은 예매 불필요 — 기존 저장 데이터도 하위 호환
+      return /대중교통|지하철|전철|호선|시내\s*버스|시내·광역버스|광역버스|마을버스|급행버스|도보|자차|렌터카|택시|기타/.test(q);
     }
 
     // 가는 날 / 오는 날 교통수단 → 예매 오픈일 알림 (자차·기타는 만들지 않음)
@@ -4777,6 +4867,717 @@
       if (img) img.removeAttribute("src");
     }
 
+    /* =====================================================================
+       🇰🇷 내장 한국 지명·역 DB — 국내 장소 검색 정확도 1차 매칭
+       (Nominatim 단일 검색이 '명동역'에 카페만 먼저 물어오던 문제 해결)
+       ===================================================================== */
+    const KR_KIND_RANK = { station: 15, airport: 15, terminal: 11, attraction: 9, city: 8, nature: 7, area: 6, etc: 3 };
+    const KR_KIND_ICON = { station: "🚉", airport: "✈️", terminal: "🚌", attraction: "📷", nature: "🌿", city: "🏙️", area: "🏘️", etc: "📍" };
+    const KR_PLACES = [
+      // ── 여행지(도시) ──
+      { n: "서울", s: "수도권 · 여행지", k: "city", c: "서울", lat: 37.5665, lng: 126.9780 },
+      { n: "부산", s: "경남 · 여행지", k: "city", c: "부산", lat: 35.1796, lng: 129.0756 },
+      { n: "제주", s: "제주도 · 여행지", k: "city", c: "제주", lat: 33.4996, lng: 126.5312, a: ["제주도"] },
+      { n: "강릉", s: "강원 · 여행지", k: "city", c: "강릉", lat: 37.7519, lng: 128.8761 },
+      { n: "여수", s: "전남 · 여행지", k: "city", c: "여수", lat: 34.7604, lng: 127.6622 },
+      { n: "경주", s: "경북 · 여행지", k: "city", c: "경주", lat: 35.8562, lng: 129.2247 },
+      { n: "전주", s: "전북 · 여행지", k: "city", c: "전주", lat: 35.8242, lng: 127.1480 },
+      { n: "속초", s: "강원 · 여행지", k: "city", c: "속초", lat: 38.2070, lng: 128.5918 },
+      { n: "대구", s: "경북 · 여행지", k: "city", c: "대구", lat: 35.8714, lng: 128.6014 },
+      { n: "대전", s: "충남 · 여행지", k: "city", c: "대전", lat: 36.3504, lng: 127.3845 },
+      { n: "광주", s: "전남 · 여행지", k: "city", c: "광주", lat: 35.1595, lng: 126.8526 },
+      { n: "인천", s: "수도권 · 여행지", k: "city", c: "인천", lat: 37.4563, lng: 126.7052 },
+      { n: "춘천", s: "강원 · 여행지", k: "city", c: "춘천", lat: 37.8813, lng: 127.7298 },
+      { n: "포항", s: "경북 · 여행지", k: "city", c: "포항", lat: 36.0190, lng: 129.3435 },
+      { n: "목포", s: "전남 · 여행지", k: "city", c: "목포", lat: 34.8118, lng: 126.3922 },
+      { n: "통영", s: "경남 · 여행지", k: "city", c: "통영", lat: 34.8544, lng: 128.4331 },
+      { n: "군산", s: "전북 · 여행지", k: "city", c: "군산", lat: 35.9676, lng: 126.7368 },
+      { n: "안동", s: "경북 · 여행지", k: "city", c: "안동", lat: 36.5684, lng: 128.7294 },
+      { n: "수원", s: "경기 · 여행지", k: "city", c: "수원", lat: 37.2636, lng: 127.0286 },
+      // ── 서울 · 수도권 ──
+      { n: "서울역", s: "1·4호선 · KTX·공항철도", k: "station", c: "서울", lat: 37.5547, lng: 126.9707 },
+      { n: "명동역", s: "4호선", k: "station", c: "서울", lat: 37.5609, lng: 126.9863, a: ["명동역4호선"] },
+      { n: "명동", s: "쇼핑·먹거리 거리", k: "area", c: "서울", lat: 37.5636, lng: 126.9850 },
+      { n: "을지로입구역", s: "2호선", k: "station", c: "서울", lat: 37.5660, lng: 126.9827, a: ["을지로"] },
+      { n: "시청역", s: "1·2호선", k: "station", c: "서울", lat: 37.5657, lng: 126.9772 },
+      { n: "광화문역", s: "5호선", k: "station", c: "서울", lat: 37.5716, lng: 126.9770, a: ["광화문광장"] },
+      { n: "경복궁역", s: "3호선", k: "station", c: "서울", lat: 37.5759, lng: 126.9736 },
+      { n: "경복궁", s: "고궁 · 화요일 휴궁", k: "attraction", c: "서울", lat: 37.5796, lng: 126.9770 },
+      { n: "북촌한옥마을", s: "한옥 골목", k: "attraction", c: "서울", lat: 37.5826, lng: 126.9830, a: ["북촌"] },
+      { n: "인사동", s: "전통 공예·찻집", k: "area", c: "서울", lat: 37.5744, lng: 126.9856 },
+      { n: "종로3가역", s: "1·3·5호선", k: "station", c: "서울", lat: 37.5704, lng: 126.9920, a: ["종로"] },
+      { n: "익선동", s: "한옥 카페 골목", k: "area", c: "서울", lat: 37.5746, lng: 126.9900 },
+      { n: "동대문역", s: "1·4호선", k: "station", c: "서울", lat: 37.5714, lng: 127.0098 },
+      { n: "동대문디자인플라자", s: "DDP · 전시", k: "attraction", c: "서울", lat: 37.5665, lng: 127.0092, a: ["DDP", "동대문DDP"] },
+      { n: "홍대입구역", s: "2호선·공항철도", k: "station", c: "서울", lat: 37.5572, lng: 126.9245, a: ["홍대"] },
+      { n: "연남동", s: "카페·소품샵 골목", k: "area", c: "서울", lat: 37.5601, lng: 126.9250, a: ["연트럴파크"] },
+      { n: "합정역", s: "2·6호선", k: "station", c: "서울", lat: 37.5499, lng: 126.9137 },
+      { n: "망원동", s: "망원시장·한강", k: "area", c: "서울", lat: 37.5556, lng: 126.9105 },
+      { n: "이태원역", s: "6호선", k: "station", c: "서울", lat: 37.5345, lng: 126.9946, a: ["이태원"] },
+      { n: "남산서울타워", s: "야경·전망대", k: "attraction", c: "서울", lat: 37.5512, lng: 126.9882, a: ["남산", "N서울타워"] },
+      { n: "서울숲", s: "숲·산책", k: "nature", c: "서울", lat: 37.5443, lng: 127.0374 },
+      { n: "성수역", s: "2호선", k: "station", c: "서울", lat: 37.5446, lng: 127.0559, a: ["성수동"] },
+      { n: "건대입구역", s: "2·7호선", k: "station", c: "서울", lat: 37.5403, lng: 127.0696, a: ["건대"] },
+      { n: "왕십리역", s: "2·5호선·경의중앙", k: "station", c: "서울", lat: 37.5612, lng: 127.0370 },
+      { n: "강남역", s: "2호선·신분당선", k: "station", c: "서울", lat: 37.4979, lng: 127.0276, a: ["강남"] },
+      { n: "신논현역", s: "9호선", k: "station", c: "서울", lat: 37.5046, lng: 127.0245 },
+      { n: "역삼역", s: "2호선", k: "station", c: "서울", lat: 37.5006, lng: 127.0364 },
+      { n: "삼성역", s: "2호선", k: "station", c: "서울", lat: 37.5089, lng: 127.0631 },
+      { n: "코엑스", s: "전시·별마당도서관", k: "attraction", c: "서울", lat: 37.5118, lng: 127.0590, a: ["코엑스몰", "별마당도서관"] },
+      { n: "잠실역", s: "2·8호선", k: "station", c: "서울", lat: 37.5133, lng: 127.1000, a: ["잠실"] },
+      { n: "롯데월드타워", s: "전망대·몰", k: "attraction", c: "서울", lat: 37.5126, lng: 127.1025, a: ["롯데월드몰"] },
+      { n: "여의도역", s: "5·9호선", k: "station", c: "서울", lat: 37.5216, lng: 126.9243, a: ["여의도"] },
+      { n: "여의도한강공원", s: "한강 피크닉", k: "nature", c: "서울", lat: 37.5284, lng: 126.9338 },
+      { n: "더현대서울", s: "백화점·쇼핑", k: "attraction", c: "서울", lat: 37.5260, lng: 126.9284 },
+      { n: "용산역", s: "1호선·KTX", k: "station", c: "서울", lat: 37.5299, lng: 126.9648, a: ["용산"] },
+      { n: "노량진역", s: "1·9호선", k: "station", c: "서울", lat: 37.5142, lng: 126.9422 },
+      { n: "신촌역", s: "2호선", k: "station", c: "서울", lat: 37.5552, lng: 126.9368, a: ["신촌"] },
+      { n: "이대역", s: "2호선", k: "station", c: "서울", lat: 37.5568, lng: 126.9462 },
+      { n: "공덕역", s: "5·6호선·공항철도", k: "station", c: "서울", lat: 37.5443, lng: 126.9516 },
+      { n: "마포역", s: "5호선", k: "station", c: "서울", lat: 37.5397, lng: 126.9457 },
+      { n: "상암DMC", s: "미디어시티", k: "area", c: "서울", lat: 37.5803, lng: 126.8895 },
+      { n: "월드컵공원", s: "하늘공원·산책", k: "nature", c: "서울", lat: 37.5685, lng: 126.8835 },
+      { n: "김포공항역", s: "5·9호선·공항철도", k: "airport", c: "서울", lat: 37.5623, lng: 126.8013, a: ["김포공항"] },
+      { n: "서울숲역", s: "수인분당선", k: "station", c: "서울", lat: 37.5436, lng: 127.0447 },
+      { n: "뚝섬역", s: "2호선", k: "station", c: "서울", lat: 37.5473, lng: 127.0475 },
+      { n: "압구정역", s: "3호선", k: "station", c: "서울", lat: 37.5272, lng: 127.0288, a: ["압구정"] },
+      { n: "청담역", s: "7호선", k: "station", c: "서울", lat: 37.5193, lng: 127.0533 },
+      { n: "가로수길", s: "신사동 카페·편집샵", k: "area", c: "서울", lat: 37.5201, lng: 127.0232, a: ["신사동"] },
+      { n: "반포한강공원", s: "한강·야경", k: "nature", c: "서울", lat: 37.5106, lng: 126.9950 },
+      { n: "국립중앙박물관", s: "무료 관람", k: "attraction", c: "서울", lat: 37.5240, lng: 126.9804 },
+      { n: "전쟁기념관", s: "전시", k: "attraction", c: "서울", lat: 37.5366, lng: 126.9772 },
+      { n: "창덕궁", s: "고궁 · 월요일 휴궁", k: "attraction", c: "서울", lat: 37.5794, lng: 126.9910 },
+      { n: "청계천", s: "도심 산책", k: "nature", c: "서울", lat: 37.5696, lng: 126.9787 },
+      { n: "광장시장", s: "빈대떡·육회", k: "attraction", c: "서울", lat: 37.5700, lng: 126.9998 },
+      { n: "사당역", s: "2·4호선", k: "station", c: "서울", lat: 37.4765, lng: 126.9816 },
+      { n: "교대역", s: "2·3호선", k: "station", c: "서울", lat: 37.4935, lng: 127.0145 },
+      { n: "서울대입구역", s: "2호선", k: "station", c: "서울", lat: 37.4812, lng: 126.9525 },
+      { n: "영등포역", s: "1호선", k: "station", c: "서울", lat: 37.5156, lng: 126.9075 },
+      { n: "당산역", s: "2·9호선", k: "station", c: "서울", lat: 37.5345, lng: 126.9026 },
+      { n: "가산디지털단지역", s: "1·7호선", k: "station", c: "서울", lat: 37.4811, lng: 126.8826 },
+      { n: "서촌", s: "한옥 골목·기름떡볶이", k: "area", c: "서울", lat: 37.5806, lng: 126.9699 },
+      { n: "통인시장", s: "도시락 카페", k: "attraction", c: "서울", lat: 37.5811, lng: 126.9696 },
+      { n: "경리단길", s: "남산 골목·술집", k: "area", c: "서울", lat: 37.5396, lng: 126.9902 },
+      { n: "한남동", s: "카페·편집샵", k: "area", c: "서울", lat: 37.5344, lng: 127.0065 },
+      { n: "뚝섬한강공원", s: "한강 산책·자전거", k: "nature", c: "서울", lat: 37.5295, lng: 127.0668 },
+      { n: "잠실한강공원", s: "한강 피크닉", k: "nature", c: "서울", lat: 37.5175, lng: 127.0865 },
+      { n: "서울시립미술관", s: "전시", k: "attraction", c: "서울", lat: 37.5640, lng: 126.9750 },
+      { n: "예술의전당", s: "공연·전시", k: "attraction", c: "서울", lat: 37.4791, lng: 127.0118 },
+      { n: "신사역", s: "3호선", k: "station", c: "서울", lat: 37.5164, lng: 127.0203 },
+      { n: "논현역", s: "7호선", k: "station", c: "서울", lat: 37.5111, lng: 127.0220 },
+      // ── 부산 · 경남 ──
+      { n: "부산역", s: "1호선 · KTX", k: "station", c: "부산", lat: 35.1151, lng: 129.0413 },
+      { n: "부산시청역", s: "1호선", k: "station", c: "부산", lat: 35.1797, lng: 129.0758 },
+      { n: "서면역", s: "1·2호선 환승", k: "station", c: "부산", lat: 35.1578, lng: 129.0594, a: ["서면"] },
+      { n: "전포역", s: "2호선", k: "station", c: "부산", lat: 35.1577, lng: 129.0666, a: ["전포동", "전포카페거리"] },
+      { n: "광안역", s: "2호선", k: "station", c: "부산", lat: 35.1535, lng: 129.1164, a: ["광안리"] },
+      { n: "광안리해수욕장", s: "광안대교 정면 뷰", k: "nature", c: "부산", lat: 35.1532, lng: 129.1187, a: ["광안리해변", "광안리"] },
+      { n: "민락수변공원", s: "바다 데크 산책", k: "nature", c: "부산", lat: 35.1563, lng: 129.1319, a: ["민락동"] },
+      { n: "해운대역", s: "2호선", k: "station", c: "부산", lat: 35.1637, lng: 129.1672, a: ["해운대"] },
+      { n: "해운대해수욕장", s: "해변·마린시티", k: "nature", c: "부산", lat: 35.1587, lng: 129.1604, a: ["해운대해변"] },
+      { n: "동백섬", s: "누리마루 산책", k: "nature", c: "부산", lat: 35.1533, lng: 129.1523 },
+      { n: "남포역", s: "1호선", k: "station", c: "부산", lat: 35.0975, lng: 129.0310, a: ["남포동"] },
+      { n: "자갈치역", s: "1호선", k: "station", c: "부산", lat: 35.0970, lng: 129.0245, a: ["자갈치시장"] },
+      { n: "국제시장", s: "먹거리·시장", k: "attraction", c: "부산", lat: 35.1013, lng: 129.0280 },
+      { n: "부평깡통시장", s: "야시장·떡볶이", k: "attraction", c: "부산", lat: 35.1002, lng: 129.0240, a: ["깡통시장"] },
+      { n: "태종대", s: "해안 절경", k: "nature", c: "부산", lat: 35.0517, lng: 129.0870 },
+      { n: "흰여울문화마을", s: "영도 바다 절벽길", k: "attraction", c: "부산", lat: 35.0785, lng: 129.0445, a: ["흰여울"] },
+      { n: "감천문화마을", s: "알록달록 골목", k: "attraction", c: "부산", lat: 35.0975, lng: 129.0105, a: ["감천"] },
+      { n: "연산역", s: "1·3호선", k: "station", c: "부산", lat: 35.1857, lng: 129.0809 },
+      { n: "동래역", s: "1·4호선", k: "station", c: "부산", lat: 35.2053, lng: 129.0786, a: ["동래"] },
+      { n: "부산대역", s: "1호선", k: "station", c: "부산", lat: 35.2297, lng: 129.0890 },
+      { n: "사직역", s: "3호선", k: "station", c: "부산", lat: 35.1966, lng: 129.0614 },
+      { n: "기장역", s: "동해선", k: "station", c: "부산", lat: 35.2445, lng: 129.2190 },
+      { n: "송정해수욕장", s: "서핑 해변", k: "nature", c: "부산", lat: 35.1786, lng: 129.1996, a: ["송정"] },
+      { n: "김해공항", s: "국내선·국제선", k: "airport", c: "부산", lat: 35.1795, lng: 128.9382, a: ["김해국제공항"] },
+      { n: "사상역", s: "2호선·경전철", k: "station", c: "부산", lat: 35.1629, lng: 128.9810, a: ["부산서부버스터미널"] },
+      { n: "덕천역", s: "2·3호선", k: "station", c: "부산", lat: 35.2100, lng: 129.0215 },
+      { n: "온천장역", s: "1호선", k: "station", c: "부산", lat: 35.2201, lng: 129.0858 },
+      { n: "송도해수욕장", s: "해상케이블카", k: "nature", c: "부산", lat: 35.0762, lng: 129.0183, a: ["송도"] },
+      { n: "오륙도", s: "스카이워크", k: "nature", c: "부산", lat: 35.0807, lng: 129.1250 },
+      { n: "이기대", s: "해안산책로", k: "nature", c: "부산", lat: 35.1342, lng: 129.1235 },
+      { n: "다대포", s: "일몰 해변", k: "nature", c: "부산", lat: 35.0450, lng: 128.9660 },
+      { n: "벡스코", s: "전시·컨벤션", k: "attraction", c: "부산", lat: 35.1690, lng: 129.1360 },
+      { n: "센텀시티역", s: "2호선", k: "station", c: "부산", lat: 35.1688, lng: 129.1313 },
+      // ── 제주 ──
+      { n: "제주공항", s: "국내선·국제선", k: "airport", c: "제주", lat: 33.5104, lng: 126.4914, a: ["제주국제공항"] },
+      { n: "제주시청", s: "제주시 중심", k: "city", c: "제주", lat: 33.4996, lng: 126.5312, a: ["제주시"] },
+      { n: "연동", s: "누웨마루·맛집", k: "area", c: "제주", lat: 33.4920, lng: 126.4900 },
+      { n: "동문시장", s: "야시장 먹거리", k: "attraction", c: "제주", lat: 33.5122, lng: 126.5284, a: ["동문재래시장"] },
+      { n: "중문", s: "중문관광단지", k: "area", c: "제주", lat: 33.2505, lng: 126.4120 },
+      { n: "중문해수욕장", s: "해변", k: "nature", c: "제주", lat: 33.2395, lng: 126.4195 },
+      { n: "서귀포", s: "올레시장·천지연", k: "city", c: "제주", lat: 33.2541, lng: 126.5597, a: ["서귀포시"] },
+      { n: "성산일출봉", s: "일출 명소", k: "nature", c: "제주", lat: 33.4581, lng: 126.9425, a: ["일출봉"] },
+      { n: "성산", s: "성산포·광치기해변", k: "area", c: "제주", lat: 33.4620, lng: 126.9360 },
+      { n: "애월", s: "애월 카페거리", k: "area", c: "제주", lat: 33.4628, lng: 126.3095 },
+      { n: "협재해수욕장", s: "에메랄드 해변", k: "nature", c: "제주", lat: 33.3942, lng: 126.2397, a: ["협재"] },
+      { n: "함덕해수욕장", s: "오션뷰 카페", k: "nature", c: "제주", lat: 33.5431, lng: 126.6693, a: ["함덕"] },
+      { n: "우도", s: "섬 여행", k: "nature", c: "제주", lat: 33.5030, lng: 126.9520 },
+      { n: "카멜리아힐", s: "동백 수목원", k: "attraction", c: "제주", lat: 33.2890, lng: 126.3680 },
+      { n: "새별오름", s: "억새 오름", k: "nature", c: "제주", lat: 33.3560, lng: 126.3560 },
+      // ── 강원 ──
+      { n: "강릉역", s: "KTX·영동선", k: "station", c: "강릉", lat: 37.7645, lng: 128.8993 },
+      { n: "강릉중앙시장", s: "닭강정·먹거리", k: "attraction", c: "강릉", lat: 37.7541, lng: 128.8986, a: ["중앙시장"] },
+      { n: "안목해변", s: "커피거리", k: "nature", c: "강릉", lat: 37.7723, lng: 128.9476, a: ["안목"] },
+      { n: "경포해변", s: "경포호·해변", k: "nature", c: "강릉", lat: 37.8056, lng: 128.9073, a: ["경포대"] },
+      { n: "주문진", s: "수산시장·방파제", k: "area", c: "강릉", lat: 37.8935, lng: 128.8305 },
+      { n: "오죽헌", s: "역사 유적", k: "attraction", c: "강릉", lat: 37.7792, lng: 128.8780 },
+      { n: "아르떼뮤지엄", s: "미디어아트", k: "attraction", c: "강릉", lat: 37.7879, lng: 128.9098, a: ["아르떼뮤지엄 강릉"] },
+      { n: "정동진", s: "바다열차·일출", k: "nature", c: "강릉", lat: 37.6900, lng: 129.0340 },
+      { n: "속초고속버스터미널", s: "터미널", k: "terminal", c: "속초", lat: 38.1985, lng: 128.5900, a: ["속초터미널"] },
+      { n: "속초중앙시장", s: "닭강정·아바이순대", k: "attraction", c: "속초", lat: 38.2045, lng: 128.5905 },
+      { n: "청초호", s: "호수 산책", k: "nature", c: "속초", lat: 38.1940, lng: 128.5960 },
+      { n: "설악산", s: "국립공원", k: "nature", c: "속초", lat: 38.1750, lng: 128.4650, a: ["설악산소공원"] },
+      { n: "낙산사", s: "바다 사찰", k: "attraction", c: "양양", lat: 38.1250, lng: 128.6280 },
+      { n: "춘천역", s: "ITX·경춘선", k: "station", c: "춘천", lat: 37.8850, lng: 127.7170 },
+      { n: "남이섬", s: "섬 산책", k: "nature", c: "춘천", lat: 37.7910, lng: 127.5250 },
+      { n: "소양강댐", s: "호수 전망", k: "nature", c: "춘천", lat: 37.9470, lng: 127.8170 },
+      // ── 경북 · 대구 ──
+      { n: "경주역", s: "KTX·경부선", k: "station", c: "경주", lat: 35.7985, lng: 129.1385 },
+      { n: "황리단길", s: "한옥 카페·소품샵", k: "area", c: "경주", lat: 35.8375, lng: 129.2097, a: ["황리단길 맛집"] },
+      { n: "대릉원", s: "고분 산책", k: "attraction", c: "경주", lat: 35.8347, lng: 129.2190 },
+      { n: "첨성대", s: "야경 명소", k: "attraction", c: "경주", lat: 35.8349, lng: 129.2190 },
+      { n: "동궁과월지", s: "안압지 야경", k: "attraction", c: "경주", lat: 35.8348, lng: 129.2266, a: ["안압지"] },
+      { n: "불국사", s: "신라 사찰", k: "attraction", c: "경주", lat: 35.7900, lng: 129.3320 },
+      { n: "석굴암", s: "세계유산", k: "attraction", c: "경주", lat: 35.7940, lng: 129.3490 },
+      { n: "보문단지", s: "호수 리조트", k: "area", c: "경주", lat: 35.8420, lng: 129.2760 },
+      { n: "포항역", s: "KTX", k: "station", c: "포항", lat: 36.0580, lng: 129.3430 },
+      { n: "호미곶", s: "일출·상생의손", k: "nature", c: "포항", lat: 36.0750, lng: 129.5680 },
+      { n: "영일대", s: "해변·야경", k: "nature", c: "포항", lat: 36.0500, lng: 129.3800, a: ["영일대해수욕장"] },
+      { n: "스페이스워크", s: "전망 스카이워크", k: "attraction", c: "포항", lat: 36.0550, lng: 129.3630 },
+      { n: "동대구역", s: "KTX·1호선", k: "station", c: "대구", lat: 35.8790, lng: 128.6280 },
+      { n: "대구역", s: "1호선", k: "station", c: "대구", lat: 35.8757, lng: 128.5962 },
+      { n: "동성로", s: "쇼핑·먹거리", k: "area", c: "대구", lat: 35.8695, lng: 128.5950 },
+      { n: "서문시장", s: "야시장", k: "attraction", c: "대구", lat: 35.8685, lng: 128.5800 },
+      { n: "김광석길", s: "벽화 골목", k: "attraction", c: "대구", lat: 35.8590, lng: 128.6060 },
+      { n: "앞산공원", s: "케이블카·산책", k: "nature", c: "대구", lat: 35.8230, lng: 128.5760 },
+      { n: "안동역", s: "중앙선", k: "station", c: "안동", lat: 36.5810, lng: 128.7280 },
+      { n: "하회마을", s: "전통 마을", k: "attraction", c: "안동", lat: 36.5390, lng: 128.5180 },
+      { n: "월영교", s: "야경 다리", k: "attraction", c: "안동", lat: 36.5510, lng: 128.7329 },
+      // ── 전라 · 광주 ──
+      { n: "전주역", s: "KTX·전라선", k: "station", c: "전주", lat: 35.8497, lng: 127.1618 },
+      { n: "전주한옥마을", s: "한옥·비빔밥", k: "attraction", c: "전주", lat: 35.8147, lng: 127.1530, a: ["한옥마을"] },
+      { n: "경기전", s: "한옥마을 사적", k: "attraction", c: "전주", lat: 35.8150, lng: 127.1490 },
+      { n: "남부시장", s: "야시장·청년몰", k: "attraction", c: "전주", lat: 35.8095, lng: 127.1470 },
+      { n: "자만벽화마을", s: "벽화 골목", k: "attraction", c: "전주", lat: 35.8130, lng: 127.1420 },
+      { n: "군산역", s: "장항선", k: "station", c: "군산", lat: 35.9870, lng: 126.7430 },
+      { n: "군산근대역사박물관", s: "근대 건축 거리", k: "attraction", c: "군산", lat: 35.9880, lng: 126.7100 },
+      { n: "여수엑스포역", s: "KTX·전라선", k: "station", c: "여수", lat: 34.7510, lng: 127.7470, a: ["여수역", "여수EXPO역"] },
+      { n: "여수해상케이블카", s: "바다 위 케이블카", k: "attraction", c: "여수", lat: 34.7385, lng: 127.7466, a: ["여수케이블카"] },
+      { n: "낭만포차거리", s: "야경·해산물", k: "area", c: "여수", lat: 34.7366, lng: 127.7429 },
+      { n: "이순신광장", s: "여수 중심", k: "attraction", c: "여수", lat: 34.7393, lng: 127.7359 },
+      { n: "오동도", s: "동백섬 산책", k: "nature", c: "여수", lat: 34.7453, lng: 127.7664 },
+      { n: "돌산", s: "돌산대교·오션뷰", k: "area", c: "여수", lat: 34.7000, lng: 127.7500 },
+      { n: "목포역", s: "KTX", k: "station", c: "목포", lat: 34.7930, lng: 126.3830 },
+      { n: "목포해상케이블카", s: "바다 케이블카", k: "attraction", c: "목포", lat: 34.7900, lng: 126.3830 },
+      { n: "광주송정역", s: "KTX·1호선", k: "station", c: "광주", lat: 35.1370, lng: 126.7935 },
+      { n: "충장로", s: "쇼핑·먹거리", k: "area", c: "광주", lat: 35.1480, lng: 126.9150 },
+      { n: "국립아시아문화전당", s: "전시·공연", k: "attraction", c: "광주", lat: 35.1470, lng: 126.9190 },
+      { n: "무등산", s: "국립공원", k: "nature", c: "광주", lat: 35.1340, lng: 126.9880 },
+      { n: "통영종합버스터미널", s: "터미널", k: "terminal", c: "통영", lat: 34.8540, lng: 128.4330 },
+      { n: "동피랑벽화마을", s: "벽화 골목", k: "attraction", c: "통영", lat: 34.8450, lng: 128.4180, a: ["동피랑"] },
+      { n: "통영케이블카", s: "미륵산 케이블카", k: "attraction", c: "통영", lat: 34.8230, lng: 128.3990 },
+      // ── 대전 · 충청 · 인천 · 수원 ──
+      { n: "대전역", s: "KTX·1호선", k: "station", c: "대전", lat: 36.3325, lng: 127.4347 },
+      { n: "대전시청역", s: "1호선", k: "station", c: "대전", lat: 36.3515, lng: 127.3780, a: ["대전시청"] },
+      { n: "성심당", s: "빵집", k: "attraction", c: "대전", lat: 36.3270, lng: 127.4270 },
+      { n: "한밭수목원", s: "산책", k: "nature", c: "대전", lat: 36.3670, lng: 127.3880 },
+      { n: "인천역", s: "1호선·수인분당", k: "station", c: "인천", lat: 37.4760, lng: 126.6170, a: ["인천"] },
+      { n: "인천공항", s: "T1 · 공항철도", k: "airport", c: "인천", lat: 37.4602, lng: 126.4407, a: ["인천공항1터미널", "인천국제공항"] },
+      { n: "인천공항2터미널", s: "T2", k: "airport", c: "인천", lat: 37.4727, lng: 126.4494, a: ["인천공항T2"] },
+      { n: "송도센트럴파크", s: "호수 산책", k: "nature", c: "인천", lat: 37.3900, lng: 126.6390, a: ["송도"] },
+      { n: "월미도", s: "바다·놀이공원", k: "nature", c: "인천", lat: 37.4750, lng: 126.5960 },
+      { n: "인천차이나타운", s: "짬뽕·골목", k: "area", c: "인천", lat: 37.4760, lng: 126.6180, a: ["차이나타운"] },
+      { n: "부평역", s: "1호선·7호선", k: "station", c: "인천", lat: 37.4895, lng: 126.7240, a: ["부평"] },
+      { n: "수원역", s: "1호선·수인분당", k: "station", c: "수원", lat: 37.2657, lng: 127.0000 },
+      { n: "수원화성", s: "성곽 산책", k: "attraction", c: "수원", lat: 37.2880, lng: 127.0140, a: ["화성행궁"] }
+    ];
+
+    function normPlaceQuery(s) {
+      return String(s || "").toLowerCase()
+        .replace(/\s+/g, "")
+        .replace(/[()（）·.,'"’\-_/]/g, "");
+    }
+
+    function krKindRank(kind) { return KR_KIND_RANK[kind] || KR_KIND_RANK.etc; }
+    function krKindIcon(kind) { return KR_KIND_ICON[kind] || KR_KIND_ICON.etc; }
+
+    function krPlaceScore(p, nq) {
+      const n = normPlaceQuery(p.n);
+      const alias = (p.a || []).map(normPlaceQuery);
+      let s = 0;
+      if (n === nq) s = 130;
+      else if (n.startsWith(nq)) s = 108;
+      else if (nq.startsWith(n) && n.length >= 2) s = 100;
+      else if (n.includes(nq)) s = 84;
+      else if (alias.some(a => a === nq)) s = 120;
+      else if (alias.some(a => a.startsWith(nq) || (nq.startsWith(a) && a.length >= 2))) s = 92;
+      else if (alias.some(a => a.includes(nq))) s = 74;
+      else return 0;
+      s += krKindRank(p.k) * 0.7;
+      s -= Math.min(8, Math.max(0, n.length - nq.length) * 0.45);
+      return s;
+    }
+
+    // 내장 DB 우선 매칭 — '명동역'을 치면 '명동역 (4호선)'이 최상단
+    function krGazetteerSearch(q, limit = 6) {
+      const raw = String(q || "").trim();
+      const nq = normPlaceQuery(raw);
+      if (!nq) return [];
+      let rows = KR_PLACES.map(p => ({ p, s: krPlaceScore(p, nq) })).filter(x => x.s > 0);
+      if (!rows.length && /\s/.test(raw)) {
+        // '부산 해운대'처럼 띄어 쓴 검색은 마지막 토큰으로 한 번 더
+        const last = raw.split(/\s+/).filter(Boolean).pop() || "";
+        const ln = normPlaceQuery(last);
+        if (ln) rows = KR_PLACES.map(p => ({ p, s: krPlaceScore(p, ln) - 6 })).filter(x => x.s > 0);
+      }
+      return rows.sort((a, b) => b.s - a.s || normPlaceQuery(a.p.n).length - normPlaceQuery(b.p.n).length)
+        .slice(0, limit)
+        .map(({ p }) => ({
+          name: p.n, sub: [p.c, p.s].filter(Boolean).join(" · "), lat: p.lat, lng: p.lng,
+          kind: p.k, city: p.c, source: "내장"
+        }));
+    }
+
+    function remoteKindOf(props, cls, type) {
+      const hay = `${props?.osm_key || cls || ""} ${props?.osm_value || type || ""}`.toLowerCase();
+      if (/aeroway|aerodrome|airport/.test(hay)) return "airport";
+      if (/railway|station|halt|subway|train|public_transport|bus_station|bus_stop/.test(hay)) return "station";
+      if (/terminal/.test(hay)) return "terminal";
+      if (/tourism|attraction|museum|viewpoint|gallery|zoo|theme_park|hotel/.test(hay)) return "attraction";
+      if (/park|garden|beach|nature_reserve|peak/.test(hay)) return "nature";
+      if (/city|town|village|borough|district|suburb|quarter|neighbourhood|place/.test(hay)) return "area";
+      return "etc";
+    }
+
+    let __remoteSearchToken = 0;
+    // Photon + Nominatim을 한국어·국내 우선으로 조회하고 역·공항·관광지 타입을 우선 정렬한다
+    async function remotePlaceSearch(q, opts = {}) {
+      const query = String(q || "").trim();
+      if (!query) return [];
+      const limit = Math.max(3, Math.min(12, opts.limit || 8));
+      const krOnly = opts.krOnly !== false;
+      const token = ++__remoteSearchToken;
+      const out = [];
+      try {
+        const bbox = krOnly ? "&bbox=124.3,32.8,132.3,38.9" : "";
+        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lang=ko&limit=${limit}${bbox}`;
+        const ctl = typeof AbortController === "function" ? new AbortController() : null;
+        const timer = ctl ? setTimeout(() => ctl.abort(), 4200) : null;
+        const r = await fetch(url, ctl ? { signal: ctl.signal } : undefined);
+        if (timer) clearTimeout(timer);
+        const d = await r.json();
+        (d?.features || []).forEach(f => {
+          const pr = f.properties || {};
+          const co = f.geometry?.coordinates || [];
+          const nm = pr.name || pr.street || pr.city || "";
+          if (!nm || co.length < 2) return;
+          if (krOnly && pr.countrycode && String(pr.countrycode).toUpperCase() !== "KR") return;
+          out.push({
+            name: nm,
+            sub: [pr.city || pr.state, pr.street, pr.district || pr.locality, pr.housenumber].filter(Boolean).join(" "),
+            lat: Number(co[1]), lng: Number(co[0]),
+            kind: remoteKindOf(pr, pr.osm_key, pr.osm_value), city: pr.city || "", source: "Photon"
+          });
+        });
+      } catch (e) { /* Photon 실패 → Nominatim으로 */ }
+      if (token !== __remoteSearchToken) return out;
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&extratags=1&accept-language=ko&limit=${limit}${krOnly ? "&countrycodes=kr" : ""}&q=${encodeURIComponent(query)}`;
+        const r = await fetch(url);
+        const arr = await r.json();
+        (Array.isArray(arr) ? arr : []).forEach(p => {
+          const lat = parseFloat(p.lat), lng = parseFloat(p.lon);
+          if (isNaN(lat) || isNaN(lng)) return;
+          const ad = p.address || {};
+          out.push({
+            name: p.name || (String(p.display_name || "").split(",")[0] || query),
+            sub: [ad.city || ad.town || ad.province, ad.borough || ad.suburb, ad.road, ad.house_number].filter(Boolean).join(" "),
+            lat, lng, kind: remoteKindOf(null, p.class, p.type), city: ad.city || ad.town || "", source: "Nominatim"
+          });
+        });
+      } catch (e) { /* 네트워크 실패 → 내장 결과만 */ }
+      return out;
+    }
+
+    function dedupePlaceResults(list) {
+      const seen = new Map();
+      list.forEach(it => {
+        if (!it || !it.name || typeof it.lat !== "number" || typeof it.lng !== "number") return;
+        const key = normPlaceQuery(it.name) + "|" + it.lat.toFixed(3) + "," + it.lng.toFixed(3);
+        const loose = normPlaceQuery(it.name);
+        if (seen.has(key)) return;
+        // 이름이 같고 좌표가 300m 안이면 중복
+        const near = [...seen.values()].some(v => normPlaceQuery(v.name) === loose && haversineKm(v.lat, v.lng, it.lat, it.lng) < 0.3);
+        if (near) return;
+        seen.set(key, it);
+      });
+      return [...seen.values()];
+    }
+
+    function rankPlaceResults(list, q) {
+      const nq = normPlaceQuery(q);
+      return list.map((it, i) => {
+        const n = normPlaceQuery(it.name);
+        let s = 0;
+        if (n === nq) s = 120;
+        else if (n.startsWith(nq)) s = 100;
+        else if (n.includes(nq)) s = 70;
+        else s = 40;
+        s += krKindRank(it.kind) * 0.8;
+        if (it.source === "내장") s += 14;       // 국내 주요 지명·역은 내장 DB를 우선
+        s -= Math.min(10, Math.max(0, n.length - nq.length) * 0.5);
+        return { it, s, i };
+      }).sort((a, b) => b.s - a.s || a.i - b.i).map(x => x.it);
+    }
+
+    // 내장 DB + Photon + Nominatim 통합 검색 (국내는 역·공항·관광지 우선)
+    async function smartPlaceSearch(q, opts = {}) {
+      const query = String(q || "").trim();
+      if (!query) return [];
+      const krOnly = opts.krOnly !== undefined ? opts.krOnly : isDomesticTrip();
+      const local = krGazetteerSearch(query, opts.localLimit || 6);
+      if (opts.localOnly) return local;
+      let remote = [];
+      try { remote = await remotePlaceSearch(query, { limit: opts.limit || 8, krOnly }); } catch (e) { remote = []; }
+      const merged = dedupePlaceResults([...local, ...remote]);
+      return rankPlaceResults(merged, query).slice(0, Math.max(1, opts.limit || 8));
+    }
+
+    function isDomesticTrip() {
+      const m = state?.meta || {};
+      if (m.tripType === "overseas") return false;
+      if (m.country && !/^(대한민국|한국|KR|South Korea)$/i.test(String(m.country))) return false;
+      return true;
+    }
+
+    /* =====================================================================
+       🔎 모든 장소 검색칸 공통 연관검색어(자동완성) 컴포넌트
+       ===================================================================== */
+    const PLACE_AC_WIRED = {};
+    function closeAllPlaceAutocomplete(except) {
+      document.querySelectorAll(".ac-list.open").forEach(el => {
+        if (except && el === except) return;
+        el.classList.remove("open");
+      });
+    }
+
+    function attachPlaceAutocomplete(inputId, opts = {}) {
+      const input = document.getElementById(inputId);
+      if (!input || PLACE_AC_WIRED[inputId]) return;
+      PLACE_AC_WIRED[inputId] = true;
+      const wrap = document.createElement("div");
+      wrap.className = "ac-wrap";
+      if (input.style.flex) { wrap.style.flex = input.style.flex; input.style.flex = "1 1 auto"; }
+      if (input.style.width) { wrap.style.width = input.style.width; input.style.width = "100%"; }
+      wrap.style.minWidth = "0";
+      input.parentNode.insertBefore(wrap, input);
+      wrap.appendChild(input);
+      const list = document.createElement("div");
+      list.className = "ac-list";
+      list.id = "ac-" + inputId;
+      wrap.appendChild(list);
+
+      let timer = null;
+      let items = [];
+      let activeIdx = -1;
+      let lastQuery = "";
+
+      const paint = () => {
+        if (!items.length) { list.classList.remove("open"); list.innerHTML = ""; return; }
+        list.innerHTML = items.map((it, i) => `
+          <div class="ac-item ${i === activeIdx ? "active" : ""}" data-i="${i}">
+            <span class="ac-ico">${krKindIcon(it.kind)}</span>
+            <span class="ac-main">
+              <span class="ac-nm">${escapeHtmlText(it.name)}</span>
+              ${it.sub ? `<div class="ac-sub">${escapeHtmlText(it.sub)}</div>` : ""}
+            </span>
+          </div>`).join("");
+        list.classList.add("open");
+      };
+
+      const pick = (it) => {
+        if (!it) return;
+        input.value = it.name;
+        try { opts.onPick && opts.onPick(it); } catch (e) { console.warn("ac pick", e); }
+        items = []; activeIdx = -1;
+        list.innerHTML = ""; list.classList.remove("open");
+      };
+
+      const run = async (q, allowRemote) => {
+        const local = krGazetteerSearch(q, 6);
+        items = local;
+        activeIdx = -1;
+        if (local.length) paint(); else if (allowRemote) { list.innerHTML = `<div class="ac-empty">검색 중...</div>`; list.classList.add("open"); }
+        if (!allowRemote) return;
+        const remote = await smartPlaceSearch(q, { limit: 8 });
+        if (lastQuery !== q) return;
+        items = remote;
+        paint();
+        if (!items.length) {
+          list.innerHTML = `<div class="ac-empty">연관검색어가 없어요. 다른 이름으로 검색해 보세요.</div>`;
+          list.classList.add("open");
+        }
+      };
+
+      const schedule = (allowRemote) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          const q = input.value.trim();
+          if (!q) { items = []; paint(); return; }
+          lastQuery = q;
+          run(q, allowRemote).catch(() => {});
+        }, 250);
+      };
+
+      input.setAttribute("autocomplete", "off");
+      input.addEventListener("input", () => schedule(true));
+      input.addEventListener("focus", () => {
+        if (input.value.trim()) schedule(true);
+      });
+      input.addEventListener("keydown", (ev) => {
+        if (!list.classList.contains("open") || !items.length) return;
+        if (ev.key === "ArrowDown") { activeIdx = (activeIdx + 1) % items.length; paint(); ev.preventDefault(); }
+        else if (ev.key === "ArrowUp") { activeIdx = (activeIdx - 1 + items.length) % items.length; paint(); ev.preventDefault(); }
+        else if (ev.key === "Enter" && activeIdx >= 0) { ev.preventDefault(); pick(items[activeIdx]); }
+        else if (ev.key === "Escape") { list.classList.remove("open"); }
+      });
+      list.addEventListener("mousedown", (ev) => {
+        const row = ev.target.closest(".ac-item");
+        if (!row) return;
+        ev.preventDefault();
+        pick(items[Number(row.getAttribute("data-i"))]);
+      });
+      input.addEventListener("blur", () => setTimeout(() => list.classList.remove("open"), 160));
+    }
+
+    function escapeHtmlText(s) {
+      return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function attachAllPlaceAutocompletes() {
+      const setPlaceCoords = (it) => {
+        pickedLat = it.lat; pickedLng = it.lng;
+        const q = document.getElementById("pm-search-q");
+        const p = document.getElementById("pm-place");
+        if (q) q.value = it.name;
+        if (it && p) p.value = it.name;
+      };
+      const setTransitCoords = (side) => (it) => {
+        const coord = { lat: it.lat, lng: it.lng, name: it.name };
+        if (side === "from") trFromCoord = coord; else trToCoord = coord;
+        const el = document.getElementById(side === "from" ? "tr-from" : "tr-to");
+        if (el) el.value = it.name;
+        if (trFromCoord && trToCoord) { try { calcTransitEstimate(); } catch (e) {} }
+      };
+      const setHotelCoords = (withName) => (it) => {
+        bkSchedCoords = { lat: it.lat, lng: it.lng, source: `검색: ${it.name}` };
+        bkSchedStation = null; bkStationLoading = false;
+        const nameEl = document.getElementById("bk-name");
+        if (withName && nameEl && !nameEl.value.trim()) nameEl.value = it.name;
+        try { renderBookingScheduleCoordNote(); } catch (e) {}
+        nearestSubwayStation(it.lat, it.lng).then(st => {
+          bkStationLoading = false; bkSchedStation = st;
+          try { renderBookingScheduleCoordNote(); } catch (e) {}
+        }).catch(() => {});
+        try { previewBookingRoute(); } catch (e) {}
+      };
+
+      // 일정 추가·장소 수정
+      attachPlaceAutocomplete("pm-search-q", { onPick: setPlaceCoords });
+      attachPlaceAutocomplete("pm-place", { onPick: setPlaceCoords });
+      attachPlaceAutocomplete("pm-from", { onPick: (it) => { document.getElementById("pm-from").value = it.name; } });
+      attachPlaceAutocomplete("pm-to", { onPick: (it) => {
+        document.getElementById("pm-to").value = it.name;
+        pickedLat = it.lat; pickedLng = it.lng;
+      } });
+      // 교통편 출발·도착
+      attachPlaceAutocomplete("tr-from", { onPick: setTransitCoords("from") });
+      attachPlaceAutocomplete("tr-to", { onPick: setTransitCoords("to") });
+      // 숙소 검색·주소 검색
+      attachPlaceAutocomplete("bk-sched-search", { onPick: setHotelCoords(false) });
+      attachPlaceAutocomplete("bk-hotel-search-q", { onPick: setHotelCoords(true) });
+      attachPlaceAutocomplete("place-address", { onPick: (it) => {
+        savedPlacePickCoords = { lat: it.lat, lng: it.lng };
+        const note = document.getElementById("place-coord-note");
+        if (note) note.textContent = `📍 좌표 선택됨 (${it.lat.toFixed(4)}, ${it.lng.toFixed(4)}) · 저장하면 지도·경로에 쓰여요.`;
+      } });
+      // 새 여행·추천 목적지
+      attachPlaceAutocomplete("nts-dest", {});
+      attachPlaceAutocomplete("route-dest", { onPick: () => { markRecommendDestEdited("route-dest"); try { renderRouteStyleChips(); } catch (e) {} } });
+      attachPlaceAutocomplete("must-dest", { onPick: () => markRecommendDestEdited("must-dest") });
+      ["route-dest", "must-dest"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener("input", () => markRecommendDestEdited(id));
+      });
+      attachPlaceAutocomplete("must-spot-input", {});
+    }
+
+    /* =====================================================================
+       🏨 숙박 미예약 시 — 일정 동선 기반 숙소 권역 Top 3
+       ===================================================================== */
+    const LODGING_AREAS = {
+      "서울": [
+        { name: "서울역 인근", lat: 37.5547, lng: 126.9707, why: "KTX·공항철도·1·4호선 환승 — 첫날·마지막 날 짐 이동이 가장 편해요", tags: ["transit"] },
+        { name: "명동·을지로 인근", lat: 37.5637, lng: 126.9850, why: "관광·쇼핑·야식이 도보권, 4호선으로 성수·남산 이동이 쉬워요", tags: ["food", "night", "transit"] },
+        { name: "종로3가·익선동 인근", lat: 37.5704, lng: 126.9920, why: "고궁·북촌·익선동 카페 골목 도보권, 1·3·5호선 환승", tags: ["food", "night"] },
+        { name: "홍대입구·연남 인근", lat: 37.5572, lng: 126.9245, why: "공항철도 직결, 밤늦게까지 카페·술집 골목이 이어져요", tags: ["night", "food", "transit"] },
+        { name: "강남·역삼 인근", lat: 37.4979, lng: 127.0276, why: "2호선·신분당선 중심, 쇼핑·맛집·전시가 밀집", tags: ["city"] },
+        { name: "잠실 인근", lat: 37.5133, lng: 127.1000, why: "2·8호선, 롯데월드타워·석촌호수·한강공원 접근 좋아요", tags: ["city", "night"] },
+        { name: "성수·서울숲 인근", lat: 37.5446, lng: 127.0559, why: "2호선·수인분당선, 카페·편집샵과 서울숲 산책", tags: ["food", "nature"] },
+        { name: "이태원·한남 인근", lat: 37.5345, lng: 126.9946, why: "6호선, 남산·경리단길 야경과 조용한 골목", tags: ["night"] }
+      ],
+      "부산": [
+        { name: "서면역 인근", lat: 35.1578, lng: 129.0594, why: "1·2호선 환승 중심지 — 식당·카페·쇼핑이 밀집해 밤 동선이 편해요", tags: ["transit", "food", "night"] },
+        { name: "광안역·광안리 해변 인근", lat: 35.1535, lng: 129.1164, why: "광안대교 야경 도보권, 해변 카페·포차가 바로 앞", tags: ["night", "food"] },
+        { name: "해운대역 인근", lat: 35.1637, lng: 129.1672, why: "해변·마린시티·블루라인파크 접근, 2호선으로 시내 이동", tags: ["night", "transit"] },
+        { name: "부산역 인근", lat: 35.1151, lng: 129.0413, why: "KTX 도착·출발이 편하고 남포동·국제시장이 가까워요", tags: ["transit", "food"] },
+        { name: "남포동·자갈치 인근", lat: 35.0975, lng: 129.0310, why: "시장 먹거리·영도 이동이 편한 원도심 중심", tags: ["food", "transit"] },
+        { name: "전포·서면 카페거리 인근", lat: 35.1577, lng: 129.0666, why: "감성 카페·맛집 골목, 2호선 한 정거장", tags: ["food", "night"] }
+      ],
+      "제주": [
+        { name: "제주시청·연동 인근", lat: 33.4950, lng: 126.5100, why: "공항 15분·맛집 밀집, 첫날·마지막 날 동선이 편해요", tags: ["food", "transit"] },
+        { name: "중문관광단지 인근", lat: 33.2505, lng: 126.4120, why: "해변·리조트·카페가 모여 있어 남부 일정에 최적", tags: ["night", "food"] },
+        { name: "성산·표선 인근", lat: 33.4620, lng: 126.9360, why: "일출봉·우도·광치기해변 도보권, 동부 일정 중심", tags: ["nature"] },
+        { name: "애월·한림 인근", lat: 33.4628, lng: 126.3095, why: "오션뷰 카페거리와 협재 해변, 서부 드라이브 중심", tags: ["night"] }
+      ],
+      "강릉": [
+        { name: "안목해변·경포 인근", lat: 37.7723, lng: 128.9476, why: "커피거리·해변 도보권, 아침 바다 산책이 좋아요", tags: ["night", "food"] },
+        { name: "강릉역·중앙시장 인근", lat: 37.7645, lng: 128.8993, why: "KTX 도착 후 짐 두기 편하고 시장 먹거리가 가까워요", tags: ["transit", "food"] },
+        { name: "주문진·사천 인근", lat: 37.8935, lng: 128.8305, why: "조용한 바다와 해변 카페, 북부 일정 중심", tags: ["nature"] }
+      ],
+      "경주": [
+        { name: "황리단길·대릉원 인근", lat: 35.8375, lng: 129.2097, why: "한옥 카페·맛집과 고분 산책로 도보권 — 저녁 동선이 좋아요", tags: ["food", "night"] },
+        { name: "경주역·보문단지 인근", lat: 35.8420, lng: 129.2760, why: "KTX 접근과 호수 리조트, 차로 이동이 편해요", tags: ["transit", "nature"] }
+      ],
+      "여수": [
+        { name: "여수엑스포역·이순신광장 인근", lat: 34.7450, lng: 127.7400, why: "케이블카·낭만포차거리 도보권, 밤바다 동선 중심", tags: ["night", "food", "transit"] },
+        { name: "돌산·오션뷰 인근", lat: 34.7000, lng: 127.7500, why: "돌산대교 야경과 오션뷰 카페, 조용한 숙소가 많아요", tags: ["night"] },
+        { name: "오동도·소호동 인근", lat: 34.7453, lng: 127.7664, why: "바다 산책로와 해변 카페, 아침 산책이 좋아요", tags: ["nature"] }
+      ],
+      "전주": [
+        { name: "전주한옥마을 인근", lat: 35.8147, lng: 127.1530, why: "한옥 스테이·비빔밥·야시장이 도보권", tags: ["food", "night"] },
+        { name: "전주역·객사 인근", lat: 35.8497, lng: 127.1618, why: "KTX 도착이 편하고 시내버스로 어디든 이동", tags: ["transit"] }
+      ],
+      "대구": [
+        { name: "동성로·중앙로 인근", lat: 35.8695, lng: 128.5950, why: "쇼핑·먹거리 중심, 1·2호선 환승이 편해요", tags: ["food", "night", "transit"] },
+        { name: "동대구역 인근", lat: 35.8790, lng: 128.6280, why: "KTX·SRT 도착이 바로, 첫날·마지막 날 편해요", tags: ["transit"] }
+      ],
+      "대전": [
+        { name: "대전역·중앙시장 인근", lat: 36.3325, lng: 127.4347, why: "KTX 도착이 편하고 성심당·중앙시장이 가까워요", tags: ["transit", "food"] },
+        { name: "둔산동·시청 인근", lat: 36.3515, lng: 127.3780, why: "맛집·쇼핑 밀집, 1호선으로 시내 이동", tags: ["food", "night"] }
+      ],
+      "광주": [
+        { name: "충장로·문화전당 인근", lat: 35.1480, lng: 126.9150, why: "쇼핑·먹거리·전시가 도보권인 원도심 중심", tags: ["food", "night"] },
+        { name: "광주송정역 인근", lat: 35.1370, lng: 126.7935, why: "KTX 도착이 바로, 1호선으로 시내 이동", tags: ["transit"] }
+      ],
+      "인천": [
+        { name: "인천역·차이나타운 인근", lat: 37.4760, lng: 126.6170, why: "짬뽕 골목·월미도 도보권, 1호선으로 서울 이동", tags: ["food"] },
+        { name: "송도센트럴파크 인근", lat: 37.3900, lng: 126.6390, why: "호수 산책·카페, 공항철도로 공항 접근", tags: ["nature", "transit"] }
+      ],
+      "속초": [
+        { name: "속초중앙시장·청초호 인근", lat: 38.2045, lng: 128.5905, why: "시장 먹거리·호수 산책·터미널이 도보권", tags: ["food", "transit"] },
+        { name: "설악·낙산 인근", lat: 38.1750, lng: 128.4650, why: "설악산·낙산사 접근이 좋은 조용한 숙소", tags: ["nature"] }
+      ]
+    };
+
+    function tripDestinationText() {
+      const m = state?.meta || {};
+      return `${m.destination || ""} ${m.title || ""} ${m.country || ""}`;
+    }
+
+    function tripCityKey() {
+      const text = tripDestinationText();
+      const keys = Object.keys(LODGING_AREAS).concat(["춘천", "포항", "목포", "통영", "군산", "안동", "수원", "양양"]);
+      return keys.find(k => text.includes(k)) || "";
+    }
+
+    function tripGeoItems() {
+      const out = [];
+      (state.days || []).forEach(d => (d.items || []).forEach(it => {
+        const c = coordsOfItem(it);
+        if (c) out.push({ lat: c.lat, lng: c.lng, time: it.time || "", day: d.day, place: it.place || "" });
+      }));
+      return out;
+    }
+
+    function lodgingAreaScores() {
+      const city = tripCityKey();
+      const areas = LODGING_AREAS[city] || [];
+      const pts = tripGeoItems();
+      if (!areas.length || pts.length < 2) return [];
+      const mornings = [], nights = [];
+      (state.days || []).forEach(d => {
+        const list = (d.items || []).map(it => ({ it, c: coordsOfItem(it) })).filter(x => x.c);
+        if (!list.length) return;
+        list.sort((a, b) => String(a.it.time || "99:99").localeCompare(String(b.it.time || "99:99")));
+        mornings.push(list[0].c);
+        nights.push(list[list.length - 1].c);
+      });
+      const avgKm = (arr, a) => arr.length
+        ? arr.reduce((s, p) => s + haversineKm(p.lat, p.lng, a.lat, a.lng), 0) / arr.length
+        : null;
+      return areas.map(a => {
+        const all = avgKm(pts, a) || 0;
+        const night = avgKm(nights, a);
+        const morning = avgKm(mornings, a);
+        let score = all * 0.55;
+        if (night != null) score += night * 0.3;
+        if (morning != null) score += morning * 0.15;
+        if ((a.tags || []).includes("night")) score -= 0.35;   // 밤 동선이 좋은 권역 가점
+        if ((a.tags || []).includes("transit")) score -= 0.15; // 환승·터미널 가점
+        return { ...a, avgKm: all, nightKm: night, morningKm: morning, score };
+      }).sort((x, y) => x.score - y.score);
+    }
+
+    function recommendLodgingAreas(limit = 3) {
+      return lodgingAreaScores().slice(0, limit);
+    }
+
+    function renderLodgingRecommendation() {
+      const box = document.getElementById("lodging-rec-box");
+      if (!box) return;
+      const hasHotel = (state.bookings || []).some(b => b && b.type === "hotel" && b.name);
+      if (hasHotel) { box.innerHTML = ""; return; }
+      const pts = tripGeoItems();
+      if (pts.length < 2) { box.innerHTML = ""; return; }
+      const top = recommendLodgingAreas(3);
+      if (!top.length) { box.innerHTML = ""; return; }
+      const city = tripCityKey() || "여행지";
+      const kmTxt = (v) => v == null ? "-" : (v < 0.95 ? `${Math.round(v * 1000)}m` : `${v.toFixed(1)}km`);
+      box.innerHTML = `
+        <div class="card lodg-rec-card" style="border:1.5px solid var(--ocean-border);">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:2px;">
+            <div style="font-weight:800;font-size:14.5px;color:var(--ocean-dark);">🏨 동선 맞춤 숙박 권역 추천 Top 3</div>
+            <span class="tag blue" style="flex-shrink:0;">${escapeHtmlText(city)}</span>
+          </div>
+          <div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:6px;">
+            숙소 예약이 없어서 지금 일정 ${pts.length}곳의 좌표와 밤·아침 동선으로 계산했어요. 정확한 호텔명이 아니라 <b>묵기 좋은 역·권역</b>이에요.
+          </div>
+          ${top.map((a, i) => `
+            <div class="lr-row">
+              <div class="lr-rank">${i + 1}</div>
+              <div style="flex:1;min-width:0;">
+                <div class="lr-name">${escapeHtmlText(a.name)}</div>
+                <div class="lr-why">${escapeHtmlText(a.why)}</div>
+                <div class="lr-meta">평균 이동 ${kmTxt(a.avgKm)}${a.nightKm != null ? ` · 밤 동선 ${kmTxt(a.nightKm)}` : ""}${a.morningKm != null ? ` · 아침 ${kmTxt(a.morningKm)}` : ""}</div>
+              </div>
+              <button type="button" class="btn btn-soft lr-btn" style="align-self:center;" onclick="useLodgingArea('${escapeAttr(a.name)}')">숙소 찾기 →</button>
+            </div>`).join("")}
+          <div style="font-size:10.5px;color:var(--muted);margin-top:6px;line-height:1.45;">일정에 장소가 더 쌓이면 추천도 다시 계산돼요. 마음에 드는 권역을 고르면 숙소 검색칸에 그 이름을 넣어 드려요.</div>
+        </div>`;
+    }
+
+    function useLodgingArea(name) {
+      if (!canEdit()) return alert("읽기 전용 권한이라 숙소를 추가할 수 없어요.");
+      openBookingModal(null, "hotel");
+      const q = document.getElementById("bk-hotel-search-q");
+      if (q) q.value = name;
+      const s = document.getElementById("bk-sched-search");
+      if (s) s.value = name;
+      setTimeout(() => { try { searchBookingHotelCoords(); } catch (e) {} }, 120);
+    }
+
     function renderTimeline() {
       const destShort = String(state.meta?.destination || "부산").split(/[(\s]/)[0] || "부산";
       const mapTitleEl = document.getElementById("map-card-title");
@@ -4805,30 +5606,35 @@
       // 🏨🚆 예약 내역도 해당 일차 타임라인에 같이 보여 준다 (원본 데이터는 그대로 두고 표시만 연동)
       // · 숙소 예약은 '일정에도 등록하기'를 켜고 고른 순서(앵커) 자리에 끼우고,
       // · 교통편 예약은 기존처럼 출발 시각 순서대로 합친다.
-      const feed = dayObj.items.map((it, idx) => ({ it, idx, virtual: false }))
-        .sort((a, b) => String(a.it.time || "99:99").localeCompare(String(b.it.time || "99:99")));
+      const editModeOn = Boolean(editMode);
+      // ✏️ 편집 모드에서는 사용자가 정한 배열 순서를 그대로, 평소에는 시간순으로 보여 준다
+      const feed = dayObj.items.map((it, idx) => ({ it, idx, virtual: false }));
+      if (!editModeOn) feed.sort((a, b) => String(a.it.time || "99:99").localeCompare(String(b.it.time || "99:99")));
       const bkVirtuals = bookingTimelineItems(dayObj);
-      // 🏨 숙소 자동 카드: 복귀는 그날 맨 마지막, 출발은 그날 맨 처음
-      bkVirtuals.filter(v => v.scheduled && v.pin === "first").slice().reverse().forEach(v => {
-        feed.unshift({ it: v, idx: -1, virtual: true });
-      });
-      bkVirtuals.filter(v => v.scheduled && v.pin === "last").forEach(v => {
-        feed.push({ it: v, idx: -1, virtual: true });
-      });
-      bkVirtuals.filter(v => v.scheduled && v.pin !== "first" && v.pin !== "last").forEach(v => {
-        let pos = 0;
-        if (v.anchorId && v.anchorId !== "__first") {
-          const i = feed.findIndex(x => String(x.it.id) === String(v.anchorId));
-          pos = i >= 0 ? i + 1 : feed.length;
-        }
-        feed.splice(pos, 0, { it: v, idx: -1, virtual: true });
-      });
-      bkVirtuals.filter(v => !v.scheduled).forEach(v => {
-        let pos = feed.findIndex(x => String(x.it.time || "99:99").localeCompare(String(v.time || "99:99")) > 0);
-        if (pos < 0) pos = feed.length;
-        feed.splice(pos, 0, { it: v, idx: -1, virtual: true });
-      });
+      if (!editModeOn) {
+        // 🏨 숙소 자동 카드: 복귀는 그날 맨 마지막, 출발은 그날 맨 처음
+        bkVirtuals.filter(v => v.scheduled && v.pin === "first").slice().reverse().forEach(v => {
+          feed.unshift({ it: v, idx: -1, virtual: true });
+        });
+        bkVirtuals.filter(v => v.scheduled && v.pin === "last").forEach(v => {
+          feed.push({ it: v, idx: -1, virtual: true });
+        });
+        bkVirtuals.filter(v => v.scheduled && v.pin !== "first" && v.pin !== "last").forEach(v => {
+          let pos = 0;
+          if (v.anchorId && v.anchorId !== "__first") {
+            const i = feed.findIndex(x => String(x.it.id) === String(v.anchorId));
+            pos = i >= 0 ? i + 1 : feed.length;
+          }
+          feed.splice(pos, 0, { it: v, idx: -1, virtual: true });
+        });
+        bkVirtuals.filter(v => !v.scheduled).forEach(v => {
+          let pos = feed.findIndex(x => String(x.it.time || "99:99").localeCompare(String(v.time || "99:99")) > 0);
+          if (pos < 0) pos = feed.length;
+          feed.splice(pos, 0, { it: v, idx: -1, virtual: true });
+        });
+      }
       const cardBlocks = feed.map(({ it, idx, virtual }) => {
+        if (editModeOn) return virtual ? tlEditVirtualRowHtml(it) : tlEditRowHtml(it);
         // 일출·일몰 시각은 카드 안 배지가 아니라 타임라인의 한 줄 마커로만 보여 준다
         const badges = (it.badges || []).filter(b => !/^\s*(일출|일몰)\s*\d{1,2}:\d{2}/.test(String(b))).map(b => {
           let cls = "tag";
@@ -4847,18 +5653,28 @@
           : "";
         const photoRegion = photoRegionOfDay(dayObj);
         const photoSlot = shouldLookupPhoto(it) ? photoSlotHtml(it.place, photoRegion, "md") : "";
+        const isOpen = virtual || expandedTimelineCards.has(String(it.id));
+        const actions = virtual
+          ? virtualActions
+          : `<div class="tl-extra-actions">
+              ${canEdit() ? `<button class="btn btn-soft btn-sm" onclick="event.stopPropagation();openPlaceModal('${it.id}')">✏️ 수정</button>` : ""}
+              ${hasMenus ? `<button class="btn btn-soft btn-sm" onclick="event.stopPropagation();openMenuModal('${it.id}')">🍽️ 메뉴 선택</button>` : ""}
+              ${it.mapUrl ? `<a class="map-btn" href="${it.mapUrl}" target="_blank" onclick="event.stopPropagation()">🗺️ 지도</a>` : ""}
+            </div>`;
         return `
-          <div class="card ${virtual ? "tl-virtual" : ""}" ${hasMenus ? `onclick="openMenuModal('${it.id}')" style="cursor:pointer;"` : ""}>
+          <div class="card ${virtual ? "tl-virtual tl-open" : "tl-collapsible"} ${!virtual && isOpen ? "tl-open" : ""}" data-card-id="${escapeAttr(it.id)}" ${virtual ? "" : `onclick="toggleTimelineCard('${it.id}',event)"`}>
             <div class="tl-body">
             <div class="tl-main">
             <div class="tl-head">
               <span class="tl-time">${it.time}</span>
               <div class="tl-place">${it.place}</div>
               <span class="tl-stay">${it.stay || ""}</span>
+              ${virtual ? "" : `<span class="tl-fold-cue">${isOpen ? "접기 ▴" : "더 보기 ▾"}</span>`}
             </div>
+            <div class="tl-memo">${it.memo || ""}</div>
+            <div class="tl-extra">
             <div class="tl-badges">${badges}${hasMenus ? `<span class="tag blue">🍽️ 메뉴 선택</span>` : ""}</div>
             ${pickedText ? `<div style="font-size:12.5px;font-weight:700;color:var(--ocean-dark);background:var(--ocean-soft);padding:6px 9px;border-radius:8px;margin-bottom:6px;">🍴 ${pickedText} (${fmt(it.costTotal)})</div>` : ""}
-            <div class="tl-memo">${it.memo || ""}</div>
             ${it.scheduled && it.routeSummary ? `<div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:2px;">🛣️ ${it.routeSummary}</div>` : ""}
             <div class="tl-meta">
               <div class="tl-move">${moveIconOf(it.moveMode)} ${it.moveMode || ""} ${virtual
@@ -4870,25 +5686,20 @@
                     : `<span class="tl-cost">${fmt(it.costTotal || 0)}</span>`}${it.routeUrl ? `<a class="map-btn" href="${it.routeUrl}" target="_blank" onclick="event.stopPropagation()">길찾기</a>` : ""}${it.mapUrl ? `<a class="map-btn" href="${it.mapUrl}" target="_blank" onclick="event.stopPropagation()">지도</a>` : ""}</div>`
                 : `<div style="display:flex;align-items:center;gap:6px;">
                 <span class="tl-cost">${fmt(it.costTotal || 0)} <span style="font-weight:500;color:var(--muted);">(1인 ${fmt(per)})</span></span>
-                <a class="map-btn" href="${it.mapUrl}" target="_blank" onclick="event.stopPropagation()">지도</a>
               </div>`}
             </div>
-            ${virtual ? virtualActions : (editMode ? `
-            <div style="display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9;" onclick="event.stopPropagation()">
-              <button class="btn btn-soft btn-sm" onclick="moveItem(${idx}, -1)" ${idx === 0 ? "disabled" : ""}>↑</button>
-              <button class="btn btn-soft btn-sm" onclick="moveItem(${idx}, 1)" ${idx === dayObj.items.length - 1 ? "disabled" : ""}>↓</button>
-              <button class="btn btn-soft btn-sm" style="flex:1;" onclick="openPlaceModal('${it.id}')">✏️ 장소 수정</button>
-              <button class="btn btn-danger btn-sm" onclick="deleteItem('${it.id}')">삭제</button>
-            </div>` : "")}
+            ${actions}
+            </div>
             </div>
             ${photoSlot}
             </div>
           </div>
         `;
       });
-      // 🌅 일출 · 🌇 일몰은 카드가 아니라 시간 순서에 맞춰 얇은 한 줄로 끼워 넣는다
-      const sunRows = daySunTimeRows(dayObj);
+      // 🌅 일출 · 🌇 일몰은 카드가 아니라 시간 순서에 맞춰 얇은 한 줄로 끼워 넣는다 (편집 모드에서는 숨김)
+      const sunRows = editModeOn ? [] : daySunTimeRows(dayObj);
       const blocks = [];
+      if (editModeOn) blocks.push(`<div class="tl-edit-hint">≡ 손잡이를 드래그해 순서를 바꾸고, − 로 지울 수 있어요. 카드를 누르면 장소 수정으로 들어가요.</div>`);
       let sunIdx = 0;
       feed.forEach(({ it }, i) => {
         while (sunIdx < sunRows.length && sunRows[sunIdx].time <= (it.time || "99:99")) {
@@ -4901,9 +5712,15 @@
         blocks.push(sunRows[sunIdx].html);
         sunIdx++;
       }
+      if (editModeOn) {
+        // 편집 모드에서는 예약(숙소·교통) 카드도 맨 아래에 컴팩트하게 보여 준다
+        const vHtml = bkVirtuals.map(tlEditVirtualRowHtml).join("");
+        if (vHtml) blocks.push(vHtml);
+      }
       listEl.innerHTML = blocks.join("");
       try { hydratePlacePhotos(listEl); } catch (e) { console.warn(e); }
       try { refineBookingRoutes(dayObj); } catch (e) { console.warn(e); }
+      try { renderLodgingRecommendation(); } catch (e) { console.warn(e); }
       const addRow = document.getElementById("add-btns-row");
       if (addRow) addRow.style.display = editMode ? "flex" : "none";
       const emBtn = document.getElementById("edit-mode-btn");
@@ -4917,6 +5734,129 @@
     function toggleEditMode() {
       editMode = !editMode;
       renderTimeline();
+    }
+
+    /* =====================================================================
+       ✏️ 일정 편집 — 컴팩트 행 [−] [카테고리·장소] [≡] + 마우스·터치 드래그 순서 변경
+       ===================================================================== */
+    const expandedTimelineCards = new Set();
+
+    function toggleTimelineCard(id, ev) {
+      const t = ev && ev.target;
+      if (t && t.closest && t.closest("a,button,input,label,textarea,select")) return;
+      const key = String(id);
+      const card = (t && t.closest ? t.closest(".card.tl-collapsible") : null) || document.querySelector(`.card[data-card-id="${key}"]`);
+      const open = !expandedTimelineCards.has(key);
+      if (open) expandedTimelineCards.add(key); else expandedTimelineCards.delete(key);
+      if (card) {
+        card.classList.toggle("tl-open", open);
+        const cue = card.querySelector(".tl-fold-cue");
+        if (cue) cue.textContent = open ? "접기 ▴" : "더 보기 ▾";
+      }
+    }
+
+    function tlItemCategory(it) {
+      if (!it) return "일정";
+      if (it.fromPlace || it.toPlace) return `이동 · ${it.time || ""}`.trim();
+      const b = (it.badges || []).map(String);
+      const known = b.find(x => /음식점|카페|관광|명소|술집|쇼핑|숙소|교통|산책|자연|전시|휴양/.test(x));
+      if (known) return known.replace(/^🔗\s*/, "");
+      if (Array.isArray(it.menus)) return "음식점·카페";
+      const txt = `${it.place || ""} ${it.memo || ""}`;
+      if (/카페|커피|베이커리|디저트/.test(txt)) return "카페";
+      if (/국밥|식당|맛집|피자|떡볶이|레스토랑|분식|고기|횟집|술/.test(txt)) return "음식점";
+      if (/호텔|숙소|리조트|펜션|체크인/.test(txt)) return "숙소";
+      if (/역|공항|터미널|KTX|SRT|버스|지하철/.test(txt)) return "교통";
+      if (/해변|해수욕|공원|숲|산책|전망|관광|명소/.test(txt)) return "관광·명소";
+      return it.time || "일정";
+    }
+
+    function tlEditRowHtml(it) {
+      const cat = tlItemCategory(it);
+      const name = escapeHtmlText(it.place || "이름 없음");
+      return `<div class="tl-edit-row" data-item-id="${escapeAttr(it.id)}">
+        <button type="button" class="tl-edit-del" aria-label="삭제" onclick="event.stopPropagation();deleteItem('${it.id}')">−</button>
+        <div class="tl-edit-card" onclick="event.stopPropagation();openPlaceModal('${it.id}')">
+          <div class="tl-edit-cat">${escapeHtmlText(cat)}</div>
+          <div class="tl-edit-place">${name}</div>
+        </div>
+        <div class="tl-edit-handle" onpointerdown="tlEditDragStart(event,'${it.id}')" title="드래그해서 순서 바꾸기">≡</div>
+      </div>`;
+    }
+
+    function tlEditVirtualRowHtml(it) {
+      return `<div class="tl-edit-row tl-edit-virtual">
+        <div style="width:30px;flex:0 0 30px;"></div>
+        <div class="tl-edit-card" onclick="event.stopPropagation();openBookingModal('${it.bookingId}')">
+          <div class="tl-edit-cat">🔗 예약 · ${escapeHtmlText(it.time || "")}</div>
+          <div class="tl-edit-place">${escapeHtmlText(it.place || "예약")}</div>
+        </div>
+        <div class="tl-edit-handle" style="cursor:default;color:#7dd3fc;">🔗</div>
+      </div>`;
+    }
+
+    let tlDragState = null;
+
+    function tlEditDragStart(ev, itemId) {
+      if (!editMode) return;
+      const row = ev.target.closest(".tl-edit-row");
+      if (!row) return;
+      ev.preventDefault();
+      try { ev.target.setPointerCapture(ev.pointerId); } catch (e) {}
+      tlDragState = { id: String(itemId), row };
+      row.classList.add("dragging");
+      document.addEventListener("pointermove", tlEditDragMove, { passive: false });
+      document.addEventListener("pointerup", tlEditDragEnd);
+      document.addEventListener("pointercancel", tlEditDragEnd);
+    }
+
+    function tlEditDragMove(ev) {
+      if (!tlDragState) return;
+      ev.preventDefault();
+      const rows = [...document.querySelectorAll("#timeline-list .tl-edit-row[data-item-id]")];
+      let over = null;
+      rows.forEach(r => {
+        const b = r.getBoundingClientRect();
+        if (ev.clientY >= b.top && ev.clientY <= b.bottom) over = r;
+      });
+      if (!over || over === tlDragState.row) return;
+      const b = over.getBoundingClientRect();
+      const after = ev.clientY > b.top + b.height / 2;
+      over.parentNode.insertBefore(tlDragState.row, after ? over.nextSibling : over);
+      // 드래그 중 자동 스크롤
+      const sc = document.scrollingElement || document.documentElement;
+      if (ev.clientY < 90) sc.scrollTop -= 12;
+      else if (ev.clientY > window.innerHeight - 90) sc.scrollTop += 12;
+    }
+
+    function tlEditDragEnd() {
+      document.removeEventListener("pointermove", tlEditDragMove);
+      document.removeEventListener("pointerup", tlEditDragEnd);
+      document.removeEventListener("pointercancel", tlEditDragEnd);
+      if (!tlDragState) return;
+      try { tlDragState.row.classList.remove("dragging"); } catch (e) {}
+      tlDragState = null;
+      commitTimelineEditOrder();
+    }
+
+    // 화면에 놓인 순서를 데이터에 확정하고, 기존 시간표를 새 순서에 다시 매긴다
+    function commitTimelineEditOrder() {
+      const list = document.getElementById("timeline-list");
+      const dayObj = state.days.find(d => d.day === currentDay);
+      if (!list || !dayObj) return;
+      const ids = [...list.querySelectorAll(".tl-edit-row[data-item-id]")].map(r => r.getAttribute("data-item-id"));
+      const byId = new Map((dayObj.items || []).map(it => [String(it.id), it]));
+      const ordered = ids.map(id => byId.get(String(id))).filter(Boolean);
+      if (ordered.length !== dayObj.items.length) return;
+      const sameOrder = ordered.every((it, i) => it === dayObj.items[i]);
+      if (sameOrder) return;
+      const times = ordered.map(it => it.time).filter(t => /^\d{1,2}:\d{2}$/.test(String(t || ""))).sort();
+      let k = 0;
+      ordered.forEach(it => {
+        if (/^\d{1,2}:\d{2}$/.test(String(it.time || "")) && times[k]) it.time = times[k++];
+      });
+      dayObj.items = ordered;
+      saveState();
     }
 
     let trFromCoord = null, trToCoord = null, trSearchSide = "from", trRouteCache = null;
@@ -4951,8 +5891,7 @@
       const resEl = document.getElementById("tr-search-results");
       resEl.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:4px;">'${q}' 검색 중...</div>`;
       try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=kr&limit=4&q=${encodeURIComponent(q)}`);
-        const list = await r.json();
+        const list = await smartPlaceSearch(q, { limit: 6 });
         if (!list.length) {
           resEl.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:4px;">검색 결과가 없습니다.</div>`;
           return;
@@ -4960,7 +5899,7 @@
         window._trResults = list;
         resEl.innerHTML = list.map((p, i) => `
           <div class="expense-item" style="padding:5px 4px;cursor:pointer;" onclick="pickTransitPlace(${i})">
-            <div style="font-size:11.5px;"><strong>${p.name || q}</strong> <span style="color:var(--muted);">${p.display_name}</span></div>
+            <div style="font-size:11.5px;"><strong>${krKindIcon(p.kind)} ${escapeAttr(p.name || q)}</strong> <span style="color:var(--muted);">${escapeAttr(p.sub || "")}</span></div>
             <span class="tag blue">선택</span>
           </div>
         `).join("");
@@ -4972,7 +5911,7 @@
     function pickTransitPlace(i) {
       const p = (window._trResults || [])[i];
       if (!p) return;
-      const coord = { lat: parseFloat(p.lat), lng: parseFloat(p.lon), name: p.name || "" };
+      const coord = { lat: parseFloat(p.lat), lng: Number(p.lng != null ? p.lng : p.lon), name: p.name || "" };
       if (trSearchSide === "from") {
         trFromCoord = coord;
         if (coord.name) document.getElementById("tr-from").value = coord.name;
@@ -5008,7 +5947,7 @@
       } else if (/고속버스|시외버스|터미널/.test(txt)) {
         document.getElementById("tr-type").value = "시외/고속버스";
       } else if (mSub || mBus) {
-        document.getElementById("tr-type").value = mSub ? "지하철·전철" : "시내·광역버스";
+        document.getElementById("tr-type").value = "대중교통";
         document.getElementById("tr-code").value = [...new Set(mSub || mBus)].join(" → ");
       }
 
@@ -5292,8 +6231,7 @@
       const resEl = document.getElementById("pm-search-results");
       resEl.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:4px;">'${q}' 검색 중...</div>`;
       try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=kr&limit=5&q=${encodeURIComponent(q)}`);
-        const list = await r.json();
+        const list = await smartPlaceSearch(q, { limit: 6 });
         if (!list.length) {
           resEl.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:4px;">검색 결과가 없습니다. 역 이름이나 동네명으로 검색해 보세요.</div>`;
           return;
@@ -5301,8 +6239,8 @@
         resEl.innerHTML = list.map((p, i) => `
           <div class="expense-item" style="padding:6px 4px;cursor:pointer;" onclick="selectSearchPlace(${i})">
             <div style="font-size:12px;">
-              <strong>${p.name || q}</strong>
-              <div style="color:var(--muted);font-size:11px;">${p.display_name}</div>
+              <strong>${krKindIcon(p.kind)} ${escapeAttr(p.name || q)}</strong>
+              <div style="color:var(--muted);font-size:11px;">${escapeAttr(p.sub || "")}</div>
             </div>
             <span class="tag blue">선택</span>
           </div>
@@ -5322,11 +6260,11 @@
       } else if (searchTargetSide === "to") {
         if (pickedName) document.getElementById("pm-to").value = pickedName;
         pickedLat = parseFloat(p.lat);
-        pickedLng = parseFloat(p.lon);
+        pickedLng = Number(p.lng != null ? p.lng : p.lon);
       } else {
         if (pickedName) document.getElementById("pm-place").value = pickedName;
         pickedLat = parseFloat(p.lat);
-        pickedLng = parseFloat(p.lon);
+        pickedLng = Number(p.lng != null ? p.lng : p.lon);
       }
       document.getElementById("pm-search-results").innerHTML = `<div style="font-size:12px;color:var(--success);padding:4px;">✓ ${searchTargetSide === "from" ? "출발지" : searchTargetSide === "to" ? "도착지" : "장소"} 선택됨</div>`;
     }
@@ -5649,6 +6587,18 @@
       return `<span class="hr-move">${ico} ${txt}</span>`;
     }
 
+    function defaultMapView() {
+      // 🇰🇷 국내 여행에 좌표가 하나도 없을 때: 부산 기본 좌표로 줌인하지 않고 대한민국 전체가 보이게
+      if (isDomesticTrip()) return { center: [36.35, 127.85], zoom: 6 };
+      return { center: [22, 10], zoom: 2 };
+    }
+
+    function applyDefaultMapView(map) {
+      if (!map) return;
+      const v = defaultMapView();
+      try { map.setView(v.center, v.zoom, { animate: false }); } catch (e) {}
+    }
+
     function renderHomeMap() {
       const el = document.getElementById("home-map");
       if (!el || !window.L) return;
@@ -5665,7 +6615,7 @@
           keyboard: true,
           zoomSnap: 0.5,
           attributionControl: false
-        }).setView([35.15, 129.11], 12);
+        }).setView(defaultMapView().center, defaultMapView().zoom);
         if (homeMap.zoomControl) homeMap.zoomControl.setPosition("topright");
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(homeMap);
         homeLayer = L.layerGroup().addTo(homeMap);
@@ -5675,7 +6625,7 @@
       homeMap.invalidateSize();
       homeLayer.clearLayers();
       homeMarkers = {};
-      if (!homePts.length) return;
+      if (!homePts.length) { applyDefaultMapView(homeMap); return; }
       homeMap.fitBounds(homePts.map(p => p.ll), { paddingTopLeft: [42, 92], paddingBottomRight: [42, 64] });
       drawHomePins();
       setTimeout(() => {
@@ -5902,7 +6852,7 @@
       const mapEl = document.getElementById("day-map");
       if (!mapEl) return;
       if (!leafletMap) {
-        leafletMap = L.map("day-map", { zoomControl: true }).setView([35.15, 129.11], 12);
+        leafletMap = L.map("day-map", { zoomControl: true }).setView(defaultMapView().center, defaultMapView().zoom);
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           attribution: "© OpenStreetMap"
         }).addTo(leafletMap);
@@ -5924,11 +6874,18 @@
       const startPts = [], endPts = [];
       if (dayObj.date) {
         (state.bookings || []).forEach(b => {
-          if (!bookingAutoOn(b)) return;
+          if (!b || b.type !== "hotel") return;
           const c = hotelCoordsForBooking(b);
           if (!c) return;
           const s = hotelStayDates(b);
           const nm = `🏨 ${b.name || "숙소"}`;
+          const inStay = s.mornings.includes(dayObj.date) || s.nights.includes(dayObj.date);
+          if (!inStay) return;
+          if (!bookingAutoOn(b)) {
+            // 자동 동선을 꺼 둠 — 숙소 위치 핀 하나만 조용히 보여 준다
+            endPts.push({ it: { place: nm, time: "", moveMode: "", hotelPin: true }, ll: [c.lat, c.lng] });
+            return;
+          }
           if (s.mornings.includes(dayObj.date)) startPts.push({ it: { place: `${nm} 출발`, time: "", moveMode: "" }, ll: [c.lat, c.lng] });
           if (s.nights.includes(dayObj.date)) endPts.push({ it: { place: `${nm} 복귀`, time: "", moveMode: "" }, ll: [c.lat, c.lng] });
         });
@@ -5936,7 +6893,7 @@
       dayMapPts = [...startPts, ...itemPts, ...endPts];
       leafletMap.closePopup();
       mapLayerGroup.clearLayers();
-      if (!dayMapPts.length) return;
+      if (!dayMapPts.length) { applyDefaultMapView(leafletMap); return; }
       // 다른 탭에 있다가 돌아온 경우 크기가 늦게 잡혀 엉뚱한 배율로 맞춰지는 것을 막는다
       leafletMap.invalidateSize();
       leafletMap.fitBounds(dayMapPts.map(p => p.ll), { padding: [26, 26] });
@@ -6968,8 +7925,11 @@
       } else if (overseas) {
         parts.push(`<div style="font-size:11.5px;color:var(--muted);line-height:1.5;">일정에서 예매·줄서기 항목을 아직 찾지 못했어요. 입국·결제 바로가기만 표시 중이에요.</div>`);
       } else {
-        parts.push(DOMESTIC_APP_LINKS_HTML);
-        parts.push(`<div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5;">일정에 ‘예매·예약 필수·웨이팅’ 항목이 아직 없어 기본 앱만 보여 줘요. 일정 배지나 메모에 적어 두면 🔄 일정 동기화 때 바로 잡아냅니다.</div>`);
+        // 🚫 빈 여행·기본값에 부산 고정 앱(블루라인파크 등)이 뜨지 않게 — 실제 일정에 있을 때만 모은다
+        const hasAnyItem = (state.days || []).some(d => (d.items || []).length > 0);
+        parts.push(hasAnyItem
+          ? `<div style="font-size:11.5px;color:var(--muted);line-height:1.5;">지금 일정에는 예매·줄서기가 필요한 항목이 없어요. 카드 배지나 메모에 ‘예매·예약 필수·웨이팅’을 적으면 🔄 일정 동기화 때 바로 잡아냅니다.</div>`
+          : `<div style="font-size:11.5px;color:var(--muted);line-height:1.5;">일정에 예매가 필요한 장소를 추가하면 바로가기가 자동으로 모입니다.</div>`);
       }
       box.innerHTML = parts.join("");
       const stEl = document.getElementById("app-sync-status");
@@ -7647,6 +8607,11 @@
     async function geocodeByName(name) {
       const q0 = String(name || "").trim();
       if (!q0) return null;
+      // 🇰🇷 내장 지명·역 DB를 먼저 본다 (네트워크 없이도 정확)
+      const gz = krGazetteerSearch(q0, 1)[0];
+      if (gz && normPlaceQuery(gz.name) === normPlaceQuery(q0)) {
+        return { lat: gz.lat, lng: gz.lng, source: "내장 지명·역 DB" };
+      }
       const city = String(state.meta?.destination || "").split(/[(\s·,]/)[0].trim();
       const bare = q0.replace(/^(호텔|Hotel|HOTEL)\s*/i, "").replace(/\s*(호텔|Hotel)$/i, "").trim();
       // 🇰🇷 한글 상호는 붙여쓰기·'호텔' 붙임말로만 OSM에 있는 경우가 많다 (예: '아쿠아 펠리스' → '아쿠아펠리스호텔')
@@ -7713,12 +8678,59 @@
       return g;
     }
 
+    async function searchBookingHotelByName() {
+      const qInput = document.getElementById("bk-hotel-search-q");
+      const nameInput = document.getElementById("bk-name");
+      const q = String(qInput?.value || "").trim() || String(nameInput?.value || "").trim();
+      const box = document.getElementById("bk-hotel-search-results");
+      if (!q) return alert("숙소 이름이나 주소를 입력해 주세요.");
+      if (box) box.innerHTML = `<div style="font-size:11.5px;color:var(--muted);padding:3px;">'${escapeAttr(q)}' 숙소 위치 찾는 중...</div>`;
+      const list = await smartPlaceSearch(q, { limit: 6 });
+      if (!list.length) {
+        if (box) box.innerHTML = `<div style="font-size:11.5px;color:var(--muted);padding:3px;">결과가 없어요. 호텔명·주소·가까운 역 이름으로 다시 찾아 보세요.</div>`;
+        return;
+      }
+      window._bkHotelNameResults = list;
+      if (box) box.innerHTML = list.map((p, i) => `
+        <div class="expense-item" style="padding:5px 4px;cursor:pointer;" onclick="pickBookingHotelName(${i})">
+          <div style="font-size:11.5px;"><strong>${krKindIcon(p.kind)} ${escapeAttr(p.name)}</strong>
+            <div style="color:var(--muted);font-size:10.5px;">${escapeAttr(p.sub || "")}${p.lat != null ? ` · ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}` : ""}</div>
+          </div>
+          <span class="tag blue">선택</span>
+        </div>`).join("");
+    }
+
+    function pickBookingHotelName(i) {
+      const p = (window._bkHotelNameResults || [])[i];
+      if (!p) return;
+      const lat = Number(p.lat), lng = Number(p.lng);
+      if (isNaN(lat) || isNaN(lng)) return;
+      bkSchedCoords = { lat, lng, source: `숙소 검색: ${p.name}` };
+      bkSchedStation = null;
+      bkStationLoading = false;
+      const nameEl = document.getElementById("bk-name");
+      if (nameEl && !nameEl.value.trim()) nameEl.value = p.name;
+      const qEl = document.getElementById("bk-hotel-search-q");
+      if (qEl) qEl.value = p.name;
+      const sEl = document.getElementById("bk-sched-search");
+      if (sEl) sEl.value = p.name;
+      const box = document.getElementById("bk-hotel-search-results");
+      if (box) box.innerHTML = `<div style="font-size:11.5px;color:var(--success);padding:3px;">✓ '${escapeAttr(p.name)}' 좌표 선택됨 (${lat.toFixed(4)}, ${lng.toFixed(4)}) — 저장하면 일정 카드·지도 핀에 반영돼요.</div>`;
+      renderBookingScheduleCoordNote();
+      nearestSubwayStation(lat, lng).then(st => {
+        bkStationLoading = false;
+        bkSchedStation = st;
+        renderBookingScheduleCoordNote();
+      }).catch(() => {});
+      previewBookingRoute();
+    }
+
     async function searchBookingHotelCoords() {
       const q = (document.getElementById("bk-sched-search")?.value || "").trim();
       const box = document.getElementById("bk-sched-search-results");
       if (!q) return alert("호텔 주소나 가까운 역·동네 이름을 입력해 주세요.");
       if (box) box.innerHTML = `<div style="font-size:11.5px;color:var(--muted);padding:3px;">'${escapeAttr(q)}' 찾는 중...</div>`;
-      const list = await nominatimSearch(q, 5);
+      const list = await smartPlaceSearch(q, { limit: 6, krOnly: isDomesticTrip() });
       if (!list.length) {
         if (box) box.innerHTML = `<div style="font-size:11.5px;color:var(--muted);padding:3px;">결과가 없어요. 가까운 역·동네·도로명주소로 다시 찾아 보세요.</div>`;
         return;
@@ -7726,8 +8738,8 @@
       window._bkCoordResults = list;
       if (box) box.innerHTML = list.map((p, i) => `
         <div class="expense-item" style="padding:5px 4px;cursor:pointer;" onclick="pickBookingHotelCoords(${i})">
-          <div style="font-size:11.5px;"><strong>${escapeAttr(p.name || q)}</strong>
-            <div style="color:var(--muted);font-size:10.5px;">${escapeAttr(p.display_name || "")}</div>
+          <div style="font-size:11.5px;"><strong>${krKindIcon(p.kind)} ${escapeAttr(p.name || q)}</strong>
+            <div style="color:var(--muted);font-size:10.5px;">${escapeAttr(p.sub || "")}</div>
           </div>
           <span class="tag blue">선택</span>
         </div>`).join("");
@@ -7736,7 +8748,7 @@
     function pickBookingHotelCoords(i) {
       const p = (window._bkCoordResults || [])[i];
       if (!p) return;
-      const lat = parseFloat(p.lat), lng = parseFloat(p.lon);
+      const lat = parseFloat(p.lat), lng = Number(p.lng != null ? p.lng : p.lon);
       if (isNaN(lat) || isNaN(lng)) return;
       bkSchedCoords = { lat, lng, source: `검색: ${String(p.name || p.display_name || "").slice(0, 24)}` };
       bkSchedStation = null;
@@ -7790,6 +8802,8 @@
       if (!b) return null;
       const sch = b.schedule || {};
       if (typeof sch.lat === "number" && typeof sch.lng === "number") return { lat: sch.lat, lng: sch.lng };
+      // 일정 자동 반영을 꺼도 저장해 둔 숙소 좌표로 지도 핀은 보여 준다
+      if (typeof b.lat === "number" && typeof b.lng === "number") return { lat: b.lat, lng: b.lng };
       const pl = hotelSavedPlaceMatch(b.name || "");
       if (pl && typeof pl.lat === "number") return { lat: pl.lat, lng: pl.lng };
       const it = findItemCoordsByName(b.name || "");
@@ -8111,6 +9125,12 @@
         : "예: 서울역→강릉역 · 2인 연석";
       document.getElementById("bk-hotel-fields").style.display = t === "hotel" ? "block" : "none";
       document.getElementById("bk-transit-fields").style.display = t === "transit" ? "block" : "none";
+      const hotelSearchWrap = document.getElementById("bk-hotel-search-wrap");
+      if (hotelSearchWrap) hotelSearchWrap.style.display = t === "hotel" ? "block" : "none";
+      const hotelSearchBox = document.getElementById("bk-hotel-search-results");
+      if (hotelSearchBox) hotelSearchBox.innerHTML = "";
+      const hotelSearchInput = document.getElementById("bk-hotel-search-q");
+      if (hotelSearchInput) hotelSearchInput.value = b && b.type === "hotel" ? (b.name || "") : "";
 
       const tripStart = state.meta?.startDate || "";
       const tripEnd = state.meta?.endDate || tripStart;
@@ -8263,12 +9283,20 @@
         delete rec.room; delete rec.url;
       }
       // 📅 숙소만: '일정에 숙소 동선 자동 반영'을 켰을 때만 매일 밤 복귀·아침 출발 카드를 자동 배치
+      //    (켜지 않아도 찾은 좌표는 저장해서 지도 핀·숙소 카드에 바로 반영한다)
       if (t === "hotel") {
         const schedOn = Boolean(document.getElementById("bk-sched-on")?.checked);
+        const hotelCoord = (bkSchedCoords && typeof bkSchedCoords.lat === "number")
+          ? bkSchedCoords
+          : (schedOn ? await resolveBookingHotelCoords(name)
+            : (existing && typeof existing.lat === "number" ? { lat: existing.lat, lng: existing.lng, source: existing.coordSource || "" } : null));
+        if (hotelCoord && typeof hotelCoord.lat === "number") {
+          rec.lat = hotelCoord.lat;
+          rec.lng = hotelCoord.lng;
+          rec.coordSource = hotelCoord.source || "";
+          persistHotelCoords(name, hotelCoord);
+        }
         if (schedOn) {
-          const hotelCoord = (bkSchedCoords && typeof bkSchedCoords.lat === "number")
-            ? bkSchedCoords
-            : await resolveBookingHotelCoords(name);
           const stay = hotelStayDates(rec);
           rec.schedule = {
             on: true, auto: true,
@@ -8281,7 +9309,6 @@
             plan: { nights: stay.nights, mornings: stay.mornings },
             calcAt: new Date().toISOString()
           };
-          if (hotelCoord && typeof hotelCoord.lat === "number") persistHotelCoords(name, hotelCoord);
         } else {
           rec.schedule = { on: false, auto: true, offAt: new Date().toISOString() };
         }
@@ -8608,8 +9635,7 @@
       const box = document.getElementById("place-search-results");
       box.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:4px;">'${escapeAttr(q)}' 찾는 중...</div>`;
       try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(q)}`);
-        const list = await r.json();
+        const list = await smartPlaceSearch(q, { limit: 6 });
         if (!list || !list.length) {
           box.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:4px;">검색 결과가 없어요. 주소를 조금 더 자세히 적어 보세요.</div>`;
           return;
@@ -8617,8 +9643,8 @@
         window._savedPlaceResults = list;
         box.innerHTML = list.map((p, i) => `
           <div class="expense-item" style="padding:6px 4px;cursor:pointer;" onclick="pickSavedPlaceCoords(${i})">
-            <div style="font-size:12px;"><strong>${escapeAttr(p.name || q)}</strong>
-              <div style="color:var(--muted);font-size:11px;">${escapeAttr(p.display_name || "")}</div>
+            <div style="font-size:12px;"><strong>${krKindIcon(p.kind)} ${escapeAttr(p.name || q)}</strong>
+              <div style="color:var(--muted);font-size:11px;">${escapeAttr(p.sub || "")}</div>
             </div>
             <span class="tag blue">선택</span>
           </div>`).join("");
@@ -8630,7 +9656,7 @@
     function pickSavedPlaceCoords(i) {
       const p = (window._savedPlaceResults || [])[i];
       if (!p) return;
-      savedPlacePickCoords = { lat: parseFloat(p.lat), lng: parseFloat(p.lon) };
+      savedPlacePickCoords = { lat: parseFloat(p.lat), lng: Number(p.lng != null ? p.lng : p.lon) };
       const addrEl = document.getElementById("place-address");
       if (p.display_name) addrEl.value = p.name ? `${p.name} (${p.display_name})` : p.display_name;
       document.getElementById("place-search-results").innerHTML = `<div style="font-size:12px;color:var(--success);padding:4px;">✓ 좌표 선택됨 (${savedPlacePickCoords.lat.toFixed(4)}, ${savedPlacePickCoords.lng.toFixed(4)})</div>`;
@@ -10552,14 +11578,84 @@
       { name: "흰여울문화마을 해안터널", purpose: "데이트", desc: "바다 위 절벽 골목길과 오션뷰 포토 스팟", lat: 35.0785, lng: 129.0445, times: ["아침", "점심", "저녁"] }
     ];
 
+    // 🍽️ 서울용 추천 풀 — 부산 고정 풀(광안리·해운대)이 섞여 '바다 도시'로 인식되던 문제 방지
+    const CURATED_SEOUL_SPOTS = [
+      { name: "청계천 산책로", purpose: "산책", desc: "도심 물길 산책 · 밤 조명이 예뻐요", lat: 37.5696, lng: 126.9787, times: ["아침", "점심", "저녁", "밤"] },
+      { name: "서울숲", purpose: "산책", desc: "숲·사슴방사장·뚝섬한강으로 이어지는 산책", lat: 37.5443, lng: 127.0374, times: ["아침", "점심", "저녁"] },
+      { name: "남산 둘레길 (백범광장)", purpose: "산책", desc: "남산성곽길 · 도심이 내려다보이는 산책로", lat: 37.5547, lng: 126.9803, times: ["아침", "점심", "저녁"] },
+      { name: "여의도 한강공원", purpose: "산책", desc: "한강 런닝·피크닉·라면 코스", lat: 37.5284, lng: 126.9338, times: ["점심", "저녁", "밤"] },
+      { name: "북촌·삼청동 골목", purpose: "산책", desc: "한옥 골목과 갤러리·찻집 산책", lat: 37.5826, lng: 126.9830, times: ["아침", "점심", "저녁"] },
+      { name: "성수동 카페거리", purpose: "산책", desc: "편집샵·팝업·로스터리 카페 골목", lat: 37.5446, lng: 127.0559, times: ["점심", "저녁"] },
+      { name: "명동교자 본점", purpose: "음식점", desc: "칼국수·만두로 유명한 명동 노포", lat: 37.5637, lng: 126.9850, times: ["점심", "저녁"] },
+      { name: "토속촌 삼계탕", purpose: "음식점", desc: "서촌 삼계탕 — 웨이팅 있는 인기집", lat: 37.5770, lng: 126.9710, times: ["점심", "저녁"] },
+      { name: "진옥화할매원조닭한마리", purpose: "음식점", desc: "동대문 닭한마리 골목 원조", lat: 37.5705, lng: 127.0093, times: ["점심", "저녁"] },
+      { name: "우래옥", purpose: "음식점", desc: "을지로 평양냉면·불고기 노포", lat: 37.5678, lng: 126.9985, times: ["점심", "저녁"] },
+      { name: "광장시장 순희네빈대떡", purpose: "음식점", desc: "광장시장 녹두빈대떡·육회", lat: 37.5701, lng: 126.9996, times: ["점심", "저녁"] },
+      { name: "을지로 노가리골목", purpose: "술집", desc: "노가리·골뱅이와 생맥주, 늦게까지", lat: 37.5665, lng: 126.9883, times: ["저녁", "밤"] },
+      { name: "어니언 안국", purpose: "카페", desc: "한옥 리모델링 베이커리 카페", lat: 37.5762, lng: 126.9858, times: ["아침", "점심"] },
+      { name: "대림창고", purpose: "카페", desc: "성수 창고형 대형 카페·갤러리", lat: 37.5427, lng: 127.0558, times: ["점심", "저녁"] },
+      { name: "프릳츠 도화점", purpose: "카페", desc: "스페셜티 커피 로스터리", lat: 37.5378, lng: 126.9518, times: ["아침", "점심"] },
+      { name: "블루보틀 성수", purpose: "카페", desc: "성수동 대형 로스터리 카페", lat: 37.5446, lng: 127.0557, times: ["아침", "점심", "저녁"] },
+      { name: "을지로 장생", purpose: "바", desc: "을지로 골목 칵테일 바", lat: 37.5662, lng: 126.9919, times: ["저녁", "밤"] },
+      { name: "남산서울타워", purpose: "데이트", desc: "서울 야경 파노라마·전망대", lat: 37.5512, lng: 126.9882, times: ["저녁", "밤"] },
+      { name: "반포한강공원 달빛무지개분수", purpose: "데이트", desc: "밤 분수쇼와 한강 야경", lat: 37.5106, lng: 126.9950, times: ["저녁", "밤"] },
+      { name: "롯데월드타워 서울스카이", purpose: "데이트", desc: "118층 전망대 야경", lat: 37.5126, lng: 127.1025, times: ["저녁", "밤"] },
+      { name: "익선동 한옥골목", purpose: "데이트", desc: "한옥 카페·바·소품샵 골목", lat: 37.5746, lng: 126.9900, times: ["점심", "저녁", "밤"] },
+      { name: "경복궁·서촌", purpose: "데이트", desc: "고궁 산책과 서촌 골목 카페", lat: 37.5796, lng: 126.9770, times: ["아침", "점심", "저녁"] }
+    ];
+
+    // 도시별 추천 풀 — 부산 고정 풀이 다른 도시(서울 등)에 섞이지 않게 한다
+    function curatedSpotsForCity(cityKey) {
+      if (cityKey === "부산") return CURATED_BUSAN_SPOTS;
+      if (cityKey === "서울") return CURATED_SEOUL_SPOTS;
+      const pool = CITY_ROUTE_SPOTS[cityKey] || [];
+      return pool.map(p => ({
+        name: p.name,
+        purpose: /카페/.test(`${p.cat} ${p.name}`) ? "카페" : /음식점/.test(p.cat || "") ? "음식점" : /바|술/.test(p.name) ? "술집" : "산책",
+        desc: p.desc || `${cityKey} 추천 장소`,
+        lat: p.lat, lng: p.lng,
+        times: ["아침", "점심", "저녁", "밤"]
+      }));
+    }
+
+    function cityCenterOf(cityKey) {
+      if (!cityKey) return null;
+      const exact = KR_PLACES.find(p => p.n === cityKey || p.n === `${cityKey}역` || p.n === `${cityKey}시청`);
+      if (exact) return { lat: exact.lat, lng: exact.lng };
+      const rows = KR_PLACES.filter(p => p.c === cityKey);
+      if (!rows.length) return null;
+      return {
+        lat: rows.reduce((s, p) => s + p.lat, 0) / rows.length,
+        lng: rows.reduce((s, p) => s + p.lng, 0) / rows.length
+      };
+    }
+
     function initRecommendSelectors() {
       const daySel = document.getElementById("rec-day");
       if (!daySel) return;
+      syncRecommendDestDefaults();
       const prevDay = daySel.value;
       daySel.innerHTML = state.days.map(d => `<option value="${d.day}">${d.label}</option>`).join("");
       if (prevDay && state.days.some(d => String(d.day) === prevDay)) daySel.value = prevDay;
       else daySel.value = String(currentDay);
       updateRecommendAfterOptions();
+    }
+
+    // 추천 탭 목적지 칸이 여행지와 다르게 남아 있으면 현재 여행지로 맞춘다 (사용자가 직접 고친 값은 유지)
+    function syncRecommendDestDefaults() {
+      const city = tripCityKey();
+      if (!city) return;
+      ["route-dest", "must-dest"].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (el.dataset.userDest === "1") return;
+        el.value = city;
+      });
+    }
+
+    function markRecommendDestEdited(id) {
+      const el = document.getElementById(id);
+      if (el) el.dataset.userDest = "1";
     }
 
     function updateRecommendAfterOptions() {
@@ -10598,8 +11694,18 @@
       if (!dayObj || !resEl) return;
 
       let anchor = afterIdx >= 0 ? dayObj.items[afterIdx] : dayObj.items[0];
-      if (!anchor?.lat) anchor = dayObj.items.find(x => typeof x.lat === "number") || { lat: 35.1538, lng: 129.1190, place: "광안리" };
-      const aLat = anchor.lat || 35.1538, aLng = anchor.lng || 129.1190;
+      if (!anchor || typeof anchor.lat !== "number") anchor = dayObj.items.find(x => typeof x.lat === "number") || null;
+      const recCity = tripCityKey();
+      if (!anchor) {
+        // 🚫 여행지와 무관한 부산 기본 좌표를 쓰지 않는다 — 여행지 중심이 있을 때만 계산
+        const center = cityCenterOf(recCity);
+        if (!center) {
+          resEl.innerHTML = `<div class="card" style="font-size:12.5px;color:var(--muted);line-height:1.6;">주변 추천을 하려면 좌표가 있는 장소가 하나 필요해요. 일정에 장소를 먼저 추가하거나, 위 목록에서 장소를 골라 주세요.</div>`;
+          return;
+        }
+        anchor = { lat: center.lat, lng: center.lng, place: recCity || "여행지" };
+      }
+      const aLat = anchor.lat, aLng = anchor.lng;
 
       resEl.innerHTML = `<div class="card" style="text-align:center;color:var(--muted);font-size:13px;">🔍 ${anchor.place || "선택 위치"} 주변 '${purpose}' 5곳 찾는 중...</div>`;
 
@@ -10629,7 +11735,8 @@
         })).filter(x => x.name && x.lat && x.lng);
       } catch { /* fallback to curated */ }
 
-      const curated = CURATED_BUSAN_SPOTS
+      const curatedPool = curatedSpotsForCity(recCity);
+      const curated = curatedPool
         .filter(s => s.purpose === purpose || (purpose === "데이트" && (s.purpose === "산책" || s.purpose === "카페")))
         .map(s => ({ ...s, source: "추천", timeMatch: s.times.includes(timeSlot) ? 0 : 1 }));
 
@@ -10644,7 +11751,7 @@
       }
       // 요청한 목적의 후보가 5곳보다 적으면 가까운 다른 추천 후보로 5곳을 채운다
       if (merged.length < 5) {
-        const fillers = CURATED_BUSAN_SPOTS
+        const fillers = curatedPool
           .filter(s => !seen.has(s.name.replace(/\s+/g, "")))
           .map(s => ({ ...s, source: "추천", timeMatch: 1, distKm: calcDistKm(aLat, aLng, s.lat, s.lng) }))
           .sort((a, b) => a.distKm - b.distKm);
@@ -11075,10 +12182,39 @@
 
     let roulRegion = "domestic";
     let roulThemes = [];   // 취향 복수 선택
+    let roulPeople = 2;    // 인원수 (1 / 2 / 3~4 / 5+)
+    let roulNights = null; // 일정 길이 override (null = 추천대로)
+    let roulParty = null;  // 여행 동행 유형 (couple/friends/parents/honeymoon/solo/family)
     let roulMount = "nts";   // 룰렛 블록이 지금 어느 설정 모달에 붙어 있는지 (nts = 국내, os = 해외)
     let roulOpen = false;
     let roulSpinning = false;
     let roulResults = [];
+
+    const ROULETTE_PARTIES = [
+      { key: "couple", label: "커플여행", emoji: "💑", themes: ["night", "healing", "food"] },
+      { key: "friends", label: "친구들과 함께", emoji: "👯", themes: ["active", "night", "city", "food"] },
+      { key: "parents", label: "효도여행", emoji: "🧓", themes: ["nature", "healing", "food"] },
+      { key: "honeymoon", label: "신혼여행", emoji: "💍", themes: ["healing", "night", "city"] },
+      { key: "solo", label: "혼자여행", emoji: "🎒", themes: ["food", "city", "nature"] },
+      { key: "family", label: "가족여행", emoji: "👨‍👩‍👧", themes: ["nature", "active", "food"] }
+    ];
+
+    function roulPartyMeta(key) { return ROULETTE_PARTIES.find(p => p.key === key) || null; }
+
+    // 동행 유형과 여행지 취향이 몇 개 겹치는지 (0~3)
+    function roulettePartyFit(d, party) {
+      const meta = roulPartyMeta(party);
+      if (!meta) return 0;
+      return meta.themes.filter(k => (d.themes || []).includes(k)).length;
+    }
+
+    // 선택한 일정 길이와 여행지의 기본 체류 박수가 얼마나 맞는지
+    function rouletteLengthFit(d) {
+      if (roulNights == null) return 0;
+      const base = Math.max(1, Number(d.nights) || 1);
+      const diff = Math.abs(Number(roulNights) - base);
+      return diff === 0 ? 2 : diff === 1 ? 1 : -1;
+    }
 
     function roulThemeMeta(key) { return ROULETTE_THEMES.find(t => t.key === key) || null; }
 
@@ -11091,17 +12227,20 @@
       return rouletteThemeKeys(theme).filter(k => (d.themes || []).includes(k)).length;
     }
 
-    function rouletteCost(d) {
-      const nights = Math.max(1, Number(d.nights) || 1);
+    function rouletteCost(d, opts = {}) {
+      const nights = Math.max(0, opts.nights != null ? Number(opts.nights) : Math.max(1, Number(d.nights) || 1));
       const days = nights + 1;
+      const people = Math.max(1, Number(opts.travelers) || 1);
+      const soloAdj = opts.travelers != null && people === 1 ? 1.25 : 1; // 혼자면 1인실·1인 숙박 할증
       const c = d.cost || {};
       const parts = {
         transport: Number(c.transport) || 0,
-        lodging: (Number(c.lodging) || 0) * nights,
+        lodging: Math.round((Number(c.lodging) || 0) * nights * soloAdj),
         food: (Number(c.food) || 0) * days,
         activity: (Number(c.activity) || 0) * days
       };
-      return { parts, total: parts.transport + parts.lodging + parts.food + parts.activity, nights, days };
+      const total = parts.transport + parts.lodging + parts.food + parts.activity;
+      return { parts, total, nights, days, travelers: people, groupTotal: total * people };
     }
 
     function rouletteFit(d, theme) {
@@ -11117,6 +12256,47 @@
       if (!matched) return 66;
       // 겹치는 취향이 많을수록 적합도가 올라간다
       return Math.min(99, best + (matched - 1) * 3);
+    }
+
+    function renderRouletteSettings() {
+      const people = document.getElementById("roul-people");
+      if (people) people.value = String(roulPeople);
+      const len = document.getElementById("roul-length");
+      if (len) len.value = roulNights == null ? "auto" : String(roulNights);
+      const host = document.getElementById("roul-party-chips");
+      if (host) {
+        host.innerHTML = ROULETTE_PARTIES.map(p => {
+          const on = roulParty === p.key;
+          return `<button type="button" class="roul-party ${on ? "active" : ""}" aria-pressed="${on ? "true" : "false"}" onclick="setRouletteParty('${p.key}')">${on ? "✓ " : ""}${p.emoji} ${p.label}</button>`;
+        }).join("");
+      }
+    }
+
+    function setRoulettePeople(v) {
+      roulPeople = Math.max(1, Number(v) || 2);
+      renderRouletteSettings();
+      if (roulResults.length) renderRouletteResults(roulResults, roulThemes, true);
+    }
+
+    function setRouletteLength(v) {
+      roulNights = v === "auto" || v === "" ? null : Math.max(0, Number(v) || 0);
+      renderRouletteSettings();
+      if (roulResults.length) renderRouletteResults(roulResults, roulThemes, true);
+    }
+
+    function setRouletteParty(key) {
+      roulParty = roulParty === key ? null : key;   // 한 번 더 누르면 선택 해제
+      renderRouletteSettings();
+      if (roulResults.length) {
+        // 동행 유형에 맞춰 순위를 다시 정한다
+        const pool = (ROULETTE_SPOTS[roulRegion] || []).filter(d => roulResults.some(x => x.name === d.name));
+        roulResults = [...roulResults].sort((a, b) =>
+          roulettePartyFit(b, roulParty) - roulettePartyFit(a, roulParty) ||
+          rouletteMatchCount(b, roulThemes) - rouletteMatchCount(a, roulThemes) ||
+          rouletteFit(b, roulThemes) - rouletteFit(a, roulThemes)
+        );
+        renderRouletteResults(roulResults, roulThemes, true);
+      }
     }
 
     function renderRouletteThemes() {
@@ -11143,6 +12323,7 @@
 
     function renderRouletteUI() {
       renderRouletteRegion();
+      renderRouletteSettings();
       renderRouletteThemes();
       if (roulResults.length) renderRouletteResults(roulResults, roulThemes, true);
     }
@@ -11162,6 +12343,9 @@
       mountRouletteBlock(target);
       roulRegion = roulMount === "os" ? "overseas" : "domestic";
       roulThemes = [];
+      roulPeople = 2;
+      roulNights = null;
+      roulParty = null;
       roulResults = [];
       roulSpinning = false;
       const host = document.getElementById("roul-results");
@@ -11216,20 +12400,22 @@
     }
 
     // 가중치 뽑기: 선택한 취향과 겹치는 취향이 많을수록 잘 나오도록 점수² 가중치로 3곳 추첨
-    function pickRouletteTop3(pool, theme) {
+    function pickRouletteTop3(pool, theme, party) {
       const keys = rouletteThemeKeys(theme);
       const scoreOf = (d) => {
-        if (!keys.length) return 5;
+        if (!keys.length && !party && roulNights == null) return 5;
         let s = 0;
         keys.forEach(k => {
           const i = (d.themes || []).indexOf(k);
           s += i === 0 ? 10 : i === 1 ? 6 : i === 2 ? 3 : 0;
         });
+        s += roulettePartyFit(d, party) * 2.2;   // 동행 유형과 겹치는 취향 가점
+        s += rouletteLengthFit(d) * 1.4;          // 고른 일정 길이와 잘 맞는 여행지 가점
         return s; // 여러 취향과 겹칠수록 커진다
       };
       const bag = pool.map(d => {
         const s = scoreOf(d);
-        const w = keys.length && s === 0 ? 0.3 : s * s * (0.6 + (Number(d.hot) || 50) / 100);
+        const w = (keys.length || party) && s === 0 ? 0.3 : s * s * (0.6 + (Number(d.hot) || 50) / 100);
         return { d, w };
       });
       const picked = [];
@@ -11241,8 +12427,9 @@
         for (let i = 0; i < left.length; i++) { r -= left[i].w; if (r <= 0) { idx = i; break; } idx = i; }
         picked.push(left.splice(idx, 1)[0].d);
       }
-      // 뽑힌 3곳의 순위: 겹치는 취향 개수 → 적합도 → 인기 순
+      // 뽑힌 3곳의 순위: 동행 유형 적합도 → 겹치는 취향 개수 → 적합도 → 인기 순
       return picked.sort((a, b) =>
+        (party ? roulettePartyFit(b, party) - roulettePartyFit(a, party) : 0) ||
         rouletteMatchCount(b, keys) - rouletteMatchCount(a, keys) ||
         rouletteFit(b, keys) - rouletteFit(a, keys) ||
         (b.hot || 0) - (a.hot || 0)
@@ -11274,7 +12461,7 @@
         if (slot) slot.innerHTML = `${d.emoji} ${d.name}<small>${label} 룰렛 도는 중...</small>`;
         if (tick < ticks) return;
         clearInterval(timer);
-        roulResults = pickRouletteTop3(cand, keys);
+        roulResults = pickRouletteTop3(cand, keys, roulParty);
         if (slot) {
           slot.classList.remove("spinning");
           const top = roulResults[0];
@@ -11292,10 +12479,14 @@
       if (!picks || !picks.length) { host.innerHTML = ""; return; }
       const rank = ["🥇", "🥈", "🥉"];
       const keys = rouletteThemeKeys(theme);
+      const people = Math.max(1, Number(roulPeople) || 2);
+      const partyMeta = roulPartyMeta(roulParty);
       host.innerHTML = picks.map((d, i) => {
-        const { parts, total, nights, days } = rouletteCost(d);
+        const { parts, total, nights, days, groupTotal } = rouletteCost(d, { nights: roulNights, travelers: people });
+        const lengthTxt = nights === 0 ? "당일치기" : `${nights}박 ${days}일`;
         const fit = rouletteFit(d, theme);
         const matched = rouletteMatchCount(d, keys);
+        const pFit = roulettePartyFit(d, roulParty);
         const regionLabel = d.country ? `해외 · ${d.country === "기타" ? (d.countryCustom || "해외") : d.country}` : "국내";
         const tags = (d.themes || []).slice(0, 3).map(k => {
           const t = roulThemeMeta(k);
@@ -11305,25 +12496,29 @@
         const fitTag = keys.length
           ? `<span class="roul-tag fit">취향 적합 ${fit}%${keys.length > 1 ? ` · ${matched}/${keys.length} 겹침` : ""}</span>`
           : `<span class="roul-tag fit">인기 지수 ${fit}%</span>`;
+        const partyTag = partyMeta
+          ? `<span class="roul-tag${pFit ? " fit" : ""}">${partyMeta.emoji} ${partyMeta.label}${pFit ? ` 적합 ${pFit}/${partyMeta.themes.length}` : " · 아쉬움"}</span>`
+          : "";
         return `
           <div class="roul-card ${i === 0 ? "top1" : ""}">
             <div class="roul-card-head">
               <div class="roul-rank">${rank[i] || "•"}</div>
               <div style="flex:1;min-width:0;">
                 <div class="roul-name">${d.emoji} ${d.name}</div>
-                <div class="roul-meta">${regionLabel} · ${nights}박 ${days}일</div>
+                <div class="roul-meta">${regionLabel} · ${lengthTxt} · ${people}명</div>
               </div>
             </div>
-            <div class="roul-tags">${fitTag}${tags}</div>
+            <div class="roul-tags">${fitTag}${partyTag}${tags}</div>
             <div class="roul-blurb">${d.blurb}</div>
             <div class="roul-cost-box">
-              <div class="roul-cost-top"><span>1인 예상 경비 · ${nights}박 ${days}일</span><b>${fmt(total)}</b></div>
+              <div class="roul-cost-top"><span>1인 예상 경비 · ${lengthTxt}</span><b>${fmt(total)}</b></div>
               <div class="roul-cost-parts">
                 <div>교통<b>${fmt(parts.transport)}</b></div>
                 <div>숙박<b>${fmt(parts.lodging)}</b></div>
                 <div>식비<b>${fmt(parts.food)}</b></div>
                 <div>입장·체험<b>${fmt(parts.activity)}</b></div>
               </div>
+              <div class="roul-cost-total">👥 ${people}명 합계 <b style="color:var(--ocean-dark);">${fmt(groupTotal)}</b>${people === 1 ? " · 1인 숙박 할증 포함" : ""}</div>
             </div>
             <div class="roul-meta" style="margin-top:8px;">🚉 ${d.transit}<br>🗓️ ${d.best}</div>
             <div class="roul-do">
@@ -11331,13 +12526,13 @@
               <a class="btn btn-soft btn-sm" style="text-decoration:none;" href="https://map.naver.com/p/search/${encodeURIComponent(d.name)}" target="_blank" rel="noopener">🗺️ 지도</a>
             </div>
           </div>`;
-      }).join("") + `<div class="roul-note">※ 성인 2인 · 2인 1실 기준 1인 예상 경비예요. 숙박은 1박 평균가, 계절·예매 시점에 따라 달라져요.</div>`;
+      }).join("") + `<div class="roul-note">※ ${people}명 기준 · 숙박은 2인 1실 1박 평균가로 계산했어요. 선택한 일정 길이·계절·예매 시점에 따라 달라져요.</div>`;
     }
 
     // 뽑힌 여행지 → 새 여행 개설 화면에 미리 채워 둔다 (최종 개설은 사용자가 버튼으로)
     // 추천 여행지 → 설정 모달 입력 칸에 채운다 (모달은 닫지 않는다)
     function rouletteTripPlan(d) {
-      const nights = Math.max(1, Number(d.nights) || 1);
+      const nights = roulNights != null ? Math.max(0, Number(roulNights) || 0) : Math.max(1, Number(d.nights) || 1);
       const base = new Date();
       base.setHours(0, 0, 0, 0);
       base.setDate(base.getDate() + 21);
@@ -11346,9 +12541,10 @@
       return {
         nights,
         days: nights + 1,
+        travelers: Math.max(1, Number(roulPeople) || 2),
         startStr: toLocalIso(base),
         endStr: toLocalIso(end),
-        title: `${d.name} ${nights}박 ${nights + 1}일`
+        title: `${d.name} ${nights === 0 ? "당일치기" : `${nights}박 ${nights + 1}일`}`
       };
     }
 
@@ -11382,6 +12578,8 @@
           document.getElementById("os-title").value = plan.title;
           document.getElementById("os-start").value = plan.startStr;
           document.getElementById("os-end").value = plan.endStr;
+          const osTrav = document.getElementById("os-travelers");
+          if (osTrav) osTrav.value = String(plan.travelers);
           const om = document.getElementById("os-out-mode"), im = document.getElementById("os-in-mode");
           if (om) om.value = "비행기";
           if (im) im.value = "비행기";
@@ -11396,6 +12594,8 @@
           document.getElementById("nts-dest").value = d.name;
           document.getElementById("nts-start").value = plan.startStr;
           document.getElementById("nts-end").value = plan.endStr;
+          const ntsTrav = document.getElementById("nts-travelers");
+          if (ntsTrav) ntsTrav.value = String(plan.travelers);
           const om = document.getElementById("nts-out-mode"), im = document.getElementById("nts-in-mode");
           if (om) om.value = d.mode || "기차";
           if (im) im.value = d.mode || "기차";
@@ -11408,7 +12608,7 @@
       const note = document.getElementById("roul-fill-note");
       if (note) {
         note.style.display = "flex";
-        note.innerHTML = `<span>✅</span><span><b>${d.emoji} ${d.name}</b> 추천 ${plan.nights}박 ${plan.days}일로 아래 칸을 채웠어요. 날짜·인원은 자유롭게 고쳐서 바로 시작하면 돼요.${switched ? " (해외 설정 칸으로 옮겨 채웠어요)" : ""}</span>`;
+        note.innerHTML = `<span>✅</span><span><b>${d.emoji} ${d.name}</b> 추천 ${plan.nights === 0 ? "당일치기" : `${plan.nights}박 ${plan.days}일`} · ${plan.travelers}명으로 아래 칸을 채웠어요. 날짜·인원은 자유롭게 고쳐서 바로 시작하면 돼요.${switched ? " (해외 설정 칸으로 옮겨 채웠어요)" : ""}</span>`;
       }
       const anchor = document.getElementById(r === "overseas" ? "os-title" : "nts-title");
       try { anchor?.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) {}
@@ -11539,6 +12739,10 @@
       if (knownKey) {
         const m = KNOWN_SPOT_META[knownKey];
         return { name, lat: m.lat, lng: m.lng, cat: m.cat, cost: m.cost, stay: m.stay, desc: m.desc, closed: m.closed, closedChecked: true };
+      }
+      const gz = krGazetteerSearch(name, 1)[0];
+      if (gz && normPlaceQuery(gz.name) === normPlaceQuery(name)) {
+        return { name, lat: gz.lat, lng: gz.lng, cat: "필수", cost: 0, stay: "체류 60분", desc: `${gz.name} · ${gz.sub || "추천 명소"}`, closed: "", closedChecked: false };
       }
       try {
         const url = `https://nominatim.openstreetmap.org/search?format=json&extratags=1&limit=1&q=${encodeURIComponent(destHint + " " + name)}`;
@@ -11774,9 +12978,106 @@
       "서울": [
         { name: "서촌 & 통인시장", cat: "음식점", lat: 37.5806, lng: 126.9699, cost: 20000, stay: "체류 60분", desc: "기름떡볶이 & 한옥 골목 산책" },
         { name: "경복궁 & 국립현대미술관", cat: "관광", lat: 37.5796, lng: 126.9770, cost: 6000, stay: "체류 80분", desc: "도심 속 고궁과 전시 산책" },
+        { name: "북촌한옥마을 & 삼청동", cat: "관광", lat: 37.5826, lng: 126.9830, cost: 0, stay: "체류 70분", desc: "한옥 골목과 갤러리·찻집 산책" },
+        { name: "인사동 & 익선동 한옥골목", cat: "관광", lat: 37.5746, lng: 126.9900, cost: 0, stay: "체류 60분", desc: "전통 공예 거리와 한옥 카페 골목" },
+        { name: "광장시장 먹자골목", cat: "음식점", lat: 37.5700, lng: 126.9998, cost: 18000, stay: "체류 50분", desc: "녹두빈대떡·육회·마약김밥" },
+        { name: "동대문디자인플라자(DDP)", cat: "관광", lat: 37.5665, lng: 127.0092, cost: 0, stay: "체류 60분", desc: "전시와 야간 조명이 예쁜 복합문화공간" },
         { name: "성수동 카페거리", cat: "카페", lat: 37.5446, lng: 127.0560, cost: 16000, stay: "체류 70분", desc: "트렌디한 팝업 & 로스터리 카페" },
+        { name: "서울숲", cat: "관광", lat: 37.5443, lng: 127.0374, cost: 0, stay: "체류 70분", desc: "숲 산책과 뚝섬한강 연결 코스" },
+        { name: "뚝섬한강공원", cat: "관광", lat: 37.5295, lng: 127.0668, cost: 0, stay: "체류 60분", desc: "한강 자전거·피크닉" },
+        { name: "홍대입구 & 연남동 카페골목", cat: "카페", lat: 37.5572, lng: 126.9245, cost: 15000, stay: "체류 70분", desc: "연트럴파크 카페·소품샵" },
         { name: "여의도 한강공원 & 더현대 서울", cat: "관광", lat: 37.5260, lng: 126.9284, cost: 25000, stay: "체류 90분", desc: "한강 피크닉 & 쇼핑" },
-        { name: "남산서울타워 야경", cat: "관광", lat: 37.5512, lng: 126.9882, cost: 20000, stay: "체류 60분", desc: "서울 시내 파노라마 야경" }
+        { name: "남산서울타워 야경", cat: "관광", lat: 37.5512, lng: 126.9882, cost: 20000, stay: "체류 60분", desc: "서울 시내 파노라마 야경" },
+        { name: "명동 & 을지로 쇼핑거리", cat: "관광", lat: 37.5636, lng: 126.9850, cost: 0, stay: "체류 70분", desc: "쇼핑·길거리 간식·야경" },
+        { name: "을지로 노가리골목", cat: "음식점", lat: 37.5665, lng: 126.9883, cost: 22000, stay: "체류 70분", desc: "노가리·골뱅이와 생맥주" },
+        { name: "잠실 롯데월드타워 & 석촌호수", cat: "관광", lat: 37.5126, lng: 127.1025, cost: 29000, stay: "체류 80분", desc: "서울스카이 전망대와 호수 산책" },
+        { name: "코엑스 & 별마당도서관", cat: "관광", lat: 37.5118, lng: 127.0590, cost: 0, stay: "체류 60분", desc: "실내 전시·서점·쇼핑" },
+        { name: "경리단길 & 이태원", cat: "카페", lat: 37.5396, lng: 126.9902, cost: 15000, stay: "체류 60분", desc: "남산 아래 골목 카페·바" },
+        { name: "반포한강공원 달빛무지개분수", cat: "관광", lat: 37.5106, lng: 126.9950, cost: 0, stay: "체류 50분", desc: "밤 분수쇼와 한강 야경" }
+      ],
+      "대구": [
+        { name: "동성로 쇼핑거리", cat: "관광", lat: 35.8695, lng: 128.5950, cost: 0, stay: "체류 70분", desc: "대구 중심 쇼핑·먹거리" },
+        { name: "서문시장 야시장", cat: "음식점", lat: 35.8685, lng: 128.5800, cost: 18000, stay: "체류 60분", desc: "납작만두·전참시 먹거리" },
+        { name: "김광석다시그리기길", cat: "관광", lat: 35.8590, lng: 128.6060, cost: 0, stay: "체류 50분", desc: "벽화 골목과 라이브 카페" },
+        { name: "앞산 케이블카 & 전망대", cat: "관광", lat: 35.8230, lng: 128.5760, cost: 12000, stay: "체류 70분", desc: "대구 시내 파노라마" },
+        { name: "수성못 & 카페거리", cat: "카페", lat: 35.8280, lng: 128.6170, cost: 15000, stay: "체류 60분", desc: "호수 산책과 카페" }
+      ],
+      "전주": [
+        { name: "전주한옥마을", cat: "관광", lat: 35.8147, lng: 127.1530, cost: 0, stay: "체류 90분", desc: "한옥 골목·한복·비빔밥" },
+        { name: "경기전", cat: "관광", lat: 35.8150, lng: 127.1490, cost: 0, stay: "체류 50분", desc: "한옥마을 안 사적지" },
+        { name: "남부시장 & 청년몰", cat: "음식점", lat: 35.8095, lng: 127.1470, cost: 18000, stay: "체류 60분", desc: "야시장·청년몰 먹거리" },
+        { name: "자만벽화마을", cat: "관광", lat: 35.8130, lng: 127.1420, cost: 0, stay: "체류 50분", desc: "언덕 벽화 골목" },
+        { name: "전주 객사 & 한옥 카페", cat: "카페", lat: 35.8180, lng: 127.1480, cost: 13000, stay: "체류 60분", desc: "고즈넉한 한옥 카페" }
+      ],
+      "속초": [
+        { name: "속초중앙시장", cat: "음식점", lat: 38.2045, lng: 128.5905, cost: 20000, stay: "체류 60분", desc: "닭강정·아바이순대" },
+        { name: "청초호 & 영금정", cat: "관광", lat: 38.1940, lng: 128.5960, cost: 0, stay: "체류 60분", desc: "호수와 바다를 잇는 산책" },
+        { name: "설악산 소공원", cat: "관광", lat: 38.1750, lng: 128.4650, cost: 0, stay: "체류 90분", desc: "국립공원 입구 산책" },
+        { name: "낙산사", cat: "관광", lat: 38.1250, lng: 128.6280, cost: 4000, stay: "체류 70분", desc: "바다를 품은 사찰" },
+        { name: "해변 오션뷰 카페", cat: "카페", lat: 38.2010, lng: 128.5980, cost: 14000, stay: "체류 60분", desc: "동해 바다 통창 카페" }
+      ],
+      "인천": [
+        { name: "인천 차이나타운", cat: "음식점", lat: 37.4760, lng: 126.6180, cost: 20000, stay: "체류 70분", desc: "짬뽕·공갈빵 골목" },
+        { name: "월미도 & 바다열차", cat: "관광", lat: 37.4750, lng: 126.5960, cost: 8000, stay: "체류 70분", desc: "바다 전망 유원지" },
+        { name: "송도센트럴파크", cat: "관광", lat: 37.3900, lng: 126.6390, cost: 0, stay: "체류 70분", desc: "호수 산책과 카페" },
+        { name: "자유공원", cat: "관광", lat: 37.4757, lng: 126.6225, cost: 0, stay: "체류 50분", desc: "항구와 시내 전망" },
+        { name: "개항장 카페거리", cat: "카페", lat: 37.4750, lng: 126.6170, cost: 14000, stay: "체류 60분", desc: "근대 건축 카페" }
+      ],
+      "대전": [
+        { name: "성심당 본점", cat: "음식점", lat: 36.3270, lng: 127.4270, cost: 12000, stay: "체류 40분", desc: "튀김소보로·부추빵" },
+        { name: "한밭수목원", cat: "관광", lat: 36.3670, lng: 127.3880, cost: 0, stay: "체류 70분", desc: "도심 수목원 산책" },
+        { name: "대전 중앙시장", cat: "음식점", lat: 36.3300, lng: 127.4270, cost: 16000, stay: "체류 50분", desc: "시장 먹거리" },
+        { name: "엑스포과학공원", cat: "관광", lat: 36.3740, lng: 127.3850, cost: 0, stay: "체류 60분", desc: "한빛탑과 과학관" },
+        { name: "대청호 카페", cat: "카페", lat: 36.4770, lng: 127.4840, cost: 14000, stay: "체류 60분", desc: "호수 뷰 카페" }
+      ],
+      "광주": [
+        { name: "충장로 & 금남로", cat: "관광", lat: 35.1480, lng: 126.9150, cost: 0, stay: "체류 70분", desc: "쇼핑·먹거리 중심" },
+        { name: "국립아시아문화전당", cat: "관광", lat: 35.1470, lng: 126.9190, cost: 0, stay: "체류 70분", desc: "전시·공연 복합공간" },
+        { name: "양림동 역사마을", cat: "관광", lat: 35.1390, lng: 126.9130, cost: 0, stay: "체류 60분", desc: "근대 건축과 카페 골목" },
+        { name: "무등산", cat: "관광", lat: 35.1340, lng: 126.9880, cost: 0, stay: "체류 90분", desc: "국립공원 등산·전망" },
+        { name: "광주 맛집 골목", cat: "음식점", lat: 35.1490, lng: 126.9110, cost: 20000, stay: "체류 60분", desc: "한정식·상추튀김" }
+      ],
+      "춘천": [
+        { name: "남이섬", cat: "관광", lat: 37.7910, lng: 127.5250, cost: 16000, stay: "체류 90분", desc: "섬 산책·자전거" },
+        { name: "소양강댐 & 스카이워크", cat: "관광", lat: 37.9470, lng: 127.8170, cost: 3000, stay: "체류 60분", desc: "호수 전망" },
+        { name: "춘천 닭갈비 골목", cat: "음식점", lat: 37.8800, lng: 127.7260, cost: 18000, stay: "체류 60분", desc: "명동 닭갈비 골목" },
+        { name: "강촌 레일바이크", cat: "관광", lat: 37.8050, lng: 127.6330, cost: 25000, stay: "체류 70분", desc: "북한강 철길 자전거" }
+      ],
+      "포항": [
+        { name: "호미곶 해맞이광장", cat: "관광", lat: 36.0750, lng: 129.5680, cost: 0, stay: "체류 60분", desc: "상생의 손·일출" },
+        { name: "영일대 해수욕장", cat: "관광", lat: 36.0500, lng: 129.3800, cost: 0, stay: "체류 60분", desc: "해변 야경" },
+        { name: "스페이스워크", cat: "관광", lat: 36.0550, lng: 129.3630, cost: 0, stay: "체류 50분", desc: "환호공원 스카이워크" },
+        { name: "죽도시장", cat: "음식점", lat: 36.0320, lng: 129.3650, cost: 20000, stay: "체류 60분", desc: "과메기·물회" }
+      ],
+      "목포": [
+        { name: "목포 해상케이블카", cat: "관광", lat: 34.7900, lng: 126.3830, cost: 22000, stay: "체류 60분", desc: "바다 위 케이블카" },
+        { name: "유달산", cat: "관광", lat: 34.7950, lng: 126.3750, cost: 0, stay: "체류 60분", desc: "노적봉·전망" },
+        { name: "목포 홍어거리", cat: "음식점", lat: 34.7890, lng: 126.3800, cost: 25000, stay: "체류 60분", desc: "홍어삼합·세발낙지" },
+        { name: "근대역사관 카페", cat: "카페", lat: 34.7870, lng: 126.3820, cost: 13000, stay: "체류 50분", desc: "옛 건물 카페" }
+      ],
+      "통영": [
+        { name: "동피랑벽화마을", cat: "관광", lat: 34.8450, lng: 128.4180, cost: 0, stay: "체류 60분", desc: "바다 내려다보는 벽화 골목" },
+        { name: "통영케이블카", cat: "관광", lat: 34.8230, lng: 128.3990, cost: 17000, stay: "체류 60분", desc: "미륵산 케이블카" },
+        { name: "중앙시장 & 서호시장", cat: "음식점", lat: 34.8440, lng: 128.4230, cost: 20000, stay: "체류 60분", desc: "충무김밥·꿀빵" },
+        { name: "강구안 오션뷰 카페", cat: "카페", lat: 34.8420, lng: 128.4250, cost: 13000, stay: "체류 50분", desc: "항구 뷰 카페" }
+      ],
+      "군산": [
+        { name: "군산근대역사박물관", cat: "관광", lat: 35.9880, lng: 126.7100, cost: 0, stay: "체류 60분", desc: "근대 건축 거리" },
+        { name: "경암동 철길마을", cat: "관광", lat: 35.9770, lng: 126.7470, cost: 0, stay: "체류 50분", desc: "철길 위 벽화 골목" },
+        { name: "이성당", cat: "음식점", lat: 35.9830, lng: 126.7120, cost: 8000, stay: "체류 30분", desc: "단팥빵·야채빵 노포" },
+        { name: "새만금 방조제", cat: "관광", lat: 35.8500, lng: 126.6000, cost: 0, stay: "체류 50분", desc: "바람길 드라이브" }
+      ],
+      "안동": [
+        { name: "하회마을", cat: "관광", lat: 36.5390, lng: 128.5180, cost: 5000, stay: "체류 90분", desc: "전통 한옥 마을" },
+        { name: "월영교", cat: "관광", lat: 36.5510, lng: 128.7329, cost: 0, stay: "체류 50분", desc: "호수 위 목교 야경" },
+        { name: "안동찜닭 골목", cat: "음식점", lat: 36.5650, lng: 128.7290, cost: 20000, stay: "체류 60분", desc: "안동찜닭 원조 골목" },
+        { name: "안동 한옥 카페", cat: "카페", lat: 36.5600, lng: 128.7300, cost: 12000, stay: "체류 50분", desc: "고즈넉한 한옥 카페" }
+      ],
+      "수원": [
+        { name: "수원화성", cat: "관광", lat: 37.2880, lng: 127.0140, cost: 1000, stay: "체류 80분", desc: "성곽 산책·야경" },
+        { name: "화성행궁", cat: "관광", lat: 37.2820, lng: 127.0140, cost: 1500, stay: "체류 60분", desc: "행궁과 정원" },
+        { name: "행리단길", cat: "카페", lat: 37.2800, lng: 127.0090, cost: 14000, stay: "체류 60분", desc: "카페·소품샵 골목" },
+        { name: "수원 통닭거리", cat: "음식점", lat: 37.2770, lng: 127.0170, cost: 18000, stay: "체류 60분", desc: "옛 통닭 골목" }
       ]
     };
 
@@ -11789,12 +13090,27 @@
       const resBox = document.getElementById("route-results");
       resBox.innerHTML = `<div class="card" style="text-align:center;color:var(--muted);padding:20px;">🗺️ '${destRaw}' 맞춤 루트를 짜고 있어요...</div>`;
 
-      const cityKey = Object.keys(CITY_ROUTE_SPOTS).find(k => destRaw.includes(k));
+      const cityKey = Object.keys(CITY_ROUTE_SPOTS).find(k => destRaw.includes(k)) || tripCityKey();
       let pool = cityKey ? [...CITY_ROUTE_SPOTS[cityKey]] : [];
+
+      // 내장 지명 DB로 같은 도시의 관광지·동네를 보강한다 (서울 12~15곳 이상 확보)
+      if (cityKey) {
+        KR_PLACES.filter(p => p.c === cityKey && /attraction|nature|area/.test(p.k)).forEach(p => {
+          const nk = normPlaceQuery(p.n);
+          if (pool.some(x => normPlaceQuery(x.name).includes(nk) || nk.includes(normPlaceQuery(x.name)))) return;
+          pool.push({
+            name: p.n,
+            cat: p.k === "area" ? "산책" : "관광",
+            lat: p.lat, lng: p.lng,
+            cost: 0, stay: "체류 60분",
+            desc: [p.n, p.s].filter(Boolean).join(" · ")
+          });
+        });
+      }
 
       if (pool.length < 6) {
         try {
-          const url = `https://nominatim.openstreetmap.org/search?format=json&limit=8&q=${encodeURIComponent(destRaw + " 명소 카페 맛집")}`;
+          const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&accept-language=ko&countrycodes=kr&limit=8&q=${encodeURIComponent(destRaw + " 명소 카페 맛집")}`;
           const resp = await fetch(url);
           const rows = await resp.json();
           (rows || []).forEach(r => {
@@ -11822,6 +13138,15 @@
           { name: `${destRaw} 저녁 로컬 식사`, cat: "음식점", cost: 32000, stay: "체류 70분", desc: "저녁 식사 & 야경 산책" }
         ];
       }
+
+      // 같은 이름 장소는 풀에서 한 번만
+      const poolSeen = new Set();
+      pool = pool.filter(p => {
+        const k = normPlaceQuery(p.name);
+        if (!k || poolSeen.has(k)) return false;
+        poolSeen.add(k);
+        return true;
+      });
 
       const styleKey = routeStyleKey || "balanced";
       const styleRank = {
@@ -11872,12 +13197,36 @@
       const timeSlots = styleSlots[styleKey] || styleSlots.balanced;
 
       const days = buildDateRangeDays(startStr, endStr, destRaw);
-      let idx = 0;
-      days.forEach((d) => {
-        const count = d.day === days.length ? Math.min(3, pool.length) : Math.min(4, pool.length);
+      // 🔁 전 일차에 걸쳐 이미 배정한 장소는 절대 다시 쓰지 않는다 (사용한 id·이름 모두 기억)
+      const usedIds = new Set();
+      const usedNames = new Set();
+      let cursor = 0;
+      const takeNextSpot = () => {
+        while (cursor < pool.length) {
+          const cand = pool[cursor++];
+          const key = normPlaceQuery(cand.name);
+          if (!key || usedNames.has(key) || usedIds.has(key)) continue;
+          usedNames.add(key);
+          usedIds.add(key);
+          return cand;
+        }
+        return null;
+      };
+      days.forEach((d, di) => {
+        const isLast = di === days.length - 1;
+        const count = isLast && days.length > 1 ? 3 : 4;
         for (let i = 0; i < count; i++) {
-          const spot = pool[idx % pool.length];
-          idx++;
+          let spot = takeNextSpot();
+          if (!spot) {
+            // 풀이 모자라면 같은 도시의 다른 동네·명소로 채우고, 그래도 없으면 이름이 겹치지 않는 여유 일정으로
+            const spare = KR_PLACES.find(p => p.c === cityKey && !usedNames.has(normPlaceQuery(p.n)) && /attraction|nature|area/.test(p.k));
+            if (spare) {
+              usedNames.add(normPlaceQuery(spare.n));
+              spot = { name: spare.n, cat: spare.k === "area" ? "산책" : "관광", lat: spare.lat, lng: spare.lng, cost: 0, stay: "체류 60분", desc: spare.s || "" };
+            } else {
+              spot = { name: `${destRaw} ${d.day}일차 여유 산책`, cat: "산책", cost: 0, stay: "체류 45분", desc: "주변 골목을 천천히 둘러보는 여유 시간" };
+            }
+          }
           d.items.push({
             id: `ai-${Date.now()}-${d.day}-${i}`,
             time: timeSlots[i] || "15:00",
@@ -13955,7 +15304,7 @@
       const panel = document.getElementById("tab-timeline");
       if (!panel) return;
       const leftSel = [".tl-map-card", ".map-action-row", ".map-help-row", "#map-hours-stamp", "#add-btns-row", ".tl-places-row"];
-      const rightSel = [".day-tabs", ".tl-planb-row", "#planb-content", "#timeline-list", "#bookings-section", ".tl-foot-row", ".tl-foot-stamp"];
+      const rightSel = [".day-tabs", ".tl-planb-row", "#planb-content", "#timeline-list", "#lodging-rec-box", "#bookings-section", ".tl-foot-row", ".tl-foot-stamp"];
       let left = panel.querySelector(".tl-pc-left");
       let right = panel.querySelector(".tl-pc-right");
       const built = Boolean(left && right);
@@ -14038,6 +15387,7 @@
 
     try { applyViewModeClasses(getViewMode()); syncViewModeButtons(getViewMode()); } catch (e) { console.warn("view mode", e); }
     try { buildPcTimeline(); updatePcMetrics(); } catch (e) { console.warn("pc layout", e); }
+    try { attachAllPlaceAutocompletes(); } catch (e) { console.warn("autocomplete", e); }
     try { renderAll(); } catch (e) { console.error("renderAll error:", e); }
     try { initSupabaseFromStorage(); } catch (e) { console.error("supabase init error:", e); }
     setTimeout(() => {
