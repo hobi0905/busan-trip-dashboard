@@ -2868,7 +2868,8 @@
       const n = Math.max(1, Number(state.meta.travelers) || 2);
       const listEl = document.getElementById("timeline-list");
       const cardBlocks = dayObj.items.map((it, idx) => {
-        const badges = (it.badges || []).map(b => {
+        // 일출·일몰 시각은 카드 안 배지가 아니라 타임라인의 한 줄 마커로만 보여 준다
+        const badges = (it.badges || []).filter(b => !/^\s*(일출|일몰)\s*\d{1,2}:\d{2}/.test(String(b))).map(b => {
           let cls = "tag";
           if (b.includes("휴무") || b.includes("필수")) cls += " warn";
           else if (b.includes("완료") || b.includes("영업") || b.includes("오픈")) cls += " blue";
