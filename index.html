@@ -6029,15 +6029,30 @@
       bkFallbackStations = [];
       const city = String(state.meta?.destination || "").split(/[(\s·,]/)[0].trim();
       if (!city) { box.innerHTML = ""; return; }
+      box.innerHTML = `<div style="color:var(--muted);">📍 ${escapeAttr(city)} 기준 가까운 역을 찾는 중...</div>`;
       const cityCoords = await geocodeByName(city);
-      if (!cityCoords) { box.innerHTML = ""; return; }
-      const list = await nearbySubwayStations(cityCoords.lat, cityCoords.lng, 7000, 5);
+      const list = cityCoords ? await nearbySubwayStations(cityCoords.lat, cityCoords.lng, 7000, 5) : [];
       bkFallbackStations = list;
-      if (!list.length) { box.innerHTML = ""; return; }
-      box.innerHTML = `<div style="margin-bottom:3px;">📍 ${escapeAttr(city)} 기준 가까운 역 — 호텔 위치를 모를 땐 동네 기준으로 잡아 둘 수 있어요.</div>`
+      if (list.length) {
+        box.innerHTML = `<div style="margin-bottom:3px;">📍 ${escapeAttr(city)} 기준 가까운 역 — 호텔 위치를 모를 땐 동네 기준으로 잡아 둘 수 있어요.</div>`
+          + `<div class="chip-group" style="margin-top:2px;">`
+          + list.map((s, i) => `<span class="chip" onclick="pickHotelFallbackStation(${i})">${escapeAttr(stationDisplayName(s.name))} · ${s.distM >= 1000 ? (s.distM / 1000).toFixed(1) + "km" : s.distM + "m"}</span>`).join("")
+          + `</div>`;
+        return;
+      }
+      // 역 목록을 못 받아도 바로 써볼 수 있는 검색어 칩은 항상 준다
+      const quick = [`${city}역`, `${city}시청역`, `${city} 지하철역`];
+      box.innerHTML = `<div style="margin-bottom:3px;color:var(--muted);">여행지 기준 역 목록을 지금은 못 받았어요. 아래로 바로 검색해 볼 수 있어요.</div>`
         + `<div class="chip-group" style="margin-top:2px;">`
-        + list.map((s, i) => `<span class="chip" onclick="pickHotelFallbackStation(${i})">${escapeAttr(stationDisplayName(s.name))} · ${s.distM >= 1000 ? (s.distM / 1000).toFixed(1) + "km" : s.distM + "m"}</span>`).join("")
+        + quick.map(q => `<span class="chip" onclick="fillHotelSearchAndSearch('${escapeAttr(q).replace(/'/g, "")}')">🔎 ${escapeAttr(q)}</span>`).join("")
         + `</div>`;
+    }
+
+    // 칩을 누르면 주소·가까운 역 칸에 그 검색어를 넣고 바로 좌표 검색
+    function fillHotelSearchAndSearch(q) {
+      const el = document.getElementById("bk-sched-search");
+      if (el) el.value = q;
+      searchBookingHotelCoords();
     }
 
     function pickHotelFallbackStation(i) {
@@ -6092,7 +6107,7 @@
         box.innerHTML = `<span style="color:var(--success);">✓ '${escapeAttr(name)}' 좌표를 찾았어요 (${g.lat.toFixed(4)}, ${g.lng.toFixed(4)}).</span>`
           + (st
             ? `<div style="color:var(--ocean-dark);font-weight:800;margin-top:3px;">${escapeAttr(stationLine(st))}</div>`
-            : `<div style="color:var(--muted);margin-top:3px;">🚇 주변 3km 안에 지하철역이 없거나 조회에 실패했어요. ‘호텔 주소·가까운 역’ 칸에 역 이름을 직접 넣어 검색해 보세요.</div>`);
+            : `<div style="color:var(--muted);margin-top:3px;">🚇 주변 역 정보를 지금은 못 받았어요(3km 안에 역이 없는 경우도 있어요). 잠시 뒤 ‘📍 호텔명으로 좌표 찾기’를 한 번 더 누르면 재시도하고, ‘호텔 주소·가까운 역’ 칸에 역 이름을 직접 넣어 검색해도 돼요.</div>`);
       }
       previewBookingRoute();
     }
