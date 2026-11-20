@@ -1530,7 +1530,7 @@
         <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeBookingModal()">닫기</button>
       </div>
       <input type="hidden" id="bk-type" value="hotel" />
-      <div class="bk-label">이름</div>
+      <div class="bk-label" id="bk-name-label">숙소 이름</div>
       <input id="bk-name" class="input" placeholder="예: 아쿠아 펠리스 호텔 (디럭스 오션뷰)" style="margin-bottom:8px;" />
 
       <div id="bk-hotel-fields">
@@ -4506,16 +4506,22 @@
 
     function bookingTransitHtml(b) {
       const pay = bookingPayBits(b);
-      const dep = b.depDate ? `${fmtMD(b.depDate)}${b.depTime ? ` ${b.depTime}` : ""}` : (b.depTime || "출발 미입력");
-      const arr = b.arrDate ? `${fmtMD(b.arrDate)}${b.arrTime ? ` ${b.arrTime}` : ""}` : (b.arrTime || "");
-      const title = [b.mode, b.name].filter(Boolean).join(" · ") || "교통편 이름 미입력";
+      const depDateTxt = b.depDate ? fmtMD(b.depDate) : "";
+      const arrDateTxt = b.arrDate ? fmtMD(b.arrDate) : "";
+      const dep = [depDateTxt, b.depTime].filter(Boolean).join(" ");
+      const arr = [arrDateTxt, b.arrTime].filter(Boolean).join(" ");
+      let when = dep || "출발 미입력";
+      if (arr && arr !== dep) when = `${when} → ${arr}`;
+      const title = (b.name && b.mode && String(b.name).startsWith(b.mode))
+        ? b.name
+        : ([b.mode, b.name].filter(Boolean).join(" · ") || "교통편 이름 미입력");
       return `
         <div class="bk-card ${pay.cls}">
           <div class="bk-head">
             <div style="min-width:0;">
               <div class="bk-name">🚆 ${escapeAttr(title)}</div>
               <div class="bk-line">📍 ${escapeAttr(b.from || "출발지 미입력")} → ${escapeAttr(b.to || "도착지 미입력")}</div>
-              <div class="bk-line">🕒 ${dep}${arr ? ` → ${arr}` : ""}</div>
+              <div class="bk-line">🕒 ${when}</div>
               ${b.seat ? `<div class="bk-line">💺 ${escapeAttr(b.seat)}</div>` : ""}
             </div>
             <span class="bk-pay ${pay.cls}">${pay.short}</span>
@@ -4585,6 +4591,11 @@
       editingBookingId = b ? b.id : null;
       document.getElementById("bk-type").value = t;
       document.getElementById("booking-modal-title").textContent = `${t === "hotel" ? "🏨 숙소" : "🚆 교통편"} 예약 ${b ? "수정" : "추가"}`;
+      const nameLabel = document.getElementById("bk-name-label");
+      if (nameLabel) nameLabel.textContent = t === "hotel" ? "숙소 이름" : "예약 이름 (선택 · 비우면 편명 사용)";
+      document.getElementById("bk-name").placeholder = t === "hotel"
+        ? "예: 아쿠아 펠리스 호텔 (디럭스 오션뷰)"
+        : "예: 1/31 부산행 · 2인 연석";
       document.getElementById("bk-hotel-fields").style.display = t === "hotel" ? "block" : "none";
       document.getElementById("bk-transit-fields").style.display = t === "transit" ? "block" : "none";
 
@@ -5986,7 +5997,7 @@
        (장소 직접 추가 · 추천에서 담기 · 추천 루트 적용 시 공통 사용)
        ===================================================================== */
     const BOOKING_KEYWORDS = [
-      { re: /스카이캡슐|해변열차|블루라인파크|케이블카|곤돌라|짚라인|루지|크루즈|유람선|관광열차|전망대|스카이워크|루프탑|워터파크|아쿠아리움|테마파크|디즈니|유니버설|레고랜드|액티비티|클래스|체험|투어|가이드/i, label: "예약 권장" },
+      { re: /스카이캡슐|해변열차|블루라인파크|케이블카|케이블웨이|스카이웨이|레일웨이|곤돌라|짚라인|루지|크루즈|유람선|관광열차|전망대|스카이워크|루프탑|워터파크|아쿠아리움|테마파크|디즈니|유니버설|레고랜드|액티비티|클래스|체험|투어|가이드/i, label: "예약 권장" },
       { re: /오마카세|파인다이닝|미쉐린|코스요리|디너쇼|뷔페|공연|뮤지컬|콘서트/i, label: "예약 권장" },
       { re: /웨이팅|줄서기|캐치테이블|테이블링|현지 인기|인기 맛집/i, label: "예약 권장" }
     ];
@@ -6004,7 +6015,8 @@
 
     function applyAutoBookingBadge(item) {
       if (!item) return "";
-      const label = bookingBadgeFor(item.place);
+      let label = bookingBadgeFor(item.place);
+      if (!label && /예약\s*(권장|필수)|예매\s*필수|웨이팅|줄\s*서기|대기가?\s*(길|많)/.test(String(item.memo || ""))) label = "예약 권장";
       if (!label) return "";
       if (!Array.isArray(item.badges)) item.badges = [];
       if (item.badges.some(b => /예약\s*(권장|필수)|예매\s*필수/.test(String(b)))) return "";
@@ -6657,9 +6669,11 @@
       if (/^24\/7$/.test(s)) return "24시간";
       const dm = { Mo: "월", Tu: "화", We: "수", Th: "목", Fr: "금", Sa: "토", Su: "일" };
       s = s.replace(/\b(Mo|Tu|We|Th|Fr|Sa|Su)\b/g, m => dm[m]);
+      s = s.replace(/[월화수목금토일]\s*off/gi, "");
       s = s.replace(/([월화수목금토일])\s*-\s*([월화수목금토일])/g, "$1~$2");
       s = s.replace(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/g, "$1:$2~$3:$4");
       s = s.replace(/월~일/g, "매일");
+      s = s.replace(/;\s*;/g, ";").replace(/^[\s;]+|[\s;]+$/g, "");
       return s.replace(/\s+/g, " ").slice(0, 42);
     }
 
