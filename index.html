@@ -5581,12 +5581,27 @@
       if (typeof lat !== "number" || typeof lng !== "number") return [];
       const cacheKey = `${lat.toFixed(3)},${lng.toFixed(3)},${radius}`;
       if (stationCache.has(cacheKey)) return stationCache.get(cacheKey).slice(0, limit);
+      // Overpass(정밀)와 위키백과 지리검색(빠른 보조)을 동시에 돌려, 먼저 답을 준 쪽을 쓴다
+      const pOsm = nearbyStationsFromOsm(lat, lng, radius).catch(() => []);
+      const pWiki = nearbyStationsFromWiki(lat, lng, radius, 12).catch(() => []);
+      let list = [];
+      const first = await Promise.race([
+        pOsm.then(l => ({ from: "osm", l: l || [] })),
+        pWiki.then(l => ({ from: "wiki", l: l || [] }))
+      ]);
+      if (first.l.length) list = first.l;
+      else list = (first.from === "osm" ? await pWiki : await pOsm) || [];
+      if (list.length) stationCache.set(cacheKey, list);
+      return list.slice(0, limit);
+    }
+
+    async function nearbyStationsFromOsm(lat, lng, radius = 3000) {
       const q = `[out:json][timeout:6];(`
         + `node["railway"="station"]["station"="subway"](around:${radius},${lat},${lng});`
         + `node["railway"="station"]["subway"="yes"](around:${radius},${lat},${lng});`
         + `node["public_transport"="station"]["subway"="yes"](around:${radius},${lat},${lng});`
         + `node["railway"="halt"]["subway"="yes"](around:${radius},${lat},${lng});`
-        + `);out center ${Math.max(60, limit * 10)};`;
+        + `);out center 80;`;
       for (const ep of OVERPASS_ENDPOINTS) {
         try {
           const ctrl = typeof AbortController === "function" ? new AbortController() : null;
@@ -5608,16 +5623,10 @@
             return true;
           }).map(s => ({ ...s, distM: Math.round(calcDistKm(lat, lng, s.lat, s.lng) * 1000) }))
             .sort((a, b) => a.distM - b.distM);
-          if (list.length) {
-            stationCache.set(cacheKey, list);
-            return list.slice(0, limit);
-          }
+          if (list.length) return list;
         } catch { /* 다음 서버로 */ }
       }
-      // 3) Overpass가 모두 실패하면 위키백과 지리검색으로 마저 찾기
-      const wiki = await nearbyStationsFromWiki(lat, lng, radius, limit);
-      if (wiki.length) stationCache.set(cacheKey, wiki);
-      return wiki;
+      return [];
     }
 
     async function nearestSubwayStation(lat, lng, radius = 3000) {
@@ -5625,19 +5634,22 @@
       return list.length ? list[0] : null;
     }
 
-    // Overpass가 모두 막혔을 때 쓰는 보조 경로 — 위키백과 지리검색으로 주변 ‘~역’ 문서 찾기
-    async function nearbyStationsFromWiki(lat, lng, radius = 3000, limit = 6) {
+    // Overpass가 막혔을 때 쓰는 보조 경로 — 위키백과 지리검색으로 주변 ‘~역’ 문서 찾기
+    async function nearbyStationsFromWiki(lat, lng, radius = 3000, limit = 6, lang = "ko") {
       try {
-        const url = `https://ko.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}%7C${lng}&gsradius=${radius}&gslimit=50&gsnamespace=0&format=json&origin=*`;
+        const url = `https://${lang}.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}%7C${lng}&gsradius=${radius}&gslimit=50&gsnamespace=0&format=json&origin=*`;
         const r = await fetch(url);
         if (!r.ok) return [];
         const d = await r.json();
         const seen = new Set();
         const rows = (d?.query?.geosearch || [])
-          .map(g => ({ title: String(g.title || "").replace(/\s*[（(].*?[)）]$/, "").trim(), lat: g.lat, lon: g.lon, dist: g.dist }))
-          .filter(g => /역$/.test(g.title) && typeof g.lat === "number")
+          .map(g => ({ title: String(g.title || "").trim(), lat: g.lat, lon: g.lon, dist: g.dist }))
+          .filter(g => typeof g.lat === "number" && (lang === "ko" ? /역$/.test(g.title) : /역$|Station$|駅$|Halt$/i.test(g.title)))
           .filter(g => { if (seen.has(g.title)) return false; seen.add(g.title); return true; })
-          .map(g => ({ name: g.title.replace(/역$/, ""), lat: g.lat, lng: g.lon, distM: Math.round(Number(g.dist) || 0) }))
+          .map(g => ({
+            name: lang === "ko" ? g.title.replace(/\s*[（(].*?[)）]$/, "").replace(/역$/, "").trim() : g.title,
+            lat: g.lat, lng: g.lon, distM: Math.round(Number(g.dist) || 0)
+          }))
           .sort((a, b) => a.distM - b.distM);
         return rows.slice(0, limit);
       } catch { return []; }
