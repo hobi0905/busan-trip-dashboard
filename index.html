@@ -732,6 +732,7 @@
       background: #fff; border-radius: 18px; padding: 10px;
       display: flex; flex-direction: column; gap: 8px;
       box-shadow: 0 12px 32px rgba(15,23,42,0.25);
+      position: relative; z-index: 1;
     }
     .big-map-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-shrink: 0; }
     #big-map-canvas { flex: 1 1 auto; min-height: 140px; border-radius: 14px; border: 1px solid var(--border); z-index: 1; }
@@ -961,6 +962,60 @@
     }
     .style-chip.active { background: var(--ocean); border-color: var(--ocean); color: #fff; }
 
+    /* 🎰 취향별 여행지 Top 3 룰렛 */
+    .rec-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+    .rec-modes .btn { padding: 8px 4px; font-size: 11.5px; line-height: 1.25; min-height: 40px; }
+    .roul-sub { font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
+    .roul-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+    .roul-seg-btn {
+      padding: 10px 6px; border-radius: 12px; border: 1px solid var(--border); background: #fff;
+      font-family: inherit; font-size: 13.5px; font-weight: 800; color: #475569; cursor: pointer;
+      transition: background .15s ease, color .15s ease;
+    }
+    .roul-seg-btn.active { background: var(--ocean); border-color: var(--ocean); color: #fff; box-shadow: 0 6px 16px rgba(2,132,199,.28); }
+    .roul-themes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .roul-theme {
+      padding: 8px 12px; border-radius: 999px; border: 1px solid var(--border); background: #fff;
+      font-family: inherit; font-size: 12.5px; font-weight: 700; color: #334155; cursor: pointer;
+    }
+    .roul-theme.active { background: var(--ocean-soft); border-color: var(--ocean); color: var(--ocean-dark); box-shadow: inset 0 0 0 1px var(--ocean); }
+    .roul-stage {
+      display: none; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+      margin-top: 10px; padding: 14px 10px; border-radius: 14px;
+      background: linear-gradient(135deg, #eff6ff, #e0f2fe); border: 1px dashed var(--ocean-border);
+      text-align: center; overflow: hidden;
+    }
+    .roul-stage.on { display: flex; }
+    .roul-stage-ico { font-size: 20px; line-height: 1; }
+    .roul-slot { font-size: 16px; font-weight: 900; color: var(--ocean-dark); letter-spacing: -0.02em; min-height: 22px; }
+    .roul-slot small { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-top: 2px; letter-spacing: 0; }
+    .roul-slot.spinning { animation: roulBlink .12s linear infinite alternate; }
+    @keyframes roulBlink { from { opacity: .3 } to { opacity: 1 } }
+    .roul-results { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 12px; }
+    .roul-card { border: 1px solid var(--border); border-radius: 14px; background: #fff; padding: 12px 13px; }
+    .roul-card.top1 { border-color: #fbbf24; box-shadow: 0 6px 18px rgba(251,191,36,.18); }
+    .roul-card-head { display: flex; align-items: flex-start; gap: 9px; }
+    .roul-rank {
+      flex: 0 0 auto; width: 30px; height: 30px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-size: 15px; background: var(--ocean-soft);
+    }
+    .roul-card.top1 .roul-rank { background: #fef3c7; }
+    .roul-name { font-size: 15.5px; font-weight: 900; letter-spacing: -0.02em; line-height: 1.3; }
+    .roul-meta { font-size: 11.5px; color: var(--muted); font-weight: 700; margin-top: 2px; }
+    .roul-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+    .roul-tag { font-size: 10.5px; font-weight: 800; border-radius: 999px; padding: 3px 8px; background: var(--ocean-soft); color: var(--ocean-dark); }
+    .roul-tag.fit { background: #dcfce7; color: #166534; }
+    .roul-blurb { font-size: 12px; color: #334155; line-height: 1.5; margin-top: 7px; }
+    .roul-cost-box { margin-top: 9px; padding: 9px 10px; border-radius: 11px; background: #f8fafc; border: 1px solid var(--border); }
+    .roul-cost-top { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+    .roul-cost-top span { font-size: 11px; font-weight: 800; color: var(--muted); }
+    .roul-cost-top b { font-size: 15px; font-weight: 900; color: var(--ocean-dark); letter-spacing: -0.02em; }
+    .roul-cost-parts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; margin-top: 6px; }
+    .roul-cost-parts div { text-align: center; font-size: 9.5px; color: var(--muted); font-weight: 700; }
+    .roul-cost-parts b { display: block; font-size: 10.5px; color: #334155; font-weight: 800; }
+    .roul-do { display: flex; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
+    .roul-do .btn { flex: 1 1 auto; }
+
     /* 🧥 공항 환복 알림 */
     .airport-alert {
       background: linear-gradient(135deg, #fff7ed 0%, #fef2f2 100%);
@@ -1056,6 +1111,15 @@
       background: #dbeafe; z-index: 1;
     }
     #home-map .leaflet-control-attribution { display: none; }
+    /* 홈 지도 확대·축소 버튼: 날씨 알약 아래 오른쪽에 놓아 핀·제목을 가리지 않게 */
+    #home-map .leaflet-top.leaflet-right { top: 104px; right: 2px; }
+    #home-map .leaflet-control-zoom a,
+    #home-map .leaflet-touch .leaflet-control-zoom a {
+      width: 36px; height: 36px; line-height: 34px; font-size: 19px; font-weight: 700;
+      color: var(--ocean-dark); border-radius: 10px;
+    }
+    #home-map .leaflet-control-zoom { border-radius: 12px; box-shadow: 0 4px 14px rgba(15,23,42,.18); overflow: hidden; }
+    #home-map.leaflet-dragging { cursor: grabbing; }
 
     .home-float { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 600; pointer-events: none; }
     .home-float > * { pointer-events: auto; }
@@ -1411,18 +1475,64 @@
     }
     body.view-pc #packing-body > *:only-child { grid-column: 1 / -1; }
 
+    /* ✨ 추천: PC에서는 폼은 넓게 가로 배치, 결과 카드는 2열로 시원하게 */
+    body.view-pc #tab-recommend.active { max-width: 1120px; }
+    body.view-pc #tab-recommend > .card { max-width: 720px; }
+    body.view-pc #tab-recommend .rec-modes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    body.view-pc #rec-mode-spot,
+    body.view-pc #rec-mode-route,
+    body.view-pc #rec-mode-must,
+    body.view-pc #rec-mode-roulette { font-size: 12.5px; padding: 9px 6px; }
+
     body.view-pc #rec-spot-panel,
     body.view-pc #rec-route-panel,
-    body.view-pc #rec-must-panel {
-      display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
-      gap: 0 18px; align-items: start;
-    }
+    body.view-pc #rec-must-panel,
+    body.view-pc #rec-roulette-panel { display: block; }
     body.view-pc #rec-spot-panel[style*="none"],
     body.view-pc #rec-route-panel[style*="none"],
-    body.view-pc #rec-must-panel[style*="none"] { display: none !important; }
+    body.view-pc #rec-must-panel[style*="none"],
+    body.view-pc #rec-roulette-panel[style*="none"] { display: none !important; }
+
+    body.view-pc #rec-spot-panel > .card,
+    body.view-pc #rec-route-panel > .card,
+    body.view-pc #rec-must-panel > .card {
+      display: grid; grid-template-columns: minmax(0, 230px) minmax(0, 1fr);
+      column-gap: 18px; row-gap: 9px; align-items: center;
+    }
+    body.view-pc #rec-roulette-panel > .card {
+      display: grid;
+      grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+      grid-template-areas:
+        "title title"
+        "sub sub"
+        "seg stage"
+        "themes stage"
+        "spin stage";
+      column-gap: 22px; row-gap: 9px; align-items: start;
+    }
+    body.view-pc #rec-roulette-panel > .card > .sec-title { grid-area: title; }
+    body.view-pc #rec-roulette-panel > .card > .roul-sub { grid-area: sub; }
+    body.view-pc #roul-region-seg { grid-area: seg; }
+    body.view-pc #roul-theme-chips { grid-area: themes; }
+    body.view-pc #roul-spin-btn { grid-area: spin; }
+    body.view-pc #roul-stage { grid-area: stage; margin-top: 0; align-self: stretch; justify-content: center; }
+    body.view-pc .rec-wide { grid-column: 1 / -1; }
+    body.view-pc #rec-spot-panel > .card > .row,
+    body.view-pc #rec-route-panel > .card > .row,
+    body.view-pc #rec-must-panel > .card > .row { margin-bottom: 0; }
+
     body.view-pc #rec-results,
     body.view-pc #route-results,
-    body.view-pc #must-results { min-width: 0; }
+    body.view-pc #must-results {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; margin-top: 12px;
+    }
+    body.view-pc #rec-results > .card,
+    body.view-pc #route-results > .card,
+    body.view-pc #must-results > .card { margin-bottom: 0; }
+    body.view-pc #rec-results > .card[style*="sticky"] {
+      grid-column: 1 / -1; position: static !important; bottom: auto !important;
+    }
+    body.view-pc .roul-results { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
     body.view-pc #tab-mypage.active { max-width: 860px; }
     body.view-pc #bookings-section { margin-bottom: 4px; }
@@ -1726,17 +1836,18 @@
       <!-- TAB 6: RECOMMEND -->
       <section id="tab-recommend" class="tab-panel">
         <div class="card" style="padding:10px 12px;">
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
-            <button id="rec-mode-spot" class="btn btn-primary btn-sm" style="padding:7px 4px;font-size:11.5px;" onclick="setRecommendMode('spot')">📍 1. 동선 맞춤</button>
-            <button id="rec-mode-route" class="btn btn-soft btn-sm" style="padding:7px 4px;font-size:11.5px;" onclick="setRecommendMode('route')">🗺️ 2. 신규 루트</button>
-            <button id="rec-mode-must" class="btn btn-soft btn-sm" style="padding:7px 4px;font-size:11.5px;" onclick="setRecommendMode('must')">📌 3. 필수 장소</button>
+          <div class="rec-modes">
+            <button id="rec-mode-spot" class="btn btn-primary btn-sm" onclick="setRecommendMode('spot')">📍 1. 동선 맞춤</button>
+            <button id="rec-mode-route" class="btn btn-soft btn-sm" onclick="setRecommendMode('route')">🗺️ 2. 신규 루트</button>
+            <button id="rec-mode-must" class="btn btn-soft btn-sm" onclick="setRecommendMode('must')">📌 3. 필수 장소</button>
+            <button id="rec-mode-roulette" class="btn btn-soft btn-sm" onclick="setRecommendMode('roulette')">🎰 4. 여행지 룰렛</button>
           </div>
         </div>
 
         <div id="rec-spot-panel">
           <div class="card">
-            <div class="sec-title">📍 기존 동선 맞춤 장소 추천</div>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+            <div class="sec-title rec-wide">📍 기존 동선 맞춤 장소 추천</div>
+            <div class="rec-wide" style="font-size:12px;color:var(--muted);margin-bottom:10px;">
               방문 시간대·목적·언제 들를지 고르면 주변 장소 5곳을 추천하고, 원하는 곳만 복수 선택해 바로 추가해요!
             </div>
             <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:4px;">1. 언제쯤, 어떤 목적으로 방문하나요?</div>
@@ -1761,22 +1872,22 @@
               <select id="rec-day" class="input" style="width:115px;" onchange="updateRecommendAfterOptions()"></select>
               <select id="rec-after" class="input" style="flex:1;"></select>
             </div>
-            <button class="btn btn-primary" style="width:100%;" onclick="runPlaceRecommend()">✨ 장소 5곳 추천 받기</button>
+            <button class="btn btn-primary rec-wide" style="width:100%;" onclick="runPlaceRecommend()">✨ 장소 5곳 추천 받기</button>
           </div>
           <div id="rec-results"></div>
         </div>
 
         <div id="rec-route-panel" style="display:none;">
           <div class="card">
-            <div class="sec-title">🗺️ 처음부터 짜는 신규 루트 추천</div>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+            <div class="sec-title rec-wide">🗺️ 처음부터 짜는 신규 루트 추천</div>
+            <div class="rec-wide" style="font-size:12px;color:var(--muted);margin-bottom:10px;">
               목적지와 여행 날짜만 입력하면 기간에 맞는 일차별 추천 루트를 자동으로 짜 드려요!
             </div>
             <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:4px;">어디로 떠나나요?</div>
             <div class="row" style="margin-bottom:6px;">
               <input id="route-dest" class="input" placeholder="예: 부산, 제주, 강릉, 여수, 경주, 서울" value="부산" oninput="renderRouteStyleChips()" />
             </div>
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;">
+            <div class="rec-wide" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;">
               <button class="btn btn-soft btn-sm" onclick="document.getElementById('route-dest').value='부산'">부산</button>
               <button class="btn btn-soft btn-sm" onclick="document.getElementById('route-dest').value='제주'">제주</button>
               <button class="btn btn-soft btn-sm" onclick="document.getElementById('route-dest').value='강릉'">강릉</button>
@@ -1789,16 +1900,16 @@
               <input id="route-start" type="date" class="input" style="flex:1;" />
               <input id="route-end" type="date" class="input" style="flex:1;" />
             </div>
-            <div id="route-style-chips" class="style-chips"></div>
-            <button class="btn btn-primary" style="width:100%;" onclick="generateNewRoute()">🗺️ AI 추천 루트 생성하기</button>
+            <div id="route-style-chips" class="style-chips rec-wide"></div>
+            <button class="btn btn-primary rec-wide" style="width:100%;" onclick="generateNewRoute()">🗺️ AI 추천 루트 생성하기</button>
           </div>
           <div id="route-results"></div>
         </div>
 
         <div id="rec-must-panel" style="display:none;">
           <div class="card">
-            <div class="sec-title">📌 필수 장소 포함 최적 루트 추천</div>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+            <div class="sec-title rec-wide">📌 필수 장소 포함 최적 루트 추천</div>
+            <div class="rec-wide" style="font-size:12px;color:var(--muted);margin-bottom:10px;">
               꼭 가야 하는 곳 이름만 여러 개 추가하면 <strong>휴무일 자동 조회·회피 → 권역별 묶기 → 최단 동선 정렬</strong>까지 여러 번 검증해 최적의 루트를 짜 드려요!
             </div>
             <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:4px;">여행 지역 & 날짜</div>
@@ -1814,10 +1925,30 @@
               <input id="must-spot-input" class="input" style="flex:1;" placeholder="예: 중앙시장, 해변 카페, 전망대" onkeydown="if(event.key==='Enter'){event.preventDefault();addMustSpot();}" />
               <button class="btn btn-soft btn-sm" onclick="addMustSpot()">+ 추가</button>
             </div>
-            <div id="must-spots-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
-            <button class="btn btn-primary" style="width:100%;" onclick="optimizeMustVisitRoute()">🧠 휴무·동선 검증해 최적 루트 만들기</button>
+            <div id="must-spots-list" class="rec-wide" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+            <button class="btn btn-primary rec-wide" style="width:100%;" onclick="optimizeMustVisitRoute()">🧠 휴무·동선 검증해 최적 루트 만들기</button>
           </div>
           <div id="must-results"></div>
+        </div>
+
+        <div id="rec-roulette-panel" style="display:none;">
+          <div class="card">
+            <div class="sec-title rec-wide">🎰 취향별 여행지 Top 3 룰렛</div>
+            <div class="roul-sub rec-wide">
+              국내·해외를 고르고 취향을 하나 찍어 보세요. 딱 맞는 여행지 3곳을 뽑아 <b>1인 예상 경비</b>까지 계산해 드려요. 취향을 안 고르면 룰렛이 알아서 돌려요!
+            </div>
+            <div class="roul-seg" id="roul-region-seg">
+              <button type="button" class="roul-seg-btn active" data-region="domestic" onclick="setRouletteRegion('domestic')">🇰🇷 국내</button>
+              <button type="button" class="roul-seg-btn" data-region="overseas" onclick="setRouletteRegion('overseas')">✈️ 해외</button>
+            </div>
+            <div class="roul-themes" id="roul-theme-chips"></div>
+            <button type="button" id="roul-spin-btn" class="btn btn-primary" style="width:100%;" onclick="spinRoulette()">🎰 랜덤 룰렛 돌리기</button>
+            <div class="roul-stage" id="roul-stage">
+              <div class="roul-stage-ico">🎰</div>
+              <div class="roul-slot" id="roul-slot">룰렛을 돌려 보세요<small id="roul-slot-sub">국내·해외 · 취향 선택은 자유</small></div>
+            </div>
+          </div>
+          <div id="roul-results" class="roul-results"></div>
         </div>
       </section>
 
@@ -1913,8 +2044,10 @@
           <option value="KTX/SRT">KTX / SRT</option>
           <option value="항공편">항공편</option>
           <option value="시외/고속버스">시외·고속버스</option>
-          <option value="지하철/버스">지하철·시내버스</option>
-          <option value="택시">택시</option>
+          <option value="지하철·전철">🚇 지하철·전철</option>
+          <option value="시내·광역버스">🚌 시내·광역버스</option>
+          <option value="도보">🚶 도보</option>
+          <option value="택시">🚕 택시</option>
         </select>
         <input id="tr-code" class="input" placeholder="편명/노선 (예: KTX 101)" />
       </div>
@@ -2073,7 +2206,7 @@
   </div>
 
   <!-- BIG MAP MODAL (◀ ▶ 스텝 투어) -->
-  <div id="big-map-modal" class="modal-backdrop center" style="padding:8px;" onclick="if(event.target===this)closeBigMap()">
+  <div id="big-map-modal" class="modal-backdrop center" style="padding:8px;z-index:3000;" onclick="if(event.target===this)closeBigMap()">
     <div class="big-map-sheet">
       <div class="big-map-head">
         <div id="big-map-title" style="font-size:14.5px;font-weight:800;">🗺️ 동선 크게 보기</div>
@@ -2165,16 +2298,20 @@
           <option value="기차">🚆 가는 날 · KTX·기차</option>
           <option value="버스">🚌 가는 날 · 고속·시외버스</option>
           <option value="비행기">✈️ 가는 날 · 비행기</option>
+          <option value="지하철·전철">🚇 가는 날 · 지하철·전철 (예매 불필요)</option>
+          <option value="시내·광역버스">🚌 가는 날 · 시내·광역버스 (예매 불필요)</option>
           <option value="자차">🚗 가는 날 · 자차·기타</option>
         </select>
         <select id="nts-in-mode" class="input" style="flex:1;" title="오는 날 교통수단">
           <option value="기차">🚆 오는 날 · KTX·기차</option>
           <option value="버스">🚌 오는 날 · 고속·시외버스</option>
           <option value="비행기">✈️ 오는 날 · 비행기</option>
+          <option value="지하철·전철">🚇 오는 날 · 지하철·전철 (예매 불필요)</option>
+          <option value="시내·광역버스">🚌 오는 날 · 시내·광역버스 (예매 불필요)</option>
           <option value="자차">🚗 오는 날 · 자차·기타</option>
         </select>
       </div>
-      <div style="font-size:10.5px;color:var(--muted);margin-bottom:8px;line-height:1.45;">자차·기타를 빼고는 예매 오픈일 알림이 자동으로 들어가요 (기차 30일·버스 20일·항공 60일 전).</div>
+      <div style="font-size:10.5px;color:var(--muted);margin-bottom:8px;line-height:1.45;">기차·고속/시외버스·항공만 예매 오픈일 알림이 자동으로 들어가요 (기차 30일·버스 20일·항공 60일 전). 지하철·시내버스·자차는 알림 없이 일정에만 기록돼요.</div>
       <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:3px;">인원수 (명)</div>
       <div class="row"><input id="nts-travelers" type="number" min="1" max="20" value="2" class="input" /></div>
       <button class="btn btn-primary" style="width:100%;" onclick="createGuidedTrip()">🚀 이 설정으로 여행 시작하기</button>
@@ -2244,12 +2381,16 @@
           <option value="비행기">✈️ 가는 날 · 비행기</option>
           <option value="기차">🚆 가는 날 · KTX·기차</option>
           <option value="버스">🚌 가는 날 · 고속·시외버스</option>
+          <option value="지하철·전철">🚇 가는 날 · 지하철·전철 (예매 불필요)</option>
+          <option value="시내·광역버스">🚌 가는 날 · 시내·광역버스 (예매 불필요)</option>
           <option value="자차">🚗 가는 날 · 자차·기타</option>
         </select>
         <select id="os-in-mode" class="input" style="flex:1;" title="오는 날 교통수단">
           <option value="비행기">✈️ 오는 날 · 비행기</option>
           <option value="기차">🚆 오는 날 · KTX·기차</option>
           <option value="버스">🚌 오는 날 · 고속·시외버스</option>
+          <option value="지하철·전철">🚇 오는 날 · 지하철·전철 (예매 불필요)</option>
+          <option value="시내·광역버스">🚌 오는 날 · 시내·광역버스 (예매 불필요)</option>
           <option value="자차">🚗 오는 날 · 자차·기타</option>
         </select>
       </div>
@@ -2478,7 +2619,7 @@
       <div id="bk-transit-fields" style="display:none;">
         <div class="row" style="margin-bottom:6px;">
           <select id="bk-mode" class="input" style="width:132px;">
-            <option>KTX</option><option>SRT</option><option>항공편</option><option>시외·고속버스</option><option>기차</option><option>페리·크루즈</option><option>렌터카</option><option>기타</option>
+            <option>KTX</option><option>SRT</option><option>항공편</option><option>시외·고속버스</option><option>기차</option><option>페리·크루즈</option><option>지하철·전철</option><option>시내·광역버스</option><option>렌터카</option><option>기타</option>
           </select>
           <input id="bk-code" class="input" placeholder="편명·열차 (예: KTX 101 / KE401)" />
         </div>
@@ -4068,6 +4209,8 @@
     // 일정 항목(장소·이동·추천 담기·자동 루트) 하나가 등록될 때
     function autoAlertForItem(dayObj, item) {
       if (!item || !dayObj || !dayObj.date) return null;
+      // 예매 불필요 수단(지하철·시내버스·도보·자차)으로 추가한 이동은 알림을 만들지 않는다
+      if (item.bookingFree || isBookingFreeTransit(item.transitType)) return null;
       const text = [item.place, item.memo, (item.badges || []).join(" ")].filter(Boolean).join(" ");
       const rule = autoAlertRuleFor(text);
       if (!rule) return null;
@@ -4100,6 +4243,8 @@
       }
       if (b.type === "transit") {
         if (!b.depDate) return null;
+        // 지하철·시내버스·도보처럼 예매가 필요 없는 수단은 알림을 만들지 않는다
+        if (isBookingFreeTransit(b.mode)) return null;
         const text = [b.mode, b.name, b.from, b.to].filter(Boolean).join(" ");
         const rule = autoAlertRuleFor(text);
         if (!rule) return null;
@@ -4111,9 +4256,20 @@
       return null;
     }
 
+    // 예매가 필요 없는 이동수단 (지하철·전철 · 시내/광역버스 · 도보 · 자차·택시)
+    //  → '예매 필수' 배지도, 예매 오픈일 알림도 만들지 않는다 (KTX·고속/시외버스·항공만 자동 생성)
+    function isBookingFreeTransit(mode) {
+      const q = String(mode || "").trim();
+      if (!q) return false;
+      if (/고속\s*버스|시외\s*버스|시외·고속|시외\/고속|버스터미널|코버스|kobus|KTX|SRT|ITX|새마을|무궁화|기차|열차|항공|비행|공항|페리|크루즈|유람선/i.test(q)) return false;
+      return /지하철|전철|호선|시내\s*버스|시내·광역버스|광역버스|마을버스|급행버스|도보|자차|렌터카|택시|기타/.test(q);
+    }
+
     // 가는 날 / 오는 날 교통수단 → 예매 오픈일 알림 (자차·기타는 만들지 않음)
     function addTransportBookingAlert(dateStr, mode, label) {
       if (!dateStr) return null;
+      // 지하철·전철 · 시내/광역버스 · 도보 · 자차로 오가면 예매 오픈일 알림을 만들지 않는다
+      if (isBookingFreeTransit(mode)) return null;
       const map = {
         "기차": { key: "rail", icon: "🚆" },
         "버스": { key: "bus", icon: "🚌" },
@@ -4802,7 +4958,7 @@
       } else if (/고속버스|시외버스|터미널/.test(txt)) {
         document.getElementById("tr-type").value = "시외/고속버스";
       } else if (mSub || mBus) {
-        document.getElementById("tr-type").value = "지하철/버스";
+        document.getElementById("tr-type").value = mSub ? "지하철·전철" : "시내·광역버스";
         document.getElementById("tr-code").value = [...new Set(mSub || mBus)].join(" → ");
       }
 
@@ -4984,6 +5140,7 @@
 
       const dur = parseMinDiff(dep, arr);
       const titleSuffix = code ? ` (${code})` : ` (${type})`;
+      const bookingFree = isBookingFreeTransit(type);
       const newItem = {
         id: "tr-" + Date.now(),
         time: dep,
@@ -4992,16 +5149,19 @@
         toPlace,
         stay: `${dep}→${arr} (${dur}분)`,
         moveMode: code ? `${type} ${code}` : type,
+        transitType: type,
+        bookingFree,
         moveMin: dur,
         moveCost: cost,
         costTotal: cost,
-        badges: [type, "직접 추가"],
+        badges: bookingFree ? [type, "예매 불필요"] : [type, "직접 추가"],
         mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(toPlace)}`,
         memo: `${dep} 출발 → ${arr} 도착`
       };
       if (trToCoord) { newItem.lat = trToCoord.lat; newItem.lng = trToCoord.lng; }
       dayObj.items.splice(Math.max(0, Math.min(idx, dayObj.items.length)), 0, newItem);
-      autoAlertForItem(dayObj, newItem);
+      // 지하철·시내버스·도보처럼 예매가 필요 없는 수단은 예매 오픈일 알림을 만들지 않는다
+      if (!bookingFree) autoAlertForItem(dayObj, newItem);
       closeTransitModal();
       saveState();
     }
@@ -5444,10 +5604,21 @@
       if (!el || !window.L) return;
       if (!el.offsetWidth) return; // 아직 화면에 없으면 탭이 열릴 때 다시 그린다
       if (!homeMap) {
-        homeMap = L.map("home-map", { zoomControl: false, attributionControl: false, scrollWheelZoom: false }).setView([35.15, 129.11], 12);
+        // 🏠 홈 지도는 그 자리에서 확대·축소·드래그가 되게 (지도 탭을 여는 클릭 동작은 없앰)
+        homeMap = L.map("home-map", {
+          zoomControl: true,
+          scrollWheelZoom: true,
+          doubleClickZoom: true,
+          dragging: true,
+          touchZoom: true,
+          boxZoom: true,
+          keyboard: true,
+          zoomSnap: 0.5,
+          attributionControl: false
+        }).setView([35.15, 129.11], 12);
+        if (homeMap.zoomControl) homeMap.zoomControl.setPosition("topright");
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(homeMap);
         homeLayer = L.layerGroup().addTo(homeMap);
-        homeMap.on("click", () => { try { openBigMap(0); } catch (e) {} });
         homeMap.on("zoomend", () => { if (homePts.length) drawHomePins(); });
       }
       homePts = homeGeoPts();
@@ -10699,13 +10870,16 @@
     }
 
     function setRecommendMode(mode) {
-      const isSpot = mode === "spot", isRoute = mode === "route", isMust = mode === "must";
+      const isSpot = mode === "spot", isRoute = mode === "route", isMust = mode === "must", isRoul = mode === "roulette";
       document.getElementById("rec-mode-spot").className = `btn btn-sm ${isSpot ? "btn-primary" : "btn-soft"}`;
       document.getElementById("rec-mode-route").className = `btn btn-sm ${isRoute ? "btn-primary" : "btn-soft"}`;
       document.getElementById("rec-mode-must").className = `btn btn-sm ${isMust ? "btn-primary" : "btn-soft"}`;
+      document.getElementById("rec-mode-roulette").className = `btn btn-sm ${isRoul ? "btn-primary" : "btn-soft"}`;
       document.getElementById("rec-spot-panel").style.display = isSpot ? "" : "none";
       document.getElementById("rec-route-panel").style.display = isRoute ? "" : "none";
       document.getElementById("rec-must-panel").style.display = isMust ? "" : "none";
+      document.getElementById("rec-roulette-panel").style.display = isRoul ? "" : "none";
+      if (isRoul) renderRouletteUI();
       if (isRoute) {
         const rs = document.getElementById("route-start"), re = document.getElementById("route-end");
         if (!rs.value) rs.value = state.meta?.startDate || "2027-01-31";
@@ -10724,6 +10898,334 @@
         }
         renderMustSpotsList();
       }
+    }
+
+    /* =====================================================================
+       🎰 취향별 여행지 Top 3 룰렛
+          · 국내/해외 × 취향(힐링·바다/맛집·카페/야경·감성/자연·산책/쇼핑·도시/액티비티)
+          · 결과 3곳을 여행 성격·일정(2박 3일 등)과 함께 1인 예상 경비로 보여 준다
+       ===================================================================== */
+    const ROULETTE_THEMES = [
+      { key: "healing", label: "힐링·바다", emoji: "🌊" },
+      { key: "food", label: "맛집·카페", emoji: "🍽️" },
+      { key: "night", label: "야경·감성", emoji: "🌃" },
+      { key: "nature", label: "자연·산책", emoji: "🌿" },
+      { key: "city", label: "쇼핑·도시", emoji: "🛍️" },
+      { key: "active", label: "액티비티", emoji: "🏄" }
+    ];
+
+    // cost: 교통(1인 왕복) · 숙박(1박 1인, 2인 1실 기준) · 식비(1일) · 입장·체험(1일)
+    const ROULETTE_SPOTS = {
+      domestic: [
+        { name: "부산", emoji: "🌊", area: "부산·경남", mode: "기차", themes: ["healing", "food", "night", "city"], nights: 2, hot: 96,
+          blurb: "광안대교 야경 · 해변 카페 · 시장 먹거리를 한 번에", transit: "KTX 약 2시간 30분 (서울역 출발)", best: "연중 · 야경은 겨울도 좋아요",
+          cost: { transport: 120000, lodging: 65000, food: 42000, activity: 20000 } },
+        { name: "제주", emoji: "🌴", area: "제주", mode: "비행기", themes: ["healing", "nature", "active", "food"], nights: 2, hot: 94,
+          blurb: "바다 · 오름 · 오션뷰 카페까지 다 갖춘 섬 여행", transit: "항공 약 1시간 10분 (김포 출발)", best: "4~6월 · 9~11월",
+          cost: { transport: 140000, lodging: 70000, food: 45000, activity: 30000 } },
+        { name: "강릉", emoji: "☕", area: "강원 영동", mode: "기차", themes: ["healing", "food", "night", "nature"], nights: 2, hot: 88,
+          blurb: "안목해변 카페거리와 경포호수 산책, 새벽 바다", transit: "KTX 약 2시간 10분 (서울역 출발)", best: "연중 · 여름은 붐벼요",
+          cost: { transport: 100000, lodging: 60000, food: 40000, activity: 20000 } },
+        { name: "속초·양양", emoji: "🏔️", area: "강원 영동", mode: "버스", themes: ["nature", "healing", "food"], nights: 2, hot: 84,
+          blurb: "설악산 꽃길과 서핑 해변, 조용한 바다 카페", transit: "고속버스 약 2시간 40분 (서울 출발)", best: "5~6월 · 9~10월",
+          cost: { transport: 70000, lodging: 60000, food: 38000, activity: 25000 } },
+        { name: "경주", emoji: "🏯", area: "경북", mode: "기차", themes: ["nature", "food", "night"], nights: 1, hot: 85,
+          blurb: "천년 고도 야간 산책로와 황리단길 감성", transit: "KTX 약 2시간 (서울역 출발)", best: "3~5월 · 9~10월",
+          cost: { transport: 100000, lodging: 55000, food: 38000, activity: 22000 } },
+        { name: "여수", emoji: "🌉", area: "전남", mode: "기차", themes: ["healing", "night", "food"], nights: 1, hot: 86,
+          blurb: "밤바다 노을과 케이블카, 돌산 갯장어", transit: "KTX 약 2시간 50분 (용산 출발)", best: "연중 · 야경은 사계철",
+          cost: { transport: 110000, lodging: 60000, food: 40000, activity: 25000 } },
+        { name: "순천", emoji: "🌿", area: "전남", mode: "기차", themes: ["nature", "healing"], nights: 1, hot: 78,
+          blurb: "순천만 갈대길 · 국가정원 느린 산책", transit: "KTX 약 2시간 40분 (용산 출발)", best: "9~11월 갈대철",
+          cost: { transport: 95000, lodging: 50000, food: 35000, activity: 18000 } },
+        { name: "전주", emoji: "🍜", area: "전북", mode: "버스", themes: ["food", "city", "nature"], nights: 1, hot: 82,
+          blurb: "한옥마을 · 길거리 음식 · 카페 골목", transit: "고속버스 약 2시간 40분 (서울 출발)", best: "연중",
+          cost: { transport: 60000, lodging: 50000, food: 45000, activity: 15000 } },
+        { name: "서울", emoji: "🌃", area: "서울", mode: "기차", themes: ["city", "food", "night"], nights: 1, hot: 90,
+          blurb: "전시·쇼핑·야경을 한 번에, 하루로도 충분한 도시 여행", transit: "전철·KTX 약 40분~1시간 (인천 출발)", best: "연중",
+          cost: { transport: 20000, lodging: 80000, food: 50000, activity: 30000 } },
+        { name: "대구", emoji: "☀️", area: "대구", mode: "기차", themes: ["city", "food", "night"], nights: 1, hot: 74,
+          blurb: "김광석길 골목과 야시장, 근대골목 투어", transit: "KTX 약 1시간 50분 (서울역 출발)", best: "4~5월 · 10월",
+          cost: { transport: 90000, lodging: 50000, food: 38000, activity: 18000 } },
+        { name: "통영·거제", emoji: "⛵", area: "경남", mode: "버스", themes: ["healing", "nature", "food", "active"], nights: 2, hot: 83,
+          blurb: "한려수도 바다길 · 케이블카 · 해산물 시장", transit: "고속버스 약 4시간 20분 (서울 출발)", best: "4~6월 · 9~11월",
+          cost: { transport: 70000, lodging: 60000, food: 40000, activity: 30000 } },
+        { name: "포항", emoji: "🌅", area: "경북", mode: "기차", themes: ["healing", "nature"], nights: 1, hot: 72,
+          blurb: "호미곶 일출과 스페이스워크, 영일대 야경", transit: "KTX 약 2시간 20분 (서울역 출발)", best: "연중 · 일출은 겨울",
+          cost: { transport: 110000, lodging: 55000, food: 38000, activity: 22000 } },
+        { name: "군산", emoji: "🏚️", area: "전북", mode: "버스", themes: ["food", "nature"], nights: 1, hot: 68,
+          blurb: "근대건축 거리와 빵지순례, 새만금 바람길", transit: "고속버스 약 2시간 40분 (서울 출발)", best: "4~6월 · 9~10월",
+          cost: { transport: 55000, lodging: 45000, food: 38000, activity: 15000 } },
+        { name: "목포", emoji: "🦑", area: "전남", mode: "기차", themes: ["food", "healing", "nature"], nights: 1, hot: 70,
+          blurb: "홍어·세발낙지 먹거리와 해상케이블카 야경", transit: "KTX 약 2시간 40분 (용산 출발)", best: "연중",
+          cost: { transport: 100000, lodging: 45000, food: 40000, activity: 20000 } },
+        { name: "안동", emoji: "🏡", area: "경북", mode: "기차", themes: ["nature", "food"], nights: 1, hot: 66,
+          blurb: "하회마을 · 월영교 야경 · 찜닭과 한우", transit: "KTX 약 2시간 10분 (청량리 출발)", best: "3~5월 · 9~11월",
+          cost: { transport: 80000, lodging: 50000, food: 35000, activity: 18000 } },
+        { name: "춘천·가평", emoji: "🛶", area: "강원", mode: "기차", themes: ["active", "nature", "food"], nights: 1, hot: 76,
+          blurb: "호수 자전거 · 카약 · 남이섬, 접근성 좋은 근교", transit: "ITX 약 1시간 10분 (용산 출발)", best: "5~10월",
+          cost: { transport: 30000, lodging: 60000, food: 40000, activity: 35000 } }
+      ],
+      overseas: [
+        { name: "도쿄", emoji: "🗼", country: "일본", themes: ["city", "food", "night"], nights: 3, hot: 95,
+          blurb: "전시·쇼핑·야경과 골목 맛집까지 밀도 높은 도시 여행", transit: "항공 약 2시간 20분 (인천 출발)", best: "3~4월 벚꽃 · 11월",
+          cost: { transport: 450000, lodging: 90000, food: 70000, activity: 50000 } },
+        { name: "오사카·교토", emoji: "⛩️", country: "일본", themes: ["food", "night", "city", "nature"], nights: 2, hot: 93,
+          blurb: "도톤보리 야경과 교토 사찰 골목, 먹거리 중심", transit: "항공 약 1시간 40분 (인천 출발)", best: "3~4월 · 10~11월",
+          cost: { transport: 380000, lodging: 80000, food: 65000, activity: 45000 } },
+        { name: "후쿠오카", emoji: "🍜", country: "일본", themes: ["food", "city", "night"], nights: 2, hot: 89,
+          blurb: "하카타 라멘·야타이 골목, 짧고 굵은 미식 여행", transit: "항공 약 1시간 20분 (인천 출발)", best: "연중",
+          cost: { transport: 300000, lodging: 75000, food: 60000, activity: 40000 } },
+        { name: "삿포로", emoji: "❄️", country: "일본", themes: ["nature", "food", "active"], nights: 3, hot: 85,
+          blurb: "설경과 스키, 스프카레·징기스칸 먹거리", transit: "항공 약 2시간 40분 (인천 출발)", best: "12~2월 설경 · 7월",
+          cost: { transport: 500000, lodging: 85000, food: 70000, activity: 55000 } },
+        { name: "오키나와", emoji: "🐠", country: "일본", themes: ["healing", "nature", "active"], nights: 3, hot: 84,
+          blurb: "에메랄드 바다 · 스노클링 · 오션뷰 카페", transit: "항공 약 2시간 20분 (인천 출발)", best: "5~10월",
+          cost: { transport: 520000, lodging: 95000, food: 75000, activity: 60000 } },
+        { name: "타이베이", emoji: "🏮", country: "대만", themes: ["food", "city", "night"], nights: 2, hot: 87,
+          blurb: "야시장 먹거리와 온천, 가성비 좋은 도시 여행", transit: "항공 약 2시간 30분 (인천 출발)", best: "10~4월",
+          cost: { transport: 380000, lodging: 70000, food: 55000, activity: 35000 } },
+        { name: "홍콩", emoji: "🌆", country: "기타", countryCustom: "홍콩", themes: ["city", "night", "food"], nights: 2, hot: 80,
+          blurb: "빅토리아항 야경과 딤섬, 트램 골목 산책", transit: "항공 약 3시간 40분 (인천 출발)", best: "10~3월",
+          cost: { transport: 450000, lodging: 100000, food: 70000, activity: 45000 } },
+        { name: "방콕", emoji: "🛺", country: "태국", themes: ["food", "city", "active"], nights: 3, hot: 88,
+          blurb: "야시장·루프탑바·마사지까지 가성비 좋은 휴양+도시", transit: "항공 약 5시간 30분 (인천 출발)", best: "11~2월",
+          cost: { transport: 500000, lodging: 65000, food: 45000, activity: 45000 } },
+        { name: "치앙마이", emoji: "🐘", country: "태국", themes: ["healing", "nature", "food"], nights: 3, hot: 78,
+          blurb: "고요한 사원과 산속 카페, 느린 휴양", transit: "항공 약 5시간 50분 (인천 출발)", best: "11~2월",
+          cost: { transport: 480000, lodging: 55000, food: 40000, activity: 40000 } },
+        { name: "다낭", emoji: "🏖️", country: "베트남", themes: ["healing", "food", "active"], nights: 3, hot: 90,
+          blurb: "미케비치 리조트와 호이안 야경, 가성비 휴양", transit: "항공 약 4시간 30분 (인천 출발)", best: "2~8월",
+          cost: { transport: 450000, lodging: 70000, food: 45000, activity: 50000 } },
+        { name: "하노이", emoji: "🍲", country: "베트남", themes: ["food", "city", "nature"], nights: 2, hot: 79,
+          blurb: "쌀국수 골목과 호안끼엠 호수, 야시장", transit: "항공 약 5시간 (인천 출발)", best: "10~4월",
+          cost: { transport: 420000, lodging: 65000, food: 42000, activity: 40000 } },
+        { name: "싱가포르", emoji: "🌴", country: "싱가포르", themes: ["city", "food", "active"], nights: 3, hot: 82,
+          blurb: "마리나베이 야경과 호커센터, 깔끔한 도시 여행", transit: "항공 약 6시간 20분 (인천 출발)", best: "연중",
+          cost: { transport: 550000, lodging: 120000, food: 75000, activity: 55000 } },
+        { name: "세부·보라카이", emoji: "🐬", country: "기타", countryCustom: "필리핀", themes: ["healing", "active"], nights: 3, hot: 81,
+          blurb: "섬 호핑과 스노클링, 리조트에서 느긴 휴양", transit: "항공 약 4시간 30분 (인천 출발)", best: "12~5월",
+          cost: { transport: 480000, lodging: 90000, food: 50000, activity: 60000 } },
+        { name: "발리", emoji: "🌺", country: "기타", countryCustom: "인도네시아", themes: ["healing", "nature", "active"], nights: 4, hot: 83,
+          blurb: "민박 끄떼 · 라이스테라스 · 선셋 비치클럽", transit: "항공 약 7시간 (인천 출발)", best: "4~10월",
+          cost: { transport: 700000, lodging: 80000, food: 50000, activity: 60000 } },
+        { name: "괌·사이판", emoji: "🏝️", country: "미국", themes: ["healing", "active"], nights: 3, hot: 76,
+          blurb: "맑은 바다와 면세 쇼핑, 아이·어른 다 편한 휴양지", transit: "항공 약 4시간 20분 (인천 출발)", best: "12~5월",
+          cost: { transport: 600000, lodging: 130000, food: 80000, activity: 60000 } },
+        { name: "파리", emoji: "🗼", country: "유럽 (솅겐)", themes: ["city", "night", "food"], nights: 4, hot: 86,
+          blurb: "미술관·골목 카페·센강 야경의 도시 미학", transit: "항공 약 14시간 (인천 출발)", best: "5~6월 · 9~10월",
+          cost: { transport: 950000, lodging: 120000, food: 90000, activity: 70000 } },
+        { name: "바르셀로나", emoji: "🏛️", country: "유럽 (솅겐)", themes: ["city", "night", "healing"], nights: 4, hot: 79,
+          blurb: "가우디 건축과 지중해 해변, 타파스 골목", transit: "항공 약 15시간 (인천 출발)", best: "5~6월 · 9월",
+          cost: { transport: 900000, lodging: 110000, food: 85000, activity: 70000 } },
+        { name: "뉴욕", emoji: "🏙️", country: "미국", themes: ["city", "food", "night"], nights: 4, hot: 77,
+          blurb: "뮤지컬·스카이라인·브런치까지 도시 여행의 정석", transit: "항공 약 14시간 (인천 출발)", best: "4~6월 · 9~11월",
+          cost: { transport: 1100000, lodging: 150000, food: 95000, activity: 80000 } }
+      ]
+    };
+
+    let roulRegion = "domestic";
+    let roulTheme = "";
+    let roulSpinning = false;
+    let roulResults = [];
+
+    function roulThemeMeta(key) { return ROULETTE_THEMES.find(t => t.key === key) || null; }
+
+    function rouletteCost(d) {
+      const nights = Math.max(1, Number(d.nights) || 1);
+      const days = nights + 1;
+      const c = d.cost || {};
+      const parts = {
+        transport: Number(c.transport) || 0,
+        lodging: (Number(c.lodging) || 0) * nights,
+        food: (Number(c.food) || 0) * days,
+        activity: (Number(c.activity) || 0) * days
+      };
+      return { parts, total: parts.transport + parts.lodging + parts.food + parts.activity, nights, days };
+    }
+
+    function rouletteFit(d, theme) {
+      if (!theme) return Math.min(96, 74 + Math.round((d.hot || 50) / 5));
+      const i = (d.themes || []).indexOf(theme);
+      return i === 0 ? 96 : i === 1 ? 88 : i === 2 ? 79 : 66;
+    }
+
+    function renderRouletteThemes() {
+      const host = document.getElementById("roul-theme-chips");
+      if (!host) return;
+      host.innerHTML = ROULETTE_THEMES.map(t =>
+        `<button type="button" class="roul-theme ${roulTheme === t.key ? "active" : ""}" onclick="setRouletteTheme('${t.key}')">${t.emoji} ${t.label}</button>`
+      ).join("");
+    }
+
+    function renderRouletteRegion() {
+      document.querySelectorAll("#roul-region-seg .roul-seg-btn").forEach(b => {
+        b.classList.toggle("active", b.getAttribute("data-region") === roulRegion);
+      });
+      const host = document.getElementById("roul-theme-chips");
+      if (host) host.setAttribute("data-region", roulRegion);
+    }
+
+    function renderRouletteUI() {
+      renderRouletteRegion();
+      renderRouletteThemes();
+      if (roulResults.length) renderRouletteResults(roulResults, roulTheme, true);
+    }
+
+    function setRouletteRegion(region) {
+      roulRegion = region === "overseas" ? "overseas" : "domestic";
+      roulResults = [];
+      const host = document.getElementById("roul-results");
+      if (host) host.innerHTML = "";
+      const stage = document.getElementById("roul-stage");
+      if (stage) stage.classList.remove("on");
+      const btn = document.getElementById("roul-spin-btn");
+      if (btn) btn.textContent = roulRegion === "overseas" ? "🎰 해외 룰렛 돌리기" : "🎰 국내 룰렛 돌리기";
+      renderRouletteRegion();
+    }
+
+    function setRouletteTheme(key) {
+      roulTheme = roulTheme === key ? "" : key;
+      renderRouletteThemes();
+    }
+
+    // 가중치 뽑기: 취향에 맞는 곳이 잘 나오도록 점수² 가중치로 3곳 추첨
+    function pickRouletteTop3(pool, theme) {
+      const bag = pool.map(d => {
+        const i = theme ? (d.themes || []).indexOf(theme) : 0;
+        const fit = theme ? (i === 0 ? 10 : i === 1 ? 6 : i === 2 ? 3 : 1) : 5;
+        return { d, w: fit * fit * (0.6 + (Number(d.hot) || 50) / 100) };
+      });
+      const picked = [];
+      const left = bag.slice();
+      while (picked.length < Math.min(3, left.length)) {
+        const totalW = left.reduce((s, x) => s + x.w, 0);
+        let r = Math.random() * totalW;
+        let idx = 0;
+        for (let i = 0; i < left.length; i++) { r -= left[i].w; if (r <= 0) { idx = i; break; } idx = i; }
+        picked.push(left.splice(idx, 1)[0].d);
+      }
+      // 뽑힌 3곳의 순위는 취향 적합도로 정리
+      return picked.sort((a, b) => rouletteFit(b, theme) - rouletteFit(a, theme) || (b.hot || 0) - (a.hot || 0)).slice(0, 3);
+    }
+
+    function spinRoulette() {
+      if (roulSpinning) return;
+      const pool = (ROULETTE_SPOTS[roulRegion] || []).slice();
+      if (!pool.length) return;
+      const pickedTheme = roulTheme || ROULETTE_THEMES[Math.floor(Math.random() * ROULETTE_THEMES.length)].key;
+      let cand = roulTheme ? pool.filter(d => (d.themes || []).includes(roulTheme)) : pool;
+      if (!cand.length) cand = pool;
+      roulSpinning = true;
+      const btn = document.getElementById("roul-spin-btn");
+      if (btn) { btn.disabled = true; btn.textContent = "🎰 룰렛 도는 중..."; }
+      const stage = document.getElementById("roul-stage");
+      const slot = document.getElementById("roul-slot");
+      if (stage) stage.classList.add("on");
+      if (slot) slot.classList.add("spinning");
+      const t = roulThemeMeta(pickedTheme);
+      let tick = 0;
+      const ticks = 18;
+      const timer = setInterval(() => {
+        tick++;
+        const d = pool[Math.floor(Math.random() * pool.length)];
+        if (slot) slot.innerHTML = `${d.emoji} ${d.name}<small>${t ? t.emoji + " " + t.label : "취향 랜덤"} 룰렛 도는 중...</small>`;
+        if (tick < ticks) return;
+        clearInterval(timer);
+        roulResults = pickRouletteTop3(cand, roulTheme);
+        if (slot) {
+          slot.classList.remove("spinning");
+          const top = roulResults[0];
+          slot.innerHTML = top ? `<b>${top.emoji} ${top.name}</b>이(가) 1순위!<small>${roulRegion === "overseas" ? "해외" : "국내"} · ${roulThemeMeta(roulTheme) ? roulThemeMeta(roulTheme).emoji + " " + roulThemeMeta(roulTheme).label : "랜덤 취향"} · Top 3 도착</small>` : "결과 없음";
+        }
+        renderRouletteResults(roulResults, roulTheme);
+        roulSpinning = false;
+        if (btn) { btn.disabled = false; btn.textContent = roulRegion === "overseas" ? "🎰 해외 룰렛 다시 돌리기" : "🎰 국내 룰렛 다시 돌리기"; }
+      }, 80);
+    }
+
+    function renderRouletteResults(picks, theme, keepQuiet = false) {
+      const host = document.getElementById("roul-results");
+      if (!host) return;
+      if (!picks || !picks.length) { host.innerHTML = ""; return; }
+      const rank = ["🥇", "🥈", "🥉"];
+      host.innerHTML = picks.map((d, i) => {
+        const { parts, total, nights, days } = rouletteCost(d);
+        const fit = rouletteFit(d, theme);
+        const regionLabel = d.country ? `해외 · ${d.country === "기타" ? (d.countryCustom || "해외") : d.country}` : "국내";
+        const tags = (d.themes || []).slice(0, 3).map(k => {
+          const t = roulThemeMeta(k);
+          return t ? `<span class="roul-tag">${t.emoji} ${t.label}</span>` : "";
+        }).join("");
+        return `
+          <div class="roul-card ${i === 0 ? "top1" : ""}">
+            <div class="roul-card-head">
+              <div class="roul-rank">${rank[i] || "•"}</div>
+              <div style="flex:1;min-width:0;">
+                <div class="roul-name">${d.emoji} ${d.name}</div>
+                <div class="roul-meta">${regionLabel} · ${nights}박 ${days}일</div>
+              </div>
+            </div>
+            <div class="roul-tags"><span class="roul-tag fit">취향 적합 ${fit}%</span>${tags}</div>
+            <div class="roul-blurb">${d.blurb}</div>
+            <div class="roul-cost-box">
+              <div class="roul-cost-top"><span>1인 예상 경비 · ${nights}박 ${days}일</span><b>${fmt(total)}</b></div>
+              <div class="roul-cost-parts">
+                <div>교통<b>${fmt(parts.transport)}</b></div>
+                <div>숙박<b>${fmt(parts.lodging)}</b></div>
+                <div>식비<b>${fmt(parts.food)}</b></div>
+                <div>입장·체험<b>${fmt(parts.activity)}</b></div>
+              </div>
+            </div>
+            <div class="roul-meta" style="margin-top:8px;">🚉 ${d.transit}<br>🗓️ ${d.best}</div>
+            <div class="roul-do">
+              <button class="btn btn-primary btn-sm" onclick="startTripFromRoulette('${d.country ? "overseas" : "domestic"}','${d.name}')">✈️ 이 여행지로 새 여행 만들기</button>
+              <a class="btn btn-soft btn-sm" style="text-decoration:none;" href="https://map.naver.com/p/search/${encodeURIComponent(d.name)}" target="_blank" rel="noopener">🗺️ 지도</a>
+            </div>
+          </div>`;
+      }).join("") + `<div class="roul-note">※ 성인 2인 · 2인 1실 기준 1인 예상 경비예요. 숙박은 1박 평균가, 계절·예매 시점에 따라 달라져요.</div>`;
+    }
+
+    // 뽑힌 여행지 → 새 여행 개설 화면에 미리 채워 둔다 (최종 개설은 사용자가 버튼으로)
+    function startTripFromRoulette(region, name) {
+      const d = (ROULETTE_SPOTS[region] || []).find(x => x.name === name);
+      if (!d) return;
+      const nights = Math.max(1, Number(d.nights) || 1);
+      const base = new Date();
+      base.setHours(0, 0, 0, 0);
+      base.setDate(base.getDate() + 21);
+      while (base.getDay() !== 6) base.setDate(base.getDate() + 1);
+      const end = new Date(base.getFullYear(), base.getMonth(), base.getDate() + nights);
+      const startStr = toLocalIso(base), endStr = toLocalIso(end);
+      const title = `${d.name} ${nights}박 ${nights + 1}일`;
+      const travelers = String(Math.max(1, Number(state?.meta?.travelers) || 2));
+      try {
+        if (region === "overseas") {
+          openOverseasSetupModal();
+          if (typeof selectOverseasCountry === "function") selectOverseasCountry(d.country || "기타");
+          const custom = document.getElementById("os-country-custom");
+          if (custom) custom.value = d.country === "기타" ? (d.countryCustom || "") : "";
+          document.getElementById("os-title").value = title;
+          document.getElementById("os-start").value = startStr;
+          document.getElementById("os-end").value = endStr;
+          document.getElementById("os-travelers").value = travelers;
+          const om = document.getElementById("os-out-mode"), im = document.getElementById("os-in-mode");
+          if (om) om.value = "비행기";
+          if (im) im.value = "비행기";
+          if (custom && d.country === "기타") custom.dispatchEvent(new Event("input", { bubbles: true }));
+          try { renderOverseasPreview(); } catch (e) {}
+        } else {
+          openNewTripSetupModal();
+          document.getElementById("nts-title").value = title;
+          document.getElementById("nts-dest").value = d.name;
+          document.getElementById("nts-start").value = startStr;
+          document.getElementById("nts-end").value = endStr;
+          document.getElementById("nts-travelers").value = travelers;
+          const om = document.getElementById("nts-out-mode"), im = document.getElementById("nts-in-mode");
+          if (om) om.value = d.mode || "기차";
+          if (im) im.value = d.mode || "기차";
+        }
+      } catch (e) { console.warn("roulette trip prefetch", e); }
     }
 
     const KNOWN_SPOT_META = {
@@ -10766,6 +11268,7 @@
 
     function applyAutoBookingBadge(item) {
       if (!item) return "";
+      if (item.bookingFree || isBookingFreeTransit(item.transitType)) return "";
       let label = bookingBadgeFor(item.place);
       if (!label && /예약\s*(권장|필수)|예매\s*필수|웨이팅|줄\s*서기|대기가?\s*(길|많)/.test(String(item.memo || ""))) label = "예약 권장";
       if (!label) return "";
