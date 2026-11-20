@@ -2021,6 +2021,7 @@
       <div style="font-size:16.5px;font-weight:800;">💌 여행 동반인 초대</div>
       <div id="join-trip-desc" style="font-size:13px;color:var(--muted);margin-top:4px;"></div>
       <div id="join-status-box" style="margin-top:12px;"></div>
+      <button class="btn btn-soft" style="width:100%;margin-top:10px;font-size:11.5px;" onclick="switchProfileFromJoin()">👤 다른 프로필로 전환</button>
     </div>
   </div>
 
@@ -7334,8 +7335,14 @@
         return;
       }
       isNewFlow = true;
+      pendingNewTripSetup = false; // 기존 이용자는 프로필을 불러온 뒤 내 여행으로 간다
       openProfileModal(true, "login");
       toggleProfileForm(true, "login");
+    }
+
+    function switchProfileFromJoin() {
+      document.getElementById("join-modal")?.classList.remove("open");
+      openProfileModal(false);
     }
 
     function showProfError(text) {
@@ -7675,7 +7682,7 @@
       if (!splashDone) return;
       const jm = document.getElementById("join-modal");
       // 새 여행 선택·설정 창이 떠 있는 동안에는 승인 요청 창을 겹쳐 띄우지 않는다
-      const newTripFlowOpen = ["trip-type-modal", "new-trip-setup-modal", "overseas-setup-modal"]
+      const newTripFlowOpen = ["trip-type-modal", "new-trip-setup-modal", "overseas-setup-modal", "profile-modal", "trips-modal", "entry-chooser-modal"]
         .some(id => document.getElementById(id)?.classList.contains("open"));
       if (newTripFlowOpen) {
         if (jm) jm.classList.remove("open");
