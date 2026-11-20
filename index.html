@@ -3735,7 +3735,7 @@
          붙이지 않고 '📷 사진 보기'(네이버 사진 검색) 버튼으로 넘긴다.
        ===================================================================== */
     const PHOTO_MEM = new Map();
-    const PHOTO_STORE_KEY = "bsdash_photo_cache_v1";
+    const PHOTO_STORE_KEY = "bsdash_photo_cache_v2";
     const PHOTO_TTL_HIT = 30 * 24 * 60 * 60 * 1000;
     const PHOTO_TTL_MISS = 7 * 24 * 60 * 60 * 1000;
     let photoStoreCache = null;
@@ -3748,7 +3748,8 @@
       "카툼바": "katoomba", "블루마운틴": "blue mountains", "멜버른": "melbourne", "도쿄": "tokyo",
       "오사카": "osaka", "교토": "kyoto", "파리": "paris", "런던": "london", "뉴욕": "new york"
     };
-    const PHOTO_STOPWORDS = /(체크인|체크아웃|가이드\s*투어|투어|산책|야경|브런치|모닝\s*커피|점심|저녁|식사|구경|방문|선택|이동|탑승|환승|출발|도착|복귀|입국심사|세관|짐\s*보관|물품보관함|일정\s*시작|무료|체류\s*\d+분)/g;
+    const PHOTO_STOPWORDS = /(체크인|체크아웃|산책로|산책|가이드\s*투어|투어|야경|브런치|모닝\s*커피|점심|저녁|식사|구경|방문|선택|이동|탑승|환승|출발|도착|복귀|입국심사|세관|짐\s*보관|물품보관함|일정\s*시작|무료|해변|체류\s*\d+분)/g;
+    const PHOTO_GENERIC = new Set(["카페", "맛집", "식당", "호텔", "숙소", "리조트", "펍", "바", "술집", "시장", "산책", "투어", "일정", "이동", "공원", "역", "공항", "터미널", "비치", "전망대", "카페거리"]);
 
     function photoStore() {
       if (photoStoreCache) return photoStoreCache;
@@ -3785,19 +3786,21 @@
       return best;
     }
     // 문서 제목이 장소명과 같은 곳을 가리키는지 점수화 (엉뚱한 사진 방지)
+    // 3 = 이름이 사실상 같음, 2 = 이름 핵심어가 제목과 일치, 1 = 부분 일치(좌표가 있는 장소 문서만 통과)
     function photoTitleScore(cand, title) {
-      const a = photoNorm(cand), b = photoNorm(title);
+      const t = String(title || "");
+      // 영어 문서의 '(Australia)' 같은 동명 구분 괄호만 떼고 비교한다 (한국어 제목의 괄호는 다른 곳을 가리키는 경우가 많다)
+      const base = /[A-Za-z]/.test(t) ? t.replace(/\s*[\(（][^\)）]*[\)）]\s*$/, "").trim() : t;
+      const a = photoNorm(cand), b = photoNorm(base || t);
       if (!a || !b) return 0;
       if (a === b) return 3;
       const toks = String(cand).split(/[\s\-_·,.&/()]+/).map(photoNorm).filter(t => t.length >= 3);
-      for (const t of toks) {
-        if (b === t) return 2;
-        if (b.includes(t) && t.length / b.length >= 0.6) return 2;
-      }
+      for (const t of toks) if (b === t) return 2;
       const short = a.length <= b.length ? a : b;
       const long = a.length <= b.length ? b : a;
-      if (short.length >= 4 && long.includes(short) && short.length / long.length >= 0.8) return 2;
-      if (photoLongestCommon(a, b) >= 3) return 1;
+      if (short.length >= 4 && long.includes(short) && short.length / long.length >= 0.85) return 2;
+      const common = photoLongestCommon(a, b);
+      if (common >= 4 && common / short.length >= 0.6) return 1;
       return 0;
     }
     function photoRegionTokens(region) {
@@ -3823,21 +3826,32 @@
     function photoCandidates(placeName) {
       const out = [];
       const push = (v) => {
-        const s = String(v || "").replace(/\s+/g, " ").replace(/^[\s\-·,&/]+|[\s\-·,&/]+$/g, "").trim();
-        if (s.length >= 2 && photoNorm(s) && !out.some(x => photoNorm(x) === photoNorm(s))) out.push(s);
+        const s = String(v || "").replace(PHOTO_STOPWORDS, " ").replace(/\s+/g, " ").replace(/^[\s\-·,&/]+|[\s\-·,&/]+$/g, "").trim();
+        const n = photoNorm(s);
+        if (s.length < 2 || !n) return;
+        if (PHOTO_GENERIC.has(n)) return;                       // '카페'·'숙소' 같은 일반명사만으로는 찾지 않는다
+        if (out.some(x => photoNorm(x) === n)) return;
+        out.push(s);
       };
       let raw = String(placeName || "");
-      // 1) 괄호 안은 보통 설명('광안리', '선택' 등)이라 기본 후보에서 제외
+      // 1) 괄호 안은 보통 설명('광안리', '선택' 등)이라 앞 후보에서는 빼고, 맨 뒤 후보로만 남긴다
+      const parens = (String(placeName || "").match(/[\(\[（【][^\)\]）】]*[\)\]）】]/g) || [])
+        .map(v => v.replace(/[\(\[（【\)\]）】]/g, " ")).map(v => v.replace(/\s+/g, " ").trim())
+        .filter(v => v.length >= 3);
       raw = raw.replace(/[\(\[（【][^\)\]）】]*[\)\]）】]/g, " ");
-      // 2) '& ' 와 '·' 로 이어진 복합 장소는 각각 시도
+      // 2) '&' 와 '·' 로 이어진 복합 장소는 각각 시도
       raw.split(/&|·|\s+[–—]\s+|,/).forEach(part => push(part));
       // 3) 수식어 제거본도 후보로
-      const cleaned = raw.replace(PHOTO_STOPWORDS, " ").replace(/\s+/g, " ").trim();
+      const cleaned = String(raw).replace(PHOTO_STOPWORDS, " ").replace(/\s+/g, " ").trim();
       push(cleaned);
       // 4) 지점명 접미사 제거 (전포점·광안점 …)
       push(cleaned.replace(/\s*[가-힣A-Za-z0-9]{1,6}점$/, ""));
-      // 5) 너무 긴 이름은 앞쪽 핵심어만
-      if (cleaned.split(" ").length > 3) push(cleaned.split(" ").slice(0, 3).join(" "));
+      // 5) '하버브리지 파이론 룩아웃'처럼 수식어가 붙은 이름은 앞쪽 핵심어만
+      const words = cleaned.split(" ").filter(Boolean);
+      if (words.length > 3) push(words.slice(0, 3).join(" "));
+      if (words.length >= 2 && photoNorm(words[0]).length >= 3) push(words[0]);
+      // 6) 그래도 없으면 괄호 안에 적힌 이름(예: 루나파크)을 마지막으로 시도
+      parens.slice(0, 2).forEach(p => push(p));
       return out.slice(0, 4);
     }
 
@@ -3886,18 +3900,19 @@
       return null;
     }
 
-    async function photoWikiLookup(lang, query) {
+    async function photoWikiLookup(lang, query, scoreText) {
       const url = `https://${lang}.wikipedia.org/w/api.php?action=query&generator=search`
         + `&gsrsearch=${encodeURIComponent(query)}&gsrlimit=5&gsrnamespace=0`
         + `&prop=pageimages%7Ccoordinates&piprop=thumbnail&pithumbsize=560&format=json&origin=*`;
       const data = await photoFetchJson(url);
       const pages = (data && data.query && data.query.pages) || {};
       const rows = Object.keys(pages).map(k => pages[k]).sort((a, b) => (a.index || 9) - (b.index || 9));
+      const basis = scoreText || query;
       for (const row of rows) {
         const thumb = row.thumbnail && row.thumbnail.source;
         if (!thumb) continue;
         const hasCoord = Array.isArray(row.coordinates) && row.coordinates.length > 0;
-        const score = photoTitleScore(query, row.title);
+        const score = photoTitleScore(basis, row.title);
         if (!(score >= 2 || (score >= 1 && hasCoord))) continue;
         return {
           url: thumb,
@@ -3945,14 +3960,22 @@
         if (cand.length < 2) continue;
         const ko = await photoWikiLookup("ko", cand);
         if (ko) return { ...ko, place: name };
-        const latin = (cand.match(/[A-Za-z][A-Za-z0-9'\.\-]*(?:\s+[A-Za-z0-9'\.\-]+)*/g) || [])
-          .map(s => s.trim()).filter(s => s.length >= 3).sort((a, b) => b.length - a.length)[0];
-        if (latin) {
-          const en = await photoWikiLookup("en", latin);
+        // 영어권 장소명은 영어 위키백과도 확인한다 (한국어 설명이 섞인 이름은 그대로 쓰지 않는다)
+        const latinWords = String(cand).match(/[A-Za-z][A-Za-z0-9'\.\-]*(?:\s+[A-Za-z0-9'\.\-]+)*/g) || [];
+        const latin = latinWords.map(s => s.trim()).filter(s => s.length >= 3).sort((a, b) => b.length - a.length)[0];
+        const hasHangul = /[가-힣]/.test(cand);
+        const latinWordCount = latin ? latin.split(/\s+/).length : 0;
+        if (latin && (!hasHangul || latinWordCount >= 2)) {
+          const regionEn = PHOTO_REGION_EN[String(region || "").trim()] || "";
+          const enQuery = (!hasHangul || regionEn) && regionEn ? `${latin} ${regionEn}` : latin;
+          const en = await photoWikiLookup("en", enQuery, latin);
           if (en) return { ...en, place: name };
         }
-        const cm = await photoCommonsLookup(cand, region);
-        if (cm) return { ...cm, place: name };
+        // 공용 검색은 이름이 너무 짧으면 엉뚱한 파일이 걸리기 쉬워 4글자 이상만 본다
+        if (photoNorm(cand).length >= 4) {
+          const cm = await photoCommonsLookup(cand, region);
+          if (cm) return { ...cm, place: name };
+        }
       }
       return null;
     }
@@ -5713,11 +5736,13 @@
         host.innerHTML = groups.map(g => {
           const done = g.items.filter(i => i.done).length;
           const urgent = g.group.startsWith("🚨");
+          // 기본 그룹('🎒 출발 전 준비물')은 카드 제목과 겹쳐서 머리글만 숨긴다 (항목은 그대로)
+          const hideHead = /^\s*🎒\s*출발 전 준비물\s*$/.test(String(g.group || ""));
           return `<div class="chk-group">
-            <div class="chk-group-head ${urgent ? "urgent" : ""}">
+            ${hideHead ? "" : `<div class="chk-group-head ${urgent ? "urgent" : ""}">
               <span>${g.group}</span>
               <span class="cnt">${done}/${g.items.length} 완료</span>
-            </div>
+            </div>`}
             ${g.items.map(c => editingCheckId === c.id ? `
               <div class="expense-item chk-editing">
                 <input id="chk-edit-input" class="input" value="${escapeAttr(c.text)}" style="flex:1;min-width:0;font-size:13px;"
