@@ -491,6 +491,13 @@
       border: 1px solid var(--border); background: #fff; color: var(--text);
     }
     .map-stamp-line { text-align: center; font-size: 10.5px; color: var(--muted); margin: 0 0 12px; }
+    /* 일정 사이 시간순 일출·일몰 한 줄 표시 (카드 아님) */
+    .tl-sun-row { display: flex; align-items: center; gap: 8px; margin: -2px 2px 10px; }
+    .tl-sun-row .sun-line { flex: 1; height: 0; border-top: 1px dashed #cbd5e1; }
+    .tl-sun-row .sun-chip {
+      font-size: 10.5px; font-weight: 800; color: #b45309; background: #fff7ed;
+      border: 1px dashed #fdba74; border-radius: 999px; padding: 2px 9px; white-space: nowrap;
+    }
     /* 지도 아래 3버튼 설명 ? 아이콘 */
     .map-help-row { display: flex; justify-content: flex-end; align-items: center; gap: 6px; margin: -2px 0 8px; }
     .map-help-btn {
@@ -2815,6 +2822,26 @@
       if (emBtn) emBtn.style.display = canEdit() ? "inline-flex" : "none";
     }
 
+    // 그날 일출·일몰 시각을 구해 타임라인에 끼울 한 줄 마커로 만든다 (일정/경비/지도 핀과 무관)
+    function daySunTimeRows(dayObj) {
+      const dayNum = dayObj?.day ?? currentDay;
+      const idx = (state.days || []).findIndex(d => d.day === dayNum);
+      const list = state.weather || [];
+      const w = list.find(x => x.dayNum === dayNum) || list[idx] || null;
+      let sun;
+      try {
+        sun = sunTimesForEntry(w ? { ...w } : { dayNum });
+      } catch { sun = { sunrise: "", sunset: "" }; }
+      const mk = (time, label) => ({
+        time,
+        html: `<div class="tl-sun-row" aria-label="${label}"><span class="sun-line"></span><span class="sun-chip">${label}</span><span class="sun-line"></span></div>`
+      });
+      const out = [];
+      if (/^\d{1,2}:\d{2}$/.test(sun.sunrise || "")) out.push(mk(sun.sunrise, `🌅 일출 ${sun.sunrise}`));
+      if (/^\d{1,2}:\d{2}$/.test(sun.sunset || "")) out.push(mk(sun.sunset, `🌇 일몰 ${sun.sunset}`));
+      return out.sort((a, b) => a.time.localeCompare(b.time));
+    }
+
     function renderTimeline() {
       const destShort = String(state.meta?.destination || "부산").split(/[(\s]/)[0] || "부산";
       const mapTitleEl = document.getElementById("map-card-title");
@@ -2840,7 +2867,7 @@
 
       const n = Math.max(1, Number(state.meta.travelers) || 2);
       const listEl = document.getElementById("timeline-list");
-      listEl.innerHTML = dayObj.items.map((it, idx) => {
+      const cardBlocks = dayObj.items.map((it, idx) => {
         const badges = (it.badges || []).map(b => {
           let cls = "tag";
           if (b.includes("휴무") || b.includes("필수")) cls += " warn";
@@ -2877,7 +2904,23 @@
             </div>` : ""}
           </div>
         `;
-      }).join("");
+      });
+      // 🌅 일출 · 🌇 일몰은 카드가 아니라 시간 순서에 맞춰 얇은 한 줄로 끼워 넣는다
+      const sunRows = daySunTimeRows(dayObj);
+      const blocks = [];
+      let sunIdx = 0;
+      dayObj.items.forEach((it, idx) => {
+        while (sunIdx < sunRows.length && sunRows[sunIdx].time <= (it.time || "99:99")) {
+          blocks.push(sunRows[sunIdx].html);
+          sunIdx++;
+        }
+        blocks.push(cardBlocks[idx]);
+      });
+      while (sunIdx < sunRows.length) {
+        blocks.push(sunRows[sunIdx].html);
+        sunIdx++;
+      }
+      listEl.innerHTML = blocks.join("");
       const addRow = document.getElementById("add-btns-row");
       if (addRow) addRow.style.display = editMode ? "flex" : "none";
       const emBtn = document.getElementById("edit-mode-btn");
