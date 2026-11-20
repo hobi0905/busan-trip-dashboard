@@ -1578,7 +1578,7 @@
       </div>
       <input type="hidden" id="bk-type" value="hotel" />
       <div class="bk-label" id="bk-name-label">숙소 이름</div>
-      <input id="bk-name" class="input" placeholder="예: OO 호텔" style="margin-bottom:8px;" />
+      <input id="bk-name" class="input" placeholder="예: OO 호텔" style="margin-bottom:8px;" oninput="onBookingNameInput()" />
 
       <div id="bk-hotel-fields">
         <div class="row" style="margin-bottom:6px;">
@@ -1594,6 +1594,30 @@
         </div>
         <div class="row" style="margin-bottom:6px;">
           <input id="bk-hotel-url" class="input" placeholder="예약 링크 (선택)" />
+        </div>
+
+        <!-- 📅 일정에도 등록하기 (기본 OFF · 켤 때만 일차·순서·시각 선택) -->
+        <div id="bk-sched-box" style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:10px;padding:8px 10px;margin-bottom:8px;">
+          <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:800;color:var(--ocean-dark);cursor:pointer;">
+            <input type="checkbox" id="bk-sched-on" onchange="onBookingScheduleToggle()" />
+            <span>📅 일정에도 등록하기</span>
+          </label>
+          <div style="font-size:10.5px;color:var(--muted);margin-top:2px;line-height:1.45;">끄면 예약 내역에만 남고 일정 타임라인에는 뜨지 않아요.</div>
+          <div id="bk-sched-fields" style="display:none;margin-top:8px;">
+            <div class="row" style="margin-bottom:6px;">
+              <div style="flex:1;min-width:0;"><div class="bk-label">어느 일차</div><select id="bk-sched-day" class="input" onchange="onBookingScheduleTargetChange()"></select></div>
+              <div style="width:118px;"><div class="bk-label">방문 시각</div><input id="bk-sched-time" type="time" class="input" onchange="previewBookingRoute()" /></div>
+            </div>
+            <div style="margin-bottom:6px;">
+              <div class="bk-label">몇 번째 순서</div><select id="bk-sched-after" class="input" onchange="previewBookingRoute()"></select>
+            </div>
+            <div id="bk-sched-coord" style="font-size:10.5px;color:var(--muted);margin-bottom:6px;line-height:1.45;"></div>
+            <div class="row" style="margin-bottom:2px;">
+              <button type="button" class="btn btn-soft btn-sm" style="flex:1;" onclick="findBookingHotelCoords()">📍 호텔 좌표 찾기</button>
+              <button type="button" class="btn btn-soft btn-sm" style="flex:1;" onclick="previewBookingRoute()">🛣️ 이동 루트 미리보기</button>
+            </div>
+            <div id="bk-sched-preview" style="font-size:11.5px;color:var(--ocean-dark);line-height:1.6;margin-top:4px;"></div>
+          </div>
         </div>
       </div>
 
@@ -2786,6 +2810,17 @@
 
     const fmt = (n) => "₩" + Math.round(Number(n) || 0).toLocaleString("ko-KR");
 
+    /* 이동수단 이름으로 아이콘 고르기 (일정 카드 이동 줄) */
+    function moveIconOf(mode) {
+      const t = String(mode || "");
+      if (/택시/.test(t)) return "🚕";
+      if (/지하철|버스|전철|환승/.test(t)) return "🚇";
+      if (/KTX|SRT|기차|열차|항공|비행|페리|크루즈/.test(t)) return "🚆";
+      if (/자전거|바이크/.test(t)) return "🚲";
+      if (/차량|렌터카|자가용/.test(t)) return "🚗";
+      return "🚶";
+    }
+
     function inferItemExpenseCategory(it) {
       const text = `${it.place || ""} ${(it.badges || []).join(" ")} ${it.moveMode || ""}`;
       if (/호텔|숙소|펜션|리조트|체크인|에어비앤비|모텔|게스트하우스/.test(text)) return "숙소";
@@ -2997,10 +3032,24 @@
       const n = Math.max(1, Number(state.meta.travelers) || 2);
       const listEl = document.getElementById("timeline-list");
       // 🏨🚆 예약 내역도 해당 일차 타임라인에 같이 보여 준다 (원본 데이터는 그대로 두고 표시만 연동)
-      const feed = [
-        ...dayObj.items.map((it, idx) => ({ it, idx, virtual: false })),
-        ...bookingTimelineItems(dayObj).map(it => ({ it, idx: -1, virtual: true }))
-      ].sort((a, b) => String(a.it.time || "99:99").localeCompare(String(b.it.time || "99:99")));
+      // · 숙소 예약은 '일정에도 등록하기'를 켜고 고른 순서(앵커) 자리에 끼우고,
+      // · 교통편 예약은 기존처럼 출발 시각 순서대로 합친다.
+      const feed = dayObj.items.map((it, idx) => ({ it, idx, virtual: false }))
+        .sort((a, b) => String(a.it.time || "99:99").localeCompare(String(b.it.time || "99:99")));
+      const bkVirtuals = bookingTimelineItems(dayObj);
+      bkVirtuals.filter(v => v.scheduled).forEach(v => {
+        let pos = 0;
+        if (v.anchorId && v.anchorId !== "__first") {
+          const i = feed.findIndex(x => String(x.it.id) === String(v.anchorId));
+          pos = i >= 0 ? i + 1 : feed.length;
+        }
+        feed.splice(pos, 0, { it: v, idx: -1, virtual: true });
+      });
+      bkVirtuals.filter(v => !v.scheduled).forEach(v => {
+        let pos = feed.findIndex(x => String(x.it.time || "99:99").localeCompare(String(v.time || "99:99")) > 0);
+        if (pos < 0) pos = feed.length;
+        feed.splice(pos, 0, { it: v, idx: -1, virtual: true });
+      });
       const cardBlocks = feed.map(({ it, idx, virtual }) => {
         // 일출·일몰 시각은 카드 안 배지가 아니라 타임라인의 한 줄 마커로만 보여 준다
         const badges = (it.badges || []).filter(b => !/^\s*(일출|일몰)\s*\d{1,2}:\d{2}/.test(String(b))).map(b => {
@@ -3028,10 +3077,13 @@
             <div class="tl-badges">${badges}${hasMenus ? `<span class="tag blue">🍽️ 메뉴 선택</span>` : ""}</div>
             ${pickedText ? `<div style="font-size:12.5px;font-weight:700;color:var(--ocean-dark);background:var(--ocean-soft);padding:6px 9px;border-radius:8px;margin-bottom:6px;">🍴 ${pickedText} (${fmt(it.costTotal)})</div>` : ""}
             <div class="tl-memo">${it.memo || ""}</div>
+            ${it.scheduled && it.routeSummary ? `<div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:2px;">🛣️ ${it.routeSummary}</div>` : ""}
             <div class="tl-meta">
-              <div class="tl-move">🚶 ${it.moveMode || ""} ${virtual ? "" : `(${it.moveMin || 0}분 · ${fmt(it.moveCost || 0)})`}</div>
+              <div class="tl-move">${moveIconOf(it.moveMode)} ${it.moveMode || ""} ${virtual
+                ? (it.moveMin ? `(${it.moveMin}분${it.moveCost ? ` · ${fmt(it.moveCost)}` : ""})` : "")
+                : `(${it.moveMin || 0}분 · ${fmt(it.moveCost || 0)})`}</div>
               ${virtual
-                ? `<div style="display:flex;align-items:center;gap:6px;"><span class="tl-cost">${fmt(it.costTotal || 0)}</span>${it.mapUrl ? `<a class="map-btn" href="${it.mapUrl}" target="_blank" onclick="event.stopPropagation()">지도</a>` : ""}</div>`
+                ? `<div style="display:flex;align-items:center;gap:6px;"><span class="tl-cost">${fmt(it.costTotal || 0)}</span>${it.routeUrl ? `<a class="map-btn" href="${it.routeUrl}" target="_blank" onclick="event.stopPropagation()">길찾기</a>` : ""}${it.mapUrl ? `<a class="map-btn" href="${it.mapUrl}" target="_blank" onclick="event.stopPropagation()">지도</a>` : ""}</div>`
                 : `<div style="display:flex;align-items:center;gap:6px;">
                 <span class="tl-cost">${fmt(it.costTotal || 0)} <span style="font-weight:500;color:var(--muted);">(1인 ${fmt(per)})</span></span>
                 <a class="map-btn" href="${it.mapUrl}" target="_blank" onclick="event.stopPropagation()">지도</a>
@@ -4775,6 +4827,9 @@
             ${b.url ? `<a class="btn btn-soft btn-sm" style="text-decoration:none;padding:2px 8px;font-size:10.5px;" href="${escapeAttr(b.url)}" target="_blank" rel="noopener">예약 링크</a>` : ""}
           </div>
           ${b.memo ? `<div class="bk-line" style="margin-top:3px;">📝 ${escapeAttr(b.memo)}</div>` : ""}
+          ${b.schedule && b.schedule.on
+            ? `<div class="bk-line" style="margin-top:3px;color:var(--ocean-dark);font-weight:700;">📅 일정 등록 · ${bookingDayLabel(b.schedule.day)} ${b.schedule.time || ""}${b.schedule.moveMode ? ` → ${moveIconOf(b.schedule.moveMode)} ${b.schedule.moveMode} ${b.schedule.moveMin || 0}분` : ""}</div>`
+            : `<div class="bk-line" style="margin-top:3px;color:var(--muted);">📅 일정 미등록 · 예약 내역에만 표시</div>`}
           ${canEdit() ? `<div style="display:flex;gap:6px;margin-top:7px;">
             <button class="btn btn-soft btn-sm" style="flex:1;" onclick="openBookingModal('${b.id}')">✏️ 수정</button>
             <button class="btn btn-danger btn-sm" onclick="deleteBooking('${b.id}')">삭제</button>
@@ -4861,6 +4916,269 @@
     }
 
     let editingBookingId = null;
+
+    /* =====================================================================
+       📅 숙소 예약 → 일정 선택 등록 (일차 · 순서 · 방문 시각)
+          + 직전 일정 장소 → 호텔 이동 시간/최적 루트 계산
+       ===================================================================== */
+    let bkSchedCoords = null;
+
+    function bkTimeCmp(a, b) { return String(a || "99:99").localeCompare(String(b || "99:99")); }
+    function bookingSortedItems(dayNum) {
+      const dayObj = (state.days || []).find(d => Number(d.day) === Number(dayNum));
+      return (dayObj?.items || []).slice().sort((a, b) => bkTimeCmp(a.time, b.time));
+    }
+    function bookingDayNumForDate(dateStr) {
+      const d = (state.days || []).find(x => x.date && x.date === dateStr);
+      return d ? d.day : ((state.days || [])[0]?.day || 1);
+    }
+    function bookingDayLabel(dayNum) {
+      const d = (state.days || []).find(x => Number(x.day) === Number(dayNum));
+      if (!d) return `${dayNum}일차`;
+      return `${d.label || `${d.day}일차`}${d.date ? ` · ${fmtMD(d.date)}` : ""}`;
+    }
+
+    function fillBookingScheduleSelects(sel) {
+      const daySel = document.getElementById("bk-sched-day");
+      if (!daySel) return;
+      const days = state.days || [];
+      daySel.innerHTML = days.map(d => `<option value="${d.day}">${escapeAttr(`${d.label || `${d.day}일차`}${d.date ? ` · ${fmtMD(d.date)}` : ""}`)}</option>`).join("")
+        || `<option value="1">1일차</option>`;
+      const want = Number(sel?.day) || bookingDayNumForDate(document.getElementById("bk-in-date")?.value || "");
+      daySel.value = [...daySel.options].some(o => o.value === String(want)) ? String(want) : (daySel.options[0]?.value || "1");
+      fillBookingScheduleAfterOptions(sel?.afterId || null);
+    }
+
+    function fillBookingScheduleAfterOptions(keepId) {
+      const afterSel = document.getElementById("bk-sched-after");
+      if (!afterSel) return;
+      const dayNum = Number(document.getElementById("bk-sched-day")?.value) || 1;
+      const items = bookingSortedItems(dayNum);
+      afterSel.innerHTML = `<option value="__first">맨 처음 (1번째 일정 전)</option>` +
+        items.map((it, i) => `<option value="${escapeAttr(it.id)}">${i + 1}번째 [${escapeAttr(it.place || "일정")}] 다음</option>`).join("");
+      if (keepId && [...afterSel.options].some(o => o.value === keepId)) afterSel.value = keepId;
+      else if (items.length) afterSel.value = items[items.length - 1].id;
+      else afterSel.value = "__first";
+    }
+
+    function onBookingScheduleToggle() {
+      const on = Boolean(document.getElementById("bk-sched-on")?.checked);
+      const box = document.getElementById("bk-sched-fields");
+      if (box) box.style.display = on ? "block" : "none";
+      if (!on) {
+        const pv = document.getElementById("bk-sched-preview");
+        if (pv) pv.innerHTML = "";
+        return;
+      }
+      const daySel = document.getElementById("bk-sched-day");
+      if (![...(daySel?.options || [])].length) fillBookingScheduleSelects(null);
+      const t = document.getElementById("bk-sched-time");
+      if (t && !t.value) t.value = document.getElementById("bk-in-time")?.value || "15:00";
+      renderBookingScheduleCoordNote();
+    }
+
+    function onBookingNameInput() {
+      // 이름을 바꾸면 이전 이름으로 찾은 좌표는 버린다
+      bkSchedCoords = null;
+      if (document.getElementById("bk-sched-on")?.checked) renderBookingScheduleCoordNote();
+    }
+
+    function onBookingScheduleTargetChange() {
+      fillBookingScheduleAfterOptions(null);
+      renderBookingScheduleCoordNote();
+      const pv = document.getElementById("bk-sched-preview");
+      if (pv) pv.innerHTML = "";
+    }
+
+    function renderBookingScheduleCoordNote() {
+      const el = document.getElementById("bk-sched-coord");
+      if (!el) return;
+      if (bkSchedCoords && typeof bkSchedCoords.lat === "number") {
+        el.innerHTML = `📍 호텔 좌표 ${bkSchedCoords.lat.toFixed(4)}, ${bkSchedCoords.lng.toFixed(4)}${bkSchedCoords.source ? ` (${escapeAttr(bkSchedCoords.source)})` : ""}`;
+        return;
+      }
+      const name = document.getElementById("bk-name")?.value.trim() || "";
+      const pl = hotelSavedPlaceMatch(name);
+      el.innerHTML = (pl && typeof pl.lat === "number")
+        ? `📍 저장된 거점 '${escapeAttr(pl.label || name)}'에 좌표가 있어요 — 미리보기를 누르면 계산해요.`
+        : `📍 좌표가 아직 없어요. 저장할 때 저장된 거점·Nominatim에서 자동으로 찾고, 필요하면 '호텔 좌표 찾기'를 눌러 주세요.`;
+    }
+
+    function hotelSavedPlaceMatch(name) {
+      const key = normalizePlaceKey(name);
+      if (!key) return null;
+      const list = Array.isArray(state.savedPlaces) ? state.savedPlaces : [];
+      return list.find(p => p && p.kind === "hotel" && normalizePlaceKey(p.label || p.address) === key)
+        || list.find(p => p && typeof p.lat === "number" && key.length >= 2 && normalizePlaceKey(p.label || "").includes(key))
+        || null;
+    }
+
+    async function geocodeByName(name) {
+      const q0 = String(name || "").trim();
+      if (!q0) return null;
+      const overseas = state.meta?.tripType === "overseas";
+      const city = String(state.meta?.destination || "").split(/[(\s]/)[0];
+      const q = (overseas || (city && q0.includes(city))) ? q0 : [q0, city].filter(Boolean).join(" ");
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1${overseas ? "" : "&countrycodes=kr"}&q=${encodeURIComponent(q)}`);
+        const list = await r.json();
+        if (Array.isArray(list) && list.length) {
+          const lat = parseFloat(list[0].lat), lng = parseFloat(list[0].lon);
+          if (!isNaN(lat) && !isNaN(lng)) return { lat, lng, source: "Nominatim 검색", query: q };
+        }
+      } catch {}
+      return null;
+    }
+
+    async function resolveBookingHotelCoords(name) {
+      if (bkSchedCoords && typeof bkSchedCoords.lat === "number") return bkSchedCoords;
+      const pl = hotelSavedPlaceMatch(name);
+      if (pl && typeof pl.lat === "number") {
+        bkSchedCoords = { lat: pl.lat, lng: pl.lng, source: "저장된 거점" };
+        return bkSchedCoords;
+      }
+      const g = await geocodeByName(name);
+      if (g) bkSchedCoords = g;
+      return g;
+    }
+
+    function persistHotelCoords(name, coords) {
+      if (!coords || typeof coords.lat !== "number") return;
+      const pl = hotelSavedPlaceMatch(name);
+      if (pl) { pl.lat = coords.lat; pl.lng = coords.lng; }
+    }
+
+    // 지정한 순서의 '직전 장소' 일정 항목 (맨 처음이면 전날 마지막 일정)
+    function bookingPrevItem(dayNum, afterId) {
+      const items = bookingSortedItems(dayNum);
+      if (!afterId || afterId === "__first") {
+        const idx = (state.days || []).findIndex(d => Number(d.day) === Number(dayNum));
+        const prevDay = idx > 0 ? state.days[idx - 1] : null;
+        const prevItems = (prevDay?.items || []).slice().sort((a, b) => bkTimeCmp(a.time, b.time));
+        return prevItems.length ? prevItems[prevItems.length - 1] : (items[0] || null);
+      }
+      if (!items.length) return null;
+      const i = items.findIndex(x => String(x.id) === String(afterId));
+      if (i >= 0) return items[i];
+      return items[items.length - 1];
+    }
+
+    async function coordsForPlace(it) {
+      if (!it) return null;
+      if (typeof it.lat === "number" && typeof it.lng === "number") return { lat: it.lat, lng: it.lng, name: it.place || "" };
+      const key = normalizePlaceKey(it.place);
+      const pl = (Array.isArray(state.savedPlaces) ? state.savedPlaces : [])
+        .find(p => p && typeof p.lat === "number" && key && normalizePlaceKey(p.label || p.address).includes(key));
+      if (pl) return { lat: pl.lat, lng: pl.lng, name: it.place || pl.label || "" };
+      const g = await geocodeByName(String(it.place || "").replace(/\s*(체크인|체크아웃).*$/, ""));
+      return g ? { lat: g.lat, lng: g.lng, name: it.place || "" } : null;
+    }
+
+    async function fetchDriveRoute(from, to) {
+      if (!from || !to) return null;
+      try {
+        const ctl = typeof AbortController === "function" ? new AbortController() : null;
+        const timer = ctl ? setTimeout(() => ctl.abort(), 7000) : null;
+        const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=false`, ctl ? { signal: ctl.signal } : undefined);
+        if (timer) clearTimeout(timer);
+        const d = await r.json();
+        const rt = d?.routes?.[0];
+        if (!rt) return null;
+        return { distM: Number(rt.distance) || 0, durS: Number(rt.duration) || 0 };
+      } catch { return null; }
+    }
+
+    function taxiFareForSchedule(dayNum, timeStr, distM, durS) {
+      const dayObj = (state.days || []).find(d => Number(d.day) === Number(dayNum));
+      const dow = dayObj?.date ? new Date(`${dayObj.date}T00:00:00`).getDay() : new Date().getDay();
+      const weekend = dow === 0 || dow === 6;
+      const m = String(timeStr || "").match(/^(\d{1,2}):(\d{2})$/);
+      const minsOfDay = m ? Number(m[1]) * 60 + Number(m[2]) : 600;
+      let factor = 1.05, night = false;
+      if (minsOfDay >= 1320 || minsOfDay < 240) { factor = 0.85; night = true; }
+      else if (!weekend && ((minsOfDay >= 450 && minsOfDay <= 570) || (minsOfDay >= 1050 && minsOfDay <= 1200))) factor = 1.28;
+      else if (weekend && minsOfDay >= 780 && minsOfDay <= 1140) factor = 1.12;
+      const baseFare = 4800 + Math.max(0, (Number(distM) || 0) - 1600) / 131 * 100;
+      return {
+        mins: Math.max(2, Math.round(((Number(durS) || 0) / 60) * factor)),
+        fare: Math.round((baseFare * (night ? 1.2 : 1.0)) / 100) * 100
+      };
+    }
+
+    function naverDirectionsUrl(from, to, mode) {
+      const seg = (p, n) => `${Number(p.lng).toFixed(6)},${Number(p.lat).toFixed(6)},${encodeURIComponent(String(n || "").slice(0, 40))}`;
+      const kind = mode === "택시" ? "car" : mode === "도보" ? "walk" : "transit";
+      return `https://map.naver.com/p/directions/${seg(from, from.name)}/${seg(to, to.name)}/-/${kind}`;
+    }
+
+    // 직전 장소 → 호텔 : 거리·도보/대중교통/택시 비교 후 최적 수단과 네이버 길찾기 링크
+    async function estimateHotelRoute(from, to) {
+      const km = calcDistKm(from.lat, from.lng, to.lat, to.lng);
+      const walkMin = Math.max(1, Math.round((km / 4.2) * 60));
+      const drive = await fetchDriveRoute(from, to);
+      const driveDurS = drive?.durS || Math.max(60, (km / 22) * 3600);
+      const driveDistM = drive?.distM || km * 1000;
+      const taxi = taxiFareForSchedule(to.dayNum, to.time, driveDistM, driveDurS);
+      const transitMin = Math.max(4, Math.round((driveDurS / 60) * 1.7 + 8));
+      const transitFare = 1550;
+      const cands = [
+        { mode: "도보", min: walkMin, cost: 0 },
+        { mode: "지하철·버스", min: transitMin, cost: transitFare },
+        { mode: "택시", min: taxi.mins, cost: taxi.fare }
+      ];
+      const score = (c) => c.min + (c.cost / 1000) * 1.2;
+      const best = cands.slice().sort((a, b) => score(a) - score(b))[0];
+      const summary = `직전 '${from.name || "출발지"}' → ${to.name || "호텔"} · 도보 ${walkMin}분 / 지하철·버스 ${transitMin}분 ₩${transitFare.toLocaleString("ko-KR")} / 택시 ${taxi.mins}분 ₩${taxi.fare.toLocaleString("ko-KR")} → 최적 ${best.mode}`;
+      return {
+        moveMode: best.mode,
+        moveMin: best.min,
+        moveCost: best.cost,
+        moveKm: Math.round(km * 10) / 10,
+        bestMode: best.mode,
+        routeUrl: naverDirectionsUrl(from, to, best.mode),
+        summary,
+        candidates: cands
+      };
+    }
+
+    async function previewBookingRoute() {
+      const box = document.getElementById("bk-sched-preview");
+      if (!box) return;
+      if (!document.getElementById("bk-sched-on")?.checked) { box.innerHTML = ""; return; }
+      const name = document.getElementById("bk-name")?.value.trim() || "";
+      const dayNum = Number(document.getElementById("bk-sched-day")?.value) || 1;
+      const afterId = document.getElementById("bk-sched-after")?.value || "__first";
+      const time = document.getElementById("bk-sched-time")?.value || "";
+      if (!name) { box.innerHTML = `<span style="color:var(--muted);">숙소 이름을 먼저 입력해 주세요.</span>`; return; }
+      box.innerHTML = `<span style="color:var(--muted);">좌표·이동 루트 계산 중...</span>`;
+      const coord = await resolveBookingHotelCoords(name);
+      renderBookingScheduleCoordNote();
+      if (!coord) { box.innerHTML = `<span style="color:var(--danger);">호텔 좌표를 찾지 못했어요. '호텔명 + 동네'로 이름을 고치고 다시 눌러 주세요.</span>`; return; }
+      const prev = bookingPrevItem(dayNum, afterId);
+      const pc = await coordsForPlace(prev);
+      if (!pc) { box.innerHTML = `📍 호텔 좌표 ${coord.lat.toFixed(4)}, ${coord.lng.toFixed(4)} · 직전 장소${prev ? ` '${escapeAttr(prev.place)}'` : ""} 좌표가 없어 소요시간을 계산하지 못했어요.`; return; }
+      const est = await estimateHotelRoute(pc, { lat: coord.lat, lng: coord.lng, name, dayNum, time });
+      box.innerHTML = `<div>🛣️ <b>${escapeAttr(est.summary)}</b></div>
+        <div style="margin-top:3px;">${time ? `${time} 도착 기준 · ` : ""}추천 <b>${escapeAttr(est.moveMode)} ${est.moveMin}분</b>${est.moveCost ? ` · ${fmt(est.moveCost)}` : ""} → <a href="${est.routeUrl}" target="_blank" rel="noopener" style="font-weight:800;">네이버 길찾기</a></div>`;
+    }
+
+    async function findBookingHotelCoords() {
+      const name = document.getElementById("bk-name")?.value.trim() || "";
+      if (!name) return alert("숙소 이름을 먼저 입력해 주세요.");
+      const box = document.getElementById("bk-sched-preview");
+      if (box) box.innerHTML = `<span style="color:var(--muted);">'${escapeAttr(name)}' 좌표 찾는 중...</span>`;
+      bkSchedCoords = null;
+      const g = await geocodeByName(name);
+      if (g) bkSchedCoords = g;
+      renderBookingScheduleCoordNote();
+      if (box) {
+        box.innerHTML = g
+          ? `<span style="color:var(--success);">✓ '${escapeAttr(name)}' 좌표를 찾았어요 (${g.lat.toFixed(4)}, ${g.lng.toFixed(4)}).</span>`
+          : `<span style="color:var(--danger);">좌표를 찾지 못했어요. 저장할 때 한 번 더 시도하고, 그래도 없으면 이동 시간 없이 저장돼요.</span>`;
+      }
+      if (g) previewBookingRoute();
+    }
+
     function openBookingModal(id, type) {
       ensureBookings();
       if (!canEdit()) return alert("읽기 전용 권한이라 예약 내역을 수정할 수 없어요. 호스트에게 수정 권한을 요청해 주세요.");
@@ -4903,6 +5221,23 @@
       document.getElementById("bk-out-time").value = b ? (b.outTime || "") : "11:00";
       document.getElementById("bk-hotel-room").value = b ? (b.room || "") : "";
       document.getElementById("bk-hotel-url").value = b ? (b.url || "") : "";
+
+      // 📅 일정 등록 옵션 — 저장된 값이 없으면 기본 OFF
+      const sch = (b && b.type === "hotel" && b.schedule) ? b.schedule : null;
+      bkSchedCoords = (sch && typeof sch.lat === "number" && typeof sch.lng === "number")
+        ? { lat: sch.lat, lng: sch.lng, source: sch.coordSource || "저장된 좌표" }
+        : null;
+      const schedOnEl = document.getElementById("bk-sched-on");
+      if (schedOnEl) schedOnEl.checked = Boolean(sch && sch.on);
+      fillBookingScheduleSelects({
+        day: sch?.day || bookingDayNumForDate(document.getElementById("bk-in-date").value),
+        afterId: sch?.afterId || null
+      });
+      const schedTimeEl = document.getElementById("bk-sched-time");
+      if (schedTimeEl) schedTimeEl.value = sch?.time || (b?.inTime || "15:00");
+      const schedPv = document.getElementById("bk-sched-preview");
+      if (schedPv) schedPv.innerHTML = (sch && sch.summary) ? `<div>🛣️ <b>${escapeAttr(sch.summary)}</b></div>` : "";
+      onBookingScheduleToggle();
 
       document.getElementById("bk-mode").value = b && b.mode ? b.mode : "KTX";
       if (![...document.getElementById("bk-mode").options].some(o => o.value === document.getElementById("bk-mode").value)) {
@@ -4951,7 +5286,7 @@
       document.getElementById("bk-booker-name").style.display = sel.value === "__custom" ? "block" : "none";
     }
 
-    function saveBooking() {
+    async function saveBooking() {
       if (!canEdit()) return alert("읽기 전용 권한이라 예약 내역을 저장할 수 없어요.");
       ensureBookings();
       const t = document.getElementById("bk-type").value === "transit" ? "transit" : "hotel";
@@ -5014,11 +5349,48 @@
         delete rec.inDate; delete rec.inTime; delete rec.outDate; delete rec.outTime;
         delete rec.room; delete rec.url;
       }
+      // 📅 숙소만: '일정에도 등록하기'를 켰을 때만 지정한 일차·순서·시각으로 타임라인에 연결
+      if (t === "hotel") {
+        const schedOn = Boolean(document.getElementById("bk-sched-on")?.checked);
+        if (schedOn) {
+          const dayNum = Number(document.getElementById("bk-sched-day")?.value) || 1;
+          const afterId = document.getElementById("bk-sched-after")?.value || "__first";
+          const schedTime = document.getElementById("bk-sched-time")?.value || rec.inTime || "15:00";
+          const prev = bookingPrevItem(dayNum, afterId);
+          const hotelCoord = (bkSchedCoords && typeof bkSchedCoords.lat === "number")
+            ? bkSchedCoords
+            : await resolveBookingHotelCoords(name);
+          const prevCoord = await coordsForPlace(prev);
+          const est = (hotelCoord && prevCoord)
+            ? await estimateHotelRoute(prevCoord, { lat: hotelCoord.lat, lng: hotelCoord.lng, name, dayNum, time: schedTime })
+            : null;
+          rec.schedule = {
+            on: true, day: dayNum, afterId, time: schedTime,
+            lat: (hotelCoord && typeof hotelCoord.lat === "number") ? hotelCoord.lat : null,
+            lng: (hotelCoord && typeof hotelCoord.lng === "number") ? hotelCoord.lng : null,
+            coordSource: hotelCoord?.source || "",
+            from: prev?.place || "",
+            moveMode: est?.moveMode || "", moveMin: est?.moveMin || 0,
+            moveCost: est?.moveCost || 0, moveKm: est?.moveKm || 0,
+            routeUrl: est?.routeUrl || "",
+            summary: est?.summary || (prevCoord ? "호텔 좌표를 찾지 못해 이동 시간은 계산하지 못했어요." : "직전 장소 좌표를 찾지 못해 이동 시간은 계산하지 못했어요."),
+            calcAt: new Date().toISOString()
+          };
+          if (hotelCoord && typeof hotelCoord.lat === "number") persistHotelCoords(name, hotelCoord);
+        } else {
+          delete rec.schedule;
+        }
+      }
       if (!existing) state.bookings.push(rec);
       closeBookingModal();
       syncPlacesFromBookings();
       saveState();
-      alert(`✅ ${t === "hotel" ? "숙소" : "교통편"} 예약 내역을 저장했어요.`);
+      const schedNote = (t === "hotel")
+        ? (rec.schedule?.on
+          ? `\n📅 ${bookingDayLabel(rec.schedule.day)} ${rec.schedule.time} 일정에도 등록했어요.`
+          : "\n📅 일정 등록이 꺼져 있어 예약 내역에만 남겼어요.")
+        : "";
+      alert(`✅ ${t === "hotel" ? "숙소" : "교통편"} 예약 내역을 저장했어요.${schedNote}`);
     }
 
     function deleteBooking(id) {
@@ -5032,14 +5404,20 @@
     }
 
     // 예약 내역 → 일정 타임라인 표시용 항목 (원본 일정 데이터는 건드리지 않음)
+    // · 숙소는 '일정에도 등록하기'를 골라 저장한 경우에만, 그 일차·순서·시각으로 한 장.
+    // · 교통편은 출발일 타임라인에 그대로 표시.
+    // · 금액은 예약 내역에 입력한 값을 그대로 보여 준다(예전 ₩0 오류 수정).
     function bookingTimelineItems(dayObj) {
       const out = [];
       const date = dayObj?.date || "";
+      const dayNum = Number(dayObj?.day) || 0;
       if (!date) return out;
       (state.bookings || []).forEach(b => {
         if (!b) return;
+        const amount = bookingAmount(b);
         if (b.type === "transit") {
           if (b.depDate && b.depDate === date) {
+            const rideMin = (b.depTime && b.arrTime) ? parseMinDiff(b.depTime, b.arrTime) : 0;
             out.push({
               id: "bkvl-" + b.id + "-dep",
               virtual: true, bookingId: b.id,
@@ -5047,42 +5425,33 @@
               place: `${b.from || "출발지"} → ${b.to || "도착지"}`,
               stay: b.depTime && b.arrTime ? `${b.depTime}~${b.arrTime}` : "",
               moveMode: (b.name && b.mode && String(b.name).startsWith(b.mode)) ? b.name : [b.mode, b.name].filter(Boolean).join(" "),
-              moveMin: 0, moveCost: 0, costTotal: 0,
+              moveMin: rideMin, moveCost: 0, costTotal: amount,
               memo: [b.seat, b.payStatus === "paid" ? "결제 완료" : "결제 예정", b.memo].filter(Boolean).join(" · "),
               mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(b.to || b.from || "")}`,
               badges: ["🔗 예약 연동", b.mode || "교통편"].filter(Boolean)
             });
           }
-        } else if (b.type === "hotel") {
+        } else if (b.type === "hotel" && b.schedule && b.schedule.on && Number(b.schedule.day) === dayNum) {
           const nights = (b.inDate && b.outDate)
             ? Math.max(0, Math.round((new Date(b.outDate + "T00:00:00") - new Date(b.inDate + "T00:00:00")) / 86400000))
             : null;
-          if (b.inDate && b.inDate === date) {
-            out.push({
-              id: "bkvl-" + b.id + "-in",
-              virtual: true, bookingId: b.id,
-              time: b.inTime || "15:00",
-              place: `🏨 ${b.name || "숙소"} 체크인`,
-              stay: nights ? `${nights}박` : "",
-              moveMode: "", moveMin: 0, moveCost: 0, costTotal: 0,
-              memo: [b.room, b.payStatus === "paid" ? "결제 완료" : "결제 예정"].filter(Boolean).join(" · "),
-              mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(b.name || "숙소")}`,
-              badges: ["🔗 예약 연동", "숙소"]
-            });
-          }
-          if (b.outDate && b.outDate === date) {
-            out.push({
-              id: "bkvl-" + b.id + "-out",
-              virtual: true, bookingId: b.id,
-              time: b.outTime || "11:00",
-              place: `🏨 ${b.name || "숙소"} 체크아웃`,
-              stay: "",
-              moveMode: "", moveMin: 0, moveCost: 0, costTotal: 0,
-              memo: "",
-              mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(b.name || "숙소")}`,
-              badges: ["🔗 예약 연동"]
-            });
-          }
+          out.push({
+            id: "bkvl-" + b.id + "-sched",
+            virtual: true, scheduled: true, bookingId: b.id,
+            anchorId: b.schedule.afterId || "__first",
+            time: b.schedule.time || b.inTime || "15:00",
+            place: `🏨 ${b.name || "숙소"} 체크인`,
+            stay: nights ? `${nights}박` : "",
+            moveMode: b.schedule.moveMode || "",
+            moveMin: Number(b.schedule.moveMin) || 0,
+            moveCost: Number(b.schedule.moveCost) || 0,
+            costTotal: amount,
+            memo: [b.room, b.schedule.from ? `직전 ${b.schedule.from}에서 이동` : "", b.payStatus === "paid" ? "결제 완료" : "결제 예정", b.memo].filter(Boolean).join(" · "),
+            mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(b.name || "숙소")}`,
+            routeUrl: b.schedule.routeUrl || "",
+            routeSummary: b.schedule.summary || "",
+            badges: ["🔗 예약 연동", "숙소"].filter(Boolean)
+          });
         }
       });
       return out;
@@ -6054,6 +6423,11 @@
     }
 
     async function startSupabase(url, key, syncId) {
+      // QA 검증용 트립(qa-… )은 실제 클라우드 백업을 건드리지 않는다
+      if (/^qa-/i.test(String(syncId || ""))) {
+        sbClient = null;
+        return setSyncStatus("QA 테스트 트립 · 클라우드 동기화 꺼짐", false);
+      }
       if (!window.supabase) return setSyncStatus("마지막 백업: 연결 실패", false);
       sbClient = window.supabase.createClient(url, key);
       await pullFromCloud(true);
