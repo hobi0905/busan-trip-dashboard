@@ -1064,6 +1064,8 @@
     }
     .roul-fill-note b { font-weight: 900; }
     .roul-block .roul-results .roul-do .btn { font-size: 11.5px; }
+    /* PC 화면에서도 모달 안 룰렛 결과는 한 줄씩 (넓은 화면용 3열 규칙 무시) */
+    body.view-pc .roul-block .roul-results { grid-template-columns: 1fr; }
     .setup-filled { animation: setupFilled 1.6s ease; }
     @keyframes setupFilled { 0% { background: #fef9c3; box-shadow: 0 0 0 3px rgba(250,204,21,.45); } 100% { background: #fff; box-shadow: none; } }
     /* 설정 모달은 룰렛 결과까지 담을 수 있게 스크롤 */
