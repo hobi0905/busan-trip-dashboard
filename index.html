@@ -1194,6 +1194,173 @@
       background: #2563eb; border: 2.5px solid #fff;
       box-shadow: 0 4px 10px rgba(37, 99, 235, 0.45);
     }
+
+    /* =====================================================================
+       🖥️ PC 데스크톱 레이아웃 (960px 이상)
+       · 좌측 220px 고정 사이드바가 하단 탭을 대신한다
+       · 🏠 홈: 좌 지도(58%) / 우 일정 패널(42%)
+       · 📅 일정: 좌 스티키 지도 / 우 타임라인 2단
+       · 960px 미만(모바일·태블릿)에서는 아래 규칙이 하나도 적용되지 않는다
+       ===================================================================== */
+    .pc-sidebar { display: none; }
+    /* 잠금(비밀번호)·동반인 승인 대기 중에는 모바일처럼 사이드바도 감춘다 */
+    body:not(.unlocked) .pc-sidebar { display: none !important; }
+
+    @media (min-width: 960px) {
+      body { padding-left: 220px; padding-bottom: 0; }
+      body.home-mode { padding-left: 220px; padding-bottom: 0; }
+      body.day-bar-on { padding-bottom: 0; }
+      .bottom-nav, #day-float-bar { display: none !important; }
+
+      .container { max-width: 1120px; }
+      body.home-mode .container { max-width: 1680px; }
+      body:not(.home-mode) .main { padding: 18px 22px 30px; }
+      .sticky-header { padding: 12px 22px 10px; }
+      .summary-strip { max-width: 560px; }
+
+      /* ─────────────── 좌측 고정 사이드바 ─────────────── */
+      .pc-sidebar {
+        display: flex; flex-direction: column; gap: 12px;
+        position: fixed; top: 0; left: 0; bottom: 0; width: 220px; z-index: 60;
+        padding: 16px 12px 14px;
+        background: #fff; border-right: 1px solid var(--border);
+        overflow-y: auto; overflow-x: hidden;
+      }
+      .pcs-head { display: flex; align-items: center; gap: 9px; padding: 2px 4px 0; }
+      .pcs-logo {
+        width: 34px; height: 34px; border-radius: 11px; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center; font-size: 18px;
+        background: var(--ocean-soft); border: 1px solid var(--ocean-border);
+      }
+      .pcs-trip { min-width: 0; flex: 1; }
+      .pcs-trip-title {
+        font-size: 13.5px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.25;
+        overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
+        -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      }
+      .pcs-trip-sub { font-size: 10.5px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .pcs-switch {
+        display: flex; align-items: center; justify-content: space-between; gap: 6px;
+        width: 100%; padding: 8px 10px; border-radius: 10px;
+        border: 1px solid var(--border); background: #f8fafc;
+        font-family: inherit; font-size: 11.5px; font-weight: 800; color: #334155;
+        cursor: pointer;
+      }
+      .pcs-switch:hover { background: var(--ocean-soft); }
+      .pcs-switch #pcs-dday { color: var(--ocean); font-weight: 800; }
+      .pcs-nav { display: flex; flex-direction: column; gap: 3px; }
+      .pcs-nav-btn {
+        display: flex; align-items: center; gap: 9px;
+        width: 100%; padding: 9px 10px; border-radius: 10px;
+        border: 1px solid transparent; background: transparent;
+        font-family: inherit; font-size: 13px; font-weight: 700; color: #475569;
+        text-align: left; cursor: pointer;
+        transition: background .12s ease, color .12s ease, border-color .12s ease;
+      }
+      .pcs-nav-btn:hover { background: #f1f5f9; }
+      .pcs-nav-btn .pcs-ico { font-size: 15px; line-height: 1; width: 18px; text-align: center; flex-shrink: 0; }
+      .pcs-nav-btn.active {
+        background: var(--ocean-soft); border-color: var(--ocean-border);
+        color: var(--ocean-dark); font-weight: 800;
+      }
+      .pcs-sum {
+        margin-top: auto; padding: 10px 11px; border-radius: 12px;
+        background: var(--ocean-soft); border: 1px solid var(--ocean-border);
+        display: flex; flex-direction: column; gap: 6px;
+      }
+      .pcs-sum-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 11px; color: #475569; font-weight: 600; }
+      .pcs-sum-row b { font-size: 12px; font-weight: 800; color: var(--ocean-dark); }
+      .pcs-foot { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+      .pcs-foot button {
+        padding: 8px 2px; border-radius: 9px; border: 1px solid var(--border);
+        background: #fff; font-family: inherit; font-size: 10.5px; font-weight: 700;
+        color: #334155; cursor: pointer; white-space: nowrap;
+      }
+      .pcs-foot button:hover { background: var(--ocean-soft); color: var(--ocean-dark); }
+
+      /* ─────────────── 🏠 홈: 좌 지도 / 우 일정 패널 ─────────────── */
+      #tab-home { height: 100vh; }
+      .home-stage {
+        display: grid; grid-template-columns: 58% minmax(0, 42%);
+        height: 100vh; overflow: hidden;
+      }
+      #home-map { height: 100%; min-height: 0; max-height: none; }
+      .home-float { right: 42%; }
+      .home-float .home-title-pill { max-width: calc(100% - 120px); }
+      .home-day-col { top: 68px; }
+      .home-credit { bottom: 14px; }
+      .home-sheet {
+        margin-top: 0; min-height: 0; height: 100%;
+        border-radius: 0; border-left: 1px solid var(--border);
+        box-shadow: -12px 0 30px rgba(15, 23, 42, 0.06);
+        padding: 16px 18px 24px; overflow-y: auto; -webkit-overflow-scrolling: touch;
+      }
+      .home-sheet .sheet-handle,
+      .home-sheet .sheet-more,
+      .home-scrim { display: none !important; }
+      .home-sheet .sheet-head { padding: 0 2px 12px; }
+      .home-row {
+        grid-template-columns: 24px 44px minmax(0, 1fr) 52px auto 12px;
+        gap: 8px; padding: 8px 10px; margin-bottom: 7px;
+      }
+      .hr-place { font-size: 14px; }
+      .hr-time { font-size: 11.5px; }
+
+      /* ─────────────── 📅 일정: 좌 지도(스티키) / 우 타임라인 ─────────────── */
+      #tab-timeline.active {
+        display: grid;
+        grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+        gap: 0 22px; align-items: start;
+      }
+      .tl-pc-left {
+        position: sticky; top: calc(var(--pc-hdr-h, 0px) + 12px);
+        display: flex; flex-direction: column; min-width: 0;
+      }
+      .tl-pc-right { display: flex; flex-direction: column; min-width: 0; }
+      .tl-pc-left .tl-map-card { margin-bottom: 10px; }
+      .tl-pc-left .map-action-row { margin-bottom: 6px; }
+      .tl-pc-left .map-action-row .btn { flex: 1; min-width: 0; padding-left: 4px; padding-right: 4px; }
+      .tl-pc-left .map-help-row { margin-bottom: 10px; }
+      .tl-pc-left .tl-places-row { margin-bottom: 10px; }
+      #day-map { height: clamp(300px, 46vh, 460px); }
+      .tl-pc-right > .day-tabs { margin-bottom: 12px; }
+
+      /* ─────────────── 나머지 탭: 넓은 2열 카드 그리드 ─────────────── */
+      #tab-expenses.active,
+      #tab-checklist.active,
+      #tab-sync.active {
+        display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 16px; align-items: start;
+      }
+      #tab-expenses.active > .card:last-child { grid-column: 1 / -1; }
+      #tab-checklist.active > div:empty { display: none; }
+      #tab-sync.active > details { grid-column: 1 / -1; }
+
+      .wp-seg { max-width: 460px; }
+      #wp-pane-weather.active {
+        display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 16px; align-items: start;
+      }
+      #wp-pane-weather.active > #weather-list,
+      #wp-pane-weather.active > #weather-alert-box { grid-column: 1 / -1; }
+      #wp-pane-weather.active > #weather-alert-box:empty { display: none; }
+      #weather-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+      #packing-body {
+        display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 16px; align-items: start;
+      }
+      #packing-body > *:only-child { grid-column: 1 / -1; }
+
+      #rec-spot-panel, #rec-route-panel, #rec-must-panel {
+        display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
+        gap: 0 18px; align-items: start;
+      }
+      #rec-spot-panel[style*="none"], #rec-route-panel[style*="none"], #rec-must-panel[style*="none"] { display: none !important; }
+      #rec-results, #route-results, #must-results { min-width: 0; }
+
+      #tab-mypage.active { max-width: 860px; }
+      #bookings-section { margin-bottom: 4px; }
+    }
   </style>
 </head>
 <body class="home-mode">
@@ -1283,7 +1450,7 @@
       <!-- TAB 1: TIMELINE -->
       <section id="tab-timeline" class="tab-panel">
         <div class="day-tabs" id="day-tabs"></div>
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+        <div class="tl-planb-row" style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
           <div class="planb-bar" style="flex:1;margin-bottom:0;padding:8px 12px;">
             <div>
               <div style="font-weight:800;font-size:13px;" id="planb-bar-title">☔ 플랜 B</div>
@@ -1297,7 +1464,7 @@
           <button id="edit-mode-btn" class="btn btn-soft" style="height:48px;white-space:nowrap;" onclick="toggleEditMode()">✏️ 일정 편집</button>
         </div>
         <div id="planb-content" class="planb-box" style="display:none;"></div>
-        <div class="card" style="padding:10px;">
+        <div class="card tl-map-card" style="padding:10px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:0 2px;gap:6px;">
             <span id="map-card-title" style="font-size:12.5px;font-weight:800;color:var(--ocean-dark);">🗺️ 오늘의 부산 동선 지도</span>
             <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
@@ -1321,16 +1488,16 @@
           <button class="btn btn-soft" style="flex:1;" onclick="openPlaceModal(null)">+ 일정 추가</button>
           <button class="btn btn-primary" style="flex:1;" onclick="openTransitModal()">🚆 교통편 추가</button>
         </div>
-        <div style="margin:0 0 12px;">
+        <div class="tl-places-row" style="margin:0 0 12px;">
           <button class="btn btn-soft btn-sm" style="width:100%;" onclick="openPlacesModal()">🏠 자주 쓰는 거점 (집·공항·역·호텔) 관리</button>
         </div>
         <div id="timeline-list"></div>
         <div id="bookings-section"></div>
-        <div style="margin-top:16px;margin-bottom:6px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
+        <div class="tl-foot-row" style="margin-top:16px;margin-bottom:6px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-soft btn-sm" onclick="openThemeModal()" style="padding:8px 18px;">⚙️ 설정 · 색감 변경</button>
           <button class="btn btn-soft btn-sm hours-refresh-btn" data-default-label="🔄 영업시간 업데이트" onclick="refreshBusinessHours()" style="padding:8px 14px;">🔄 영업시간 업데이트</button>
         </div>
-        <div class="hours-note hours-updated-label" style="text-align:center;margin-bottom:8px;">아직 업데이트 전</div>
+        <div class="hours-note hours-updated-label tl-foot-stamp" style="text-align:center;margin-bottom:8px;">아직 업데이트 전</div>
       </section>
 
       <!-- TAB 2: EXPENSES -->
@@ -2404,6 +2571,40 @@
       <button class="nav-btn" data-tab="mypage"><span class="ico">👤</span>마이</button>
     </div>
   </nav>
+
+  <!-- 🖥️ PC 데스크톱 전용 좌측 사이드바 (960px 이상에서만 보임 / 하단 탭 대체) -->
+  <aside class="pc-sidebar" id="pc-sidebar" aria-label="PC 메뉴">
+    <div class="pcs-head">
+      <div class="pcs-logo">🧳</div>
+      <div class="pcs-trip">
+        <div class="pcs-trip-title" id="pcs-trip-title">부산 2박 3일 뚜벅이 여행</div>
+        <div class="pcs-trip-sub" id="pcs-trip-sub">2027.01.31 ~ 02.02</div>
+      </div>
+    </div>
+    <button type="button" class="pcs-switch" onclick="openTripsModal()" title="내 여행 목록 · 여행 전환">
+      <span>🔄 여행 전환</span><span id="pcs-dday">D-0</span>
+    </button>
+    <nav class="pcs-nav" aria-label="여행 탭">
+      <button type="button" class="pcs-nav-btn active" data-tab="home" onclick="pcGoTab('home')"><span class="pcs-ico">🏠</span><span>홈</span></button>
+      <button type="button" class="pcs-nav-btn" data-tab="timeline" onclick="pcGoTab('timeline')"><span class="pcs-ico">📅</span><span>일정</span></button>
+      <button type="button" class="pcs-nav-btn" data-tab="recommend" onclick="pcGoTab('recommend')"><span class="pcs-ico">✨</span><span>추천</span></button>
+      <button type="button" class="pcs-nav-btn" data-tab="expenses" onclick="pcGoTab('expenses')"><span class="pcs-ico">💰</span><span>경비</span></button>
+      <button type="button" class="pcs-nav-btn" data-tab="weather-packing" onclick="pcGoTab('weather-packing')"><span class="pcs-ico">🌤️</span><span>날씨·짐</span></button>
+      <button type="button" class="pcs-nav-btn" data-tab="checklist" onclick="pcGoTab('checklist')"><span class="pcs-ico">✅</span><span>체크</span></button>
+      <button type="button" class="pcs-nav-btn" data-tab="mypage" onclick="pcGoTab('mypage')"><span class="pcs-ico">👤</span><span>마이</span></button>
+    </nav>
+    <div class="pcs-sum" aria-label="여행 요약">
+      <div class="pcs-sum-row"><span>총 예상 경비</span><b id="pcs-sum-total">₩0</b></div>
+      <div class="pcs-sum-row"><span>1인당</span><b id="pcs-sum-per">₩0</b></div>
+      <div class="pcs-sum-row"><span>예약 완료</span><b id="pcs-sum-done">0건</b></div>
+      <div class="pcs-sum-row"><span>총 이동</span><b id="pcs-sum-move">0분</b></div>
+    </div>
+    <div class="pcs-foot">
+      <button type="button" onclick="openShareModal()" title="일정 공유">🔗 공유</button>
+      <button type="button" onclick="openSyncTab()" title="클라우드 백업·동기화">☁️ 동기화</button>
+      <button type="button" onclick="openThemeModal()" title="설정·색감 변경">⚙️ 설정</button>
+    </div>
+  </aside>
 
   <script>
     const DEFAULT_DATA = {
@@ -3896,6 +4097,8 @@
       const emBtn = document.getElementById("edit-mode-btn");
       if (emBtn) emBtn.style.display = canEdit() ? "inline-flex" : "none";
       try { refreshHomeHeader(); } catch (e) {}
+      try { syncPcSidebar(); } catch (e) {}
+      try { updatePcMetrics(); } catch (e) {}
     }
 
     // 그날 일출·일몰 시각을 구해 타임라인에 끼울 한 줄 마커로 만든다 (일정/경비/지도 핀과 무관)
@@ -5278,10 +5481,12 @@
       if (!sheet) return;
       const rows = Array.from(sheet.querySelectorAll(".home-row"));
       const expanded = sheet.classList.contains("expanded");
-      rows.forEach((row, i) => row.classList.toggle("hr-hide", !expanded && i >= 4));
+      // PC(960px 이상)에서는 접지 않고 그 일차 전체 일정을 한눈에 보여 준다
+      const pcView = isPcWidth();
+      rows.forEach((row, i) => row.classList.toggle("hr-hide", !pcView && !expanded && i >= 4));
       if (moreBtn) {
         const rest = rows.length - 4;
-        moreBtn.classList.toggle("hide", expanded || rest <= 0);
+        moreBtn.classList.toggle("hide", pcView || expanded || rest <= 0);
         if (rest > 0) moreBtn.innerHTML = `펼쳐서 ${rest}개 더 보기 ⌄`;
       }
     }
@@ -9888,6 +10093,7 @@
 
     function openSyncTab() {
       document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".pcs-nav-btn").forEach(b => b.classList.remove("active"));
       document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
       document.getElementById("tab-sync")?.classList.add("active");
       resetScrollToTop();
@@ -9904,12 +10110,14 @@
       const target = document.getElementById("tab-" + tabId);
       if (!target) return;
       document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tabId));
+      document.querySelectorAll(".pcs-nav-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tabId));
       document.querySelectorAll(".tab-panel").forEach(p => p.classList.toggle("active", p.id === "tab-" + tabId));
       const isHome = tabId === "home";
       document.body.classList.toggle("home-mode", isHome);
       if (!isHome) { try { toggleHomeSheet(false); } catch (e) {} }
       resetScrollToTop();
       updateDayFloatBar();
+      try { updatePcMetrics(); } catch (e) {}
       if (isHome) {
         try { renderHome(); } catch (e) { console.warn(e); }
         setTimeout(() => { try { renderHomeMap(); } catch (e) {} }, 80);
@@ -10404,9 +10612,9 @@
       document.getElementById("rec-mode-spot").className = `btn btn-sm ${isSpot ? "btn-primary" : "btn-soft"}`;
       document.getElementById("rec-mode-route").className = `btn btn-sm ${isRoute ? "btn-primary" : "btn-soft"}`;
       document.getElementById("rec-mode-must").className = `btn btn-sm ${isMust ? "btn-primary" : "btn-soft"}`;
-      document.getElementById("rec-spot-panel").style.display = isSpot ? "block" : "none";
-      document.getElementById("rec-route-panel").style.display = isRoute ? "block" : "none";
-      document.getElementById("rec-must-panel").style.display = isMust ? "block" : "none";
+      document.getElementById("rec-spot-panel").style.display = isSpot ? "" : "none";
+      document.getElementById("rec-route-panel").style.display = isRoute ? "" : "none";
+      document.getElementById("rec-must-panel").style.display = isMust ? "" : "none";
       if (isRoute) {
         const rs = document.getElementById("route-start"), re = document.getElementById("route-end");
         if (!rs.value) rs.value = state.meta?.startDate || "2027-01-31";
@@ -12832,6 +13040,122 @@
       }, 500);
     }
 
+    /* =====================================================================
+       🖥️ PC 데스크톱 레이아웃 (960px 이상)
+       · 좌측 사이드바의 여행 요약·활성 탭 동기화
+       · 📅 일정 탭을 좌(지도·거점·3버튼) / 우(일차·타임라인·예약) 2단으로 재배치
+       · 탭 전환·창 크기 변경·분기점 통과 시 Leaflet 지도 크기 보정
+       960px 미만에서는 DOM을 건드리지 않으므로 기존 모바일 화면은 그대로 유지된다.
+       ===================================================================== */
+    function isPcWidth() { return window.innerWidth >= 960; }
+
+    function pcGoTab(tab) {
+      if (!tab) return;
+      if (tab === "mypage") { try { prepareMyPageTab(); } catch (e) { console.warn(e); } }
+      activateTab(tab);
+      if (tab === "weather-packing") {
+        if (weatherPackingView === "packing") { try { renderPacking(); } catch (e) { console.warn(e); } }
+        else { try { autoRefreshWeather(); } catch (e) { console.warn(e); } }
+      }
+    }
+
+    function pcSetText(id, text) {
+      const el = document.getElementById(id);
+      if (el && text != null && el.textContent !== text) el.textContent = text;
+    }
+
+    function syncPcSidebar() {
+      if (!isPcWidth()) return;
+      const m = (state && state.meta) || {};
+      pcSetText("pcs-trip-title", m.title || "내 여행");
+      const sd = String(m.startDate || "").replace(/-/g, ".");
+      const ed = String(m.endDate || "").replace(/-/g, ".");
+      pcSetText("pcs-trip-sub", sd && ed ? `${sd} ~ ${ed}` : "");
+      pcSetText("pcs-dday", document.getElementById("hdr-dday")?.textContent || "");
+      pcSetText("pcs-sum-total", document.getElementById("sum-total")?.textContent || "₩0");
+      pcSetText("pcs-sum-per", document.getElementById("sum-per")?.textContent || "₩0");
+      pcSetText("pcs-sum-done", document.getElementById("sum-done")?.textContent || "0건");
+      const move = (document.getElementById("hdr-travel-time")?.textContent || "").replace(/^총 이동\s*/, "").trim();
+      pcSetText("pcs-sum-move", move || "0분");
+    }
+
+    function updatePcMetrics() {
+      if (!isPcWidth()) { document.documentElement.style.removeProperty("--pc-hdr-h"); return; }
+      const h = document.querySelector(".sticky-header");
+      let hh = 0;
+      if (h) {
+        const cs = window.getComputedStyle(h);
+        // 홈 탭에서는 헤더가 숨겨지므로(display:none) 높이 0으로 둔다
+        if (cs.display !== "none" && cs.visibility !== "hidden") hh = Math.round(h.getBoundingClientRect().height);
+      }
+      document.documentElement.style.setProperty("--pc-hdr-h", `${hh}px`);
+    }
+
+    let tlOrigNodes = null;
+
+    function buildPcTimeline() {
+      const panel = document.getElementById("tab-timeline");
+      if (!panel) return;
+      const leftSel = [".tl-map-card", ".map-action-row", ".map-help-row", "#map-hours-stamp", "#add-btns-row", ".tl-places-row"];
+      const rightSel = [".day-tabs", ".tl-planb-row", "#planb-content", "#timeline-list", "#bookings-section", ".tl-foot-row", ".tl-foot-stamp"];
+      let left = panel.querySelector(".tl-pc-left");
+      let right = panel.querySelector(".tl-pc-right");
+      const built = Boolean(left && right);
+      const wantPc = isPcWidth();
+
+      if (wantPc && !built) {
+        if (!tlOrigNodes) tlOrigNodes = Array.from(panel.children);
+        left = document.createElement("div");
+        left.className = "tl-pc-left";
+        right = document.createElement("div");
+        right.className = "tl-pc-right";
+        panel.appendChild(left);
+        panel.appendChild(right);
+        leftSel.forEach(sel => {
+          const el = panel.querySelector(sel);
+          if (el && el !== left && el !== right) left.appendChild(el);
+        });
+        rightSel.forEach(sel => {
+          const el = panel.querySelector(sel);
+          if (el && el !== left && el !== right) right.appendChild(el);
+        });
+        scheduleMapResize();
+      } else if (!wantPc && built) {
+        left.remove();
+        right.remove();
+        (tlOrigNodes || []).forEach(n => { if (n && n.parentNode !== panel) panel.appendChild(n); });
+        scheduleMapResize();
+      }
+    }
+
+    let pcMapTimer = null;
+    function scheduleMapResize() {
+      clearTimeout(pcMapTimer);
+      pcMapTimer = setTimeout(() => {
+        try { if (homeMap) homeMap.invalidateSize(); } catch (e) {}
+        try { if (leafletMap) { leafletMap.invalidateSize(); renderDayMap(); } } catch (e) {}
+      }, 90);
+    }
+
+    let pcResizeTimer = null;
+    function pcHandleViewportChange() {
+      clearTimeout(pcResizeTimer);
+      pcResizeTimer = setTimeout(() => {
+        try { buildPcTimeline(); } catch (e) { console.warn(e); }
+        try { updatePcMetrics(); } catch (e) {}
+        try { syncPcSidebar(); } catch (e) {}
+        try { syncHomeRowsHidden(); } catch (e) {}
+        scheduleMapResize();
+      }, 150);
+    }
+    window.addEventListener("resize", pcHandleViewportChange);
+    window.addEventListener("orientationchange", pcHandleViewportChange);
+    try {
+      const pcMq = window.matchMedia("(min-width: 960px)");
+      if (pcMq.addEventListener) pcMq.addEventListener("change", pcHandleViewportChange);
+      else if (pcMq.addListener) pcMq.addListener(pcHandleViewportChange);
+    } catch (e) { console.warn(e); }
+
     function renderAll() {
       applyThemeColor(state.meta?.themeColor || "#0284c7");
       registerMyTrip(currentSyncId, state.meta);
@@ -12852,6 +13176,7 @@
       try { renderHome(); } catch (e) { console.warn(e); }
     }
 
+    try { buildPcTimeline(); updatePcMetrics(); } catch (e) { console.warn("pc layout", e); }
     try { renderAll(); } catch (e) { console.error("renderAll error:", e); }
     try { initSupabaseFromStorage(); } catch (e) { console.error("supabase init error:", e); }
     setTimeout(() => {
