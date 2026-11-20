@@ -769,6 +769,9 @@
 
     /* 🕒 영업시간 */
     .hours-note { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.45; }
+    /* 🔄 일정 동기화 누를 때 링크 묶음이 살짝 번쩍 */
+    @keyframes appSyncFlash { 0% { background: #dbeafe; } 60% { background: #eff6ff; } 100% { background: transparent; } }
+    .app-sync-flash { animation: appSyncFlash 1s ease; border-radius: 10px; }
 
     /* 신규 루트 스타일 칩 */
     .style-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
@@ -1020,7 +1023,14 @@
         </div>
 
         <div class="card">
-          <h3 class="sec-title" id="booking-apps-title">📱 줄서기 · 예매 앱 바로가기</h3>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
+            <h3 class="sec-title" id="booking-apps-title" style="margin:0;">📱 줄서기 · 예매 앱 바로가기</h3>
+            <div style="display:flex;align-items:center;gap:4px;flex:0 0 auto;">
+              <button class="btn btn-soft btn-sm" id="app-sync-btn" data-default-label="🔄 일정 동기화" onclick="syncBookingApps()" title="일정·예약을 다시 읽어 필요한 예매·줄서기 앱을 맞춰요">🔄 일정 동기화</button>
+              <button class="btn btn-soft btn-sm" id="app-sync-help-btn" onclick="openAppSyncHelp()" aria-label="일정 동기화 기능 설명" title="이 기능이 뭐예요?" style="width:28px;padding:0;font-weight:800;">?</button>
+            </div>
+          </div>
+          <div class="hours-note" id="app-sync-status" style="margin:0 0 8px;">일정·예약을 보고 예매·줄서기가 필요한 항목의 앱만 모아 둡니다.</div>
           <div id="booking-apps-links">
             <div class="row">
               <a class="btn btn-soft" style="flex:1;text-decoration:none;" href="https://app.catchtable.co.kr/" target="_blank">캐치테이블 (맛집 예약)</a>
@@ -1715,6 +1725,38 @@
       </div>
       <input id="bk-memo" class="input" placeholder="메모 (취소 규정·조식·요청사항 등)" style="margin-bottom:10px;" />
       <button class="btn btn-primary" style="width:100%;" onclick="saveBooking()">저장하기</button>
+    </div>
+  </div>
+
+  <!-- 🔄 일정 동기화 설명 모달 -->
+  <div id="app-sync-help-modal" class="modal-backdrop" onclick="if(event.target===this)closeAppSyncHelp()">
+    <div class="modal-sheet" style="max-width:420px;max-height:88vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-size:16px;font-weight:800;">🔄 일정 동기화 · 이렇게 동작해요</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeAppSyncHelp()">닫기</button>
+      </div>
+      <div style="font-size:12.5px;line-height:1.7;">
+        <p style="margin:0 0 8px;">‘📱 줄서기 · 예매 앱 바로가기’는 <b>지금 내 일정과 예약 내역을 읽어서</b>, <b>예매나 줄서기가 필요한 항목만</b> 골라 그 서비스 바로가기를 자동으로 모아 줍니다. 일정에 없는 앱을 마구 늘어놓지 않아요.</p>
+        <div style="font-weight:800;margin:10px 0 4px;">이런 항목을 찾아요</div>
+        <div style="display:grid;gap:2px;">
+          <div>🚆 <b>기차·KTX·SRT</b> → 코레일톡 · SRT</div>
+          <div>🚋 <b>해변열차·스카이캡슐</b> → 블루라인파크 예매</div>
+          <div>🍽️ <b>웨이팅·원격대기 맛집</b> → 캐치테이블 · 테이블링</div>
+          <div>✈️ <b>항공편</b> → 항공사·스카이스캐너</div>
+          <div>🏨 <b>숙소 예약</b> → 예약 내역에 넣어 둔 예약 링크</div>
+          <div>🎟️ <b>해외 투어·입장권</b> → 공식 예매처 · 클룩 · KKday</div>
+        </div>
+        <div style="font-weight:800;margin:10px 0 4px;">이렇게 쓰면 돼요</div>
+        <ul style="margin:0;padding-left:18px;">
+          <li>🔄 <b>일정 동기화</b>를 누르면 지금 일정·예약으로 다시 맞춰요.</li>
+          <li>일정이나 예약을 저장하면 <b>알아서 다시 맞춰</b>지고, 버튼으로 바로 최신화할 수도 있어요.</li>
+          <li>같은 앱은 <b>한 번만</b> 뜨고, 버튼에 그 항목 이름이 같이 적혀요. (예: 코레일톡 예매 · KTX 25열차)</li>
+          <li>해당 항목이 하나도 없으면 기본 앱(캐치테이블 · 테이블링 · 코레일 · 블루라인파크)만 보여 줘요.</li>
+        </ul>
+        <div style="margin-top:10px;padding:8px 10px;background:var(--ocean-soft);border:1px solid var(--ocean-border);border-radius:10px;font-size:11.5px;color:var(--ocean-dark);line-height:1.6;">
+          🔎 일정 카드의 배지·메모에 ‘예매’, ‘예약 필수’, ‘웨이팅’, ‘캐치테이블’처럼 적어 두면 동기화할 때 바로 잡아냅니다.
+        </div>
+      </div>
     </div>
   </div>
 
@@ -4862,6 +4904,187 @@
     ].join("");
     const DOMESTIC_APP_LINKS_TITLE = "📱 줄서기 · 예매 앱 바로가기";
 
+    /* =====================================================================
+       🔄 일정 동기화 — 일정·예약에서 '예매·줄서기가 필요한 항목'만 골라 앱 바로가기 만들기
+       ===================================================================== */
+    const APP_LINKS = {
+      korail: { icon: "🚆", name: "코레일톡 예매", url: "https://www.letskorail.com/" },
+      srt: { icon: "🚄", name: "SRT 예매", url: "https://etk.srail.kr/" },
+      skyscanner: { icon: "✈️", name: "항공사·스카이스캐너", url: "https://www.skyscanner.co.kr/" },
+      blueline: { icon: "🚋", name: "블루라인파크 예매", url: "https://www.bluelinepark.com/" },
+      catchtable: { icon: "🍽️", name: "캐치테이블", url: "https://app.catchtable.co.kr/" },
+      tabling: { icon: "⏳", name: "테이블링", url: "https://www.tabling.co.kr/" },
+      klook: { icon: "🎟️", name: "클룩", url: "https://www.klook.com/ko/" },
+      kkday: { icon: "🎫", name: "KKday", url: "https://www.kkday.com/ko/" }
+    };
+    const OFFICIAL_TICKET_SITES = [
+      { re: /오페라하우스|opera\s*house/i, name: "시드니 오페라하우스 공식", url: "https://www.sydneyoperahouse.com/" },
+      { re: /시닉월드|scenic\s*world/i, name: "시닉월드 공식", url: "https://www.scenicworld.com.au/" },
+      { re: /팀랩|team\s*lab/i, name: "팀랩 공식", url: "https://www.teamlab.art/" },
+      { re: /유니버설|universal/i, name: "유니버설 스튜디오", url: "https://www.usj.co.jp/" },
+      { re: /타워아이|전망대|skydeck|observation/i, name: "전망대·타워 공식 예매", url: "https://www.klook.com/ko/" }
+    ];
+    let appSyncAt = null;
+
+    function appSyncStamp(d) {
+      const dt = d instanceof Date ? d : new Date(d);
+      if (isNaN(dt)) return "";
+      const p = n => String(n).padStart(2, "0");
+      return `${dt.getMonth() + 1}/${dt.getDate()} ${p(dt.getHours())}:${p(dt.getMinutes())}`;
+    }
+
+    // 일정·예약에서 예매·줄서기가 필요한 항목만 추려 서비스별로 묶기
+    function collectRequiredBookingApps() {
+      const raw = [];
+      const add = (icon, base, url, name, why) => {
+        if (!url) return;
+        raw.push({ icon, base, url, name: name || "", why: why || "" });
+      };
+      const shortName = s => String(s || "")
+        .replace(/[（(][^)）]*[)）]/g, " ")
+        .replace(/\s*(체크인|체크아웃|출발|도착|예약)\s*$/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 22);
+      const overseas = state.meta?.tripType === "overseas";
+
+      // 1) 예약 내역 — 교통편·숙소
+      (state.bookings || []).forEach(b => {
+        if (!b) return;
+        const nm = shortName(b.name || b.mode || "예약");
+        if (b.type === "transit") {
+          const md = String(b.mode || "");
+          if (/SRT/.test(md)) add(APP_LINKS.srt.icon, APP_LINKS.srt.name, APP_LINKS.srt.url, nm, `교통편 예약 · ${nm}`);
+          else if (/항공/.test(md)) add(APP_LINKS.skyscanner.icon, APP_LINKS.skyscanner.name, APP_LINKS.skyscanner.url, nm, `항공편 예약 · ${nm}`);
+          else if (/기차|KTX|시외|고속/.test(md)) add(APP_LINKS.korail.icon, APP_LINKS.korail.name, APP_LINKS.korail.url, nm, `교통편 예약 · ${nm}`);
+        }
+        if (b.type === "hotel" && b.url) add("🏨", "숙소 예약 페이지", b.url, nm, `숙소 예약 링크 · ${nm}`);
+      });
+
+      // 2) 일정 항목 — 배지·메모·이동수단 글에서 예매·줄서기 신호 찾기
+      (state.days || []).forEach(d => (d.items || []).forEach(it => {
+        const place = String(it.place || "").trim();
+        if (!place) return;
+        const name = shortName(place);
+        const placeHay = `${place} ${(it.badges || []).join(" ")}`;
+        const hay = `${placeHay} ${it.memo || ""} ${it.moveMode || ""}`;
+        let matched = false;
+        const hit = (icon, base, url, why) => { matched = true; add(icon, base, url, name, why); };
+
+        // 기차 (해변열차·스카이캡슐은 블루라인파크 쪽이라 제외)
+        if (/SRT/.test(placeHay)) hit(APP_LINKS.srt.icon, APP_LINKS.srt.name, APP_LINKS.srt.url, `${name} 예매`);
+        else if (/KTX|기차|무궁화|ITX|열차/.test(placeHay) && !/해변열차|스카이캡슐|블루라인/.test(placeHay)) hit(APP_LINKS.korail.icon, APP_LINKS.korail.name, APP_LINKS.korail.url, `${name} 예매`);
+
+        // 해운대 블루라인파크 (해변열차·스카이캡슐)
+        if (/블루라인|스카이캡슐|해변열차/.test(hay)) hit(APP_LINKS.blueline.icon, APP_LINKS.blueline.name, APP_LINKS.blueline.url, `${name} 예약`);
+
+        // 웨이팅·줄서기 맛집
+        if (/캐치테이블/.test(hay)) hit(APP_LINKS.catchtable.icon, APP_LINKS.catchtable.name, APP_LINKS.catchtable.url, `${name} 원격 줄서기`);
+        if (/테이블링/.test(hay)) {
+          if (matched) add(APP_LINKS.tabling.icon, APP_LINKS.tabling.name, APP_LINKS.tabling.url, name, `${name} 웨이팅`);
+          else hit(APP_LINKS.tabling.icon, APP_LINKS.tabling.name, APP_LINKS.tabling.url, `${name} 웨이팅`);
+        } else if (!/캐치테이블/.test(hay) && /웨이팅|줄서기|원격대기|예약 권장/.test(hay)) {
+          hit(APP_LINKS.catchtable.icon, APP_LINKS.catchtable.name, APP_LINKS.catchtable.url, `${name} 웨이팅`);
+          add(APP_LINKS.tabling.icon, APP_LINKS.tabling.name, APP_LINKS.tabling.url, name, `${name} 웨이팅`);
+        }
+
+        // 해외 입장권·투어 / 국내 기타 예매
+        if (overseas) {
+          OFFICIAL_TICKET_SITES.forEach(site => {
+            if (site.re.test(hay)) hit("🎟️", site.name, site.url, `${name} 입장권`);
+          });
+          if (/투어|입장권|티켓|예매|예약 필수|전망대|크루즈|공연|액티비티/.test(hay)) {
+            if (matched) add(APP_LINKS.klook.icon, APP_LINKS.klook.name, APP_LINKS.klook.url, name, `${name} 입장권·투어`);
+            else hit(APP_LINKS.klook.icon, APP_LINKS.klook.name, APP_LINKS.klook.url, `${name} 입장권·투어`);
+            add(APP_LINKS.kkday.icon, APP_LINKS.kkday.name, APP_LINKS.kkday.url, name, `${name} 입장권·투어`);
+          }
+        } else if (!matched && /예매|예약 필수|입장권|티켓/.test(placeHay)) {
+          add("🔎", `${name} 예매 검색`, `https://search.naver.com/search.naver?query=${encodeURIComponent(`${name} 예매`)}`, name, `${name} 예매처 검색`);
+        }
+      }));
+
+      // 같은 서비스는 한 번만 — 항목 이름은 버튼에 이어 붙인다
+      const merged = new Map();
+      raw.forEach(r => {
+        const prev = merged.get(r.url);
+        if (!prev) {
+          merged.set(r.url, { icon: r.icon, base: r.base, url: r.url, names: r.name ? [r.name] : [], why: r.why });
+          return;
+        }
+        if (r.name && !prev.names.includes(r.name)) prev.names.push(r.name);
+        if (!prev.why && r.why) prev.why = r.why;
+      });
+      return [...merged.values()].map(e => ({
+        icon: e.icon,
+        url: e.url,
+        why: e.why,
+        label: e.names.length
+          ? `${e.base} · ${e.names.slice(0, 2).join(", ")}${e.names.length > 2 ? ` 외 ${e.names.length - 2}` : ""}`
+          : e.base
+      }));
+    }
+
+    function renderBookingAppLinks() {
+      const box = document.getElementById("booking-apps-links");
+      if (!box) return;
+      const overseas = state.meta?.tripType === "overseas";
+      const entries = collectRequiredBookingApps();
+      const parts = [];
+      if (overseas) {
+        const preset = getCountryPreset(state.meta.country) || COUNTRY_PRESETS["기타"];
+        const links = preset.links || [];
+        if (links.length) {
+          parts.push(`<div class="row" style="margin-bottom:6px;flex-wrap:wrap;">`
+            + links.map(l => `<a class="btn btn-soft" style="flex:1 1 46%;text-decoration:none;font-size:12px;text-align:center;" href="${escapeAttr(l.url)}" target="_blank" rel="noopener">${escapeAttr(l.label)}</a>`).join("")
+            + `</div>`);
+        }
+      }
+      if (entries.length) {
+        parts.push(`<div style="font-size:11px;font-weight:800;color:var(--ocean-dark);margin:0 0 4px;">🎫 일정에서 찾은 예매·줄서기 ${entries.length}곳</div>`);
+        parts.push(`<div class="row" style="margin-bottom:0;flex-wrap:wrap;">`
+          + entries.map(e => `<a class="btn btn-soft" style="flex:1 1 46%;text-decoration:none;font-size:11.5px;text-align:left;line-height:1.35;" href="${escapeAttr(e.url)}" target="_blank" rel="noopener" title="${escapeAttr(e.why || e.label)}"><span style="min-width:0;">${e.icon} ${escapeAttr(e.label)}</span></a>`).join("")
+          + `</div>`);
+      } else if (overseas) {
+        parts.push(`<div style="font-size:11.5px;color:var(--muted);line-height:1.5;">일정에서 예매·줄서기 항목을 아직 찾지 못했어요. 입국·결제 바로가기만 표시 중이에요.</div>`);
+      } else {
+        parts.push(DOMESTIC_APP_LINKS_HTML);
+        parts.push(`<div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5;">일정에 ‘예매·예약 필수·웨이팅’ 항목이 아직 없어 기본 앱만 보여 줘요. 일정 배지나 메모에 적어 두면 🔄 일정 동기화 때 바로 잡아냅니다.</div>`);
+      }
+      box.innerHTML = parts.join("");
+      const stEl = document.getElementById("app-sync-status");
+      if (stEl) {
+        stEl.textContent = entries.length
+          ? `✓ 예매·줄서기 필요한 곳 ${entries.length}곳을 일정·예약에서 찾았어요${appSyncAt ? ` · ${appSyncStamp(appSyncAt)} 동기화` : ""}`
+          : "일정·예약을 보고 예매·줄서기가 필요한 항목의 앱만 모아 둡니다.";
+      }
+    }
+
+    function syncBookingApps() {
+      const btn = document.getElementById("app-sync-btn");
+      const label = (btn && btn.dataset.defaultLabel) || "🔄 일정 동기화";
+      if (btn) { btn.disabled = true; btn.textContent = "⏳ 맞추는 중"; }
+      appSyncAt = new Date();
+      renderBookingAppLinks();
+      const box = document.getElementById("booking-apps-links");
+      if (box) {
+        box.classList.add("app-sync-flash");
+        setTimeout(() => box.classList.remove("app-sync-flash"), 1000);
+      }
+      setTimeout(() => {
+        if (btn) { btn.disabled = false; btn.textContent = label; }
+      }, 500);
+    }
+
+    function openAppSyncHelp() {
+      const m = document.getElementById("app-sync-help-modal");
+      if (m) m.classList.add("open");
+    }
+
+    function closeAppSyncHelp() {
+      const m = document.getElementById("app-sync-help-modal");
+      if (m) m.classList.remove("open");
+    }
+
     function renderOverseasEmphasis() {
       const overseas = state.meta?.tripType === "overseas";
       const banner = document.getElementById("overseas-banner");
@@ -4876,7 +5099,7 @@
         if (badge) badge.style.display = "none";
         if (navBtn) navBtn.classList.remove("has-alert");
         if (appTitle) appTitle.textContent = DOMESTIC_APP_LINKS_TITLE;
-        if (appLinks && DOMESTIC_APP_LINKS_HTML) appLinks.innerHTML = DOMESTIC_APP_LINKS_HTML;
+        renderBookingAppLinks();
         return;
       }
       const preset = getCountryPreset(state.meta.country) || COUNTRY_PRESETS["기타"];
@@ -4884,12 +5107,7 @@
       const left = pendingRequiredCount();
       const urgentLeft = (state.checklist || []).filter(c => !c.done && c.urgent).length;
       if (appTitle) appTitle.textContent = "📱 입국·결제 바로가기";
-      if (appLinks) {
-        const links = preset.links || [];
-        appLinks.innerHTML = `<div class="row" style="margin-bottom:0;flex-wrap:wrap;">` + links.map(l =>
-          `<a class="btn btn-soft" style="flex:1 1 46%;text-decoration:none;font-size:12px;text-align:center;" href="${l.url}" target="_blank" rel="noopener">${l.label}</a>`
-        ).join("") + `</div>`;
-      }
+      renderBookingAppLinks();
       if (banner) {
         banner.classList.remove("hidden");
         banner.classList.toggle("ok", left === 0);
@@ -5351,36 +5569,52 @@
     }
 
     // 호텔 좌표 주변 지하철역 목록 (Overpass · 가까운 순)
+    // — 공개 Overpass 서버가 느리거나 막혔을 때를 대비해 대체 서버를 차례로 시도하고, 결과는 세션 내 재사용
+    const OVERPASS_ENDPOINTS = [
+      "https://overpass-api.de/api/interpreter",
+      "https://overpass.kumi.systems/api/interpreter",
+      "https://overpass.private.coffee/api/interpreter"
+    ];
+    const stationCache = new Map();   // 'lat,lng,radius' → 역 목록
+
     async function nearbySubwayStations(lat, lng, radius = 3000, limit = 6) {
       if (typeof lat !== "number" || typeof lng !== "number") return [];
-      const q = `[out:json][timeout:8];(`
+      const cacheKey = `${lat.toFixed(3)},${lng.toFixed(3)},${radius}`;
+      if (stationCache.has(cacheKey)) return stationCache.get(cacheKey).slice(0, limit);
+      const q = `[out:json][timeout:6];(`
         + `node["railway"="station"]["station"="subway"](around:${radius},${lat},${lng});`
         + `node["railway"="station"]["subway"="yes"](around:${radius},${lat},${lng});`
         + `node["public_transport"="station"]["subway"="yes"](around:${radius},${lat},${lng});`
         + `node["railway"="halt"]["subway"="yes"](around:${radius},${lat},${lng});`
-        + `way["railway"="station"]["station"="subway"](around:${radius},${lat},${lng});`
         + `);out center ${Math.max(60, limit * 10)};`;
-      try {
-        const ctrl = typeof AbortController === "function" ? new AbortController() : null;
-        const timer = ctrl ? setTimeout(() => ctrl.abort(), 8000) : null;
-        const r = await fetch("https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(q), ctrl ? { signal: ctrl.signal } : undefined);
-        if (timer) clearTimeout(timer);
-        const data = await r.json();
-        const seen = new Set();
-        const list = (data.elements || []).map(el => ({
-          name: el.tags?.["name:ko"] || el.tags?.name || "",
-          lat: el.lat ?? el.center?.lat,
-          lng: el.lon ?? el.center?.lon
-        })).filter(s => {
-          if (!s.name || typeof s.lat !== "number" || typeof s.lng !== "number") return false;
-          const k = s.name.replace(/역$/, "").replace(/\s+/g, "");
-          if (seen.has(k)) return false;
-          seen.add(k);
-          return true;
-        }).map(s => ({ ...s, distM: Math.round(calcDistKm(lat, lng, s.lat, s.lng) * 1000) }))
-          .sort((a, b) => a.distM - b.distM);
-        return list.slice(0, limit);
-      } catch { return []; }
+      for (const ep of OVERPASS_ENDPOINTS) {
+        try {
+          const ctrl = typeof AbortController === "function" ? new AbortController() : null;
+          const timer = ctrl ? setTimeout(() => ctrl.abort(), 8000) : null;
+          const r = await fetch(ep + "?data=" + encodeURIComponent(q), ctrl ? { signal: ctrl.signal } : undefined);
+          if (timer) clearTimeout(timer);
+          if (!r.ok) continue;
+          const data = await r.json();
+          const seen = new Set();
+          const list = (data.elements || []).map(el => ({
+            name: el.tags?.["name:ko"] || el.tags?.name || "",
+            lat: el.lat ?? el.center?.lat,
+            lng: el.lon ?? el.center?.lon
+          })).filter(s => {
+            if (!s.name || typeof s.lat !== "number" || typeof s.lng !== "number") return false;
+            const k = s.name.replace(/역$/, "").replace(/\s+/g, "");
+            if (seen.has(k)) return false;
+            seen.add(k);
+            return true;
+          }).map(s => ({ ...s, distM: Math.round(calcDistKm(lat, lng, s.lat, s.lng) * 1000) }))
+            .sort((a, b) => a.distM - b.distM);
+          if (list.length) {
+            stationCache.set(cacheKey, list);
+            return list.slice(0, limit);
+          }
+        } catch { /* 다음 서버로 */ }
+      }
+      return [];
     }
 
     async function nearestSubwayStation(lat, lng, radius = 3000) {
