@@ -1738,13 +1738,32 @@
     </div>
   </div>
 
-  <!-- PROFILE MODAL -->
+  <!-- PROFILE MODAL / MY PAGE -->
   <div id="profile-modal" class="modal-backdrop center" onclick="if(event.target===this && myProfile.nickname)closeProfileModal()">
-    <div class="modal-sheet">
+    <div class="modal-sheet" style="max-height:88vh;overflow-y:auto;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <div style="font-size:16px;font-weight:800;">👤 내 프로필</div>
+        <div style="font-size:16px;font-weight:800;">👤 마이페이지</div>
         <button id="prof-close-btn" class="btn btn-sm" style="background:#f1f5f9;" onclick="closeProfileModal()">닫기</button>
       </div>
+      <div id="prof-me-box" style="margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+          <div id="prof-me-avatar" class="avatar-md" style="width:54px;height:54px;font-size:20px;">👤</div>
+          <div style="flex:1;min-width:0;">
+            <div id="prof-me-name" style="font-size:15px;font-weight:800;">프로필 없음</div>
+            <div id="prof-me-sub" style="font-size:11px;color:var(--muted);">닉네임과 사진을 정하면 여행마다 표시돼요.</div>
+          </div>
+          <label class="btn btn-soft btn-sm" style="cursor:pointer;flex-shrink:0;">
+            📷
+            <input type="file" accept="image/*" style="display:none;" onchange="handleAvatarUpload(this.files[0])" />
+          </label>
+        </div>
+        <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin:8px 0 3px;">한 줄 소개</div>
+        <textarea id="prof-bio" class="input" rows="2" maxlength="200" placeholder="예: 바다 보러 자주 떠나요. 다음엔 부산 야경 투어!" style="resize:vertical;"></textarea>
+        <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin:10px 0 5px;">좋아하는 것 <span style="font-weight:500;color:var(--muted);">(여러 개 고르기)</span></div>
+        <div id="prof-likes-box" class="chip-group" style="margin-top:0;"></div>
+        <button class="btn btn-primary btn-sm" style="width:100%;margin-top:10px;" onclick="saveMyPageInfo()">💾 내 프로필 저장</button>
+      </div>
+      <div style="height:1px;background:var(--border);margin:4px 0 12px;"></div>
       <div id="prof-saved-box" style="margin-bottom:10px;display:none;">
         <div style="font-size:11.5px;font-weight:800;color:var(--ocean-dark);margin-bottom:6px;">💾 이 기기에 저장된 프로필</div>
         <div id="prof-saved-list" style="max-height:24vh;overflow-y:auto;"></div>
@@ -1780,6 +1799,22 @@
       <div id="prof-logout-note" style="font-size:10.5px;color:var(--muted);margin-top:4px;display:none;line-height:1.45;text-align:center;">로그아웃은 이 기기 목록에서만 빼는 거예요. 여행과 클라우드 프로필은 그대로 남아 있어요.</div>
       <button id="prof-delete-btn" class="btn btn-danger" style="width:100%;margin-top:8px;display:none;" onclick="deleteMyProfile()">🗑️ 내 프로필 삭제 (탈퇴)</button>
       <div id="prof-delete-note" style="font-size:10.5px;color:var(--muted);margin-top:6px;display:none;line-height:1.45;text-align:center;">탈퇴하면 내가 만든 여행은 삭제되고, 동반인 여행에서는 나가게 되며, 저장된 프로필도 지워져요.</div>
+    </div>
+  </div>
+
+  <!-- SHOW A MEMBER'S PROFILE CARD -->
+  <div id="user-profile-modal" class="modal-backdrop center" onclick="if(event.target===this)closeUserProfileCard()">
+    <div class="modal-sheet" style="max-width:400px;text-align:center;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-size:13px;font-weight:800;color:var(--muted);">👤 프로필</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeUserProfileCard()">닫기</button>
+      </div>
+      <div id="upc-avatar" class="avatar-md" style="width:76px;height:76px;font-size:28px;margin:6px auto 8px;">👤</div>
+      <div id="upc-name" style="font-size:17px;font-weight:800;">이름</div>
+      <div id="upc-role" style="margin-top:5px;"></div>
+      <div id="upc-bio" style="font-size:12.5px;color:var(--text);line-height:1.6;margin-top:10px;white-space:pre-wrap;"></div>
+      <div id="upc-likes" class="chip-group" style="justify-content:center;margin-top:10px;"></div>
+      <div id="upc-note" style="font-size:10.5px;color:var(--muted);margin-top:8px;"></div>
     </div>
   </div>
 
@@ -3098,7 +3133,7 @@
     function addSavedProfile(prof) {
       if (!prof || !prof.id || !prof.nickname) return;
       const list = getSavedProfiles().filter(p => p.id !== prof.id);
-      list.unshift({ id: prof.id, nickname: prof.nickname, avatar: prof.avatar || "", passHash: prof.passHash || "", at: new Date().toISOString() });
+      list.unshift({ id: prof.id, nickname: prof.nickname, avatar: prof.avatar || "", passHash: prof.passHash || "", bio: prof.bio || "", likes: Array.isArray(prof.likes) ? prof.likes.slice() : [], at: new Date().toISOString() });
       try { localStorage.setItem(PROFILES_KEY, JSON.stringify(list)); } catch {}
     }
 
@@ -3554,6 +3589,7 @@
 
       const pBtn = document.getElementById("hdr-profile-btn");
       if (pBtn) {
+        pBtn.title = "마이페이지";
         const av = myProfile.avatar
           ? `<img class="avatar-sm" src="${myProfile.avatar}" />`
           : `<span class="avatar-sm">${(myProfile.nickname || "나").slice(0, 1)}</span>`;
@@ -7181,6 +7217,144 @@
       if (outNote) outNote.style.display = loggedIn ? "block" : "none";
     }
 
+    // 마이페이지 — 내 소개·취향
+    const LIKE_OPTIONS = [
+      { key: "dog", label: "🐶 강아지" }, { key: "cat", label: "🐱 고양이" },
+      { key: "mountain", label: "⛰️ 산" }, { key: "sea", label: "🌊 바다" },
+      { key: "walk", label: "🚶 산책" }, { key: "coffee", label: "☕ 커피" },
+      { key: "photo", label: "📷 사진" }, { key: "food", label: "🍽️ 맛집" },
+      { key: "music", label: "🎵 음악" }, { key: "art", label: "🎨 전시" },
+      { key: "shopping", label: "🛍️ 쇼핑" }, { key: "night", label: "🌃 야경" }
+    ];
+
+    function likeLabel(key) {
+      const o = LIKE_OPTIONS.find(x => x.key === key);
+      return o ? o.label : key;
+    }
+
+    function toggleMyLike(key) {
+      const likes = Array.isArray(myProfile.likes) ? myProfile.likes.slice() : [];
+      const i = likes.indexOf(key);
+      if (i >= 0) likes.splice(i, 1); else likes.push(key);
+      myProfile.likes = likes;
+      renderMyPageBox();
+    }
+
+    function renderMyPageBox() {
+      const nameEl = document.getElementById("prof-me-name");
+      if (!nameEl) return;
+      const av = document.getElementById("prof-me-avatar");
+      if (av) av.innerHTML = myProfile.avatar
+        ? `<img src="${escapeAttr(myProfile.avatar)}" style="width:100%;height:100%;object-fit:cover;" />`
+        : (myProfile.nickname ? escapeAttr(myProfile.nickname.slice(0, 1)) : "👤");
+      nameEl.textContent = myProfile.nickname || "프로필 없음";
+      const sub = document.getElementById("prof-me-sub");
+      if (sub) sub.textContent = myProfile.nickname
+        ? "이 소개와 취향은 동반인에게도 보여요."
+        : "닉네임과 사진을 정하면 여행마다 표시돼요.";
+      const bio = document.getElementById("prof-bio");
+      if (bio) bio.value = myProfile.bio || "";
+      const box = document.getElementById("prof-likes-box");
+      if (box) {
+        const mine = Array.isArray(myProfile.likes) ? myProfile.likes : [];
+        box.innerHTML = LIKE_OPTIONS.map(o =>
+          `<span class="chip ${mine.includes(o.key) ? "selected" : ""}" onclick="toggleMyLike('${o.key}')">${mine.includes(o.key) ? "✓ " : ""}${o.label}</span>`
+        ).join("");
+      }
+    }
+
+    async function saveMyPageInfo() {
+      if (!myProfile || !myProfile.nickname) return alert("먼저 닉네임을 정해 주세요.");
+      const bio = (document.getElementById("prof-bio")?.value || "").slice(0, 200);
+      myProfile.bio = bio;
+      myProfile.likes = Array.isArray(myProfile.likes) ? myProfile.likes : [];
+      try { localStorage.setItem(PROFILE_KEY, JSON.stringify(myProfile)); } catch {}
+      addSavedProfile(myProfile);
+      // 이 여행의 동반인 정보에도 내 소개·취향을 남긴다
+      const meInMembers = (state.members || []).find(m => m.id === myProfile.id);
+      if (meInMembers) { meInMembers.nickname = myProfile.nickname; meInMembers.avatar = myProfile.avatar || ""; meInMembers.bio = bio; meInMembers.likes = myProfile.likes.slice(); }
+      if (isHost() && state.meta) {
+        state.meta.hostProfile = { nickname: myProfile.nickname, avatar: myProfile.avatar || "", bio, likes: myProfile.likes.slice() };
+      }
+      // 클라우드 프로필에도 저장
+      let cloudNote = "";
+      try {
+        const client = ensureSbClient();
+        if (client) {
+          const nickKey = "__profile__:" + String(myProfile.nickname || "").toLowerCase();
+          const { data: existing } = await client.from("trip_dashboards").select("data").eq("sync_id", nickKey).maybeSingle();
+          const base = existing && existing.data && typeof existing.data === "object" ? existing.data : {};
+          const doc = {
+            ...base,
+            id: myProfile.id, nickname: myProfile.nickname,
+            avatar: myProfile.avatar || base.avatar || "",
+            passHash: myProfile.passHash || base.passHash || "",
+            bio, likes: myProfile.likes.slice(),
+            deleted: false,
+            updatedAt: new Date().toISOString()
+          };
+          delete doc.deletedAt;
+          const { error } = await client.from("trip_dashboards").upsert({ sync_id: nickKey, data: doc, updated_at: new Date().toISOString() }, { onConflict: "sync_id" });
+          if (error) cloudNote = ` (클라우드 저장은 실패: ${error.message})`;
+        }
+      } catch (e) { cloudNote = " (클라우드 저장 실패)"; }
+      if (!isTripUnavailable(currentSyncId)) saveState(); else renderMyPageBox();
+      renderSavedProfilesBox();
+      renderMembersModal();
+      alert(`프로필 소개·취향을 저장했어요.${cloudNote}`);
+    }
+
+    async function fetchCloudProfileRow(nickname) {
+      const nick = String(nickname || "").trim().toLowerCase();
+      if (!nick || !window.supabase) return null;
+      try {
+        const client = ensureSbClient() || window.supabase.createClient(DEFAULT_SB.url, DEFAULT_SB.key);
+        if (!client) return null;
+        const { data } = await client.from("trip_dashboards").select("data").eq("sync_id", "__profile__:" + nick).maybeSingle();
+        const d = data && data.data;
+        if (!d || d.deleted === true) return null;
+        return d;
+      } catch { return null; }
+    }
+
+    function closeUserProfileCard() {
+      document.getElementById("user-profile-modal")?.classList.remove("open");
+    }
+
+    async function openUserProfileCard(person) {
+      const p = person || {};
+      const isMe = Boolean(myProfile && p.id && p.id === myProfile.id);
+      const avatarEl = document.getElementById("upc-avatar");
+      const nameEl = document.getElementById("upc-name");
+      const roleEl = document.getElementById("upc-role");
+      const bioEl = document.getElementById("upc-bio");
+      const likesEl = document.getElementById("upc-likes");
+      const noteEl = document.getElementById("upc-note");
+      if (!avatarEl) return;
+      const nickname = p.nickname || (isMe ? myProfile.nickname : "") || "이름 없음";
+      const avatar = p.avatar || (isMe ? myProfile.avatar : "") || "";
+      avatarEl.innerHTML = avatar ? `<img src="${escapeAttr(avatar)}" style="width:100%;height:100%;object-fit:cover;" />` : escapeAttr(nickname.slice(0, 1));
+      nameEl.textContent = nickname;
+      const role = p.role || "";
+      roleEl.innerHTML = role === "host" ? '<span class="tag blue">👑 호스트</span>'
+        : role === "editor" ? '<span class="tag">🙋 동반인 · 수정 가능</span>'
+        : role === "viewer" ? '<span class="tag">🙋 동반인 · 읽기 전용</span>' : '';
+      const bio = p.bio !== undefined ? p.bio : (isMe ? myProfile.bio : "");
+      const likes = Array.isArray(p.likes) ? p.likes : (isMe && Array.isArray(myProfile.likes) ? myProfile.likes : []);
+      bioEl.textContent = bio || "아직 소개글이 없어요.";
+      likesEl.innerHTML = likes.length ? likes.map(k => `<span class="chip">${escapeAttr(likeLabel(k))}</span>`).join("") : "";
+      noteEl.textContent = "";
+      document.getElementById("user-profile-modal").classList.add("open");
+      // 최신 클라우드 프로필이 있으면 소개·취향을 채워 준다
+      const cloud = await fetchCloudProfileRow(nickname);
+      if (!cloud) { if (!bio && !likes.length) noteEl.textContent = "저장된 소개가 아직 없어요."; return; }
+      if (!document.getElementById("user-profile-modal")?.classList.contains("open")) return;
+      if (cloud.bio) bioEl.textContent = cloud.bio;
+      if (Array.isArray(cloud.likes) && cloud.likes.length) likesEl.innerHTML = cloud.likes.map(k => `<span class="chip">${escapeAttr(likeLabel(k))}</span>`).join("");
+      if (cloud.avatar && !avatar) avatarEl.innerHTML = `<img src="${escapeAttr(cloud.avatar)}" style="width:100%;height:100%;object-fit:cover;" />`;
+      noteEl.textContent = "☁️ 최신 프로필을 불러왔어요.";
+    }
+
     // 이 기기에 저장된 프로필 목록 — 원클릭 전환 / 목록에서 빼기
     function renderSavedProfilesBox() {
       const box = document.getElementById("prof-saved-box");
@@ -7240,6 +7414,7 @@
       const showFormFirst = !myProfile.nickname || !saved.length;
       toggleProfileForm(showFormFirst);
       if (showFormFirst) profileCreateFresh = !myProfile.nickname;
+      renderMyPageBox();
       document.getElementById("trip-gone-modal")?.classList.remove("open");
       document.getElementById("join-modal")?.classList.remove("open");
       document.body.classList.remove("trip-is-gone");
@@ -7275,7 +7450,7 @@
       if (myProfile && myProfile.id === prof.id) return closeProfileModal();
       stopCloudChannel();
       editMode = false;
-      myProfile = { id: prof.id, nickname: prof.nickname, avatar: prof.avatar || "", passHash: prof.passHash || "" };
+      myProfile = { id: prof.id, nickname: prof.nickname, avatar: prof.avatar || "", passHash: prof.passHash || "", bio: prof.bio || "", likes: Array.isArray(prof.likes) ? prof.likes.slice() : [] };
       try { localStorage.setItem(PROFILE_KEY, JSON.stringify(myProfile)); } catch {}
       addSavedProfile(myProfile);
       profileCreateFresh = false;
@@ -7501,7 +7676,9 @@
             id: data.data.id,
             nickname: data.data.nickname,
             avatar: data.data.avatar || "",
-            passHash: data.data.passHash
+            passHash: data.data.passHash,
+            bio: data.data.bio || "",
+            likes: Array.isArray(data.data.likes) ? data.data.likes.slice() : []
           };
           localStorage.setItem(PROFILE_KEY, JSON.stringify(myProfile));
           addSavedProfile(myProfile);
@@ -7526,7 +7703,9 @@
                 id: existing.data.id,
                 nickname: existing.data.nickname,
                 avatar: draftAvatarDataUrl || existing.data.avatar || "",
-                passHash
+                passHash,
+                bio: existing.data.bio || "",
+                likes: Array.isArray(existing.data.likes) ? existing.data.likes.slice() : []
               };
               localStorage.setItem(PROFILE_KEY, JSON.stringify(myProfile));
               addSavedProfile(myProfile);
@@ -7547,6 +7726,8 @@
             nickname: nick,
             avatar: draftAvatarDataUrl || "",
             passHash,
+            bio: myProfile.bio || "",
+            likes: Array.isArray(myProfile.likes) ? myProfile.likes.slice() : [],
             updatedAt: new Date().toISOString()
           };
           await client.from("trip_dashboards").upsert({
@@ -7629,25 +7810,26 @@
       }
 
       const members = state.members || [];
+      const hostProf = (state.meta && state.meta.hostProfile) || {};
       listBox.innerHTML = `<div style="font-size:12.5px;font-weight:800;color:var(--muted);margin-bottom:6px;">등록된 동반인 (${members.length + 1}명)</div>` +
-        `<div class="expense-item" style="padding:6px 0;">
+        `<div class="expense-item" style="padding:6px 0;cursor:pointer;" onclick="openUserProfileCard(${escapeAttr(JSON.stringify({ id: (state.meta && state.meta.hostId) || "", nickname: hostProf.nickname || (isHost() ? myProfile.nickname : "호스트"), avatar: hostProf.avatar || (isHost() ? myProfile.avatar : ""), bio: hostProf.bio || "", likes: hostProf.likes || [], role: "host" }))})">
           <div style="display:flex;align-items:center;gap:8px;">
-            <div class="avatar-md">${isHost() && myProfile.avatar ? `<img src="${myProfile.avatar}" style="width:100%;height:100%;object-fit:cover;" />` : "👑"}</div>
-            <div><div style="font-weight:700;font-size:13.5px;">호스트 ${isHost() ? `(${myProfile.nickname || "나"})` : ""}</div><div style="font-size:11px;color:var(--muted);">전체 관리 권한</div></div>
+            <div class="avatar-md">${isHost() && myProfile.avatar ? `<img src="${myProfile.avatar}" style="width:100%;height:100%;object-fit:cover;" />` : (hostProf.avatar && !isHost() ? `<img src="${escapeAttr(hostProf.avatar)}" style="width:100%;height:100%;object-fit:cover;" />` : "👑")}</div>
+            <div><div style="font-weight:700;font-size:13.5px;">호스트 ${(hostProf.nickname || (isHost() ? myProfile.nickname : "")) ? `(${escapeAttr(hostProf.nickname || myProfile.nickname)})` : ""}</div><div style="font-size:11px;color:var(--muted);">전체 관리 권한 · 눌러서 프로필 보기</div></div>
           </div>
           <span class="tag blue">호스트</span>
         </div>` +
         members.map(m => `
-          <div class="expense-item" style="padding:6px 0;">
+          <div class="expense-item" style="padding:6px 0;cursor:pointer;" onclick="openUserProfileCard(${escapeAttr(JSON.stringify({ id: m.id, nickname: m.nickname || "", avatar: m.avatar || "", bio: m.bio || "", likes: m.likes || [], role: m.role || "viewer" }))})">
             <div style="display:flex;align-items:center;gap:8px;flex:1;">
-              <div class="avatar-md">${m.avatar ? `<img src="${m.avatar}" style="width:100%;height:100%;object-fit:cover;" />` : (m.nickname || "?").slice(0,1)}</div>
+              <div class="avatar-md">${m.avatar ? `<img src="${escapeAttr(m.avatar)}" style="width:100%;height:100%;object-fit:cover;" />` : escapeAttr((m.nickname || "?").slice(0,1))}</div>
               <div>
-                <div style="font-weight:700;font-size:13.5px;">${m.nickname}</div>
-                <div style="font-size:11px;color:var(--muted);">${m.role === "editor" ? "공동 편집 가능" : "읽기 전용"}</div>
+                <div style="font-weight:700;font-size:13.5px;">${escapeAttr(m.nickname || "")}</div>
+                <div style="font-size:11px;color:var(--muted);">${m.role === "editor" ? "공동 편집 가능" : "읽기 전용"} · 눌러서 프로필 보기</div>
               </div>
             </div>
-            ${isHost() ? `<button class="btn btn-soft btn-sm" onclick="toggleMemberRole('${m.id}')">${m.role === "editor" ? "읽기전용으로" : "수정권한 주기"}</button>
-              <button class="btn btn-danger btn-sm" onclick="removeMember('${m.id}')">제외</button>` : `<span class="tag">${m.role === "editor" ? "수정 가능" : "읽기 전용"}</span>`}
+            ${isHost() ? `<button class="btn btn-soft btn-sm" onclick="event.stopPropagation();toggleMemberRole('${m.id}')">${m.role === "editor" ? "읽기전용으로" : "수정권한 주기"}</button>
+              <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();removeMember('${m.id}')">제외</button>` : `<span class="tag">${m.role === "editor" ? "수정 가능" : "읽기 전용"}</span>`}
           </div>
         `).join("");
     }
