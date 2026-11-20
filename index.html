@@ -5122,11 +5122,14 @@
 
     function homePlaceEmoji(it) {
       const p = String(it.place || "");
+      if (/스카이캡슐|해변열차|블루라인/.test(p)) return "🚡";
+      if (/페리|선착장|유람선/.test(p)) return "⛴️";
       if (/호텔|숙소|체크인/.test(p)) return "🏨";
       if (/KTX|기차|열차|전철|역/.test(p)) return "🚆";
       if (/버스/.test(p)) return "🚌";
-      if (/카페|커피/.test(p)) return "☕";
-      if (/국밥|피자|떡볶이|식당|시장/.test(p)) return "🍽️";
+      if (/카페|커피|워킹홀리데이/.test(p)) return "☕";
+      if (/국밥|피자|떡볶이|식당|시장|상국|국수|빵/.test(p)) return "🍽️";
+      if (/→|출발|도착|이동|체크아웃|물품보관/.test(p)) return "🧭";
       return "📍";
     }
 
@@ -5355,7 +5358,8 @@
       try { toggleHomeSheet(false); } catch (e) {}
       activateTab("timeline");
       try { renderTimeline(); } catch (e) { console.warn(e); }
-      setTimeout(() => { try { renderDayMap(); } catch (e) {} }, 70);
+      setTimeout(() => { try { if (leafletMap) leafletMap.invalidateSize(); renderDayMap(); } catch (e) {} }, 70);
+      setTimeout(() => { try { renderDayMap(); } catch (e) {} }, 340);
     }
 
     // 화면 폭이 바뀌면 홈 지도 크기도 다시 잡는다
@@ -5410,6 +5414,8 @@
       leafletMap.closePopup();
       mapLayerGroup.clearLayers();
       if (!dayMapPts.length) return;
+      // 다른 탭에 있다가 돌아온 경우 크기가 늦게 잡혀 엉뚱한 배율로 맞춰지는 것을 막는다
+      leafletMap.invalidateSize();
       leafletMap.fitBounds(dayMapPts.map(p => p.ll), { padding: [26, 26] });
       drawDayPins(dayMapPts);
       setTimeout(() => { leafletMap.invalidateSize(); if (dayMapPts.length) drawDayPins(dayMapPts); }, 60);
@@ -9902,7 +9908,8 @@
         setTimeout(() => { try { renderHomeMap(); } catch (e) {} }, 80);
       }
       if (tabId === "timeline") {
-        setTimeout(() => { try { renderDayMap(); } catch (e) {} }, 60);
+        setTimeout(() => { try { if (leafletMap) leafletMap.invalidateSize(); renderDayMap(); } catch (e) {} }, 60);
+        setTimeout(() => { try { renderDayMap(); } catch (e) {} }, 320);
       }
     }
 
