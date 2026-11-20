@@ -827,6 +827,41 @@
     .nav-inner { grid-template-columns: repeat(6, 1fr); }
     .nav-btn { font-size: 9.6px; padding: 7px 1px 9px; gap: 1px; letter-spacing: -0.03em; }
     .nav-btn .ico { font-size: 16px; }
+
+    /* Day 1 / Day 2 … 플로팅 바 (일정 탭에서만, 하단 탭 바 위) */
+    #day-float-bar {
+      position: fixed; left: 0; right: 0; bottom: 54px;
+      z-index: 45; display: none; justify-content: center;
+      padding: 0 12px; pointer-events: none;
+    }
+    #day-float-bar.show { display: flex; }
+    #day-float-inner {
+      display: flex; align-items: center; gap: 6px;
+      max-width: 520px; overflow-x: auto; overflow-y: hidden;
+      padding: 6px; border-radius: 999px; pointer-events: auto;
+      background: rgba(255, 255, 255, 0.34);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.14);
+      scrollbar-width: none; -ms-overflow-style: none;
+    }
+    #day-float-inner::-webkit-scrollbar { display: none; }
+    .day-float-btn {
+      border: 1px solid rgba(2, 132, 199, 0.16);
+      border-radius: 999px; padding: 8px 15px;
+      font-family: inherit; font-size: 12px; font-weight: 800;
+      white-space: nowrap; cursor: pointer; flex-shrink: 0;
+      color: var(--ocean-dark);
+      background: rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+    }
+    .day-float-btn.active {
+      background: var(--ocean); color: #fff;
+      border-color: var(--ocean);
+      box-shadow: 0 3px 10px rgba(2, 132, 199, 0.35);
+      backdrop-filter: none; -webkit-backdrop-filter: none;
+    }
+    body:not(.unlocked) #day-float-bar { display: none !important; }
     .nav-badge { top: 1px; right: calc(50% - 24px); }
 
     .hidden { display: none !important; }
@@ -1675,30 +1710,58 @@
         <div style="font-size:16px;font-weight:800;">👤 내 프로필</div>
         <button id="prof-close-btn" class="btn btn-sm" style="background:#f1f5f9;" onclick="closeProfileModal()">닫기</button>
       </div>
-      <div class="row" style="gap:6px;margin-bottom:12px;">
-        <button id="prof-tab-create" class="btn btn-primary btn-sm" style="flex:1;" onclick="setProfileMode('create')">✨ 새 프로필 만들기</button>
-        <button id="prof-tab-login" class="btn btn-soft btn-sm" style="flex:1;" onclick="setProfileMode('login')">🔑 기존 프로필 불러오기</button>
+      <div id="prof-saved-box" style="margin-bottom:10px;display:none;">
+        <div style="font-size:11.5px;font-weight:800;color:var(--ocean-dark);margin-bottom:6px;">💾 이 기기에 저장된 프로필</div>
+        <div id="prof-saved-list" style="max-height:24vh;overflow-y:auto;"></div>
       </div>
-      <div id="prof-avatar-row" style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-        <div id="prof-avatar-preview" class="avatar-md" style="width:54px;height:54px;font-size:20px;">👤</div>
-        <div style="flex:1;">
-          <label class="btn btn-soft btn-sm" style="cursor:pointer;">
-            📷 프로필 사진 선택
-            <input type="file" accept="image/*" style="display:none;" onchange="handleAvatarUpload(this.files[0])" />
-          </label>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;">닉네임·비밀번호로 다른 기기/링크에서도 그대로 불러올 수 있어요.</div>
+      <div id="prof-add-row" style="display:none;margin-bottom:10px;">
+        <button class="btn btn-soft btn-sm" style="width:100%;" onclick="toggleProfileForm(true)">➕ 다른 프로필 추가/불러오기</button>
+      </div>
+      <div id="prof-form-box">
+        <div class="row" style="gap:6px;margin-bottom:12px;">
+          <button id="prof-tab-create" class="btn btn-primary btn-sm" style="flex:1;" onclick="setProfileMode('create')">✨ 새 프로필 만들기</button>
+          <button id="prof-tab-login" class="btn btn-soft btn-sm" style="flex:1;" onclick="setProfileMode('login')">🔑 기존 프로필 불러오기</button>
         </div>
+        <div id="prof-avatar-row" style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <div id="prof-avatar-preview" class="avatar-md" style="width:54px;height:54px;font-size:20px;">👤</div>
+          <div style="flex:1;">
+            <label class="btn btn-soft btn-sm" style="cursor:pointer;">
+              📷 프로필 사진 선택
+              <input type="file" accept="image/*" style="display:none;" onchange="handleAvatarUpload(this.files[0])" />
+            </label>
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;">닉네임·비밀번호로 다른 기기/링크에서도 그대로 불러올 수 있어요.</div>
+          </div>
+        </div>
+        <div class="row">
+          <input id="prof-nickname" class="input" placeholder="예: 홍길동" maxlength="20" />
+        </div>
+        <div class="row">
+          <input id="prof-password" type="password" class="input" placeholder="비밀번호 설정 (다른 기기에서 불러올 때 필요)" maxlength="40" />
+        </div>
+        <div id="prof-msg" style="font-size:12px;color:var(--danger);margin-bottom:8px;display:none;"></div>
+        <button id="prof-submit-btn" class="btn btn-primary" style="width:100%;" onclick="submitProfileModal()">프로필 저장하기</button>
       </div>
-      <div class="row">
-        <input id="prof-nickname" class="input" placeholder="예: 홍길동" maxlength="20" />
-      </div>
-      <div class="row">
-        <input id="prof-password" type="password" class="input" placeholder="비밀번호 설정 (다른 기기에서 불러올 때 필요)" maxlength="40" />
-      </div>
-      <div id="prof-msg" style="font-size:12px;color:var(--danger);margin-bottom:8px;display:none;"></div>
-      <button id="prof-submit-btn" class="btn btn-primary" style="width:100%;" onclick="submitProfileModal()">프로필 저장하기</button>
+      <button id="prof-logout-btn" class="btn btn-soft" style="width:100%;margin-top:8px;display:none;" onclick="logoutCurrentProfile()">🚪 이 기기에서 로그아웃 (프로필 빼기)</button>
+      <div id="prof-logout-note" style="font-size:10.5px;color:var(--muted);margin-top:4px;display:none;line-height:1.45;text-align:center;">로그아웃은 이 기기 목록에서만 빼는 거예요. 여행과 클라우드 프로필은 그대로 남아 있어요.</div>
       <button id="prof-delete-btn" class="btn btn-danger" style="width:100%;margin-top:8px;display:none;" onclick="deleteMyProfile()">🗑️ 내 프로필 삭제 (탈퇴)</button>
       <div id="prof-delete-note" style="font-size:10.5px;color:var(--muted);margin-top:6px;display:none;line-height:1.45;text-align:center;">탈퇴하면 내가 만든 여행은 삭제되고, 동반인 여행에서는 나가게 되며, 저장된 프로필도 지워져요.</div>
+    </div>
+  </div>
+
+  <!-- ENTRY CHOOSER (?new=1 첫 진입) -->
+  <div id="entry-chooser-modal" class="modal-backdrop center" style="background:rgba(15,23,42,0.72);">
+    <div class="modal-sheet" style="max-width:400px;">
+      <div style="text-align:center;font-size:34px;margin-bottom:4px;">✈️</div>
+      <div style="font-size:17px;font-weight:800;text-align:center;">이용해 본 적 있으시나요?</div>
+      <div style="font-size:12.5px;color:var(--muted);text-align:center;margin:6px 0 14px;line-height:1.5;">기존에 만든 프로필이 있으면 바로 불러오고,<br>처음이라면 새 프로필을 만들어요.</div>
+      <button class="btn btn-primary" style="width:100%;margin-bottom:8px;min-height:52px;display:flex;flex-direction:column;justify-content:center;gap:2px;" onclick="chooseEntry('existing')">
+        <span style="font-size:14px;font-weight:800;">🔑 기존 이용자</span>
+        <span style="font-size:11px;font-weight:600;opacity:0.9;">저장된 프로필 선택 · 프로필 불러오기</span>
+      </button>
+      <button class="btn btn-soft" style="width:100%;min-height:52px;display:flex;flex-direction:column;justify-content:center;gap:2px;" onclick="chooseEntry('new')">
+        <span style="font-size:14px;font-weight:800;">✨ 신규 이용자</span>
+        <span style="font-size:11px;font-weight:600;color:var(--muted);">새 프로필 만들고 여행 시작</span>
+      </button>
     </div>
   </div>
 
@@ -1961,6 +2024,10 @@
       <button class="btn btn-primary" style="width:100%;margin-bottom:8px;" onclick="openTripsModal()">📂 내 여행 목록</button>
       <button class="btn btn-soft" style="width:100%;" onclick="goToFreshStart()">✈️ 새 여행 시작하기</button>
     </div>
+  </div>
+
+  <div id="day-float-bar">
+    <div id="day-float-inner"></div>
   </div>
 
   <nav class="bottom-nav">
@@ -2951,6 +3018,11 @@
     const MY_TRIPS_KEY = "busan_trip_my_trips_v1";
     const DELETED_TRIPS_KEY = "busan_trip_deleted_trips_v1";
     const PROFILE_KEY = "busan_trip_my_profile_v1";
+    const PROFILES_KEY = "busan_trip_saved_profiles_v1"; // 이 기기에 저장된 프로필 여러 개
+
+    // 여행 목록·삭제 기록은 프로필별로 따로 둔다(계정 전환 시 서로 섞이지 않게)
+    function tripsKeyFor(profileId) { return MY_TRIPS_KEY + "_" + (profileId || "anon"); }
+    function deletedKeyFor(profileId) { return DELETED_TRIPS_KEY + "_" + (profileId || "anon"); }
     const SB_CONF_KEY = "busan_trip_supabase_conf_v1";
     const DEFAULT_SB = {
       url: "https://dwsvrpxppmicykxuhkhg.supabase.co",
@@ -2971,6 +3043,50 @@
     let sbClient = null;
     let sbChannel = null;
     let saveTimer = null;
+    let entryChoiceDone = false;     // ?new=1 첫 화면(기존/신규) 선택 여부
+    let profileCreateFresh = false;   // '새 프로필'을 기존 프로필 수정이 아닌 새 계정으로 만들지
+    try { migrateLegacyProfileData(); } catch (e) { console.warn("profile migrate", e); }
+
+    /* =====================================================================
+       이 기기에 저장된 프로필 여러 개(멀티 프로필) 관리
+       ===================================================================== */
+    function getSavedProfiles() {
+      try {
+        const raw = localStorage.getItem(PROFILES_KEY);
+        const list = raw ? JSON.parse(raw) : [];
+        return Array.isArray(list) ? list.filter(p => p && p.id && p.nickname) : [];
+      } catch { return []; }
+    }
+
+    function addSavedProfile(prof) {
+      if (!prof || !prof.id || !prof.nickname) return;
+      const list = getSavedProfiles().filter(p => p.id !== prof.id);
+      list.unshift({ id: prof.id, nickname: prof.nickname, avatar: prof.avatar || "", passHash: prof.passHash || "", at: new Date().toISOString() });
+      try { localStorage.setItem(PROFILES_KEY, JSON.stringify(list)); } catch {}
+    }
+
+    function removeSavedProfile(profileId) {
+      try { localStorage.setItem(PROFILES_KEY, JSON.stringify(getSavedProfiles().filter(p => p.id !== profileId))); } catch {}
+    }
+
+    // 예전 버전(프로필 1개) 저장소를 그대로 이어받는다 — 지금 쓰는 프로필에게만 복사
+    function migrateLegacyProfileData() {
+      if (localStorage.getItem("busan_trip_profiles_migrated_v1") === "1") return;
+      const pid = myProfile && myProfile.id;
+      if (!pid) return;
+      const tKey = tripsKeyFor(pid);
+      if (!localStorage.getItem(tKey)) {
+        const legacy = localStorage.getItem(MY_TRIPS_KEY);
+        if (legacy) localStorage.setItem(tKey, legacy);
+      }
+      const dKey = deletedKeyFor(pid);
+      if (!localStorage.getItem(dKey)) {
+        const legacyD = localStorage.getItem(DELETED_TRIPS_KEY);
+        if (legacyD) localStorage.setItem(dKey, legacyD);
+      }
+      if (myProfile.nickname) addSavedProfile(myProfile);
+      localStorage.setItem("busan_trip_profiles_migrated_v1", "1");
+    }
 
     function loadMyProfile() {
       try {
@@ -4142,7 +4258,34 @@
       saveState();
     }
 
-    function setDay(d) { currentDay = d; renderTimeline(); renderDayMap(); }
+    function setDay(d) {
+      currentDay = d;
+      renderTimeline();
+      renderDayMap();
+      updateDayFloatBar();
+      // 해당 일차 상단으로 깔끔하게 이동
+      try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { window.scrollTo(0, 0); }
+    }
+
+    /* 일정 탭에서만 보이는 Day 1/2/3 플로팅 바 */
+    function updateDayFloatBar() {
+      const bar = document.getElementById("day-float-bar");
+      const inner = document.getElementById("day-float-inner");
+      if (!bar || !inner) return;
+      const timelineOn = document.getElementById("tab-timeline")?.classList.contains("active");
+      const unlocked = document.body.classList.contains("unlocked");
+      const days = state.days || [];
+      if (!timelineOn || !unlocked || !days.length) { bar.classList.remove("show"); return; }
+      inner.innerHTML = days.map(d =>
+        `<button class="day-float-btn ${d.day === currentDay ? "active" : ""}" title="${escapeAttr(d.label || "")}" onclick="setDay(${d.day})">Day ${d.day}</button>`
+      ).join("");
+      bar.classList.add("show");
+      const act = inner.querySelector(".day-float-btn.active");
+      if (act) {
+        const target = Math.max(0, act.offsetLeft - (inner.clientWidth - act.offsetWidth) / 2);
+        try { inner.scrollLeft = target; } catch {}
+      }
+    }
     document.getElementById("planb-toggle").addEventListener("change", renderTimeline);
 
     let leafletMap = null;
@@ -6903,16 +7046,61 @@
         ? "비밀번호 설정 (다른 기기·링크에서 불러올 때 필요)"
         : "설정했던 비밀번호 입력";
       document.getElementById("prof-submit-btn").textContent = isCreate
-        ? (myProfile.nickname ? "프로필 저장하기" : "프로필 만들고 시작하기")
+        ? (myProfile.nickname && !profileCreateFresh ? "프로필 저장하기" : "프로필 만들고 시작하기")
         : "내 프로필 불러오기";
       const msg = document.getElementById("prof-msg");
       if (msg) { msg.style.display = "none"; msg.textContent = ""; }
-      // 프로필이 있는 사람만 탈퇴(프로필 삭제) 버튼을 본다
+      // 로그인된 프로필이 있을 때만 로그아웃·탈퇴 버튼
+      const loggedIn = Boolean(myProfile && myProfile.nickname);
       const delBtn = document.getElementById("prof-delete-btn");
       const delNote = document.getElementById("prof-delete-note");
-      const canDelete = Boolean(myProfile && myProfile.nickname);
-      if (delBtn) delBtn.style.display = canDelete ? "inline-flex" : "none";
-      if (delNote) delNote.style.display = canDelete ? "block" : "none";
+      const outBtn = document.getElementById("prof-logout-btn");
+      const outNote = document.getElementById("prof-logout-note");
+      if (delBtn) delBtn.style.display = loggedIn ? "inline-flex" : "none";
+      if (delNote) delNote.style.display = loggedIn ? "block" : "none";
+      if (outBtn) outBtn.style.display = loggedIn ? "inline-flex" : "none";
+      if (outNote) outNote.style.display = loggedIn ? "block" : "none";
+    }
+
+    // 이 기기에 저장된 프로필 목록 — 원클릭 전환 / 목록에서 빼기
+    function renderSavedProfilesBox() {
+      const box = document.getElementById("prof-saved-box");
+      const listEl = document.getElementById("prof-saved-list");
+      if (!box || !listEl) return;
+      const list = getSavedProfiles();
+      if (!list.length) { box.style.display = "none"; listEl.innerHTML = ""; return; }
+      box.style.display = "block";
+      listEl.innerHTML = list.map(p => {
+        const isMe = Boolean(myProfile && myProfile.id === p.id);
+        return `
+          <div class="expense-item" style="padding:7px 0;align-items:center;">
+            <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+              <div class="avatar-md" style="width:30px;height:30px;font-size:13px;">${p.avatar ? `<img src="${escapeAttr(p.avatar)}" style="width:100%;height:100%;object-fit:cover;" />` : escapeAttr((p.nickname || "?").slice(0, 1))}</div>
+              <div style="min-width:0;">
+                <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeAttr(p.nickname)} ${isMe ? '<span class="tag blue" style="font-size:10px;">현재</span>' : ""}</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:4px;flex-shrink:0;">
+              ${isMe ? "" : `<button class="btn btn-primary btn-sm" onclick="switchProfile('${escapeAttr(p.id)}')">전환</button>`}
+              <button class="btn btn-soft btn-sm" onclick="forgetProfile('${escapeAttr(p.id)}')" title="이 기기 목록에서만 빼기">${isMe ? "로그아웃" : "빼기"}</button>
+            </div>
+          </div>`;
+      }).join("");
+    }
+
+    function toggleProfileForm(show) {
+      const form = document.getElementById("prof-form-box");
+      const addRow = document.getElementById("prof-add-row");
+      if (form) form.style.display = show ? "block" : "none";
+      if (addRow) addRow.style.display = show ? "none" : "block";
+      if (show) {
+        profileCreateFresh = true;
+        setProfileMode("create");
+        const nick = document.getElementById("prof-nickname");
+        if (nick) { nick.value = ""; nick.focus(); }
+        const pw = document.getElementById("prof-password");
+        if (pw) pw.value = "";
+      }
     }
 
     function openProfileModal(forced = false, defaultMode = "create") {
@@ -6922,10 +7110,104 @@
       document.getElementById("prof-close-btn").style.display = forced ? "none" : "inline-flex";
       const prev = document.getElementById("prof-avatar-preview");
       prev.innerHTML = draftAvatarDataUrl ? `<img src="${draftAvatarDataUrl}" style="width:100%;height:100%;object-fit:cover;" />` : "👤";
+      profileCreateFresh = false;
       setProfileMode(defaultMode);
+      renderSavedProfilesBox();
+      const saved = getSavedProfiles();
+      // 저장된 프로필이 있으면 목록을 먼저 보여 주고, 폼은 접어 둔다(필요할 때 '➕'로 편다)
+      const showFormFirst = !myProfile.nickname || !saved.length;
+      toggleProfileForm(showFormFirst);
+      if (showFormFirst) profileCreateFresh = !myProfile.nickname;
       document.getElementById("profile-modal").classList.add("open");
     }
     function closeProfileModal() { document.getElementById("profile-modal").classList.remove("open"); }
+
+    /* =====================================================================
+       프로필 전환 · 로그아웃 · 새 프로필 시작
+       ===================================================================== */
+    async function loadProfileTripsOrFresh() {
+      const mine = getStoredTrips().filter(t => t.syncId !== "au-sydney-4n5d");
+      mine.sort((a, b) => tripRecencyScore(b) - tripRecencyScore(a));
+      if (mine.length) {
+        await switchTrip(mine[0].syncId);
+        document.querySelector('.nav-btn[data-tab="timeline"]')?.click();
+        renderMyTrips();
+        renderTripsModalList();
+        return;
+      }
+      goToFreshStart();
+    }
+
+    async function switchProfile(profileId) {
+      const prof = getSavedProfiles().find(p => p.id === profileId);
+      if (!prof) return alert("이 기기에 저장된 프로필을 찾지 못했어요.");
+      if (myProfile && myProfile.id === prof.id) return closeProfileModal();
+      stopCloudChannel();
+      editMode = false;
+      myProfile = { id: prof.id, nickname: prof.nickname, avatar: prof.avatar || "", passHash: prof.passHash || "" };
+      try { localStorage.setItem(PROFILE_KEY, JSON.stringify(myProfile)); } catch {}
+      addSavedProfile(myProfile);
+      profileCreateFresh = false;
+      closeProfileModal();
+      isNewFlow = false;
+      entryChoiceDone = true;
+      pendingNewTripSetup = false;
+      const cleanUrl = new URL(location.href);
+      cleanUrl.searchParams.delete("new");
+      cleanUrl.searchParams.delete("invite");
+      cleanUrl.searchParams.delete("trip");
+      history.replaceState(null, "", cleanUrl.toString());
+      renderHeader();
+      renderMyTrips();
+      renderTripsModalList();
+      await loadProfileTripsOrFresh();
+      renderHeader();
+      updateAccessGate();
+    }
+
+    // 이 기기 목록에서 프로필만 빼기(서버·여행 데이터는 그대로)
+    async function forgetProfile(profileId) {
+      const prof = getSavedProfiles().find(p => p.id === profileId);
+      if (!prof) return;
+      const isCurrent = Boolean(myProfile && myProfile.id === profileId);
+      if (isCurrent) return logoutCurrentProfile();
+      removeSavedProfile(profileId);
+      renderSavedProfilesBox();
+      if (!getSavedProfiles().length) toggleProfileForm(true);
+    }
+
+    async function logoutCurrentProfile() {
+      if (!myProfile || !myProfile.nickname) return;
+      const ok = await askDangerConfirm({
+        title: "🚪 이 기기에서 로그아웃할까요?",
+        desc: "현재 프로필을 이 기기 목록에서 빼는 거예요.",
+        detail: "🛡️ <b>유지됨</b> — 클라우드 프로필, 내가 만든 여행, 동반인 여행이 모두 그대로 남아 있어요.<br>🗑️ <b>이 기기에서 지워짐</b> — 저장된 프로필 목록과 이 기기의 로그인 상태(나중에 다시 불러올 수 있어요).",
+        confirmLabel: "🚪 로그아웃"
+      });
+      if (!ok) return;
+      removeSavedProfile(myProfile.id);
+      stopCloudChannel();
+      try { localStorage.removeItem(PROFILE_KEY); } catch {}
+      myProfile = loadMyProfile();
+      closeProfileModal();
+      alert("이 기기에서 로그아웃했어요. 여행 데이터와 클라우드 프로필은 그대로예요.");
+      location.replace(location.pathname);
+    }
+
+    function chooseEntry(kind) {
+      entryChoiceDone = true;
+      document.getElementById("entry-chooser-modal")?.classList.remove("open");
+      if (kind === "new") {
+        isNewFlow = true;
+        pendingNewTripSetup = true;
+        profileCreateFresh = true;
+        openProfileModal(true, "create");
+        return;
+      }
+      isNewFlow = true;
+      profileCreateFresh = false;
+      openProfileModal(true, "login");
+    }
 
     function showProfError(text) {
       const msg = document.getElementById("prof-msg");
@@ -6967,18 +7249,26 @@
       } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
     }
 
-    function clearAllLocalTripData() {
+    function clearProfileLocalData(profileId) {
+      const pid = profileId || myProfile.id;
       const drop = [];
+      let tripIds = [];
+      try {
+        const raw = JSON.parse(localStorage.getItem(tripsKeyFor(pid)) || "[]");
+        tripIds = Array.isArray(raw) ? raw.filter(t => t && t.syncId).map(t => t.syncId) : [];
+      } catch {}
+      tripIds.forEach(id => drop.push(STORAGE_KEY + "_" + id));
       try {
         for (let i = 0; i < localStorage.length; i++) {
           const k = localStorage.key(i);
           if (!k) continue;
-          if (k === PROFILE_KEY || k === MY_TRIPS_KEY || k === DELETED_TRIPS_KEY) { drop.push(k); continue; }
-          if (k === STORAGE_KEY || k.indexOf(STORAGE_KEY + "_") === 0) { drop.push(k); continue; }
-          if (k.indexOf("trip_packing_") === 0) { drop.push(k); }
+          if (k === tripsKeyFor(pid) || k === deletedKeyFor(pid)) { drop.push(k); continue; }
+          if (k.indexOf("trip_packing_") === 0 && k.slice(-(pid.length + 1)) === "_" + pid) { drop.push(k); continue; }
         }
       } catch {}
       drop.forEach(k => { try { localStorage.removeItem(k); } catch {} });
+      try { localStorage.removeItem(PROFILE_KEY); } catch {}
+      removeSavedProfile(pid);
       try { sessionStorage.clear(); } catch {}
     }
 
@@ -7016,7 +7306,7 @@
       } finally {
         if (btn) { btn.disabled = false; btn.textContent = prevTxt; }
       }
-      clearAllLocalTripData();
+      clearProfileLocalData(myProfile.id);
       myProfile = loadMyProfile();
       draftAvatarDataUrl = "";
       const msg = `프로필을 삭제했어요.\n내가 만든 여행 ${hostCount}개를 삭제하고, 동반인 여행 ${guestCount}개에서 나왔어요.`
@@ -7076,6 +7366,10 @@
             passHash: data.data.passHash
           };
           localStorage.setItem(PROFILE_KEY, JSON.stringify(myProfile));
+          addSavedProfile(myProfile);
+          profileCreateFresh = false;
+          entryChoiceDone = true;
+          stopCloudChannel();
           closeProfileModal();
           await openMostRecentTrip();
           renderAll();
@@ -7084,9 +7378,10 @@
         }
 
         // create / update mode
+        const targetId = profileCreateFresh ? ("u_" + Math.random().toString(36).slice(2, 10)) : myProfile.id;
         if (client) {
           const { data: existing } = await client.from("trip_dashboards").select("data").eq("sync_id", nickKey).maybeSingle();
-          if (existing && existing.data && existing.data.deleted !== true && existing.data.id !== myProfile.id) {
+          if (existing && existing.data && existing.data.deleted !== true && existing.data.id !== targetId) {
             if (existing.data.passHash === passHash) {
               // Same nickname + same password -> log right in seamlessly!
               myProfile = {
@@ -7096,17 +7391,21 @@
                 passHash
               };
               localStorage.setItem(PROFILE_KEY, JSON.stringify(myProfile));
+              addSavedProfile(myProfile);
+              profileCreateFresh = false;
+              entryChoiceDone = true;
+              stopCloudChannel();
               closeProfileModal();
               await openMostRecentTrip();
               renderAll();
               checkInviteFlow();
               return;
             }
-            showProfError("이미 사용 중인 닉네임이에요. 내 프로필이라면 위에서 '🔑 기존 프로필 불러오기'를 눌러주세요.");
+            showProfError("이미 사용 중인 닉네임이에요. 내 프로필이라면 위에서 '🔑 기존 프로필 불러오기'를 눌러 주세요.");
             return;
           }
           const profileDoc = {
-            id: myProfile.id,
+            id: targetId,
             nickname: nick,
             avatar: draftAvatarDataUrl || "",
             passHash,
@@ -7119,19 +7418,30 @@
           }, { onConflict: "sync_id" });
         }
 
-        myProfile.nickname = nick;
-        myProfile.avatar = draftAvatarDataUrl || "";
-        myProfile.passHash = passHash;
+        const prevId = myProfile.id;
+        myProfile = { ...myProfile, id: targetId, nickname: nick, avatar: draftAvatarDataUrl || "", passHash };
         localStorage.setItem(PROFILE_KEY, JSON.stringify(myProfile));
-        if (!state.meta.hostId && !isInviteLink) state.meta.hostId = myProfile.id;
-        const meInMembers = (state.members || []).find(m => m.id === myProfile.id);
-        if (meInMembers) { meInMembers.nickname = nick; meInMembers.avatar = myProfile.avatar; }
+        addSavedProfile(myProfile);
+        profileCreateFresh = false;
+        entryChoiceDone = true;
         closeProfileModal();
         if (pendingNewTripSetup) {
           pendingNewTripSetup = false;
           openTripTypeModal();
           return;
         }
+        if (targetId !== prevId) {
+          // 기존에 보던 여행은 그대로 두고, 새 프로필의 여행 목록으로 넘어간다
+          stopCloudChannel();
+          isNewFlow = false;
+          renderHeader();
+          renderMyTrips();
+          await loadProfileTripsOrFresh();
+          return;
+        }
+        if (!state.meta.hostId && !isInviteLink) state.meta.hostId = myProfile.id;
+        const meInMembers = (state.members || []).find(m => m.id === myProfile.id);
+        if (meInMembers) { meInMembers.nickname = nick; meInMembers.avatar = myProfile.avatar; }
         saveState();
         checkInviteFlow();
       } finally {
@@ -7241,12 +7551,14 @@
       if (newTripFlowOpen) {
         if (jm) jm.classList.remove("open");
         document.getElementById("trip-gone-modal")?.classList.remove("open");
+        document.getElementById("entry-chooser-modal")?.classList.remove("open");
         return;
       }
-      if (isNewFlow && !myProfile.nickname) {
+      if (isNewFlow && !entryChoiceDone) {
         document.body.classList.remove("unlocked");
         if (jm) jm.classList.remove("open");
-        document.getElementById("welcome-host-modal")?.classList.add("open");
+        document.getElementById("welcome-host-modal")?.classList.remove("open");
+        document.getElementById("entry-chooser-modal")?.classList.add("open");
         return;
       }
       if (!myProfile.nickname) {
@@ -7286,6 +7598,7 @@
       if (wasLocked && typeof dayMap !== "undefined" && dayMap) {
         setTimeout(() => dayMap.invalidateSize(), 60);
       }
+      try { updateDayFloatBar(); } catch {}
     }
 
     function checkInviteFlow() {
@@ -7572,7 +7885,7 @@
 
     function getMyTrips() {
       try {
-        const raw = localStorage.getItem(MY_TRIPS_KEY);
+        const raw = localStorage.getItem(tripsKeyFor(myProfile.id));
         const list = (raw ? JSON.parse(raw) : []).filter(Boolean);
         if (!list.some(t => t.syncId === DEFAULT_SB.syncId)) {
           list.unshift({
@@ -7598,6 +7911,15 @@
       }
     }
 
+    // 이 프로필이 실제로 저장해 둔 여행만(기본 목록·샘플 자동 추가 없이)
+    function getStoredTrips(profileId) {
+      try {
+        const raw = localStorage.getItem(tripsKeyFor(profileId || myProfile.id));
+        const list = (raw ? JSON.parse(raw) : []).filter(Boolean);
+        return list.filter(t => t && t.syncId && !isTripTombstoned(t.syncId));
+      } catch { return []; }
+    }
+
     function registerMyTrip(syncId, meta, stamp = false) {
       if (isTripTombstoned(syncId)) return; // 삭제·나간 여행은 목록에 다시 올리지 않는다
       const current = getMyTrips();
@@ -7609,10 +7931,11 @@
         startDate: meta?.startDate || prev.startDate || "",
         endDate: meta?.endDate || prev.endDate || "",
         locked: Boolean(meta?.passHash),
+        hostId: meta?.hostId || prev.hostId || "",
         updatedAt: stamp ? new Date().toISOString() : (prev.updatedAt || ""),
         lastOpenedAt: prev.lastOpenedAt || ""
       });
-      localStorage.setItem(MY_TRIPS_KEY, JSON.stringify(list));
+      localStorage.setItem(tripsKeyFor(myProfile.id), JSON.stringify(list));
     }
 
     function markTripOpened(syncId) {
@@ -7621,7 +7944,7 @@
         const t = list.find(x => x.syncId === syncId);
         if (t) {
           t.lastOpenedAt = new Date().toISOString();
-          localStorage.setItem(MY_TRIPS_KEY, JSON.stringify(list));
+          localStorage.setItem(tripsKeyFor(myProfile.id), JSON.stringify(list));
         }
       } catch {}
     }
@@ -7658,7 +7981,7 @@
        ===================================================================== */
     function getTripTombstones() {
       try {
-        const raw = localStorage.getItem(DELETED_TRIPS_KEY);
+        const raw = localStorage.getItem(deletedKeyFor(myProfile.id));
         const list = raw ? JSON.parse(raw) : [];
         return Array.isArray(list) ? list.filter(t => t && t.syncId) : [];
       } catch { return []; }
@@ -7677,14 +8000,14 @@
       if (!syncId) return;
       const list = getTripTombstones().filter(t => t.syncId !== syncId);
       list.push({ syncId, kind: kind || "deleted", title: title || "", at: new Date().toISOString(), by: myProfile.id });
-      try { localStorage.setItem(DELETED_TRIPS_KEY, JSON.stringify(list)); } catch {}
+      try { localStorage.setItem(deletedKeyFor(myProfile.id), JSON.stringify(list)); } catch {}
     }
 
     function removeTripFromMyTrips(syncId) {
       try {
-        const raw = localStorage.getItem(MY_TRIPS_KEY);
+        const raw = localStorage.getItem(tripsKeyFor(myProfile.id));
         const list = (raw ? JSON.parse(raw) : []).filter(t => t && t.syncId !== syncId);
-        localStorage.setItem(MY_TRIPS_KEY, JSON.stringify(list));
+        localStorage.setItem(tripsKeyFor(myProfile.id), JSON.stringify(list));
       } catch {}
     }
 
@@ -7719,7 +8042,8 @@
     // 목록의 각 여행에서 내 역할: host(내가 만든 여행) / editor·viewer·guest(동반인)
     function tripRoleOf(syncId) {
       const meta = tripMetaOf(syncId) || {};
-      const hostId = meta.hostId;
+      const entry = (getMyTrips() || []).find(t => t.syncId === syncId) || {};
+      const hostId = meta.hostId || entry.hostId || "";
       if (!hostId) return "host"; // 호스트 정보가 없는 옛 여행·코드 기본 여행은 내 여행으로 본다
       if (hostId === myProfile.id) return "host";
       const me = tripMembersOf(syncId).find(m => m.id === myProfile.id);
@@ -7840,6 +8164,14 @@
       } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
       let hardErr = "";
       try {
+        // 호스트 확인 — 남의 여행은 지우지 않는다(기본 부산 여행 같은 실제 데이터 보호)
+        const { data: row0, error: readErr0 } = await client.from("trip_dashboards").select("data").eq("sync_id", syncId).maybeSingle();
+        const ownerId = row0 && row0.data && row0.data.meta ? row0.data.meta.hostId : "";
+        if (ownerId && ownerId !== myProfile.id) {
+          return { ok: false, mode: "forbidden", error: "이 여행의 호스트만 삭제할 수 있어요" };
+        }
+      } catch (e) { /* 확인 실패해도 아래 단계는 진행 */ }
+      try {
         const { data, error } = await client.from("trip_dashboards").delete().eq("sync_id", syncId).select("sync_id");
         if (!error && Array.isArray(data) && data.length) return { ok: true, mode: "delete" };
         hardErr = error ? error.message : "삭제 권한이 없어 행이 지워지지 않았어요";
@@ -7926,6 +8258,9 @@
       });
       if (!ok) return;
       const res = await deleteTripFromCloud(syncId);
+      if (res && res.mode === "forbidden") {
+        return alert("이 여행의 호스트만 삭제할 수 있어요.\n동반인이라면 '🚪 나가기'로 내 목록에서 빼 주세요.");
+      }
       addTripTombstone(syncId, "deleted", t.title || "");
       removeTripFromMyTrips(syncId);
       try { localStorage.removeItem(STORAGE_KEY + "_" + syncId); } catch {}
@@ -7962,7 +8297,7 @@
     function checkTripGoneGate() {
       const modal = document.getElementById("trip-gone-modal");
       if (!modal) return;
-      const newTripFlowOpen = ["trip-type-modal", "new-trip-setup-modal", "overseas-setup-modal", "profile-modal", "welcome-host-modal"]
+      const newTripFlowOpen = ["trip-type-modal", "new-trip-setup-modal", "overseas-setup-modal", "profile-modal", "welcome-host-modal", "entry-chooser-modal"]
         .some(id => document.getElementById(id)?.classList.contains("open"));
       if (newTripFlowOpen) { modal.classList.remove("open"); return; }
       const tt = getTripTombstone(currentSyncId);
@@ -8129,6 +8464,7 @@
       document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
       document.getElementById("tab-sync")?.classList.add("active");
       resetScrollToTop();
+      updateDayFloatBar();
     }
 
     document.querySelectorAll(".nav-btn").forEach(btn => {
@@ -8140,6 +8476,7 @@
         resetScrollToTop();
         if (btn.dataset.tab === "weather") autoRefreshWeather();
         if (btn.dataset.tab === "packing") renderPacking();
+        updateDayFloatBar();
       });
     });
 
@@ -10939,6 +11276,7 @@
       initRecommendSelectors();
       checkInviteFlow();
       checkTripGoneGate();
+      updateDayFloatBar();
     }
 
     try { renderAll(); } catch (e) { console.error("renderAll error:", e); }
