@@ -862,6 +862,8 @@
       backdrop-filter: none; -webkit-backdrop-filter: none;
     }
     body:not(.unlocked) #day-float-bar { display: none !important; }
+    /* Day 바가 떠 있을 때는 맨 아래 내용이 바 뒤로 숨지 않게 여백을 더 준다 */
+    body.day-bar-on { padding-bottom: 150px; }
     /* 삭제·나간 여행 링크로 들어왔을 때는 뒤 내용을 가린다 */
     body.trip-is-gone main, body.trip-is-gone .sticky-header, body.trip-is-gone #day-float-bar { visibility: hidden; }
     .nav-badge { top: 1px; right: calc(50% - 24px); }
@@ -3463,7 +3465,7 @@
       if (b.type === "hotel") {
         if (!b.inDate || !b.name) return null;
         // 숙소는 누구에게나 맞는 범용 문구로만: 🏨 {숙소명} 결제하기
-        const shortName = String(b.name).replace(/\s*(체크인|체크아웃|호텔|숙소|리조트|펜션)\s*$/g, "").trim().slice(0, 20) || "숙소";
+        const shortName = String(b.name).replace(/\s+(체크인|체크아웃|호텔|숙소|리조트|펜션)\s*$/g, "").trim().slice(0, 20) || "숙소";
         const title = `🏨 ${shortName} 결제하기`;
         const payBits = [
           b.dueDate ? `${fmtMD(b.dueDate)} 결제 예정` : "",
@@ -4342,11 +4344,12 @@
       const timelineOn = document.getElementById("tab-timeline")?.classList.contains("active");
       const unlocked = document.body.classList.contains("unlocked");
       const days = state.days || [];
-      if (!timelineOn || !unlocked || !days.length) { bar.classList.remove("show"); return; }
+      if (!timelineOn || !unlocked || !days.length) { bar.classList.remove("show"); document.body.classList.remove("day-bar-on"); return; }
       inner.innerHTML = days.map(d =>
         `<button class="day-float-btn ${d.day === currentDay ? "active" : ""}" title="${escapeAttr(d.label || "")}" onclick="setDay(${d.day})">Day ${d.day}</button>`
       ).join("");
       bar.classList.add("show");
+      document.body.classList.add("day-bar-on");
       const act = inner.querySelector(".day-float-btn.active");
       if (act) {
         const target = Math.max(0, act.offsetLeft - (inner.clientWidth - act.offsetWidth) / 2);
@@ -7249,10 +7252,13 @@
        프로필 전환 · 로그아웃 · 새 프로필 시작
        ===================================================================== */
     async function loadProfileTripsOrFresh() {
-      const mine = getStoredTrips().filter(t => t.syncId !== "au-sydney-4n5d");
-      mine.sort((a, b) => tripRecencyScore(b) - tripRecencyScore(a));
-      if (mine.length) {
-        await switchTrip(mine[0].syncId);
+      const stored = getStoredTrips().filter(t => t.syncId !== "au-sydney-4n5d");
+      // 내가 호스트·동반인인 여행을 먼저 연다(남의 여행만 남았으면 그거나 새 여행)
+      const mine = stored.filter(t => tripRoleOf(t.syncId) !== "guest");
+      const pool = mine.length ? mine : stored;
+      pool.sort((a, b) => tripRecencyScore(b) - tripRecencyScore(a));
+      if (pool.length) {
+        await switchTrip(pool[0].syncId);
         document.querySelector('.nav-btn[data-tab="timeline"]')?.click();
         renderMyTrips();
         renderTripsModalList();
