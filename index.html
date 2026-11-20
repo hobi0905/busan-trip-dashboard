@@ -1196,178 +1196,253 @@
     }
 
     /* =====================================================================
-       🖥️ PC 데스크톱 레이아웃 (960px 이상)
+       🖥️ PC 데스크톱 레이아웃
        · 좌측 220px 고정 사이드바가 하단 탭을 대신한다
        · 🏠 홈: 좌 지도(58%) / 우 일정 패널(42%)
        · 📅 일정: 좌 스티키 지도 / 우 타임라인 2단
-       · 960px 미만(모바일·태블릿)에서는 아래 규칙이 하나도 적용되지 않는다
+       · 자동일 때는 960px 미만에서, 그리고 '📱 모바일 버전'에서는 항상
+         아래 규칙이 하나도 적용되지 않는다 (body.view-pc 일 때만 적용)
        ===================================================================== */
     .pc-sidebar { display: none; }
     /* 잠금(비밀번호)·동반인 승인 대기 중에는 모바일처럼 사이드바도 감춘다 */
     body:not(.unlocked) .pc-sidebar { display: none !important; }
 
-    @media (min-width: 960px) {
-      body { padding-left: 220px; padding-bottom: 0; }
-      body.home-mode { padding-left: 220px; padding-bottom: 0; }
-      body.day-bar-on { padding-bottom: 0; }
-      .bottom-nav, #day-float-bar { display: none !important; }
+    /* =====================================================================
+       ⚙️ 화면 버전 (자동 / 모바일 / PC) + PC 데스크톱 레이아웃
+       · body 에 JS가 붙이는 클래스로 화면 버전을 고른다 (localStorage: tripViewMode)
+         - view-force-mobile : 📱 모바일 버전 (폭과 상관없이 모바일 화면)
+         - view-force-pc     : 🖥️ PC 버전 (폭과 상관없이 PC 화면)
+         - view-pc           : 실제로 PC 규칙이 적용되는 상태
+                               (자동이면 폭 960px 이상, PC 버전이면 항상)
+       · 아래 PC 데스크톱 규칙은 모두 body.view-pc 아래에서만 동작한다
+         (좌측 220px 사이드바 · 홈 좌우 분할 · 일정 2단)
+       ===================================================================== */
 
-      .container { max-width: 1120px; }
-      body.home-mode .container { max-width: 1680px; }
-      body:not(.home-mode) .main { padding: 18px 22px 30px; }
-      .sticky-header { padding: 12px 22px 10px; }
-      .summary-strip { max-width: 560px; }
-
-      /* ─────────────── 좌측 고정 사이드바 ─────────────── */
-      .pc-sidebar {
-        display: flex; flex-direction: column; gap: 12px;
-        position: fixed; top: 0; left: 0; bottom: 0; width: 220px; z-index: 60;
-        padding: 16px 12px 14px;
-        background: #fff; border-right: 1px solid var(--border);
-        overflow-y: auto; overflow-x: hidden;
-      }
-      .pcs-head { display: flex; align-items: center; gap: 9px; padding: 2px 4px 0; }
-      .pcs-logo {
-        width: 34px; height: 34px; border-radius: 11px; flex-shrink: 0;
-        display: flex; align-items: center; justify-content: center; font-size: 18px;
-        background: var(--ocean-soft); border: 1px solid var(--ocean-border);
-      }
-      .pcs-trip { min-width: 0; flex: 1; }
-      .pcs-trip-title {
-        font-size: 13.5px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.25;
-        overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
-        -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-      }
-      .pcs-trip-sub { font-size: 10.5px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .pcs-switch {
-        display: flex; align-items: center; justify-content: space-between; gap: 6px;
-        width: 100%; padding: 8px 10px; border-radius: 10px;
-        border: 1px solid var(--border); background: #f8fafc;
-        font-family: inherit; font-size: 11.5px; font-weight: 800; color: #334155;
-        cursor: pointer;
-      }
-      .pcs-switch:hover { background: var(--ocean-soft); }
-      .pcs-switch #pcs-dday { color: var(--ocean); font-weight: 800; }
-      .pcs-nav { display: flex; flex-direction: column; gap: 3px; }
-      .pcs-nav-btn {
-        display: flex; align-items: center; gap: 9px;
-        width: 100%; padding: 9px 10px; border-radius: 10px;
-        border: 1px solid transparent; background: transparent;
-        font-family: inherit; font-size: 13px; font-weight: 700; color: #475569;
-        text-align: left; cursor: pointer;
-        transition: background .12s ease, color .12s ease, border-color .12s ease;
-      }
-      .pcs-nav-btn:hover { background: #f1f5f9; }
-      .pcs-nav-btn .pcs-ico { font-size: 15px; line-height: 1; width: 18px; text-align: center; flex-shrink: 0; }
-      .pcs-nav-btn.active {
-        background: var(--ocean-soft); border-color: var(--ocean-border);
-        color: var(--ocean-dark); font-weight: 800;
-      }
-      .pcs-sum {
-        margin-top: auto; padding: 10px 11px; border-radius: 12px;
-        background: var(--ocean-soft); border: 1px solid var(--ocean-border);
-        display: flex; flex-direction: column; gap: 6px;
-      }
-      .pcs-sum-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 11px; color: #475569; font-weight: 600; }
-      .pcs-sum-row b { font-size: 12px; font-weight: 800; color: var(--ocean-dark); }
-      .pcs-foot { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
-      .pcs-foot button {
-        padding: 8px 2px; border-radius: 9px; border: 1px solid var(--border);
-        background: #fff; font-family: inherit; font-size: 10.5px; font-weight: 700;
-        color: #334155; cursor: pointer; white-space: nowrap;
-      }
-      .pcs-foot button:hover { background: var(--ocean-soft); color: var(--ocean-dark); }
-
-      /* ─────────────── 🏠 홈: 좌 지도 / 우 일정 패널 ─────────────── */
-      #tab-home { height: 100vh; }
-      .home-stage {
-        display: grid; grid-template-columns: 58% minmax(0, 42%);
-        height: 100vh; overflow: hidden;
-      }
-      #home-map { height: 100%; min-height: 0; max-height: none; }
-      .home-float { right: 42%; }
-      .home-float .home-title-pill { max-width: calc(100% - 120px); }
-      .home-day-col { top: 68px; }
-      .home-credit { bottom: 14px; }
-      .home-sheet {
-        margin-top: 0; min-height: 0; height: 100%;
-        border-radius: 0; border-left: 1px solid var(--border);
-        box-shadow: -12px 0 30px rgba(15, 23, 42, 0.06);
-        padding: 16px 18px 24px; overflow-y: auto; -webkit-overflow-scrolling: touch;
-      }
-      .home-sheet .sheet-handle,
-      .home-sheet .sheet-more,
-      .home-scrim { display: none !important; }
-      .home-sheet .sheet-head { padding: 0 2px 12px; }
-      .home-row {
-        grid-template-columns: 24px 44px minmax(0, 1fr) 52px auto 12px;
-        gap: 8px; padding: 8px 10px; margin-bottom: 7px;
-      }
-      .hr-place { font-size: 14px; }
-      .hr-time { font-size: 11.5px; }
-
-      /* ─────────────── 📅 일정: 좌 지도(스티키) / 우 타임라인 ─────────────── */
-      #tab-timeline.active {
-        display: grid;
-        grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
-        gap: 0 22px; align-items: start;
-      }
-      .tl-pc-left {
-        position: sticky; top: calc(var(--pc-hdr-h, 0px) + 12px);
-        display: flex; flex-direction: column; min-width: 0;
-      }
-      .tl-pc-right { display: flex; flex-direction: column; min-width: 0; }
-      .tl-pc-left .tl-map-card { margin-bottom: 10px; }
-      .tl-pc-left .map-action-row { margin-bottom: 6px; }
-      .tl-pc-left .map-action-row .btn { flex: 1; min-width: 0; padding-left: 4px; padding-right: 4px; }
-      .tl-pc-left .map-help-row { margin-bottom: 10px; }
-      .tl-pc-left .tl-places-row { margin-bottom: 10px; }
-      #day-map { height: clamp(300px, 46vh, 460px); }
-      .tl-pc-right > .day-tabs { margin-bottom: 12px; }
-
-      /* ─────────────── 나머지 탭: 넓은 2열 카드 그리드 ─────────────── */
-      #tab-expenses.active,
-      #tab-sync.active {
-        display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0 16px; align-items: start;
-      }
-      #tab-expenses.active > .card:last-child { grid-column: 1 / -1; }
-      /* 넓은 화면에서 '추가' 버튼 글자가 두 줄로 쪼개지지 않게 */
-      #tab-expenses.active .row > .btn,
-      #tab-checklist.active .row > .btn { flex: 0 0 auto; white-space: nowrap; padding-left: 16px; padding-right: 16px; }
-      #tab-checklist.active { columns: 2; column-gap: 16px; }
-      #tab-checklist.active > * { break-inside: avoid; -webkit-column-break-inside: avoid; }
-      #tab-checklist.active > div:empty { display: none; }
-      #tab-sync.active > details { grid-column: 1 / -1; }
-
-      .wp-seg { max-width: 460px; }
-      #wp-pane-weather.active {
-        display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0 16px; align-items: start;
-      }
-      #wp-pane-weather.active > #weather-list,
-      #wp-pane-weather.active > #weather-alert-box { grid-column: 1 / -1; }
-      #wp-pane-weather.active > #weather-alert-box:empty { display: none; }
-      #weather-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
-      #packing-body {
-        display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0 16px; align-items: start;
-      }
-      #packing-body > *:only-child { grid-column: 1 / -1; }
-
-      #rec-spot-panel, #rec-route-panel, #rec-must-panel {
-        display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
-        gap: 0 18px; align-items: start;
-      }
-      #rec-spot-panel[style*="none"], #rec-route-panel[style*="none"], #rec-must-panel[style*="none"] { display: none !important; }
-      #rec-results, #route-results, #must-results { min-width: 0; }
-
-      #tab-mypage.active { max-width: 860px; }
-      #bookings-section { margin-bottom: 4px; }
+    /* ─────────────── ⚙️ 설정 모달: 화면 버전 3단 선택 ─────────────── */
+    .settings-label {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 12.5px; font-weight: 800; color: #334155; margin: 0 0 8px;
     }
+    .view-seg {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px;
+      background: #f1f5f9; border: 1px solid var(--border);
+      border-radius: 13px; padding: 4px;
+    }
+    .view-seg-btn {
+      border: 1px solid transparent; background: transparent;
+      font-family: inherit; font-size: 11.5px; font-weight: 800;
+      color: #475569; letter-spacing: -0.3px; white-space: nowrap;
+      padding: 9px 2px; border-radius: 10px; cursor: pointer;
+      transition: background .12s ease, color .12s ease, box-shadow .12s ease;
+    }
+    .view-seg-btn:hover { color: var(--ocean-dark); }
+    .view-seg-btn.active {
+      background: #fff; border-color: var(--ocean-border); color: var(--ocean-dark);
+      box-shadow: 0 1px 5px rgba(15, 23, 42, 0.12);
+    }
+    .view-seg-hint { font-size: 11px; color: var(--muted); line-height: 1.5; margin-top: 7px; }
+    .settings-divider { height: 1px; background: var(--border); margin: 14px 0 12px; }
+
+    /* ─────────────── 📱 넓은 화면에서 '모바일 버전'을 고르면 가운데 폰 프레임 ─────────────── */
+    body.view-phone-frame,
+    body.view-phone-frame.home-mode { background: #dfe7f2; }
+    body.view-phone-frame .container {
+      max-width: 430px; min-height: calc(100vh - 84px);
+      background: var(--bg);
+      box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08), 0 18px 50px rgba(15, 23, 42, 0.18);
+    }
+    body.view-phone-frame.home-mode .container { min-height: calc(100vh - 47px); background: #eef4fb; }
+    body.view-phone-frame .bottom-nav { left: 0; right: 0; max-width: 430px; margin: 0 auto; }
+    body.view-phone-frame .nav-inner { max-width: 430px; }
+    body.view-phone-frame .home-sheet.expanded { max-width: 430px; }
+    body.view-phone-frame #day-float-bar { max-width: 430px; margin: 0 auto; }
+
+    /* ─────────────── 🖥️ 좁은 화면에서 'PC 버전'을 고르면 데스크톱 폭 유지 ─────────────── */
+    body.view-force-pc .container { min-width: 1000px; }
+
+    body.view-pc { padding-left: 220px; padding-bottom: 0; }
+    body.view-pc.home-mode { padding-left: 220px; padding-bottom: 0; }
+    body.view-pc.day-bar-on { padding-bottom: 0; }
+    body.view-pc .bottom-nav,
+    body.view-pc #day-float-bar { display: none !important; }
+
+    body.view-pc .container { max-width: 1120px; }
+    body.view-pc.home-mode .container { max-width: 1680px; }
+    body.view-pc:not(.home-mode) .main { padding: 18px 22px 30px; }
+    body.view-pc .sticky-header { padding: 12px 22px 10px; }
+    body.view-pc .summary-strip { max-width: 560px; }
+
+    /* ─────────────── 좌측 고정 사이드바 ─────────────── */
+    body.view-pc .pc-sidebar {
+      display: flex; flex-direction: column; gap: 12px;
+      position: fixed; top: 0; left: 0; bottom: 0; width: 220px; z-index: 60;
+      padding: 16px 12px 14px;
+      background: #fff; border-right: 1px solid var(--border);
+      overflow-y: auto; overflow-x: hidden;
+    }
+    body.view-pc .pcs-head { display: flex; align-items: center; gap: 9px; padding: 2px 4px 0; }
+    body.view-pc .pcs-logo {
+      width: 34px; height: 34px; border-radius: 11px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+      background: var(--ocean-soft); border: 1px solid var(--ocean-border);
+    }
+    body.view-pc .pcs-trip { min-width: 0; flex: 1; }
+    body.view-pc .pcs-trip-title {
+      font-size: 13.5px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.25;
+      overflow: hidden; text-overflow: ellipsis; display: -webkit-box;
+      -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    }
+    body.view-pc .pcs-trip-sub { font-size: 10.5px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    body.view-pc .pcs-switch {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
+      width: 100%; padding: 8px 10px; border-radius: 10px;
+      border: 1px solid var(--border); background: #f8fafc;
+      font-family: inherit; font-size: 11.5px; font-weight: 800; color: #334155;
+      cursor: pointer;
+    }
+    body.view-pc .pcs-switch:hover { background: var(--ocean-soft); }
+    body.view-pc .pcs-switch #pcs-dday { color: var(--ocean); font-weight: 800; }
+    body.view-pc .pcs-nav { display: flex; flex-direction: column; gap: 3px; }
+    body.view-pc .pcs-nav-btn {
+      display: flex; align-items: center; gap: 9px;
+      width: 100%; padding: 9px 10px; border-radius: 10px;
+      border: 1px solid transparent; background: transparent;
+      font-family: inherit; font-size: 13px; font-weight: 700; color: #475569;
+      text-align: left; cursor: pointer;
+      transition: background .12s ease, color .12s ease, border-color .12s ease;
+    }
+    body.view-pc .pcs-nav-btn:hover { background: #f1f5f9; }
+    body.view-pc .pcs-nav-btn .pcs-ico { font-size: 15px; line-height: 1; width: 18px; text-align: center; flex-shrink: 0; }
+    body.view-pc .pcs-nav-btn.active {
+      background: var(--ocean-soft); border-color: var(--ocean-border);
+      color: var(--ocean-dark); font-weight: 800;
+    }
+    body.view-pc .pcs-sum {
+      margin-top: auto; padding: 10px 11px; border-radius: 12px;
+      background: var(--ocean-soft); border: 1px solid var(--ocean-border);
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    body.view-pc .pcs-sum-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 11px; color: #475569; font-weight: 600; }
+    body.view-pc .pcs-sum-row b { font-size: 12px; font-weight: 800; color: var(--ocean-dark); }
+    body.view-pc .pcs-foot { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+    body.view-pc .pcs-foot button {
+      padding: 8px 2px; border-radius: 9px; border: 1px solid var(--border);
+      background: #fff; font-family: inherit; font-size: 10.5px; font-weight: 700;
+      color: #334155; cursor: pointer; white-space: nowrap;
+    }
+    body.view-pc .pcs-foot button:hover { background: var(--ocean-soft); color: var(--ocean-dark); }
+
+    /* ─────────────── 🏠 홈: 좌 지도 / 우 일정 패널 ─────────────── */
+    body.view-pc #tab-home { height: 100vh; }
+    body.view-pc .home-stage {
+      display: grid; grid-template-columns: 58% minmax(0, 42%);
+      height: 100vh; overflow: hidden;
+    }
+    body.view-pc #home-map { height: 100%; min-height: 0; max-height: none; }
+    body.view-pc .home-float { right: 42%; }
+    body.view-pc .home-float .home-title-pill { max-width: calc(100% - 120px); }
+    body.view-pc .home-day-col { top: 68px; }
+    body.view-pc .home-credit { bottom: 14px; }
+    body.view-pc .home-sheet {
+      margin-top: 0; min-height: 0; height: 100%;
+      border-radius: 0; border-left: 1px solid var(--border);
+      box-shadow: -12px 0 30px rgba(15, 23, 42, 0.06);
+      padding: 16px 18px 24px; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    }
+    body.view-pc .home-sheet .sheet-handle,
+    body.view-pc .home-sheet .sheet-more,
+    body.view-pc .home-scrim { display: none !important; }
+    body.view-pc .home-sheet .sheet-head { padding: 0 2px 12px; }
+    body.view-pc .home-row {
+      grid-template-columns: 24px 44px minmax(0, 1fr) 52px auto 12px;
+      gap: 8px; padding: 8px 10px; margin-bottom: 7px;
+    }
+    body.view-pc .hr-place { font-size: 14px; }
+    body.view-pc .hr-time { font-size: 11.5px; }
+
+    /* ─────────────── 📅 일정: 좌 지도(스티키) / 우 타임라인 ─────────────── */
+    body.view-pc #tab-timeline.active {
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+      gap: 0 22px; align-items: start;
+    }
+    body.view-pc .tl-pc-left {
+      position: sticky; top: calc(var(--pc-hdr-h, 0px) + 12px);
+      display: flex; flex-direction: column; min-width: 0;
+    }
+    body.view-pc .tl-pc-right { display: flex; flex-direction: column; min-width: 0; }
+    body.view-pc .tl-pc-left .tl-map-card { margin-bottom: 10px; }
+    body.view-pc .tl-pc-left .map-action-row { margin-bottom: 6px; }
+    body.view-pc .tl-pc-left .map-action-row .btn { flex: 1; min-width: 0; padding-left: 4px; padding-right: 4px; }
+    body.view-pc .tl-pc-left .map-help-row { margin-bottom: 10px; }
+    body.view-pc .tl-pc-left .tl-places-row { margin-bottom: 10px; }
+    body.view-pc #day-map { height: clamp(300px, 46vh, 460px); }
+    body.view-pc .tl-pc-right > .day-tabs { margin-bottom: 12px; }
+
+    /* ─────────────── 나머지 탭: 넓은 2열 카드 그리드 ─────────────── */
+    body.view-pc #tab-expenses.active,
+    body.view-pc #tab-sync.active {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 16px; align-items: start;
+    }
+    body.view-pc #tab-expenses.active > .card:last-child { grid-column: 1 / -1; }
+    /* 넓은 화면에서 '추가' 버튼 글자가 두 줄로 쪼개지지 않게 */
+    body.view-pc #tab-expenses.active .row > .btn,
+    body.view-pc #tab-checklist.active .row > .btn { flex: 0 0 auto; white-space: nowrap; padding-left: 16px; padding-right: 16px; }
+    body.view-pc #tab-checklist.active { columns: 2; column-gap: 16px; }
+    body.view-pc #tab-checklist.active > * { break-inside: avoid; -webkit-column-break-inside: avoid; }
+    body.view-pc #tab-checklist.active > div:empty { display: none; }
+    body.view-pc #tab-sync.active > details { grid-column: 1 / -1; }
+
+    body.view-pc .wp-seg { max-width: 460px; }
+    body.view-pc #wp-pane-weather.active {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 16px; align-items: start;
+    }
+    body.view-pc #wp-pane-weather.active > #weather-list,
+    body.view-pc #wp-pane-weather.active > #weather-alert-box { grid-column: 1 / -1; }
+    body.view-pc #wp-pane-weather.active > #weather-alert-box:empty { display: none; }
+    body.view-pc #weather-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+    body.view-pc #packing-body {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 16px; align-items: start;
+    }
+    body.view-pc #packing-body > *:only-child { grid-column: 1 / -1; }
+
+    body.view-pc #rec-spot-panel,
+    body.view-pc #rec-route-panel,
+    body.view-pc #rec-must-panel {
+      display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
+      gap: 0 18px; align-items: start;
+    }
+    body.view-pc #rec-spot-panel[style*="none"],
+    body.view-pc #rec-route-panel[style*="none"],
+    body.view-pc #rec-must-panel[style*="none"] { display: none !important; }
+    body.view-pc #rec-results,
+    body.view-pc #route-results,
+    body.view-pc #must-results { min-width: 0; }
+
+    body.view-pc #tab-mypage.active { max-width: 860px; }
+    body.view-pc #bookings-section { margin-bottom: 4px; }
+
   </style>
 </head>
 <body class="home-mode">
+  <script>
+    // ⚙️ 화면 버전(자동/모바일/PC)을 첫 페인트 전에 적용해 화면이 깜박이지 않게 한다
+    (function () {
+      try {
+        var mode = localStorage.getItem("tripViewMode");
+        if (mode !== "mobile" && mode !== "pc") mode = "auto";
+        var pc = mode === "pc" || (mode === "auto" && window.matchMedia("(min-width: 960px)").matches);
+        var b = document.body;
+        b.classList.toggle("view-force-mobile", mode === "mobile");
+        b.classList.toggle("view-force-pc", mode === "pc");
+        b.classList.toggle("view-pc", pc);
+        b.classList.toggle("view-phone-frame", mode === "mobile" && window.innerWidth >= 960);
+      } catch (e) {}
+    })();
+  </script>
   <div id="splash-screen">
     <div class="splash-sky">
       <div class="splash-trail"></div>
@@ -1498,7 +1573,7 @@
         <div id="timeline-list"></div>
         <div id="bookings-section"></div>
         <div class="tl-foot-row" style="margin-top:16px;margin-bottom:6px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-soft btn-sm" onclick="openThemeModal()" style="padding:8px 18px;">⚙️ 설정 · 색감 변경</button>
+          <button class="btn btn-soft btn-sm" onclick="openThemeModal()" style="padding:8px 18px;">⚙️ 설정</button>
           <button class="btn btn-soft btn-sm hours-refresh-btn" data-default-label="🔄 영업시간 업데이트" onclick="refreshBusinessHours()" style="padding:8px 14px;">🔄 영업시간 업데이트</button>
         </div>
         <div class="hours-note hours-updated-label tl-foot-stamp" style="text-align:center;margin-bottom:8px;">아직 업데이트 전</div>
@@ -1962,13 +2037,22 @@
     </div>
   </div>
 
-  <!-- THEME COLOR MODAL -->
+  <!-- ⚙️ SETTINGS MODAL (화면 버전 · 색감) -->
   <div id="theme-modal" class="modal-backdrop center" onclick="if(event.target===this)closeThemeModal()">
     <div class="modal-sheet">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <div style="font-size:16px;font-weight:800;">🎨 전체 색감 설정</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-size:16px;font-weight:800;">⚙️ 설정</div>
         <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeThemeModal()">닫기</button>
       </div>
+      <div class="settings-label">🖥️ 화면 버전</div>
+      <div class="view-seg" id="view-mode-seg" role="group" aria-label="화면 버전">
+        <button type="button" class="view-seg-btn active" data-view-mode="auto" aria-pressed="true" onclick="setViewMode('auto')">🔄 자동</button>
+        <button type="button" class="view-seg-btn" data-view-mode="mobile" aria-pressed="false" onclick="setViewMode('mobile')">📱 모바일 버전</button>
+        <button type="button" class="view-seg-btn" data-view-mode="pc" aria-pressed="false" onclick="setViewMode('pc')">🖥️ PC 버전</button>
+      </div>
+      <div class="view-seg-hint" id="view-mode-hint">화면 폭 960px을 기준으로 자동 전환돼요.</div>
+      <div class="settings-divider"></div>
+      <div class="settings-label">🎨 색감</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">원하는 색감을 고르면 버튼·배지·동선·헤더 색상이 한 번에 바뀌어요.</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">
         <button class="btn btn-soft btn-sm" onclick="selectThemeColor('#0284c7')"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#0284c7;"></span> 🌊 오션 블루</button>
@@ -2606,7 +2690,7 @@
     <div class="pcs-foot">
       <button type="button" onclick="openShareModal()" title="일정 공유">🔗 공유</button>
       <button type="button" onclick="openSyncTab()" title="클라우드 백업·동기화">☁️ 동기화</button>
-      <button type="button" onclick="openThemeModal()" title="설정·색감 변경">⚙️ 설정</button>
+      <button type="button" onclick="openThemeModal()" title="화면 버전·색감 설정">⚙️ 설정</button>
     </div>
   </aside>
 
@@ -10460,6 +10544,7 @@
     function openThemeModal() {
       const picker = document.getElementById("theme-custom-picker");
       if (picker) picker.value = state.meta?.themeColor || "#0284c7";
+      try { syncViewModeButtons(getViewMode()); } catch (e) { console.warn(e); }
       document.getElementById("theme-modal").classList.add("open");
     }
     function closeThemeModal() { document.getElementById("theme-modal").classList.remove("open"); }
@@ -13051,7 +13136,80 @@
        · 탭 전환·창 크기 변경·분기점 통과 시 Leaflet 지도 크기 보정
        960px 미만에서는 DOM을 건드리지 않으므로 기존 모바일 화면은 그대로 유지된다.
        ===================================================================== */
-    function isPcWidth() { return window.innerWidth >= 960; }
+    function isPcWidth() { return document.body.classList.contains("view-pc"); }
+
+    /* =====================================================================
+       ⚙️ 화면 버전 (자동 / 모바일 / PC)
+       · '자동'      → 화면 폭 960px 기준으로 자동 전환
+       · '모바일 버전' → PC에서도 모바일 화면(430px 프레임·하단 7탭·접힘 시트)
+       · 'PC 버전'   → 좁은 화면에서도 PC 화면(좌측 사이드바·좌우 분할·2단)
+       · 고른 값은 localStorage(tripViewMode)에 남아 새로고침해도 유지된다
+       ====================================================== */
+    const VIEW_MODE_KEY = "tripViewMode";
+
+    function getViewMode() {
+      try {
+        const v = localStorage.getItem(VIEW_MODE_KEY);
+        if (v === "mobile" || v === "pc") return v;
+      } catch (e) {}
+      return "auto";
+    }
+
+    function resolvePcLayout(mode) {
+      if (mode === "pc") return true;
+      if (mode === "mobile") return false;
+      return window.innerWidth >= 960;
+    }
+
+    function applyViewModeClasses(mode) {
+      const m = (mode === "mobile" || mode === "pc") ? mode : "auto";
+      const b = document.body;
+      if (!b) return false;
+      const pc = resolvePcLayout(m);
+      b.classList.toggle("view-force-mobile", m === "mobile");
+      b.classList.toggle("view-force-pc", m === "pc");
+      b.classList.toggle("view-pc", pc);
+      b.classList.toggle("view-phone-frame", m === "mobile" && window.innerWidth >= 960);
+      return pc;
+    }
+
+    function syncViewModeButtons(mode) {
+      const m = (mode === "mobile" || mode === "pc") ? mode : "auto";
+      const seg = document.getElementById("view-mode-seg");
+      if (seg) {
+        seg.querySelectorAll("[data-view-mode]").forEach(btn => {
+          const on = btn.getAttribute("data-view-mode") === m;
+          btn.classList.toggle("active", on);
+          btn.setAttribute("aria-pressed", on ? "true" : "false");
+        });
+      }
+      const hint = document.getElementById("view-mode-hint");
+      if (hint) {
+        hint.textContent = m === "auto"
+          ? `화면 폭 960px을 기준으로 자동 전환돼요. (지금은 ${resolvePcLayout("auto") ? "PC 화면" : "모바일 화면"})`
+          : m === "mobile"
+            ? "PC에서도 모바일 화면(하단 탭·접힘 시트)으로 보여요."
+            : "좁은 화면에서도 PC 화면(좌측 사이드바·2단 배치)으로 보여요.";
+      }
+    }
+
+    // 화면 버전을 바꾸고, 바뀐 폭에 맞춰 지도·레이아웃을 즉시 다시 맞춘다
+    function applyViewMode(mode, opts) {
+      const m = (mode === "mobile" || mode === "pc") ? mode : "auto";
+      const persist = !(opts && opts.persist === false);
+      applyViewModeClasses(m);
+      if (persist) { try { localStorage.setItem(VIEW_MODE_KEY, m); } catch (e) {} }
+      syncViewModeButtons(m);
+      try { buildPcTimeline(); } catch (e) { console.warn(e); }
+      try { updatePcMetrics(); } catch (e) { console.warn(e); }
+      try { syncPcSidebar(); } catch (e) { console.warn(e); }
+      try { syncHomeRowsHidden(); } catch (e) { console.warn(e); }
+      try { if (homeMap) homeMap.invalidateSize(); } catch (e) {}
+      try { if (leafletMap) { leafletMap.invalidateSize(); renderDayMap(); } } catch (e) {}
+      try { scheduleMapResize(); } catch (e) {}
+    }
+
+    function setViewMode(mode) { applyViewMode(mode); }
 
     function pcGoTab(tab) {
       if (!tab) return;
@@ -13145,6 +13303,8 @@
     function pcHandleViewportChange() {
       clearTimeout(pcResizeTimer);
       pcResizeTimer = setTimeout(() => {
+        // '자동'은 폭에 따라 바뀌고, '모바일/PC 버전'은 폭이 바뀌어도 그대로 강제한다
+        try { applyViewModeClasses(getViewMode()); syncViewModeButtons(getViewMode()); } catch (e) { console.warn(e); }
         try { buildPcTimeline(); } catch (e) { console.warn(e); }
         try { updatePcMetrics(); } catch (e) {}
         try { syncPcSidebar(); } catch (e) {}
@@ -13180,6 +13340,7 @@
       try { renderHome(); } catch (e) { console.warn(e); }
     }
 
+    try { applyViewModeClasses(getViewMode()); syncViewModeButtons(getViewMode()); } catch (e) { console.warn("view mode", e); }
     try { buildPcTimeline(); updatePcMetrics(); } catch (e) { console.warn("pc layout", e); }
     try { renderAll(); } catch (e) { console.error("renderAll error:", e); }
     try { initSupabaseFromStorage(); } catch (e) { console.error("supabase init error:", e); }
