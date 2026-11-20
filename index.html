@@ -1477,7 +1477,8 @@
 
     /* ✨ 추천: PC에서는 폼은 넓게 가로 배치, 결과 카드는 2열로 시원하게 */
     body.view-pc #tab-recommend.active { max-width: 1120px; }
-    body.view-pc #tab-recommend > .card { max-width: 720px; }
+    body.view-pc #tab-recommend > .card { max-width: none; }
+    body.view-pc #tab-recommend > .card .rec-modes { max-width: 720px; }
     body.view-pc #tab-recommend .rec-modes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     body.view-pc #rec-mode-spot,
     body.view-pc #rec-mode-route,
