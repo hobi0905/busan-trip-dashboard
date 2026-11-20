@@ -1625,7 +1625,8 @@
     .tl-extra-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; padding-top: 8px; border-top: 1px solid #f1f5f9; }
 
     /* ===== 🔎 연관검색어 (공통 자동완성) ===== */
-    .ac-wrap { position: relative; }
+    .ac-wrap { position: relative; flex: 1 1 auto; min-width: 0; }
+    .row > .ac-wrap { flex: 1 1 auto; }
     .ac-list { position: absolute; left: 0; right: 0; top: calc(100% + 2px); z-index: 60; background: #fff; border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 26px rgba(15,23,42,0.16); max-height: 236px; overflow-y: auto; display: none; }
     .ac-list.open { display: block; }
     .ac-item { display: flex; align-items: center; gap: 7px; padding: 8px 10px; font-size: 12.5px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
@@ -5124,12 +5125,17 @@
       const raw = String(q || "").trim();
       const nq = normPlaceQuery(raw);
       if (!nq) return [];
+      const tokens = raw.split(/\s+/).map(normPlaceQuery).filter(Boolean);
       let rows = KR_PLACES.map(p => ({ p, s: krPlaceScore(p, nq) })).filter(x => x.s > 0);
-      if (!rows.length && /\s/.test(raw)) {
-        // '부산 해운대'처럼 띄어 쓴 검색은 마지막 토큰으로 한 번 더
-        const last = raw.split(/\s+/).filter(Boolean).pop() || "";
-        const ln = normPlaceQuery(last);
-        if (ln) rows = KR_PLACES.map(p => ({ p, s: krPlaceScore(p, ln) - 6 })).filter(x => x.s > 0);
+      // '부산 해운대'처럼 띄어 쓴 검색은 모든 토큰이 이름·별칭·지역·설명에 있어야 한다
+      // (그래야 '롯데호텔 서울'에 엉뚱한 서울역들이 섞이지 않는다)
+      if (tokens.length > 1) {
+        rows = rows.filter(({ p }) => tokens.every(t =>
+          normPlaceQuery(p.n).includes(t) ||
+          normPlaceQuery(p.c).includes(t) ||
+          normPlaceQuery(p.s).includes(t) ||
+          (p.a || []).some(a => normPlaceQuery(a).includes(t))
+        ));
       }
       return rows.sort((a, b) => b.s - a.s || normPlaceQuery(a.p.n).length - normPlaceQuery(b.p.n).length)
         .slice(0, limit)
