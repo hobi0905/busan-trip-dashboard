@@ -300,16 +300,101 @@
     .row { display: flex; gap: 8px; margin-bottom: 8px; }
     /* 📱 iOS Safari: date·time 입력칸의 고유 최소 너비 때문에 2열 칸 밖으로 삐져나오던 문제
        — 네이티브 컨트롤 모양을 끄고(appearance:none) 모든 칸에 min-width:0(줄어들 수 있게)
-         + width/max-width 100% + border-box 를 강제한다 */
+         + width/max-width 100% + border-box 를 강제한다.
+       🎯 날짜·시간 값은 칸 안 가로·세로 정중앙에 둔다.
+         · display:block 은 iOS WebKit 버그(139848) 때문에 값을 위쪽에 붙게 만든다 → flex + align-items:center
+         · iOS 는 값을 ::-webkit-date-and-time-value 안에 그리므로, 그 상자도 폭 100%로 늘려 가운데 정렬
+         · 크롬·데스크톱 웹킷은 ::-webkit-datetime-edit 의 1px 패딩이 값을 밀어내므로 0으로 */
     input[type="date"], input[type="time"], input[type="datetime-local"], input[type="month"] {
       -webkit-appearance: none;
       appearance: none;
-      display: block;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      justify-content: center;
+      position: relative;
       width: 100%;
       min-width: 0;
       min-inline-size: 0;
       max-width: 100%;
+      height: 42px;
+      min-height: 42px;
+      padding-top: 0;
+      padding-bottom: 0;
       box-sizing: border-box;
+      text-align: center;
+      line-height: 1;
+    }
+    /* iOS WebKit — 값을 담는 상자 자체를 가운데로, 한 줄 높이를 확보해 빈 칸이 납작해지지 않게 */
+    input[type="date"]::-webkit-date-and-time-value,
+    input[type="time"]::-webkit-date-and-time-value,
+    input[type="datetime-local"]::-webkit-date-and-time-value,
+    input[type="month"]::-webkit-date-and-time-value {
+      display: -webkit-flex;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      max-height: 100%;
+      margin: 0 auto;
+      padding: 0;
+      box-sizing: border-box;
+      text-align: center;
+      line-height: 1;
+      min-height: 1.2em;
+      min-height: 1lh;
+    }
+    /* 크롬·데스크톱 웹킷 — 편집 상자의 1px 패딩과 위쪽 정렬을 없애 값이 정확히 중앙에 오게 */
+    input[type="date"]::-webkit-datetime-edit,
+    input[type="time"]::-webkit-datetime-edit,
+    input[type="datetime-local"]::-webkit-datetime-edit,
+    input[type="month"]::-webkit-datetime-edit {
+      display: -webkit-flex;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      justify-content: center;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      line-height: 1;
+    }
+    input::-webkit-datetime-edit-fields-wrapper {
+      display: -webkit-inline-box;
+      display: -webkit-inline-flex;
+      display: inline-flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+      margin: 0;
+      padding: 0;
+    }
+    input::-webkit-datetime-edit-text,
+    input::-webkit-datetime-edit-hour-field,
+    input::-webkit-datetime-edit-minute-field,
+    input::-webkit-datetime-edit-second-field,
+    input::-webkit-datetime-edit-ampm-field,
+    input::-webkit-datetime-edit-year-field,
+    input::-webkit-datetime-edit-month-field,
+    input::-webkit-datetime-edit-day-field {
+      margin: 0;
+      padding: 0 1px;
+    }
+    input::-webkit-calendar-picker-indicator {
+      margin: 0 0 0 2px;
+      padding: 0;
     }
     /* 모달 시트도 flex 아이템이라 min-content 만큼 넓어질 수 있다 — 0으로 막아 화면 밖으로 못 나가게 */
     .modal-sheet { min-width: 0; }
