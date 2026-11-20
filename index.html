@@ -3049,8 +3049,22 @@
         return same;
       }
       const tokens = alertTitleTokens(shortTopic);
-      const dup = state.bookingAlerts.find(a => a && a.datetime === spec.datetime && tokens.length
-        && alertTitleTokens(a.title).some(t => tokens.includes(t)));
+      const datePrefix = fmtMD(date).replace(/\s*\(.*\)\s*/, "");
+      const aTokens = (a) => alertTitleTokens(a && a.title);
+      const strong = tokens.filter(t => t.length >= 4);
+      const dup = state.bookingAlerts.find(a => {
+        if (!a) return false;
+        const at = aTokens(a);
+        const overlap = tokens.some(t => at.includes(t));
+        if (!overlap) return false;
+        // ① 제목이 같은 이용일로 시작하면 같은 건이다 (예: '1/31 출발 KTX 예매 오픈')
+        if (String(a.title || "").trim().startsWith(datePrefix)) return true;
+        // ② 날짜 없이 적힌 수동 알림은 긴 이름이 겹치면 같은 건으로 본다 (예: '블루라인파크 스카이캡슐')
+        if (strong.some(t => at.some(u => u.includes(t) || t.includes(u)))) return true;
+        // ③ 아니면 오픈 시각이 하루 안쪽으로 붙을 때만
+        const diff = Math.abs(new Date(a.datetime).getTime() - open.getTime());
+        return diff <= 86400000;
+      });
       if (dup) return null; // 사용자가 이미 넣어 둔 알림이면 건드리지 않는다
       const rec = { id: "auto-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), ...spec };
       state.bookingAlerts.push(rec);
@@ -3063,7 +3077,7 @@
       const text = [item.place, item.memo, (item.badges || []).join(" ")].filter(Boolean).join(" ");
       const rule = autoAlertRuleFor(text);
       if (!rule) return null;
-      const place = String(item.place || "").split("→").pop().trim();
+      const place = (String(item.place || "").replace(/\s*\([^)]*\)\s*$/, "").trim() || String(item.place || "")).slice(0, 26);
       const bits = [rule.channel, item.time ? `${item.time} ${item.place}` : item.place, item.memo].filter(Boolean);
       return upsertAutoAlert({
         ruleKey: rule.key, date: dayObj.date, time: item.time, topic: place, desc: bits.join(" · ")
