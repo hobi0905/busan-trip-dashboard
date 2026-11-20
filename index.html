@@ -8398,13 +8398,12 @@
         ? `<button class="btn btn-danger btn-sm" style="white-space:nowrap;flex-shrink:0;" onclick="deleteTrip('${id}')" title="이 여행을 삭제">🗑️ 삭제</button>`
         : `<button class="btn btn-soft btn-sm" style="white-space:nowrap;flex-shrink:0;" onclick="leaveTrip('${id}')" title="이 여행에서 나가기">🚪 나가기</button>`;
       return `
-        <div class="expense-item" style="padding:8px 0;align-items:center;">
-          <div style="flex:1;min-width:0;">
+        <div class="expense-item" style="padding:8px 0;align-items:center;gap:10px;">
+          <div ${active ? "" : `onclick="switchTrip('${id}')"`} style="flex:1;min-width:0;${active ? "" : "cursor:pointer;"}padding-right:6px;">
             <div style="font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${icon} ${title} ${active ? '<span class="tag blue">현재</span>' : ""}</div>
             <div style="font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:2px;">${roleTag}<span>${dates}</span></div>
           </div>
-          <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
-            ${active ? "" : `<button class="btn btn-soft btn-sm" onclick="switchTrip('${id}')">열기</button>`}
+          <div style="display:flex;align-items:center;flex-shrink:0;">
             ${actionBtn}
           </div>
         </div>
