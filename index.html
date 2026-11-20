@@ -5975,6 +5975,12 @@
             const base = last ? timeToMin(last.time) : null;
             let retTime = base != null ? minToTime(base + stayMinutes(last.stay) + (est?.moveMin || 0)) : (date === b.inDate ? (b.inTime || "15:00") : "21:30");
             const isCheckIn = date === b.inDate;
+            // 같은 숙소 금액을 이미 일정 카드가 보여 주고 있으면 두 번 적지 않는다
+            const manualHasAmount = Boolean(amount) && items.some(it => {
+              const cat = inferItemExpenseCategory(it);
+              return (Number(it.costTotal) || 0) > 0 && expenseMatchesBooking(it, cat, Number(it.costTotal) || 0, state.bookings);
+            });
+            const showAmount = Boolean(date === primaryDate && amount && !manualHasAmount);
             out.push({
               id: "bkvl-" + b.id + "-ret-" + date,
               virtual: true, scheduled: true, pin: "last", bookingId: b.id, autoCard: "ret",
@@ -5984,13 +5990,14 @@
               moveMode: est?.moveMode || "",
               moveMin: Number(est?.moveMin) || 0,
               moveCost: Number(est?.moveCost) || 0,
-              costTotal: (date === primaryDate && amount) ? amount : 0,
-              showCost: Boolean(date === primaryDate && amount),
+              costTotal: showAmount ? amount : 0,
+              showCost: showAmount,
               memo: [
                 isCheckIn ? `체크인 ${b.inTime || "-"}${nightsTxt ? ` · ${nightsTxt}` : ""}` : "숙소 복귀",
                 last ? `'${last.place}'에서 이동` : "",
                 b.room,
-                date === primaryDate && amount ? `숙소 예약 ${fmt(amount)} · ${b.payStatus === "paid" ? "결제 완료" : "결제 예정"}` : (b.payStatus === "paid" ? "결제 완료" : "결제 예정"),
+                showAmount ? `숙소 예약 ${fmt(amount)} · ${b.payStatus === "paid" ? "결제 완료" : "결제 예정"}` : "",
+                b.payStatus === "paid" ? "결제 완료" : "결제 예정",
                 b.memo
               ].filter(Boolean).join(" · "),
               mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(hotel)}`,
