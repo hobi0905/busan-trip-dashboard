@@ -962,9 +962,11 @@
     }
     .style-chip.active { background: var(--ocean); border-color: var(--ocean); color: #fff; }
 
-    /* 🎰 취향별 여행지 Top 3 룰렛 */
-    .rec-modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+    /* ✨ 추천 탭 모드 (3개) */
+    .rec-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
     .rec-modes .btn { padding: 8px 4px; font-size: 11.5px; line-height: 1.25; min-height: 40px; }
+
+    /* 🎰 취향별 여행지 Top 3 룰렛 — 새 여행 기본 설정 모달 안 */
     .roul-sub { font-size: 12px; color: var(--muted); margin-bottom: 10px; line-height: 1.5; }
     .roul-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
     .roul-seg-btn {
@@ -1015,6 +1017,58 @@
     .roul-cost-parts b { display: block; font-size: 10.5px; color: #334155; font-weight: 800; }
     .roul-do { display: flex; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
     .roul-do .btn { flex: 1 1 auto; }
+    .roul-block {
+      border: 1px solid var(--ocean-border); border-radius: 14px; padding: 10px 11px 11px;
+      background: linear-gradient(135deg, #f0f9ff, #eff6ff); margin: 0 0 12px;
+    }
+    .roul-block.open { box-shadow: 0 4px 14px rgba(2,132,199,.10); }
+    .roul-toggle {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      width: 100%; padding: 1px; border: none; background: none;
+      font-family: inherit; text-align: left; cursor: pointer;
+    }
+    .roul-toggle .rt-t { display: block; font-size: 13px; font-weight: 900; color: var(--ocean-dark); letter-spacing: -0.01em; line-height: 1.35; }
+    .roul-toggle .rt-s { display: block; font-size: 10.5px; font-weight: 700; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+    .roul-toggle .rt-ic {
+      flex: 0 0 auto; font-size: 10.5px; font-weight: 800; color: var(--ocean-dark);
+      background: #fff; border: 1px solid var(--ocean-border); border-radius: 999px; padding: 5px 9px; white-space: nowrap;
+    }
+    .roul-body { padding-top: 10px; margin-top: 9px; border-top: 1px dashed var(--ocean-border); }
+    .roul-block .roul-sub { font-size: 11.5px; margin-bottom: 8px; }
+    .roul-block .roul-seg { margin-bottom: 8px; }
+    .roul-block .roul-seg-btn { padding: 8px 6px; font-size: 12.5px; border-radius: 10px; }
+    .roul-block .roul-themes { gap: 5px; margin-bottom: 8px; }
+    .roul-block .roul-theme { padding: 6px 10px; font-size: 11.5px; }
+    .roul-themes-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 5px; }
+    .roul-themes-head span { font-size: 11px; font-weight: 800; color: var(--ocean-dark); }
+    .roul-themes-head b { font-weight: 700; color: var(--muted); }
+    .roul-themes-head em { font-style: normal; font-weight: 900; color: var(--ocean); }
+    .roul-themes-head button {
+      flex: 0 0 auto; border: 1px solid var(--border); background: #fff; color: var(--muted);
+      font-family: inherit; font-size: 10.5px; font-weight: 800; border-radius: 999px; padding: 3px 8px; cursor: pointer;
+    }
+    .roul-block .roul-stage { padding: 11px 9px; margin-top: 9px; }
+    .roul-block .roul-slot { font-size: 14.5px; }
+    .roul-block .roul-results { gap: 8px; margin-top: 10px; }
+    .roul-block .roul-card { padding: 11px 12px; border-radius: 12px; }
+    .roul-block .roul-name { font-size: 14.5px; }
+    .roul-block .roul-blurb { font-size: 11.5px; margin-top: 6px; }
+    .roul-block .roul-cost-box { margin-top: 8px; padding: 8px 9px; }
+    .roul-block .roul-cost-top b { font-size: 14px; }
+    .roul-block .roul-meta { font-size: 11px; }
+    .roul-note { font-size: 10.5px; color: var(--muted); line-height: 1.5; margin-top: 9px; }
+    .roul-fill-note {
+      display: none; align-items: flex-start; gap: 5px; margin-top: 9px; padding: 8px 10px;
+      border-radius: 10px; background: #ecfdf5; border: 1px solid #a7f3d0;
+      font-size: 11px; font-weight: 700; color: #166534; line-height: 1.45;
+    }
+    .roul-fill-note b { font-weight: 900; }
+    .roul-block .roul-results .roul-do .btn { font-size: 11.5px; }
+    .setup-filled { animation: setupFilled 1.6s ease; }
+    @keyframes setupFilled { 0% { background: #fef9c3; box-shadow: 0 0 0 3px rgba(250,204,21,.45); } 100% { background: #fff; box-shadow: none; } }
+    /* 설정 모달은 룰렛 결과까지 담을 수 있게 스크롤 */
+    #new-trip-setup-modal > .modal-sheet,
+    #overseas-setup-modal > .modal-sheet { max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
     /* 🧥 공항 환복 알림 */
     .airport-alert {
@@ -1478,21 +1532,18 @@
     /* ✨ 추천: PC에서는 폼은 넓게 가로 배치, 결과 카드는 2열로 시원하게 */
     body.view-pc #tab-recommend.active { max-width: 1120px; }
     body.view-pc #tab-recommend > .card { max-width: none; }
-    body.view-pc #tab-recommend > .card .rec-modes { max-width: 720px; }
-    body.view-pc #tab-recommend .rec-modes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    body.view-pc #tab-recommend > .card .rec-modes { max-width: 780px; }
+    body.view-pc #tab-recommend .rec-modes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     body.view-pc #rec-mode-spot,
     body.view-pc #rec-mode-route,
-    body.view-pc #rec-mode-must,
-    body.view-pc #rec-mode-roulette { font-size: 12.5px; padding: 9px 6px; }
+    body.view-pc #rec-mode-must { font-size: 12.5px; padding: 9px 6px; }
 
     body.view-pc #rec-spot-panel,
     body.view-pc #rec-route-panel,
-    body.view-pc #rec-must-panel,
-    body.view-pc #rec-roulette-panel { display: block; }
+    body.view-pc #rec-must-panel { display: block; }
     body.view-pc #rec-spot-panel[style*="none"],
     body.view-pc #rec-route-panel[style*="none"],
-    body.view-pc #rec-must-panel[style*="none"],
-    body.view-pc #rec-roulette-panel[style*="none"] { display: none !important; }
+    body.view-pc #rec-must-panel[style*="none"] { display: none !important; }
 
     body.view-pc #rec-spot-panel > .card,
     body.view-pc #rec-route-panel > .card,
@@ -1500,23 +1551,6 @@
       display: grid; grid-template-columns: minmax(0, 230px) minmax(0, 1fr);
       column-gap: 18px; row-gap: 9px; align-items: center;
     }
-    body.view-pc #rec-roulette-panel > .card {
-      display: grid;
-      grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
-      grid-template-areas:
-        "title title"
-        "sub sub"
-        "seg stage"
-        "themes stage"
-        "spin stage";
-      column-gap: 22px; row-gap: 9px; align-items: start;
-    }
-    body.view-pc #rec-roulette-panel > .card > .sec-title { grid-area: title; }
-    body.view-pc #rec-roulette-panel > .card > .roul-sub { grid-area: sub; }
-    body.view-pc #roul-region-seg { grid-area: seg; }
-    body.view-pc #roul-theme-chips { grid-area: themes; }
-    body.view-pc #roul-spin-btn { grid-area: spin; }
-    body.view-pc #roul-stage { grid-area: stage; margin-top: 0; align-self: stretch; justify-content: center; }
     body.view-pc .rec-wide { grid-column: 1 / -1; }
     body.view-pc #rec-spot-panel > .card > .row,
     body.view-pc #rec-route-panel > .card > .row,
@@ -1841,7 +1875,6 @@
             <button id="rec-mode-spot" class="btn btn-primary btn-sm" onclick="setRecommendMode('spot')">📍 1. 동선 맞춤</button>
             <button id="rec-mode-route" class="btn btn-soft btn-sm" onclick="setRecommendMode('route')">🗺️ 2. 신규 루트</button>
             <button id="rec-mode-must" class="btn btn-soft btn-sm" onclick="setRecommendMode('must')">📌 3. 필수 장소</button>
-            <button id="rec-mode-roulette" class="btn btn-soft btn-sm" onclick="setRecommendMode('roulette')">🎰 4. 여행지 룰렛</button>
           </div>
         </div>
 
@@ -1930,26 +1963,6 @@
             <button class="btn btn-primary rec-wide" style="width:100%;" onclick="optimizeMustVisitRoute()">🧠 휴무·동선 검증해 최적 루트 만들기</button>
           </div>
           <div id="must-results"></div>
-        </div>
-
-        <div id="rec-roulette-panel" style="display:none;">
-          <div class="card">
-            <div class="sec-title rec-wide">🎰 취향별 여행지 Top 3 룰렛</div>
-            <div class="roul-sub rec-wide">
-              국내·해외를 고르고 취향을 하나 찍어 보세요. 딱 맞는 여행지 3곳을 뽑아 <b>1인 예상 경비</b>까지 계산해 드려요. 취향을 안 고르면 룰렛이 알아서 돌려요!
-            </div>
-            <div class="roul-seg" id="roul-region-seg">
-              <button type="button" class="roul-seg-btn active" data-region="domestic" onclick="setRouletteRegion('domestic')">🇰🇷 국내</button>
-              <button type="button" class="roul-seg-btn" data-region="overseas" onclick="setRouletteRegion('overseas')">✈️ 해외</button>
-            </div>
-            <div class="roul-themes" id="roul-theme-chips"></div>
-            <button type="button" id="roul-spin-btn" class="btn btn-primary" style="width:100%;" onclick="spinRoulette()">🎰 랜덤 룰렛 돌리기</button>
-            <div class="roul-stage" id="roul-stage">
-              <div class="roul-stage-ico">🎰</div>
-              <div class="roul-slot" id="roul-slot">룰렛을 돌려 보세요<small id="roul-slot-sub">국내·해외 · 취향 선택은 자유</small></div>
-            </div>
-          </div>
-          <div id="roul-results" class="roul-results"></div>
         </div>
       </section>
 
@@ -2284,6 +2297,36 @@
         <button id="nts-close-btn" class="btn btn-sm" style="background:#f1f5f9;" onclick="closeNewTripSetupModal()">닫기</button>
       </div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">여행 이름·날짜·장소·인원수를 정하면 바로 일정을 짤 수 있어요!</div>
+      <div id="nts-roul-slot">
+        <div id="roul-block" class="roul-block" style="display:none;">
+          <button type="button" class="roul-toggle" id="roul-toggle-btn" aria-controls="roul-body" aria-expanded="false" onclick="toggleRouletteBox()">
+            <span>
+              <span class="rt-t">🎰 어디로 갈지 못 정했다면? 여행지 룰렛 Top 3</span>
+              <span class="rt-s">취향 여러 개 골라도 OK · 갈 만한 곳 3곳 + 1인 예상 경비</span>
+            </span>
+            <span class="rt-ic" id="roul-toggle-ic">펼치기 ▾</span>
+          </button>
+          <div class="roul-fill-note" id="roul-fill-note"></div>
+          <div class="roul-body" id="roul-body" style="display:none;">
+            <div class="roul-sub">취향을 하나만 골라도, 여러 개 골라도 돼요. 고른 취향과 잘 맞는 여행지만 골라 <b>1인 예상 경비</b>까지 보여 드려요. 하나도 안 고르면 알아서 돌려요!</div>
+            <div class="roul-seg" id="roul-region-seg">
+              <button type="button" class="roul-seg-btn active" data-region="domestic" onclick="setRouletteRegion('domestic')">🇰🇷 국내</button>
+              <button type="button" class="roul-seg-btn" data-region="overseas" onclick="setRouletteRegion('overseas')">✈️ 해외</button>
+            </div>
+            <div class="roul-themes-head">
+              <span>취향 선택 <b>(여러 개 고를 수 있어요)</b> <em id="roul-theme-count"></em></span>
+              <button type="button" id="roul-theme-clear" onclick="clearRouletteThemes()" style="display:none;">선택 해제</button>
+            </div>
+            <div class="roul-themes" id="roul-theme-chips"></div>
+            <button type="button" id="roul-spin-btn" class="btn btn-primary" style="width:100%;" onclick="spinRoulette()">🎰 랜덤 룰렛 돌리기</button>
+            <div class="roul-stage" id="roul-stage">
+              <div class="roul-stage-ico">🎰</div>
+              <div class="roul-slot" id="roul-slot">룰렛을 돌려 보세요<small id="roul-slot-sub">국내·해외 · 취향 선택은 자유</small></div>
+            </div>
+            <div id="roul-results" class="roul-results"></div>
+          </div>
+        </div>
+      </div>
       <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:3px;">여행 계획 이름</div>
       <div class="row"><input id="nts-title" class="input" placeholder="예: 제주 2박 3일 힐링 여행" maxlength="40" /></div>
       <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:3px;">목적지 (장소)</div>
@@ -2363,6 +2406,7 @@
         <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeOverseasSetupModal()">닫기</button>
       </div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">국가를 고르면 그 나라의 필수 비자·입국·통신·어댑터 준비물이 체크리스트에 바로 들어갑니다.</div>
+      <div id="os-roul-slot"></div>
       <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:4px;">어느 나라로 가나요?</div>
       <div id="os-country-chips" class="country-chips" style="margin-bottom:8px;"></div>
       <div class="row" id="os-custom-row" style="display:none;">
@@ -9619,6 +9663,7 @@
       document.getElementById("os-travelers").value = "2";
       document.getElementById("os-country-custom").value = "";
       renderOverseasPreview();
+      prepareRouletteForSetup("overseas");
       document.getElementById("overseas-setup-modal").classList.add("open");
     }
     function closeOverseasSetupModal() {
@@ -10781,6 +10826,7 @@
       document.getElementById("nts-end").value = d3;
       document.getElementById("nts-travelers").value = "2";
       document.getElementById("nts-close-btn").style.display = forced ? "none" : "inline-flex";
+      prepareRouletteForSetup("domestic");
       document.getElementById("new-trip-setup-modal").classList.add("open");
     }
     function closeNewTripSetupModal() {
@@ -10871,16 +10917,13 @@
     }
 
     function setRecommendMode(mode) {
-      const isSpot = mode === "spot", isRoute = mode === "route", isMust = mode === "must", isRoul = mode === "roulette";
+      const isSpot = mode === "spot", isRoute = mode === "route", isMust = mode === "must";
       document.getElementById("rec-mode-spot").className = `btn btn-sm ${isSpot ? "btn-primary" : "btn-soft"}`;
       document.getElementById("rec-mode-route").className = `btn btn-sm ${isRoute ? "btn-primary" : "btn-soft"}`;
       document.getElementById("rec-mode-must").className = `btn btn-sm ${isMust ? "btn-primary" : "btn-soft"}`;
-      document.getElementById("rec-mode-roulette").className = `btn btn-sm ${isRoul ? "btn-primary" : "btn-soft"}`;
       document.getElementById("rec-spot-panel").style.display = isSpot ? "" : "none";
       document.getElementById("rec-route-panel").style.display = isRoute ? "" : "none";
       document.getElementById("rec-must-panel").style.display = isMust ? "" : "none";
-      document.getElementById("rec-roulette-panel").style.display = isRoul ? "" : "none";
-      if (isRoul) renderRouletteUI();
       if (isRoute) {
         const rs = document.getElementById("route-start"), re = document.getElementById("route-end");
         if (!rs.value) rs.value = state.meta?.startDate || "2027-01-31";
@@ -11026,11 +11069,22 @@
     };
 
     let roulRegion = "domestic";
-    let roulTheme = "";
+    let roulThemes = [];   // 취향 복수 선택
+    let roulMount = "nts";   // 룰렛 블록이 지금 어느 설정 모달에 붙어 있는지 (nts = 국내, os = 해외)
+    let roulOpen = false;
     let roulSpinning = false;
     let roulResults = [];
 
     function roulThemeMeta(key) { return ROULETTE_THEMES.find(t => t.key === key) || null; }
+
+    // 취향은 한 개(문자열)도 여러 개(배열)도 받는다
+    function rouletteThemeKeys(theme) {
+      if (Array.isArray(theme)) return theme.filter(k => !!k);
+      return theme ? [theme] : [];
+    }
+    function rouletteMatchCount(d, theme) {
+      return rouletteThemeKeys(theme).filter(k => (d.themes || []).includes(k)).length;
+    }
 
     function rouletteCost(d) {
       const nights = Math.max(1, Number(d.nights) || 1);
@@ -11046,17 +11100,32 @@
     }
 
     function rouletteFit(d, theme) {
-      if (!theme) return Math.min(96, 74 + Math.round((d.hot || 50) / 5));
-      const i = (d.themes || []).indexOf(theme);
-      return i === 0 ? 96 : i === 1 ? 88 : i === 2 ? 79 : 66;
+      const keys = rouletteThemeKeys(theme);
+      if (!keys.length) return Math.min(96, 74 + Math.round((d.hot || 50) / 5));
+      let best = 0;
+      keys.forEach(k => {
+        const i = (d.themes || []).indexOf(k);
+        const v = i === 0 ? 96 : i === 1 ? 88 : i === 2 ? 79 : 0;
+        if (v > best) best = v;
+      });
+      const matched = rouletteMatchCount(d, keys);
+      if (!matched) return 66;
+      // 겹치는 취향이 많을수록 적합도가 올라간다
+      return Math.min(99, best + (matched - 1) * 3);
     }
 
     function renderRouletteThemes() {
       const host = document.getElementById("roul-theme-chips");
       if (!host) return;
-      host.innerHTML = ROULETTE_THEMES.map(t =>
-        `<button type="button" class="roul-theme ${roulTheme === t.key ? "active" : ""}" onclick="setRouletteTheme('${t.key}')">${t.emoji} ${t.label}</button>`
-      ).join("");
+      const picked = roulThemes.slice();
+      host.innerHTML = ROULETTE_THEMES.map(t => {
+        const on = picked.includes(t.key);
+        return `<button type="button" class="roul-theme ${on ? "active" : ""}" aria-pressed="${on ? "true" : "false"}" onclick="setRouletteTheme('${t.key}')">${on ? "✓ " : ""}${t.emoji} ${t.label}</button>`;
+      }).join("");
+      const clear = document.getElementById("roul-theme-clear");
+      if (clear) clear.style.display = picked.length ? "inline-flex" : "none";
+      const cnt = document.getElementById("roul-theme-count");
+      if (cnt) cnt.textContent = picked.length ? `${picked.length}개 선택` : "";
     }
 
     function renderRouletteRegion() {
@@ -11070,7 +11139,51 @@
     function renderRouletteUI() {
       renderRouletteRegion();
       renderRouletteThemes();
-      if (roulResults.length) renderRouletteResults(roulResults, roulTheme, true);
+      if (roulResults.length) renderRouletteResults(roulResults, roulThemes, true);
+    }
+
+    // 룰렛 블록을 국내/해외 설정 모달의 빈자리로 옮겨 붙인다 (id가 겹치지 않게 한 벌만 쓴다)
+    function mountRouletteBlock(target) {
+      roulMount = target === "overseas" ? "os" : "nts";
+      const block = document.getElementById("roul-block");
+      const slot = document.getElementById(roulMount === "os" ? "os-roul-slot" : "nts-roul-slot");
+      if (block && slot && block.parentElement !== slot) slot.appendChild(block);
+      if (block) block.style.display = "";
+      return roulMount;
+    }
+
+    // 설정 모달을 열 때마다: 직전에 고른 국내/해외를 그대로 반영해 접힌 상태로 시작
+    function prepareRouletteForSetup(target) {
+      mountRouletteBlock(target);
+      roulRegion = roulMount === "os" ? "overseas" : "domestic";
+      roulThemes = [];
+      roulResults = [];
+      roulSpinning = false;
+      const host = document.getElementById("roul-results");
+      if (host) host.innerHTML = "";
+      const stage = document.getElementById("roul-stage");
+      if (stage) stage.classList.remove("on");
+      const slot = document.getElementById("roul-slot");
+      if (slot) slot.innerHTML = `룰렛을 돌려 보세요<small id="roul-slot-sub">${roulRegion === "overseas" ? "해외" : "국내"} · 취향 선택은 자유</small>`;
+      const note = document.getElementById("roul-fill-note");
+      if (note) { note.style.display = "none"; note.innerHTML = ""; }
+      const btn = document.getElementById("roul-spin-btn");
+      if (btn) { btn.disabled = false; btn.textContent = roulRegion === "overseas" ? "🎰 해외 룰렛 돌리기" : "🎰 국내 룰렛 돌리기"; }
+      toggleRouletteBox(false);
+      renderRouletteUI();
+    }
+
+    function toggleRouletteBox(force) {
+      roulOpen = typeof force === "boolean" ? force : !roulOpen;
+      const body = document.getElementById("roul-body");
+      if (body) body.style.display = roulOpen ? "" : "none";
+      const tbtn = document.getElementById("roul-toggle-btn");
+      if (tbtn) tbtn.setAttribute("aria-expanded", roulOpen ? "true" : "false");
+      const ic = document.getElementById("roul-toggle-ic");
+      if (ic) ic.textContent = roulOpen ? "접기 ▴" : "펼치기 ▾";
+      const block = document.getElementById("roul-block");
+      if (block) block.classList.toggle("open", roulOpen);
+      if (roulOpen) renderRouletteUI();
     }
 
     function setRouletteRegion(region) {
@@ -11086,16 +11199,33 @@
     }
 
     function setRouletteTheme(key) {
-      roulTheme = roulTheme === key ? "" : key;
+      const i = roulThemes.indexOf(key);
+      if (i >= 0) roulThemes.splice(i, 1);
+      else roulThemes.push(key);
       renderRouletteThemes();
     }
 
-    // 가중치 뽑기: 취향에 맞는 곳이 잘 나오도록 점수² 가중치로 3곳 추첨
+    function clearRouletteThemes() {
+      roulThemes = [];
+      renderRouletteThemes();
+    }
+
+    // 가중치 뽑기: 선택한 취향과 겹치는 취향이 많을수록 잘 나오도록 점수² 가중치로 3곳 추첨
     function pickRouletteTop3(pool, theme) {
+      const keys = rouletteThemeKeys(theme);
+      const scoreOf = (d) => {
+        if (!keys.length) return 5;
+        let s = 0;
+        keys.forEach(k => {
+          const i = (d.themes || []).indexOf(k);
+          s += i === 0 ? 10 : i === 1 ? 6 : i === 2 ? 3 : 0;
+        });
+        return s; // 여러 취향과 겹칠수록 커진다
+      };
       const bag = pool.map(d => {
-        const i = theme ? (d.themes || []).indexOf(theme) : 0;
-        const fit = theme ? (i === 0 ? 10 : i === 1 ? 6 : i === 2 ? 3 : 1) : 5;
-        return { d, w: fit * fit * (0.6 + (Number(d.hot) || 50) / 100) };
+        const s = scoreOf(d);
+        const w = keys.length && s === 0 ? 0.3 : s * s * (0.6 + (Number(d.hot) || 50) / 100);
+        return { d, w };
       });
       const picked = [];
       const left = bag.slice();
@@ -11106,17 +11236,24 @@
         for (let i = 0; i < left.length; i++) { r -= left[i].w; if (r <= 0) { idx = i; break; } idx = i; }
         picked.push(left.splice(idx, 1)[0].d);
       }
-      // 뽑힌 3곳의 순위는 취향 적합도로 정리
-      return picked.sort((a, b) => rouletteFit(b, theme) - rouletteFit(a, theme) || (b.hot || 0) - (a.hot || 0)).slice(0, 3);
+      // 뽑힌 3곳의 순위: 겹치는 취향 개수 → 적합도 → 인기 순
+      return picked.sort((a, b) =>
+        rouletteMatchCount(b, keys) - rouletteMatchCount(a, keys) ||
+        rouletteFit(b, keys) - rouletteFit(a, keys) ||
+        (b.hot || 0) - (a.hot || 0)
+      ).slice(0, 3);
     }
 
     function spinRoulette() {
       if (roulSpinning) return;
       const pool = (ROULETTE_SPOTS[roulRegion] || []).slice();
       if (!pool.length) return;
-      const pickedTheme = roulTheme || ROULETTE_THEMES[Math.floor(Math.random() * ROULETTE_THEMES.length)].key;
-      let cand = roulTheme ? pool.filter(d => (d.themes || []).includes(roulTheme)) : pool;
+      const keys = roulThemes.slice();
+      let cand = keys.length ? pool.filter(d => keys.some(k => (d.themes || []).includes(k))) : pool;
       if (!cand.length) cand = pool;
+      const label = keys.length
+        ? keys.map(k => { const m = roulThemeMeta(k); return m ? m.emoji + " " + m.label : ""; }).filter(Boolean).join(" · ")
+        : "랜덤 취향";
       roulSpinning = true;
       const btn = document.getElementById("roul-spin-btn");
       if (btn) { btn.disabled = true; btn.textContent = "🎰 룰렛 도는 중..."; }
@@ -11124,22 +11261,21 @@
       const slot = document.getElementById("roul-slot");
       if (stage) stage.classList.add("on");
       if (slot) slot.classList.add("spinning");
-      const t = roulThemeMeta(pickedTheme);
       let tick = 0;
       const ticks = 18;
       const timer = setInterval(() => {
         tick++;
         const d = pool[Math.floor(Math.random() * pool.length)];
-        if (slot) slot.innerHTML = `${d.emoji} ${d.name}<small>${t ? t.emoji + " " + t.label : "취향 랜덤"} 룰렛 도는 중...</small>`;
+        if (slot) slot.innerHTML = `${d.emoji} ${d.name}<small>${label} 룰렛 도는 중...</small>`;
         if (tick < ticks) return;
         clearInterval(timer);
-        roulResults = pickRouletteTop3(cand, roulTheme);
+        roulResults = pickRouletteTop3(cand, keys);
         if (slot) {
           slot.classList.remove("spinning");
           const top = roulResults[0];
-          slot.innerHTML = top ? `<b>${top.emoji} ${top.name}</b>이(가) 1순위!<small>${roulRegion === "overseas" ? "해외" : "국내"} · ${roulThemeMeta(roulTheme) ? roulThemeMeta(roulTheme).emoji + " " + roulThemeMeta(roulTheme).label : "랜덤 취향"} · Top 3 도착</small>` : "결과 없음";
+          slot.innerHTML = top ? `<b>${top.emoji} ${top.name}</b>이(가) 1순위!<small>${roulRegion === "overseas" ? "해외" : "국내"} · ${label} · Top 3 도착</small>` : "결과 없음";
         }
-        renderRouletteResults(roulResults, roulTheme);
+        renderRouletteResults(roulResults, keys);
         roulSpinning = false;
         if (btn) { btn.disabled = false; btn.textContent = roulRegion === "overseas" ? "🎰 해외 룰렛 다시 돌리기" : "🎰 국내 룰렛 다시 돌리기"; }
       }, 80);
@@ -11150,14 +11286,20 @@
       if (!host) return;
       if (!picks || !picks.length) { host.innerHTML = ""; return; }
       const rank = ["🥇", "🥈", "🥉"];
+      const keys = rouletteThemeKeys(theme);
       host.innerHTML = picks.map((d, i) => {
         const { parts, total, nights, days } = rouletteCost(d);
         const fit = rouletteFit(d, theme);
+        const matched = rouletteMatchCount(d, keys);
         const regionLabel = d.country ? `해외 · ${d.country === "기타" ? (d.countryCustom || "해외") : d.country}` : "국내";
         const tags = (d.themes || []).slice(0, 3).map(k => {
           const t = roulThemeMeta(k);
-          return t ? `<span class="roul-tag">${t.emoji} ${t.label}</span>` : "";
+          if (!t) return "";
+          return `<span class="roul-tag${keys.includes(k) ? " fit" : ""}">${t.emoji} ${t.label}</span>`;
         }).join("");
+        const fitTag = keys.length
+          ? `<span class="roul-tag fit">취향 적합 ${fit}%${keys.length > 1 ? ` · ${matched}/${keys.length} 겹침` : ""}</span>`
+          : `<span class="roul-tag fit">인기 지수 ${fit}%</span>`;
         return `
           <div class="roul-card ${i === 0 ? "top1" : ""}">
             <div class="roul-card-head">
@@ -11167,7 +11309,7 @@
                 <div class="roul-meta">${regionLabel} · ${nights}박 ${days}일</div>
               </div>
             </div>
-            <div class="roul-tags"><span class="roul-tag fit">${theme ? "취향 적합" : "인기 지수"} ${fit}%</span>${tags}</div>
+            <div class="roul-tags">${fitTag}${tags}</div>
             <div class="roul-blurb">${d.blurb}</div>
             <div class="roul-cost-box">
               <div class="roul-cost-top"><span>1인 예상 경비 · ${nights}박 ${days}일</span><b>${fmt(total)}</b></div>
@@ -11180,7 +11322,7 @@
             </div>
             <div class="roul-meta" style="margin-top:8px;">🚉 ${d.transit}<br>🗓️ ${d.best}</div>
             <div class="roul-do">
-              <button class="btn btn-primary btn-sm" onclick="startTripFromRoulette('${d.country ? "overseas" : "domestic"}','${d.name}')">✈️ 이 여행지로 새 여행 만들기</button>
+              <button class="btn btn-primary btn-sm" onclick="fillTripSetupFromRoulette('${d.country ? "overseas" : "domestic"}','${String(d.name).replace(/'/g, "\\'")}')">🎯 이 여행지로 채우기</button>
               <a class="btn btn-soft btn-sm" style="text-decoration:none;" href="https://map.naver.com/p/search/${encodeURIComponent(d.name)}" target="_blank" rel="noopener">🗺️ 지도</a>
             </div>
           </div>`;
@@ -11188,46 +11330,87 @@
     }
 
     // 뽑힌 여행지 → 새 여행 개설 화면에 미리 채워 둔다 (최종 개설은 사용자가 버튼으로)
-    function startTripFromRoulette(region, name) {
-      const d = (ROULETTE_SPOTS[region] || []).find(x => x.name === name);
-      if (!d) return;
+    // 추천 여행지 → 설정 모달 입력 칸에 채운다 (모달은 닫지 않는다)
+    function rouletteTripPlan(d) {
       const nights = Math.max(1, Number(d.nights) || 1);
       const base = new Date();
       base.setHours(0, 0, 0, 0);
       base.setDate(base.getDate() + 21);
       while (base.getDay() !== 6) base.setDate(base.getDate() + 1);
       const end = new Date(base.getFullYear(), base.getMonth(), base.getDate() + nights);
-      const startStr = toLocalIso(base), endStr = toLocalIso(end);
-      const title = `${d.name} ${nights}박 ${nights + 1}일`;
-      const travelers = String(Math.max(1, Number(state?.meta?.travelers) || 2));
+      return {
+        nights,
+        days: nights + 1,
+        startStr: toLocalIso(base),
+        endStr: toLocalIso(end),
+        title: `${d.name} ${nights}박 ${nights + 1}일`
+      };
+    }
+
+    function flashSetupFields(ids) {
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.remove("setup-filled");
+        void el.offsetWidth;
+        el.classList.add("setup-filled");
+        setTimeout(() => el.classList.remove("setup-filled"), 1700);
+      });
+    }
+
+    function fillTripSetupFromRoulette(region, name) {
+      const r = region === "overseas" ? "overseas" : "domestic";
+      const d = (ROULETTE_SPOTS[r] || []).find(x => x.name === name);
+      if (!d) return;
+      const plan = rouletteTripPlan(d);
+      const switched = roulMount !== (r === "overseas" ? "os" : "nts");
       try {
-        if (region === "overseas") {
-          openOverseasSetupModal();
+        if (r === "overseas") {
+          if (switched) {
+            document.getElementById("new-trip-setup-modal").classList.remove("open");
+            openOverseasSetupModal();
+          }
           if (typeof selectOverseasCountry === "function") selectOverseasCountry(d.country || "기타");
           const custom = document.getElementById("os-country-custom");
           if (custom) custom.value = d.country === "기타" ? (d.countryCustom || "") : "";
-          document.getElementById("os-title").value = title;
-          document.getElementById("os-start").value = startStr;
-          document.getElementById("os-end").value = endStr;
-          document.getElementById("os-travelers").value = travelers;
+          if (custom && d.country === "기타") custom.dispatchEvent(new Event("input", { bubbles: true }));
+          document.getElementById("os-title").value = plan.title;
+          document.getElementById("os-start").value = plan.startStr;
+          document.getElementById("os-end").value = plan.endStr;
           const om = document.getElementById("os-out-mode"), im = document.getElementById("os-in-mode");
           if (om) om.value = "비행기";
           if (im) im.value = "비행기";
-          if (custom && d.country === "기타") custom.dispatchEvent(new Event("input", { bubbles: true }));
           try { renderOverseasPreview(); } catch (e) {}
+          flashSetupFields(["os-title", "os-start", "os-end"]);
         } else {
-          openNewTripSetupModal();
-          document.getElementById("nts-title").value = title;
+          if (switched) {
+            document.getElementById("overseas-setup-modal").classList.remove("open");
+            openNewTripSetupModal(false);
+          }
+          document.getElementById("nts-title").value = plan.title;
           document.getElementById("nts-dest").value = d.name;
-          document.getElementById("nts-start").value = startStr;
-          document.getElementById("nts-end").value = endStr;
-          document.getElementById("nts-travelers").value = travelers;
+          document.getElementById("nts-start").value = plan.startStr;
+          document.getElementById("nts-end").value = plan.endStr;
           const om = document.getElementById("nts-out-mode"), im = document.getElementById("nts-in-mode");
           if (om) om.value = d.mode || "기차";
           if (im) im.value = d.mode || "기차";
+          flashSetupFields(["nts-title", "nts-dest", "nts-start", "nts-end"]);
         }
       } catch (e) { console.warn("roulette trip prefetch", e); }
+      // 같은 모달에서 채웠으면 결과를 그대로 두고, 모달을 옮겼으면 룰렛은 접어 둔다
+      if (switched) toggleRouletteBox(false);
+      else toggleRouletteBox(true);
+      const note = document.getElementById("roul-fill-note");
+      if (note) {
+        note.style.display = "flex";
+        note.innerHTML = `<span>✅</span><span><b>${d.emoji} ${d.name}</b> 추천 ${plan.nights}박 ${plan.days}일로 아래 칸을 채웠어요. 날짜·인원은 자유롭게 고쳐서 바로 시작하면 돼요.${switched ? " (해외 설정 칸으로 옮겨 채웠어요)" : ""}</span>`;
+      }
+      const anchor = document.getElementById(r === "overseas" ? "os-title" : "nts-title");
+      try { anchor?.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) {}
     }
+
+    // 예전 이름 호환
+    function startTripFromRoulette(region, name) { fillTripSetupFromRoulette(region, name); }
 
     const KNOWN_SPOT_META = {
       "이재모피자": { closed: "일", lat: 35.1558, lng: 129.0628, cat: "음식점", cost: 32000, stay: "체류 70분", desc: "전포점 추천 (일요일 전 지점 휴무 회피)" },
