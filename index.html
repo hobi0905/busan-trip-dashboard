@@ -629,6 +629,12 @@
     .vc-empty { font-size: 12.5px; color: var(--muted); padding: 12px 4px; text-align: center; }
     .vc-summary { font-size: 11.5px; color: var(--muted); margin-bottom: 8px; line-height: 1.55; }
     .vc-sec { font-size: 11.5px; font-weight: 800; color: var(--ocean-dark); margin: 12px 0 6px; }
+    /* 모달 상단 액션 바 (🔄 일정 동기화 · 🔍 실시간 혜택 조회) */
+    .vc-bar { display: flex; gap: 6px; margin-bottom: 8px; }
+    .vc-bar .btn { flex: 1 1 0; min-width: 0; font-size: 11.5px; padding: 8px 6px; white-space: nowrap; }
+    .vc-sync-line { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 800; color: var(--ocean-dark); background: var(--ocean-soft); border-radius: 999px; padding: 2px 8px; margin-top: 4px; line-height: 1.5; }
+    .vc-live-note { font-size: 10.5px; color: #7c2d12; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 9px; padding: 6px 8px; margin-bottom: 8px; line-height: 1.45; }
+    .vc-actions .btn.vc-live-btn { flex: 1 1 100%; font-weight: 800; }
 
     /* 국내 / 해외 여행 선택 (분할 카드) */
     .type-split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -1420,8 +1426,11 @@
         <div style="font-size:16px;font-weight:800;">🎭 여행 변수 체크</div>
         <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeVarModal()">닫기</button>
       </div>
+      <div class="vc-bar">
+        <button class="btn btn-soft btn-sm" id="var-sync-btn" data-default-label="🔄 일정 동기화" onclick="syncVarCheck()" title="지금 일정·예약을 다시 읽어 공휴일·축제 변수를 새로 스캔해요">🔄 일정 동기화</button>
+      </div>
       <div class="vc-summary" id="var-modal-summary"></div>
-      <div id="var-modal-list" style="max-height:64vh;overflow-y:auto;padding-right:2px;"></div>
+      <div id="var-modal-list" style="max-height:60vh;overflow-y:auto;padding-right:2px;"></div>
     </div>
   </div>
 
@@ -1432,8 +1441,13 @@
         <div style="font-size:16px;font-weight:800;">🎁 혜택 체크</div>
         <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeBenefitModal()">닫기</button>
       </div>
+      <div class="vc-bar">
+        <button class="btn btn-soft btn-sm" id="benefit-sync-btn" data-default-label="🔄 일정 동기화" onclick="syncBenefitCheck()" title="지금 일정·예약을 다시 읽어 혜택을 새로 스캔해요">🔄 일정 동기화</button>
+        <button class="btn btn-soft btn-sm" id="benefit-live-btn" onclick="openBenefitLiveTop()" title="여행지 최신 할인·프로모션을 새 창에서 검색해요">🔍 실시간 혜택 조회</button>
+      </div>
       <div class="vc-summary" id="benefit-modal-summary"></div>
-      <div id="benefit-modal-list" style="max-height:58vh;overflow-y:auto;padding-right:2px;"></div>
+      <div class="vc-live-note" id="benefit-live-note">📌 내부 할인 DB는 <b>기본 가이드</b>예요. 카드사·통신사·제휴사 이벤트는 수시로 바뀌니 <b>🔍 실시간 혜택 조회</b>로 최신 할인을 바로 확인하세요.</div>
+      <div id="benefit-modal-list" style="max-height:52vh;overflow-y:auto;padding-right:2px;"></div>
       <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="applyAllBenefits()">🎁 전체 일정에 혜택 반영</button>
     </div>
   </div>
@@ -1609,14 +1623,14 @@
         <div class="hf-ico">🎭</div>
         <div>
           <div class="hf-title">변수 체크</div>
-          <div class="hf-desc">여행 날짜의 <b>공휴일·연휴·지역 축제·혼잡 시기</b>를 공휴일 API와 시즌 캘린더로 확인해요. 붐비는 날·쉬는 날이 겹치면 <b>🎭 혼잡 대비</b> 배지와 메모, 체크리스트 항목으로 알려 드려요.</div>
+          <div class="hf-desc">여행 날짜의 <b>공휴일·연휴·지역 축제·혼잡 시기</b>를 공휴일 API와 시즌 캘린더로 확인해요. 붐비는 날·쉬는 날이 겹치면 <b>🎭 혼잡 대비</b> 배지와 메모, 체크리스트 항목으로 알려 드려요. 팝업 안 <b>🔄 일정 동기화</b>를 누르면 그때 일정·예약으로 다시 스캔해요.</div>
         </div>
       </div>
       <div class="help-feature">
         <div class="hf-ico">🎁</div>
         <div>
           <div class="hf-title">혜택 체크</div>
-          <div class="hf-desc">일정의 교통·관광 항목에 쓸 수 있는 <b>할인·패스·제휴 혜택</b>을 찾아요. 해당되는 곳에는 <b>🎁 할인 가능</b> 배지와 짧은 팁을 붙여 주고, 결제 전에 챙길 체크리스트도 함께 만들어요.</div>
+          <div class="hf-desc">일정·예약의 교통·숙소·관광 항목에 쓸 수 있는 <b>할인·패스·제휴 혜택</b>을 찾아요. 해당되는 곳에는 <b>🎁 할인 가능</b> 배지와 짧은 팁을 붙여 주고, 결제 전에 챙길 체크리스트도 함께 만들어요. 내부 DB는 기본 가이드라서, <b>🔍 실시간 혜택 조회</b>로 최신 프로모션을 바로 확인할 수 있고 <b>🔄 일정 동기화</b>로 다시 스캔할 수 있어요.</div>
         </div>
       </div>
       <div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:8px;">세 기능 모두 공개 정보를 바탕으로 한 추정이라, 결제·방문 전에 한 번 더 확인하면 가장 정확해요. 내가 만든 일정만 바꾸고, 읽기 전용 권한에서는 실행되지 않아요.</div>
@@ -9082,11 +9096,15 @@
 
     let varFindings = [];
     let varCheckedAtLabel = "";
+    let varSyncInfo = null;
 
-    async function checkTripVariables() {
-      return runSoftButton("btn-var-check", "확인 중...", async () => {
+    // 최신 state.days · state.bookings · state.meta를 다시 읽어 변수(공휴일 API + 시즌 축제)를 스캔
+    async function scanTripVariables() {
         const dates = tripDateList();
-        if (!dates.length) return alert("여행 날짜가 없어서 변수를 확인할 수 없어요.");
+        if (!dates.length) return null;
+        const bookingList = (state.bookings || []).filter(Boolean);
+        const dayCount = (state.days || []).length;
+        const bookingCount = bookingList.length;
         const years = [...new Set(dates.map(d => d.slice(0, 4)))];
         const codes = tripCountryCodes();
         let apiOk = 0, apiFail = 0;
@@ -9113,6 +9131,10 @@
         const seen = {};
         const push = (f) => { if (!seen[f.key]) { seen[f.key] = 1; out.push(f); } };
         const ccLabel = (cc) => codes.length > 1 || cc !== "KR" ? ` (${cc})` : "";
+        // 예약 내역(state.bookings)에서 그 날짜에 잡힌 일정 — 공휴일·혼잡 안내에 같이 붙인다
+        const bookingDayInfo = (iso) => bookingList
+          .filter(b => [b.depDate, b.arrDate, b.inDate, b.outDate].filter(Boolean).includes(iso))
+          .map(b => `${b.type === "hotel" ? "🏨" : "🚆"} ${String(b.name || b.mode || "예약").trim()}`);
 
         holidays.forEach(h => {
           const iso = String(h.date || "").slice(0, 10);
@@ -9125,11 +9147,14 @@
             days: [iso],
             title: `${h.localName || h.name}${ccLabel(h.cc)} 공휴일`,
             desc: `${iso}은(는) 공휴일이라 관광지·맛집 대기가 길고 일부 매장이 휴무해요. 교통도 평일보다 붐빕니다.`,
-            tip: "오픈 직후 방문하고, 예약 가능한 곳은 미리 잡으세요. 휴무 공지를 확인."
+            tip: "오픈 직후 방문하고, 예약 가능한 곳은 미리 잡으세요. 휴무 공지를 확인." +
+              (bookingDayInfo(iso).length ? ` 이 날 예약: ${bookingDayInfo(iso).join(", ")} — 평소보다 여유 있게 움직이세요.` : "")
           });
         });
 
-        const destBlob = [state.meta?.destination, state.meta?.country, state.meta?.title, ...(state.days || []).map(d => d.area || d.subtitle || "")].join(" ");
+        const destBlob = [state.meta?.destination, state.meta?.country, state.meta?.title,
+          ...(state.days || []).map(d => d.area || d.subtitle || ""),
+          ...bookingList.map(b => `${b.name || ""} ${b.from || ""} ${b.to || ""}`)].join(" ");
         SEASON_EVENTS.forEach(ev => {
           if (!codes.includes(ev.region)) return;
           if (ev.dest && !ev.dest.test(destBlob)) return;
@@ -9185,13 +9210,52 @@
         }
 
         out.sort((a, b) => (Number(a.near) - Number(b.near)) || (a.kind === b.kind ? 0 : a.kind === "festival" ? -1 : 1));
-        varFindings = out;
-        varCheckedAtLabel = fmtStamp(new Date().toISOString());
         const apiNote = apiFail && !apiOk
           ? `공휴일 API 응답 없음 — 내장 공휴일 표 사용`
-          : `공휴일 ${codes.join("/")} ${years.join(",")}년 · API ${apiOk}건 확인${apiFail ? ` (실패 ${apiFail})` : ""}`;
-        renderVarModal(apiNote, dates);
+          : `공휴일 ${codes.join("/")} ${years.join(", ")}년 · API ${apiOk}건 확인${apiFail ? ` (실패 ${apiFail})` : ""}`;
+        return { dates, findings: out, apiNote, dayCount, bookingCount };
+    }
+
+    function applyVarScan(res) {
+      varFindings = res.findings;
+      varSyncInfo = { at: new Date().toISOString(), count: res.findings.length, days: res.dayCount, bookings: res.bookingCount };
+      varCheckedAtLabel = fmtStamp(varSyncInfo.at);
+    }
+
+    function flashSyncBox(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.add("app-sync-flash");
+      setTimeout(() => el.classList.remove("app-sync-flash"), 1000);
+    }
+
+    async function checkTripVariables() {
+      return runSoftButton("btn-var-check", "확인 중...", async () => {
+        const res = await scanTripVariables();
+        if (!res) return alert("여행 날짜가 없어서 변수를 확인할 수 없어요.");
+        applyVarScan(res);
+        renderVarModal(res.apiNote, res.dates);
       });
+    }
+
+    // 모달 안 🔄 일정 동기화 — 지금 일정·예약으로 다시 스캔하고 상태 줄에 시각·건수 표시
+    async function syncVarCheck() {
+      const btn = document.getElementById("var-sync-btn");
+      if (btn && btn.disabled) return;
+      const def = (btn && btn.dataset.defaultLabel) || "🔄 일정 동기화";
+      if (btn) { btn.disabled = true; btn.textContent = "⏳ 동기화 중"; }
+      try {
+        const res = await scanTripVariables();
+        if (!res) { alert("여행 날짜가 없어서 변수를 동기화할 수 없어요. 일정에 날짜를 먼저 넣어 두세요."); return; }
+        applyVarScan(res);
+        renderVarModal(res.apiNote, res.dates);
+        flashSyncBox("var-modal-list");
+      } catch (e) {
+        console.error("var sync", e);
+        alert("변수 동기화 중 문제가 생겼어요. 잠시 후 다시 시도해 주세요.");
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = def; }
+      }
     }
 
     function renderVarModal(apiNote, dates) {
@@ -9203,7 +9267,7 @@
       const dest = String(state.meta?.destination || "").split("(")[0].trim();
       if (sum) {
         sum.innerHTML = `📅 ${fmtD(dates[0])}~${fmtD(dates[dates.length - 1])} · ${escapeAttr(dest)}<br>${escapeAttr(apiNote)}` +
-          (varCheckedAtLabel ? `<br><span style="font-size:10.5px;">체크 시각 ${varCheckedAtLabel}</span>` : "");
+          (varSyncInfo ? `<br><span class="vc-sync-line">🔄 일정 동기화 ${appSyncStamp(varSyncInfo.at)} · 변수 ${varSyncInfo.count}건 · 일정 ${varSyncInfo.days}일·예약 ${varSyncInfo.bookings}건 기준</span>` : (varCheckedAtLabel ? `<br><span style="font-size:10.5px;">체크 시각 ${varCheckedAtLabel}</span>` : ""));
       }
       if (!list) return;
       const dayOptions = (state.days || []).map(d => `<option value="${d.day}">${escapeAttr(d.label || d.day + "일차")}${d.date ? ` (${fmtD(d.date)})` : ""}</option>`).join("");
@@ -9368,9 +9432,10 @@
     ];
 
     let benefitFindings = [];
+    let benefitSyncInfo = null;
 
-    function checkTripBenefits() {
-      return runSoftButton("btn-benefit-check", "확인 중...", async () => {
+    // 최신 state.days · state.bookings · state.meta를 다시 읽어 혜택을 스캔
+    function scanTripBenefits() {
         const cc = (tripCountryCodes()[0] || "KR");
         const overseas = state.meta?.tripType === "overseas";
         const out = [];
@@ -9398,10 +9463,126 @@
             });
           });
         }));
+
+        // 예약 내역(state.bookings) — 이미 잡아 둔 숙소·교통편 결제 금액 기준
+        const bookingList = (state.bookings || []).filter(Boolean);
+        bookingList.forEach(b => {
+          const price = Number(b.price) || 0;
+          if (price < 10000) return;
+          const nm = String(b.name || b.mode || "예약").trim();
+          const hay = `${b.mode || ""} ${nm}`;
+          const ruleId = b.type === "hotel" ? "hotel"
+            : (/KTX|SRT|코레일|ITX|무궁화|새마을/.test(hay) ? "ktx" : "");
+          if (!ruleId) return;
+          const rule = BENEFIT_RULES.find(r => r.id === ruleId);
+          if (!rule) return;
+          if (rule.scope === "KR" && cc !== "KR") return;
+          const low = Math.round(price * rule.low), high = Math.round(price * rule.high);
+          if (!low && !high) return;
+          // 일정 항목에서 이미 같은 혜택을 찾았으면 예약 내역 카드는 건너뛴다
+          const dup = out.some(f => !f.fromBooking && f.ruleId === rule.id && f.place &&
+            (f.place.includes(nm) || nm.includes(f.place)));
+          if (dup) return;
+          out.push({
+            key: `${rule.id}|booking|${b.id}`,
+            ruleId: rule.id, day: null,
+            dayLabel: b.type === "hotel" ? "예약 · 숙소" : "예약 · 교통",
+            itemId: null, bookingId: b.id, place: nm,
+            title: rule.title, tip: rule.tip, where: rule.where,
+            low, high, saveText: `${fmt(low)}~${fmt(high)}`,
+            applied: false, fromBooking: true
+          });
+        });
         out.sort((a, b) => (Number(a.applied) - Number(b.applied)) || (b.high - a.high));
-        benefitFindings = out;
-        renderBenefitModal(cc, overseas);
+        return { cc, overseas, findings: out, dayCount: (state.days || []).length, bookingCount: bookingList.length };
+    }
+
+    function applyBenefitScan(res) {
+      benefitFindings = res.findings;
+      benefitSyncInfo = { at: new Date().toISOString(), days: res.dayCount, bookings: res.bookingCount };
+    }
+
+    function checkTripBenefits() {
+      return runSoftButton("btn-benefit-check", "확인 중...", async () => {
+        const res = scanTripBenefits();
+        applyBenefitScan(res);
+        renderBenefitModal(res.cc, res.overseas);
       });
+    }
+
+    // 모달 안 🔄 일정 동기화 — 지금 일정·예약으로 다시 스캔하고 상태 줄에 시각·건수 표시
+    async function syncBenefitCheck() {
+      const btn = document.getElementById("benefit-sync-btn");
+      if (btn && btn.disabled) return;
+      const def = (btn && btn.dataset.defaultLabel) || "🔄 일정 동기화";
+      if (btn) { btn.disabled = true; btn.textContent = "⏳ 동기화 중"; }
+      try {
+        const res = scanTripBenefits();
+        applyBenefitScan(res);
+        renderBenefitModal(res.cc, res.overseas);
+        flashSyncBox("benefit-modal-list");
+      } catch (e) {
+        console.error("benefit sync", e);
+        alert("혜택 동기화 중 문제가 생겼어요. 잠시 후 다시 시도해 주세요.");
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = def; }
+      }
+    }
+
+    /* 🔍 실시간 혜택 조회 — 정적 앱에서 카드사·제휴사 API를 직접 부를 수 없어
+       네이버 검색으로 최신 할인·프로모션 페이지를 새 창에 띄운다 */
+    function openExternalTab(url) {
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    function naverSearchUrl(q) {
+      return "https://search.naver.com/search.naver?query=" + encodeURIComponent(q);
+    }
+
+    function benefitDestLabel() {
+      const meta = state.meta || {};
+      const raw = String(meta.destination || meta.title || "").split("(")[0].trim();
+      if (raw) return raw;
+      return meta.tripType === "overseas" ? String(meta.country || "여행지") : "국내 여행지";
+    }
+
+    function openBenefitLiveTop() {
+      const dest = benefitDestLabel();
+      const overseas = state.meta?.tripType === "overseas";
+      const q = overseas ? `${dest} 여행 할인 쿠폰 프로모션` : `${dest} 할인 혜택 프로모션`;
+      openExternalTab(naverSearchUrl(q));
+    }
+
+    function benefitLiveQuery(f) {
+      const dest = benefitDestLabel();
+      const near = String(f.place || "").trim() || dest;
+      switch (f.ruleId) {
+        case "ktx": return "코레일 KTX 할인 혜택 프로모션";
+        case "blueline": return "블루라인파크 해변열차 스카이캡슐 할인 예매";
+        case "hotel": return /호텔|숙소|리조트|펜션/.test(near) ? `${near} 할인 프로모션` : `${near} 호텔 할인 프로모션`;
+        case "dining": return `${near} 할인 혜택 프로모션`;
+        case "transit": return `${dest} 대중교통 교통카드 할인`;
+        case "pass": return `${near} 관광 패스 할인`;
+        case "au-opal": return "Opal card 주말 할인 요금 상한";
+        case "au-opera": return `${near} 할인 티켓`;
+        case "jp-pass": return "JR 패스 할인 프로모션";
+        case "jp-taxfree": return "일본 면세 쿠폰";
+        case "ov-card": return "해외결제 카드 캐시백 혜택";
+        case "membership": return `${near} 멤버십 앱 쿠폰`;
+        default: return `${near} 할인 혜택 프로모션`;
+      }
+    }
+
+    function openBenefitLiveIdx(i) {
+      const f = benefitFindings[i];
+      if (!f) return openBenefitLiveTop();
+      openExternalTab(naverSearchUrl(benefitLiveQuery(f)));
     }
 
     function renderBenefitModal(cc, overseas) {
@@ -9410,11 +9591,14 @@
       if (!list) return;
       const totalLow = benefitFindings.filter(f => !f.applied).reduce((s, f) => s + f.low, 0);
       const totalHigh = benefitFindings.filter(f => !f.applied).reduce((s, f) => s + f.high, 0);
+      const syncLine = benefitSyncInfo
+        ? `<br><span class="vc-sync-line">🔄 일정 동기화 ${appSyncStamp(benefitSyncInfo.at)} · 혜택 ${benefitFindings.length}건 · 일정 ${benefitSyncInfo.days}일·예약 ${benefitSyncInfo.bookings}건 기준</span>`
+        : "";
       if (sum) {
         sum.innerHTML = benefitFindings.length
-          ? `일정 ${benefitFindings.length}건에서 혜택을 찾았어요 · 예상 절감 ${fmt(totalLow)}~${fmt(totalHigh)}<br>` +
-            `<span style="font-size:10.5px;">${overseas ? `해외(${escapeAttr(cc)})` : "국내"} 기준 · 카드·멤버십 조건에 따라 실제 금액은 달라요</span>`
-          : `할인 대상이 없어요. 일정에 교통·숙소·식비·관광 항목이 있는지 확인해 주세요.`;
+          ? `일정·예약 ${benefitFindings.length}건에서 혜택을 찾았어요 · 예상 절감 ${fmt(totalLow)}~${fmt(totalHigh)}<br>` +
+            `<span style="font-size:10.5px;">${overseas ? `해외(${escapeAttr(cc)})` : "국내"} 기준 · 카드·멤버십 조건에 따라 실제 금액은 달라요</span>` + syncLine
+          : `할인 대상이 없어요. 일정에 교통·숙소·식비·관광 항목이 있는지 확인해 주세요.` + syncLine;
       }
       list.innerHTML = benefitFindings.length ? benefitFindings.map((f, i) => `
         <div class="vc-item">
@@ -9426,9 +9610,12 @@
           </div>
           <div class="vc-tip">💡 ${escapeAttr(f.tip)}</div>
           <div class="vc-actions">
-            ${f.applied
-              ? `<button class="btn btn-soft" disabled style="opacity:.7;">✅ 반영됨</button>`
-              : `<button class="btn btn-primary" onclick="applyBenefitIdx(${i})">🎁 일정·경비에 혜택 반영</button>`}
+            ${f.fromBooking
+              ? `<span class="tag" style="flex:1 1 100%;justify-content:center;display:inline-flex;align-items:center;font-weight:800;">📋 예약 내역 기준</span>`
+              : (f.applied
+                ? `<button class="btn btn-soft" disabled style="opacity:.7;">✅ 반영됨</button>`
+                : `<button class="btn btn-primary" onclick="applyBenefitIdx(${i})">🎁 일정·경비에 혜택 반영</button>`)}
+            <button class="btn btn-soft vc-live-btn" onclick="openBenefitLiveIdx(${i})" title="이 항목의 최신 할인·프로모션을 새 창에서 검색해요">🔍 실시간 혜택 조회</button>
           </div>
         </div>
       `).join("") : `<div class="vc-empty">반영할 혜택이 없어요.</div>`;
@@ -9441,6 +9628,7 @@
     }
 
     function applyBenefitTo(f) {
+      if (!f || !f.itemId) return false;
       const day = state.days.find(d => d.day === f.day);
       const it = day && (day.items || []).find(x => x.id === f.itemId);
       if (!it) return false;
@@ -9467,8 +9655,10 @@
 
     function applyAllBenefits() {
       if (!canEdit()) return alert("읽기 전용 권한이라 일정을 수정할 수 없어요.");
+      const pending = benefitFindings.filter(f => !f.applied && !f.fromBooking);
+      if (!pending.length) return alert("이미 모든 혜택이 반영돼 있어요.");
       let n = 0;
-      benefitFindings.forEach(f => { if (!f.applied && applyBenefitTo(f)) { f.applied = true; n++; } });
+      pending.forEach(f => { if (applyBenefitTo(f)) { f.applied = true; n++; } });
       if (!n) return alert("이미 모든 혜택이 반영돼 있어요.");
       saveState();
       renderBenefitModal((tripCountryCodes()[0] || "KR"), state.meta?.tripType === "overseas");
