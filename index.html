@@ -491,6 +491,52 @@
       border: 1px solid var(--border); background: #fff; color: var(--text);
     }
     .map-stamp-line { text-align: center; font-size: 10.5px; color: var(--muted); margin: 0 0 12px; }
+    /* 지도 아래 3버튼 설명 ? 아이콘 */
+    .map-help-row { display: flex; justify-content: flex-end; align-items: center; gap: 6px; margin: -2px 0 8px; }
+    .map-help-btn {
+      width: 22px; height: 22px; border-radius: 50%; padding: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 900; line-height: 1; font-family: inherit;
+      border: 1px solid var(--ocean-border); background: var(--ocean-soft);
+      color: var(--ocean-dark); cursor: pointer;
+    }
+    .map-help-btn:active { transform: scale(0.94); }
+    .help-feature { display: flex; gap: 9px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .help-feature:last-of-type { border-bottom: 0; }
+    .help-feature .hf-ico { font-size: 19px; line-height: 1.25; flex: 0 0 auto; }
+    .help-feature .hf-title { font-size: 13px; font-weight: 800; }
+    .help-feature .hf-desc { font-size: 11.5px; color: #475569; line-height: 1.55; margin-top: 2px; }
+    /* 정보•체크: 나라별 기본회화 */
+    .phr-lang-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .phr-lang-chip {
+      padding: 5px 10px; border-radius: 999px; border: 1px solid var(--border);
+      background: #fff; font-size: 11.5px; font-weight: 800; color: var(--text);
+      cursor: pointer; font-family: inherit;
+    }
+    .phr-lang-chip.active { background: var(--ocean); border-color: var(--ocean); color: #fff; }
+    .phr-group-cat { display: inline-block; font-size: 10.5px; font-weight: 800; color: var(--ocean-dark); background: var(--ocean-soft); border-radius: 6px; padding: 2px 7px; margin-bottom: 2px; }
+    .phr-row { display: flex; align-items: flex-start; gap: 8px; padding: 7px 0; border-bottom: 1px dashed #e2e8f0; }
+    .phr-row:last-child { border-bottom: 0; }
+    .phr-row .phr-body { flex: 1; min-width: 0; }
+    .phr-local { font-size: 13.5px; font-weight: 800; color: var(--text); line-height: 1.35; word-break: break-word; }
+    .phr-pron { font-size: 12px; font-weight: 800; color: var(--ocean-dark); margin-top: 1px; }
+    .phr-ko { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+    /* 🏨 숙소 · 🚆 교통편 예약 내역 */
+    .bk-card { border: 1px solid var(--border); border-radius: 12px; padding: 10px 11px; margin-bottom: 8px; background: #fff; }
+    .bk-card.paid { border-left: 3px solid #22c55e; }
+    .bk-card.planned { border-left: 3px solid #f59e0b; }
+    .bk-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .bk-name { font-size: 13.5px; font-weight: 800; line-height: 1.35; }
+    .bk-line { font-size: 11.5px; color: #475569; line-height: 1.5; margin-top: 2px; }
+    .bk-label { font-size: 10.5px; font-weight: 800; color: var(--muted); margin-bottom: 2px; }
+    .bk-pay { font-size: 10.5px; font-weight: 800; border-radius: 999px; padding: 2px 8px; white-space: nowrap; flex: 0 0 auto; }
+    .bk-pay.paid { background: #dcfce7; color: #166534; }
+    .bk-pay.planned { background: #fef3c7; color: #92400e; }
+    .bk-booker { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: var(--ocean-dark); background: var(--ocean-soft); border-radius: 999px; padding: 2px 7px 2px 3px; }
+    .bk-sum { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 10px; }
+    .bk-sum span { font-size: 11px; font-weight: 800; border-radius: 8px; padding: 4px 8px; background: #f1f5f9; color: #334155; }
+    .bk-sub-title { font-size: 12.5px; font-weight: 800; margin: 12px 0 6px; color: var(--ocean-dark); }
+    .chk-editing { gap: 6px; }
     .map-head-btn {
       padding: 4px 8px; font-size: 10.5px; font-weight: 800; white-space: nowrap;
       border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--ocean-dark); cursor: pointer;
@@ -778,12 +824,17 @@
           <button class="btn" id="btn-var-check" data-default-label="🎭 변수 체크" onclick="checkTripVariables()">🎭 변수 체크</button>
           <button class="btn" id="btn-benefit-check" data-default-label="🎁 혜택 체크" onclick="checkTripBenefits()">🎁 혜택 체크</button>
         </div>
+        <div class="map-help-row">
+          <span style="font-size:10.5px;color:var(--muted);">이 3버튼이 뭐예요?</span>
+          <button class="map-help-btn" id="map-action-help" title="영업시간·변수·혜택 체크 설명 보기" onclick="openActionHelp()">?</button>
+        </div>
         <div class="hours-note hours-updated-label map-stamp-line" id="map-hours-stamp" style="text-align:center;margin:0 0 12px;">아직 업데이트 전</div>
         <div id="add-btns-row" style="display:none;gap:8px;margin-bottom:12px;">
           <button class="btn btn-soft" style="flex:1;" onclick="openPlaceModal(null)">+ 일정 추가</button>
           <button class="btn btn-primary" style="flex:1;" onclick="openTransitModal()">🚆 교통편 추가</button>
         </div>
         <div id="timeline-list"></div>
+        <div id="bookings-section"></div>
         <div style="margin-top:16px;margin-bottom:6px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-soft btn-sm" onclick="openThemeModal()" style="padding:8px 18px;">⚙️ 설정 · 색감 변경</button>
           <button class="btn btn-soft btn-sm hours-refresh-btn" data-default-label="🔄 영업시간 업데이트" onclick="refreshBusinessHours()" style="padding:8px 14px;">🔄 영업시간 업데이트</button>
@@ -860,6 +911,7 @@
       <!-- TAB 4: CHECKLIST & ALERTS -->
       <section id="tab-checklist" class="tab-panel">
         <div id="chk-overseas-box"></div>
+        <div id="chk-phrasebook-box"></div>
         <div id="chk-weather-box"></div>
         <div class="card" id="fx-card" data-fx-idx="0"></div>
         <div class="card">
@@ -1437,6 +1489,118 @@
     </div>
   </div>
 
+  <!-- 지도 아래 3버튼 설명 모달 -->
+  <div id="action-help-modal" class="modal-backdrop" onclick="if(event.target===this)closeActionHelp()">
+    <div class="modal-sheet">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="font-size:16px;font-weight:800;">💡 지도 아래 3버튼, 이렇게 써요</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeActionHelp()">닫기</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:6px;">한 번 눌러 두면 여행 전에 확인할 것들을 대신 찾아서 일정·체크리스트에 반영해 드려요.</div>
+      <div class="help-feature">
+        <div class="hf-ico">🔄</div>
+        <div>
+          <div class="hf-title">영업시간 업데이트</div>
+          <div class="hf-desc">일정에 담은 맛집·카페·관광지의 <b>오늘 영업시간과 휴무일</b>을 OpenStreetMap·내부 DB에서 다시 확인해요. 바뀐 시간은 일정 카드의 <b>🕒 배지</b>와 메모에 반영되고, 같은 휴무일이 두 번 적히지 않게 정리돼요. 정보를 못 찾은 곳은 기존 내용을 그대로 둬요.</div>
+        </div>
+      </div>
+      <div class="help-feature">
+        <div class="hf-ico">🎭</div>
+        <div>
+          <div class="hf-title">변수 체크</div>
+          <div class="hf-desc">여행 날짜의 <b>공휴일·연휴·지역 축제·혼잡 시기</b>를 공휴일 API와 시즌 캘린더로 확인해요. 붐비는 날·쉬는 날이 겹치면 <b>🎭 혼잡 대비</b> 배지와 메모, 체크리스트 항목으로 알려 드려요.</div>
+        </div>
+      </div>
+      <div class="help-feature">
+        <div class="hf-ico">🎁</div>
+        <div>
+          <div class="hf-title">혜택 체크</div>
+          <div class="hf-desc">일정의 교통·관광 항목에 쓸 수 있는 <b>할인·패스·제휴 혜택</b>을 찾아요. 해당되는 곳에는 <b>🎁 할인 가능</b> 배지와 짧은 팁을 붙여 주고, 결제 전에 챙길 체크리스트도 함께 만들어요.</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:8px;">세 기능 모두 공개 정보를 바탕으로 한 추정이라, 결제·방문 전에 한 번 더 확인하면 가장 정확해요. 내가 만든 일정만 바꾸고, 읽기 전용 권한에서는 실행되지 않아요.</div>
+    </div>
+  </div>
+
+  <!-- 🏨 숙소 · 🚆 교통편 예약 내역 입력/수정 모달 -->
+  <div id="booking-modal" class="modal-backdrop" onclick="if(event.target===this)closeBookingModal()">
+    <div class="modal-sheet" style="max-height:92vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div id="booking-modal-title" style="font-size:16px;font-weight:800;">🏨 숙소 예약 추가</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeBookingModal()">닫기</button>
+      </div>
+      <input type="hidden" id="bk-type" value="hotel" />
+      <div class="bk-label">이름</div>
+      <input id="bk-name" class="input" placeholder="예: 아쿠아 펠리스 호텔 (디럭스 오션뷰)" style="margin-bottom:8px;" />
+
+      <div id="bk-hotel-fields">
+        <div class="row" style="margin-bottom:6px;">
+          <div style="flex:1;min-width:0;"><div class="bk-label">체크인 날짜</div><input id="bk-in-date" type="date" class="input" /></div>
+          <div style="width:108px;"><div class="bk-label">체크인 시간</div><input id="bk-in-time" type="time" class="input" /></div>
+        </div>
+        <div class="row" style="margin-bottom:6px;">
+          <div style="flex:1;min-width:0;"><div class="bk-label">체크아웃 날짜</div><input id="bk-out-date" type="date" class="input" /></div>
+          <div style="width:108px;"><div class="bk-label">체크아웃 시간</div><input id="bk-out-time" type="time" class="input" /></div>
+        </div>
+        <div class="row" style="margin-bottom:6px;">
+          <input id="bk-hotel-room" class="input" placeholder="객실·인원 (예: 디럭스 오션뷰 · 2인)" />
+        </div>
+        <div class="row" style="margin-bottom:6px;">
+          <input id="bk-hotel-url" class="input" placeholder="예약 링크 (선택)" />
+        </div>
+      </div>
+
+      <div id="bk-transit-fields" style="display:none;">
+        <div class="row" style="margin-bottom:6px;">
+          <select id="bk-mode" class="input" style="width:132px;">
+            <option>KTX</option><option>SRT</option><option>항공편</option><option>시외·고속버스</option><option>기차</option><option>페리·크루즈</option><option>렌터카</option><option>기타</option>
+          </select>
+          <input id="bk-code" class="input" placeholder="편명·열차 (예: KTX 25열차 / KE401)" />
+        </div>
+        <div class="row" style="margin-bottom:6px;">
+          <input id="bk-from" class="input" placeholder="출발지 (예: 광명역)" />
+          <input id="bk-to" class="input" placeholder="도착지 (예: 부산역)" />
+        </div>
+        <div class="row" style="margin-bottom:6px;">
+          <div style="flex:1;min-width:0;"><div class="bk-label">출발 날짜</div><input id="bk-dep-date" type="date" class="input" /></div>
+          <div style="width:108px;"><div class="bk-label">출발 시간</div><input id="bk-dep-time" type="time" class="input" /></div>
+        </div>
+        <div class="row" style="margin-bottom:6px;">
+          <div style="flex:1;min-width:0;"><div class="bk-label">도착 날짜</div><input id="bk-arr-date" type="date" class="input" /></div>
+          <div style="width:108px;"><div class="bk-label">도착 시간</div><input id="bk-arr-time" type="time" class="input" /></div>
+        </div>
+        <div class="row" style="margin-bottom:6px;">
+          <input id="bk-seat" class="input" placeholder="좌석·호차 (예: 4호차 12A · 순방향 2인)" />
+        </div>
+      </div>
+
+      <div class="row" style="margin-bottom:6px;">
+        <div style="flex:1;min-width:0;"><div class="bk-label">총 금액(원)</div><input id="bk-price" type="number" class="input" placeholder="예: 211411" /></div>
+        <div style="width:132px;"><div class="bk-label">결제 상태</div>
+          <select id="bk-pay" class="input" onchange="onBookingPayChange()">
+            <option value="paid">✅ 결제 완료</option>
+            <option value="planned">⏳ 결제 예정</option>
+          </select>
+        </div>
+      </div>
+      <div id="bk-paid-row" class="row" style="margin-bottom:6px;">
+        <div style="flex:1;min-width:0;"><div class="bk-label">결제한 날짜</div><input id="bk-paid-date" type="date" class="input" /></div>
+      </div>
+      <div id="bk-planned-row" class="row" style="margin-bottom:6px;">
+        <div style="flex:1;min-width:0;"><div class="bk-label">결제 예정일</div><input id="bk-due-date" type="date" class="input" /></div>
+        <div style="width:132px;"><div class="bk-label">결제 예정 금액</div><input id="bk-due-amount" type="number" class="input" placeholder="원" /></div>
+      </div>
+
+      <div class="bk-label">예약자 프로필</div>
+      <div class="row" style="margin-bottom:6px;">
+        <select id="bk-booker" class="input" onchange="onBookingBookerChange()"></select>
+        <input id="bk-booker-name" class="input" placeholder="예약자 이름 직접 입력" style="display:none;" />
+      </div>
+      <input id="bk-memo" class="input" placeholder="메모 (취소 규정·조식·요청사항 등)" style="margin-bottom:10px;" />
+      <button class="btn btn-primary" style="width:100%;" onclick="saveBooking()">저장하기</button>
+    </div>
+  </div>
+
   <!-- INVITE JOIN REQUEST MODAL -->
   <div id="join-modal" class="modal-backdrop center" style="background:rgba(15,23,42,0.75);">
     <div class="modal-sheet">
@@ -1465,7 +1629,7 @@
       <button class="nav-btn" data-tab="recommend"><span class="ico">✨</span>추천</button>
       <button class="nav-btn" data-tab="expenses"><span class="ico">💰</span>경비</button>
       <button class="nav-btn" data-tab="weather"><span class="ico">🧥</span>날씨·옷</button>
-      <button class="nav-btn" data-tab="checklist"><span class="ico">✅</span>알림·체크<span class="nav-badge" id="nav-check-badge" style="display:none;">0</span></button>
+      <button class="nav-btn" data-tab="checklist"><span class="ico">✅</span>정보•체크<span class="nav-badge" id="nav-check-badge" style="display:none;">0</span></button>
       <button class="nav-btn" data-tab="packing"><span class="ico">🧳</span>짐</button>
     </div>
   </nav>
@@ -1588,7 +1752,7 @@
             { text: "보조배터리·충전 케이블 (기내 반입)" }
           ] }
         ],
-        genericExtra: ["선크림 SPF50·선글라스·모자 (자외선 매우 강함)", "수영복·래시가드 (해변 일정)", "상비약(소화제·진통제·밴드)"],
+        genericExtra: ["선크림 SPF50·선글라스·모자 (자외선 매우 강함)", "수영복 (해변 일정)", "상비약(소화제·진통제·밴드)"],
         links: [{ label: "호주 ETA 안내(내무부)", url: "https://immi.homeaffairs.gov.au/" }, { label: "호주관광청", url: "https://www.australia.com/ko-kr" }],
         entryAlert: { title: "호주 ETA 신청·승인 확인", daysBefore: 28, desc: "Australian ETA 앱 · 여권 정보 입력 후 승인 메일 보관" }
       },
@@ -1841,6 +2005,365 @@
       return hit ? COUNTRY_PRESETS[hit] : COUNTRY_PRESETS["기타"];
     }
 
+    /* =====================================================================
+       🗣️ 나라별 기본회화 & 현지 필수 표현 (해외여행 정보•체크 탭)
+       - 현지어 + 한국어 발음 + 뜻. 발음은 한국어 표기라 화면을 보여 주는 게 가장 정확해요.
+       ===================================================================== */
+    const PHRASEBOOKS = {
+      TH: {
+        label: "태국어", flag: "🇹🇭",
+        note: "태국은 '컵쿤(고맙습니다)'과 '마이 뻰 라이(괜찮아요)'만 알아도 대부분 통했어요. 마사지는 시작 전에 강도를 말해 두면 훨씬 편해요.",
+        phrases: [
+          ["인사", "สวัสดี", "싸왓디", "안녕하세요"],
+          ["인사", "ขอบคุณ", "컵쿤", "고맙습니다"],
+          ["인사", "ไม่เป็นไร", "마이 뻰 라이", "괜찮아요 / 천만에요"],
+          ["주문", "ขอนี่", "커 니", "이거 주세요"],
+          ["주문", "ขอน้ำ", "커 남", "물 주세요"],
+          ["주문", "แนะนำเมนู", "내남 메누", "추천 메뉴 있어요?"],
+          ["계산", "เช็คบิล", "첵빈", "계산해 주세요"],
+          ["가격", "เท่าไหร่", "타오라이", "얼마예요?"],
+          ["마사지", "เบาๆ", "바오바오", "살살 해주세요 (약하게)"],
+          ["마사지", "หนักๆ", "낙낙", "조금 세게 해주세요"],
+          ["마사지", "นวดกี่นาที", "누앗 끼 나티", "마사지 몇 분이에요?"],
+          ["마사지", "หยุดก่อน", "윳 껀", "잠깐 멈춰 주세요"],
+          ["길·화장실", "ห้องน้ำอยู่ไหน", "헝남 유 나이", "화장실 어디예요?"],
+          ["길·화장실", "ไป...ยังไง", "빠이 ... 양응아이", "...에 어떻게 가요?"],
+          ["기타", "อร่อย", "아러이", "맛있어요"],
+          ["기타", "ขอโทษ", "커톳", "죄송합니다 / 실례합니다"]
+        ]
+      },
+      VN: {
+        label: "베트남어", flag: "🇻🇳",
+        note: "베트남은 성조 때문에 발음이 어려워요. 숫자·금액은 화면에 띄워 보여 주면 확실해요. 마사지는 '녜 토이'부터 말해 보세요.",
+        phrases: [
+          ["인사", "Xin chào", "씬 짜오", "안녕하세요"],
+          ["인사", "Cảm ơn", "깜 언", "고맙습니다"],
+          ["인사", "Không sao", "콩 사오", "괜찮아요"],
+          ["주문", "Cho tôi cái này", "쪼 또이 까이 나이", "이거 주세요"],
+          ["주문", "Cho tôi nước", "쪼 또이 느억", "물 주세요"],
+          ["주문", "Món nào ngon?", "몬 나오 응온", "뭐가 맛있어요? (추천)"],
+          ["계산", "Tính tiền", "띤 띠엔", "계산해 주세요"],
+          ["가격", "Bao nhiêu tiền?", "바오 니에우 띠엔", "얼마예요?"],
+          ["마사지", "Nhẹ thôi", "녜 토이", "살살 해주세요 (약하게)"],
+          ["마사지", "Mạnh hơn chút", "마잉 헌 쭛", "조금 세게 해주세요"],
+          ["마사지", "Massage bao lâu?", "마싸지 바오 러우", "마사지 몇 분이에요?"],
+          ["길·화장실", "Nhà vệ sinh ở đâu?", "냐 베 신 어 더우", "화장실 어디예요?"],
+          ["길·화장실", "... đi thế nào?", "... 디 테 나오", "...에 어떻게 가요?"],
+          ["기타", "Ngon quá", "응온 꽈", "맛있어요"],
+          ["기타", "Xin lỗi", "씬 로이", "죄송합니다 / 실례합니다"]
+        ]
+      },
+      PH: {
+        label: "필리핀어", flag: "🇵🇭",
+        note: "필리핀은 영어가 거의 통해서 'Excuse me'와 'Thank you'만으로도 충분해요. 현지어로 한마디 하면 반응이 좋아요.",
+        phrases: [
+          ["인사", "Kumusta", "쿠무스타", "안녕하세요"],
+          ["인사", "Salamat", "살라맛", "고맙습니다"],
+          ["인사", "Paumanhin", "파우만힌", "죄송합니다 / 실례합니다"],
+          ["주문", "Ito po", "이토 포", "이거 주세요"],
+          ["주문", "Tubig po", "투빅 포", "물 주세요"],
+          ["주문", "Anong marerekomenda?", "아농 마레레코멘다", "뭐를 추천하나요?"],
+          ["계산", "Pahingi ng bill", "파힝이 낭 빌", "계산서 주세요"],
+          ["가격", "Magkano?", "막카노", "얼마예요?"],
+          ["마사지", "Malambot lang, please", "마람봇 랑", "살살 해주세요 (약하게)"],
+          ["마사지", "Medyo malakas, please", "메디요 말라카스", "조금 세게 해주세요"],
+          ["길·화장실", "Nasaan ang CR?", "나사안 앙 씨알", "화장실 어디예요?"],
+          ["길·화장실", "Paano pumunta sa...?", "파아노 푸문타 사", "...에 어떻게 가요?"],
+          ["기타", "Masarap", "마사랍", "맛있어요"],
+          ["기타", "Walang problema", "왈랑 프로블레마", "문제없어요 / 괜찮아요"]
+        ]
+      },
+      ID: {
+        label: "인도네시아어", flag: "🇮🇩",
+        note: "인도네시아·발리는 '트리마 카시(고맙습니다)'와 '민타 빌(계산서)'만 외워도 편해요. 마사지 강도는 '플란-플란(천천히)'으로 말해요.",
+        phrases: [
+          ["인사", "Selamat siang", "슬라맛 시앙", "안녕하세요 (낮)"],
+          ["인사", "Terima kasih", "트리마 카시", "고맙습니다"],
+          ["인사", "Permisi", "페르미시", "실례합니다"],
+          ["주문", "Ini saja", "이니 사자", "이거 주세요"],
+          ["주문", "Minta air", "민타 아이르", "물 주세요"],
+          ["주문", "Apa rekomendasinya?", "아빠 레코멘다시냐", "뭐를 추천하나요?"],
+          ["계산", "Minta bill", "민타 빌", "계산서 주세요"],
+          ["가격", "Berapa harganya?", "브라빠 하르가냐", "얼마예요?"],
+          ["마사지", "Pelan-pelan, ya", "플란-플란 야", "살살 해주세요 (약하게)"],
+          ["마사지", "Agak keras, ya", "아각 끄라스 야", "조금 세게 해주세요"],
+          ["길·화장실", "Di mana toilet?", "디 마나 토일렛", "화장실 어디예요?"],
+          ["길·화장실", "Bagaimana ke...?", "바가이마나 끄", "...에 어떻게 가요?"],
+          ["기타", "Enak", "에낙", "맛있어요"],
+          ["기타", "Tidak apa-apa", "띠닥 아빠 아빠", "괜찮아요"]
+        ]
+      },
+      MY: {
+        label: "말레이어", flag: "🇲🇾",
+        note: "말레이시아는 영어도 잘 통하지만, '테리마 카시'와 '미나 빌'은 알아 두면 좋아요.",
+        phrases: [
+          ["인사", "Selamat datang", "슬라맛 다탕", "어서 오세요 / 안녕하세요"],
+          ["인사", "Terima kasih", "트리마 카시", "고맙습니다"],
+          ["인사", "Maaf", "마아프", "죄송합니다 / 실례합니다"],
+          ["주문", "Ini sahaja", "이니 사하자", "이거 주세요"],
+          ["주문", "Minta air", "민타 아이르", "물 주세요"],
+          ["주문", "Apa yang anda syorkan?", "아빠 양 안다 슈르칸", "뭐를 추천하나요?"],
+          ["계산", "Minta bil", "민타 빌", "계산서 주세요"],
+          ["가격", "Berapa harganya?", "브라빠 하르가냐", "얼마예요?"],
+          ["마사지", "Perlahan-lahan, ya", "페를라한-라한 야", "살살 해주세요 (약하게)"],
+          ["마사지", "Sedikit kuat, ya", "스디낏 쿠앗 야", "조금 세게 해주세요"],
+          ["길·화장실", "Di mana tandas?", "디 마나 탄다스", "화장실 어디예요?"],
+          ["길·화장실", "Bagaimana nak pergi ke...?", "바가이마나 낙 페르기 끄", "...에 어떻게 가요?"],
+          ["기타", "Sedap", "스답", "맛있어요"],
+          ["기타", "Tiada masalah", "티아다 마살라", "문제없어요"]
+        ]
+      },
+      JP: {
+        label: "일본어", flag: "🇯🇵",
+        note: "일본은 '스미마센(실례합니다)'이 만능이에요. 점심시간·라스트오더는 가게마다 달라서 들어가며 한 번 더 확인하면 좋아요.",
+        phrases: [
+          ["인사", "こんにちは", "곤니치와", "안녕하세요"],
+          ["인사", "ありがとうございます", "아리가토오 고자이마스", "고맙습니다"],
+          ["인사", "すみません", "스미마센", "실례합니다 / 죄송합니다"],
+          ["주문", "これをください", "코레오 쿠다사이", "이거 주세요"],
+          ["주문", "お水をください", "오미즈오 쿠다사이", "물 주세요"],
+          ["주문", "おすすめは何ですか", "오스스메와 난데스카", "추천 메뉴가 뭐예요?"],
+          ["계산", "お会計お願いします", "오카이케이 오네가이시마스", "계산해 주세요"],
+          ["가격", "いくらですか", "이쿠라데스카", "얼마예요?"],
+          ["길·화장실", "トイレはどこですか", "토이레와 도코데스카", "화장실 어디예요?"],
+          ["길·화장실", "...へはどう行きますか", "...에와 도오 이키마스카", "...에 어떻게 가요?"],
+          ["기타", "おいしいです", "오이시이데스", "맛있어요"],
+          ["기타", "大丈夫です", "다이조오부데스", "괜찮아요"],
+          ["기타", "英語のメニューはありますか", "에이고노 메뉴와 아리마스카", "영어 메뉴 있어요?"],
+          ["기타", "カードは使えますか", "카아도와 츠카에마스카", "카드 되나요?"]
+        ]
+      },
+      TW: {
+        label: "중국어(대만)", flag: "🇹🇼",
+        note: "대만은 번체자를 써요. '씨에씨에(고맙습니다)'와 '마이단(계산)'은 어디서나 통해요.",
+        phrases: [
+          ["인사", "你好", "니하오", "안녕하세요"],
+          ["인사", "謝謝", "씨에씨에", "고맙습니다"],
+          ["인사", "不好意思", "부하오이쓰", "실례합니다 / 죄송합니다"],
+          ["주문", "我要這個", "워 야오 쩌거", "이거 주세요"],
+          ["주문", "請給我水", "칭 게이 워 슈이", "물 주세요"],
+          ["주문", "有什麼推薦的？", "요 싀머 투이찌엔더", "뭐를 추천하나요?"],
+          ["계산", "買單", "마이단", "계산해 주세요"],
+          ["가격", "多少錢？", "또샤오 치엔", "얼마예요?"],
+          ["길·화장실", "洗手間在哪裡？", "시서우젠 짜이 나리", "화장실 어디예요?"],
+          ["길·화장실", "怎麼去…？", "전머 취", "...에 어떻게 가요?"],
+          ["기타", "好吃", "하오츠", "맛있어요"],
+          ["기타", "沒關係", "메이 관시", "괜찮아요"],
+          ["기타", "有中文菜單嗎？", "요 중원 차이단 마", "중국어 메뉴 있어요?"],
+          ["기타", "可以刷卡嗎？", "커이 슈아카 마", "카드 되나요?"]
+        ]
+      },
+      CN: {
+        label: "중국어", flag: "🇨🇳",
+        note: "중국 본토는 간체자를 써요. 메뉴는 사진을 가리키며 '쩌거(이거)'라고 하면 가장 빠릅니다.",
+        phrases: [
+          ["인사", "你好", "니하오", "안녕하세요"],
+          ["인사", "谢谢", "씨에씨에", "고맙습니다"],
+          ["인사", "不好意思", "부하오이쓰", "실례합니다 / 죄송합니다"],
+          ["주문", "我要这个", "워 야오 쩌거", "이거 주세요"],
+          ["주문", "请给我水", "칭 게이 워 슈이", "물 주세요"],
+          ["주문", "有什么推荐的？", "요 싀머 투이찌엔더", "뭐를 추천하나요?"],
+          ["계산", "买单", "마이단", "계산해 주세요"],
+          ["가격", "多少钱？", "또샤오 치엔", "얼마예요?"],
+          ["길·화장실", "洗手间在哪里？", "시서우젠 짜이 나리", "화장실 어디예요?"],
+          ["길·화장실", "怎么去…？", "전머 취", "...에 어떻게 가요?"],
+          ["기타", "好吃", "하오츠", "맛있어요"],
+          ["기타", "没关系", "메이 관시", "괜찮아요"],
+          ["기타", "有中文菜单吗？", "요 중원 차이단 마", "중국어 메뉴 있어요?"],
+          ["기타", "可以刷卡吗？", "커이 슈아카 마", "카드 되나요?"]
+        ]
+      },
+      EN: {
+        label: "영어", flag: "🇦🇺",
+        note: "호주·영어권은 짧게 말해도 잘 통하지만, 주문할 때 'Could I get ~'를 쓰면 훨씬 부드러워요. 팁은 보통 카드 결제 시 화면에서 골라요.",
+        phrases: [
+          ["인사", "Hello", "헬로", "안녕하세요"],
+          ["인사", "Thank you", "땡큐", "고맙습니다"],
+          ["인사", "Excuse me", "익스큐즈 미", "실례합니다"],
+          ["주문", "I'll have this", "아일 해브 디스", "이거 주세요"],
+          ["주문", "Water, please", "워터 플리즈", "물 주세요"],
+          ["주문", "What do you recommend?", "왓 두 유 레코멘드", "뭐를 추천하나요?"],
+          ["계산", "Check, please", "첵 플리즈", "계산서 주세요"],
+          ["가격", "How much is it?", "하우 머치 이즈 잇", "얼마예요?"],
+          ["길·화장실", "Where is the restroom?", "웨어 이즈 더 레스트룸", "화장실 어디예요?"],
+          ["길·화장실", "How do I get to ...?", "하우 두 아이 겟 투", "...에 어떻게 가요?"],
+          ["기타", "It's delicious", "잇츠 델리셔스", "맛있어요"],
+          ["기타", "No worries", "노 워리즈", "괜찮아요"],
+          ["기타", "Do you have a menu in Korean?", "두 유 해브 어 메뉴 인 코리안", "한국어 메뉴 있어요?"],
+          ["기타", "Can I pay by card?", "캔 아이 페이 바이 카드", "카드로 결제할 수 있어요?"],
+          ["기타", "Could I get it less spicy?", "쿠드 아이 겟 잇 레스 스파이시", "덜 맵게 해 주세요"]
+        ]
+      },
+      FR: {
+        label: "프랑스어", flag: "🇫🇷",
+        note: "프랑스는 들어갈 때 '봉주르', 나올 때 '메르시'만 해도 인사가 돼요. 계산은 '라디시옹'이라고 하면 바로 알아들어요.",
+        phrases: [
+          ["인사", "Bonjour", "봉주르", "안녕하세요"],
+          ["인사", "Merci", "메르시", "고맙습니다"],
+          ["인사", "Excusez-moi", "엑스퀴제 무아", "실례합니다"],
+          ["주문", "Je vais prendre ça", "주 베 프랑드르 사", "이거 주세요"],
+          ["주문", "De l'eau, s'il vous plaît", "드 로 실 부 플레", "물 주세요"],
+          ["주문", "Qu'est-ce que vous recommandez ?", "케스크 부 레코망데", "뭐를 추천하나요?"],
+          ["계산", "L'addition, s'il vous plaît", "라디시옹 실 부 플레", "계산서 주세요"],
+          ["가격", "C'est combien ?", "세 콩비앙", "얼마예요?"],
+          ["길·화장실", "Où sont les toilettes ?", "우 송 레 투알레트", "화장실 어디예요?"],
+          ["길·화장실", "Comment aller à ... ?", "코망 알레 아", "...에 어떻게 가요?"],
+          ["기타", "C'est délicieux", "세 델리시외", "맛있어요"],
+          ["기타", "Pas de problème", "파 드 프로블렘", "문제없어요"],
+          ["기타", "Un menu en coréen, s'il vous plaît", "앙 므뉘 앙 코레앙 실 부 플레", "한국어 메뉴 주세요"],
+          ["기타", "Je peux payer par carte ?", "주 푸 페이에 파르 카르트", "카드로 결제할 수 있어요?"]
+        ]
+      },
+      IT: {
+        label: "이탈리아어", flag: "🇮🇹",
+        note: "이탈리아는 앉아서 먹으면 '코페르토(자릿세)'가 붙기도 해요. 바에서 서서 마시면 더 저렴합니다.",
+        phrases: [
+          ["인사", "Buongiorno", "부온조르노", "안녕하세요"],
+          ["인사", "Grazie", "그라치에", "고맙습니다"],
+          ["인사", "Mi scusi", "미 스쿠지", "실례합니다"],
+          ["주문", "Prendo questo", "프렌도 퀘스토", "이거 주세요"],
+          ["주문", "Acqua, per favore", "아쿠아 페르 파보레", "물 주세요"],
+          ["주문", "Cosa consiglia?", "코자 콘실리아", "뭐를 추천하나요?"],
+          ["계산", "Il conto, per favore", "일 콘토 페르 파보레", "계산서 주세요"],
+          ["가격", "Quanto costa?", "콴토 코스타", "얼마예요?"],
+          ["길·화장실", "Dov'è il bagno?", "도베 일 바뇨", "화장실 어디예요?"],
+          ["길·화장실", "Come arrivo a ...?", "코메 아리보 아", "...에 어떻게 가요?"],
+          ["기타", "È delizioso", "에 델리치오조", "맛있어요"],
+          ["기타", "Non c'è problema", "논 체 프로블레마", "문제없어요"],
+          ["기타", "Un menù in coreano, per favore", "운 메누 인 코레아노 페르 파보레", "한국어 메뉴 주세요"],
+          ["기타", "Posso pagare con la carta?", "포소 파가레 콘 라 카르타", "카드로 결제할 수 있어요?"]
+        ]
+      },
+      ES: {
+        label: "스페인어", flag: "🇪🇸",
+        note: "스페인은 저녁 식사가 21시 이후라 늦게까지 영업해요. 점심 '메뉴 델 디아'가 가성비 좋습니다.",
+        phrases: [
+          ["인사", "Hola", "올라", "안녕하세요"],
+          ["인사", "Gracias", "그라시아스", "고맙습니다"],
+          ["인사", "Perdón", "페르돈", "실례합니다 / 죄송합니다"],
+          ["주문", "Esto, por favor", "에스토 포르 파보르", "이거 주세요"],
+          ["주문", "Agua, por favor", "아과 포르 파보르", "물 주세요"],
+          ["주문", "¿Qué recomienda?", "케 레코미엔다", "뭐를 추천하나요?"],
+          ["계산", "La cuenta, por favor", "라 쿠엔타 포르 파보르", "계산서 주세요"],
+          ["가격", "¿Cuánto cuesta?", "콴토 쿠에스타", "얼마예요?"],
+          ["길·화장실", "¿Dónde está el baño?", "돈데 에스타 엘 바뇨", "화장실 어디예요?"],
+          ["길·화장실", "¿Cómo llego a ...?", "코모 예고 아", "...에 어떻게 가요?"],
+          ["기타", "Está delicioso", "에스타 델리시오소", "맛있어요"],
+          ["기타", "No hay problema", "노 아이 프로블레마", "문제없어요"],
+          ["기타", "Un menú en coreano, por favor", "운 메누 엔 코레아노 포르 파보르", "한국어 메뉴 주세요"],
+          ["기타", "¿Puedo pagar con tarjeta?", "푸에도 파가르 콘 타르헤타", "카드로 결제할 수 있어요?"]
+        ]
+      },
+      DE: {
+        label: "독일어", flag: "🇩🇪",
+        note: "독일은 현금만 받는 가게가 아직 있어요. 카드 가능 여부를 먼저 물어보면 안전해요.",
+        phrases: [
+          ["인사", "Guten Tag", "구텐 탁", "안녕하세요"],
+          ["인사", "Danke", "당케", "고맙습니다"],
+          ["인사", "Entschuldigung", "엔트슐디궁", "실례합니다 / 죄송합니다"],
+          ["주문", "Ich nehme das", "이히 네메 다스", "이거 주세요"],
+          ["주문", "Wasser, bitte", "바서 비테", "물 주세요"],
+          ["주문", "Was empfehlen Sie?", "바스 엠펠렌 지", "뭐를 추천하나요?"],
+          ["계산", "Die Rechnung, bitte", "디 레흐눙 비테", "계산서 주세요"],
+          ["가격", "Wie viel kostet das?", "비 필 코스테트 다스", "얼마예요?"],
+          ["길·화장실", "Wo ist die Toilette?", "보 이스트 디 토일레테", "화장실 어디예요?"],
+          ["길·화장실", "Wie komme ich zu ...?", "비 코메 이히 추", "...에 어떻게 가요?"],
+          ["기타", "Sehr lecker", "제어 레커", "맛있어요"],
+          ["기타", "Kein Problem", "카인 프로블렘", "문제없어요"],
+          ["기타", "Eine koreanische Speisekarte, bitte", "아이네 코레아니셰 슈파이제카르테 비테", "한국어 메뉴 주세요"],
+          ["기타", "Kann ich mit Karte zahlen?", "칸 이히 미트 카르테 찰렌", "카드로 결제할 수 있어요?"]
+        ]
+      }
+    };
+
+    const PHRASE_LANGS_BY_COUNTRY = {
+      "호주": ["EN"], "미국": ["EN"], "영국": ["EN"], "캐나다": ["EN"], "뉴질랜드": ["EN"], "싱가포르": ["EN"],
+      "일본": ["JP"], "태국": ["TH"], "베트남": ["VN"], "대만": ["TW"], "중국": ["CN"], "홍콩": ["CN"],
+      "필리핀": ["PH"], "인도네시아": ["ID"], "말레이시아": ["MY"],
+      "유럽 (솅겐)": ["FR", "IT", "ES", "DE"], "유럽": ["FR", "IT", "ES", "DE"]
+    };
+
+    let phraseLang = "";
+
+    function phraseLangsForTrip() {
+      const countryName = String(state.meta?.country || "").trim();
+      const isAbroad = state.meta?.tripType === "overseas" || (countryName && !/^(대한민국|한국|KR|KOREA)$/i.test(countryName));
+      if (!isAbroad) return [];
+      const cc = String(state.meta?.countryCode || "").toUpperCase();
+      const byCode = {
+        AU: ["EN"], US: ["EN"], GB: ["EN"], CA: ["EN"], NZ: ["EN"], SG: ["EN"],
+        JP: ["JP"], TH: ["TH"], VN: ["VN"], TW: ["TW"], CN: ["CN"], HK: ["CN"],
+        PH: ["PH"], ID: ["ID"], MY: ["MY"], FR: ["FR"], IT: ["IT"], ES: ["ES"], DE: ["DE"]
+      };
+      if (byCode[cc]) return byCode[cc];
+      const name = String(state.meta?.country || "");
+      if (!name) return ["EN"];
+      const hit = Object.keys(PHRASE_LANGS_BY_COUNTRY).find(k => {
+        const base = k.replace(" (솅겐)", "");
+        return name.includes(base) || base.includes(name);
+      });
+      return hit ? PHRASE_LANGS_BY_COUNTRY[hit] : ["EN"];
+    }
+
+    function setPhraseLang(code) {
+      phraseLang = code;
+      renderPhrasebook();
+    }
+
+    function renderPhrasebook() {
+      const box = document.getElementById("chk-phrasebook-box");
+      if (!box) return;
+      const langs = phraseLangsForTrip();
+      if (!langs.length) { box.innerHTML = ""; return; }
+      if (!langs.includes(phraseLang)) phraseLang = langs[0];
+      const data = PHRASEBOOKS[phraseLang] || PHRASEBOOKS.EN;
+      const chips = langs.length > 1
+        ? `<div class="phr-lang-row">${langs.map(code => {
+            const d = PHRASEBOOKS[code];
+            return `<button type="button" class="phr-lang-chip ${code === phraseLang ? "active" : ""}" onclick="setPhraseLang('${code}')">${d ? d.flag + " " + d.label : code}</button>`;
+          }).join("")}</div>`
+        : "";
+      const groups = [];
+      (data.phrases || []).forEach(ph => {
+        let g = groups.find(x => x.cat === ph[0]);
+        if (!g) { g = { cat: ph[0], items: [] }; groups.push(g); }
+        g.items.push(ph);
+      });
+      const body = groups.map(g => `
+        <div style="margin-bottom:9px;">
+          <div class="phr-group-cat">${g.cat}</div>
+          ${g.items.map(ph => `
+            <div class="phr-row">
+              <div class="phr-body">
+                <div class="phr-local">${ph[1]}</div>
+                <div class="phr-pron">${ph[2]}</div>
+                <div class="phr-ko">${ph[3]}</div>
+              </div>
+            </div>`).join("")}
+        </div>`).join("");
+      box.innerHTML = `
+        <div class="card" style="border-color:#bae6fd;">
+          <div style="display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:800;color:var(--ocean-dark);">
+            <span style="font-size:17px;">🗣️</span> 나라별 기본회화 & 현지 필수 표현
+          </div>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.5;">입국·필수 체크는 위 카드에서, 현지에서 바로 쓸 말은 여기서 확인하세요. 현지어를 눌러 복사해도 돼요.</div>
+          <div style="margin-top:8px;">${chips}${body}</div>
+          <div style="font-size:11px;color:#475569;background:var(--ocean-soft);border-radius:8px;padding:7px 9px;line-height:1.5;margin-top:6px;">💡 ${data.flag || ""} ${data.note || ""}</div>
+          <div style="font-size:10.5px;color:var(--muted);margin-top:5px;">발음은 한국어 표기라 실제 발음과 조금 달라요. 어려우면 화면을 그대로 보여 주는 게 가장 정확해요.</div>
+        </div>`;
+      box.querySelectorAll(".phr-local").forEach(el => {
+        el.style.cursor = "pointer";
+        el.title = "눌러서 복사";
+        el.addEventListener("click", () => {
+          const txt = el.textContent || "";
+          navigator.clipboard?.writeText(txt).then(() => {
+            el.style.background = "#dcfce7";
+            setTimeout(() => { el.style.background = ""; }, 700);
+          }).catch(() => {});
+        });
+      });
+    }
+
     /* 도시별 날씨: 좌표/기후 참고표 (없으면 Open-Meteo 지오코딩) */
     const CITY_GEO = {
       "시드니": { lat: -33.8688, lon: 151.2093, country: "AU" },
@@ -1916,9 +2439,24 @@
       return { min: Math.round(mid - 4), max: Math.round(mid + 4) };
     }
 
-    function outfitFor(minT, maxT, rainProb) {
+    /* 폭염 기준은 '그날 체감온도(최고)' 30°C 이상 — 예보에 apparent_temperature가 없으면 추정 */
+    const HEATWAVE_APPARENT = 30;
+    function apparentFromDry(maxT, minT) {
+      const mx = Number(maxT);
+      if (!isFinite(mx)) return null;
+      const mn = Number(minT);
+      if (mx >= 27) return Math.round(mx + 3);   // 한국·동남아 여름철 높은 습도 반영
+      if (mx >= 20) return Math.round(mx + 2);
+      if (mx >= 10) return Math.round(mx);
+      if (mx >= 0) return Math.round(mx - 1);
+      return Math.round(mx - 2);
+    }
+
+    function outfitFor(minT, maxT, rainProb, apparentMaxT) {
+      const feelsMax = typeof apparentMaxT === "number" && isFinite(apparentMaxT) ? apparentMaxT : maxT;
       let base;
-      if (maxT >= 30) base = "반팔·린넨 + 반바지, 모자·선글라스 필수";
+      if (feelsMax >= HEATWAVE_APPARENT) base = "민소매·반팔·린넨 + 반바지, 모자·선글라스·쿨링타월 (체감 폭염)";
+      else if (maxT >= 30) base = "반팔·린넨 + 반바지, 모자·선글라스 필수";
       else if (maxT >= 26) base = "반팔·얇은 셔츠 + 반바지/면바지";
       else if (maxT >= 22) base = "반팔·얇은 긴팔 + 가벼운 겉옷";
       else if (maxT >= 17) base = "맨투맨·얇은 니트 + 가디건";
@@ -2346,6 +2884,7 @@
         emBtn.textContent = editMode ? "✓ 편집 완료" : "✏️ 일정 편집";
         emBtn.className = editMode ? "btn btn-primary" : "btn btn-soft";
       }
+      renderBookings();
     }
 
     function toggleEditMode() {
@@ -2790,6 +3329,7 @@
           if (typeof pickedLat === "number") { it.lat = pickedLat; it.lng = pickedLng; }
           if (hasMenus && !Array.isArray(it.menus)) it.menus = [];
           if (!hasMenus) delete it.menus;
+          applyAutoBookingBadge(it);
         }
       } else {
         const c = costNum ?? 0;
@@ -2801,6 +3341,7 @@
         if (placeEditMode === "route") { newItem.fromPlace = fromPlace; newItem.toPlace = toPlace; }
         if (typeof pickedLat === "number") { newItem.lat = pickedLat; newItem.lng = pickedLng; }
         if (hasMenus) newItem.menus = [];
+        applyAutoBookingBadge(newItem);
         dayObj.items.push(newItem);
       }
       closePlaceModal();
@@ -3268,6 +3809,7 @@
           const metaBits = [];
           if (w.wind) metaBits.push(`💨 ${w.wind}`);
           if (w.feelsLike) metaBits.push(w.feelsLike);
+          if (typeof w.apparentMax === "number" && w.apparentMax >= HEATWAVE_APPARENT) metaBits.push(`🔥 폭염 기준(체감 ${Math.round(w.apparentMax)}°)`);
           if (sun.sunrise) metaBits.push(`🌅 일출 ${sun.sunrise}`);
           if (sun.sunset) metaBits.push(`🌇 일몰 ${sun.sunset}`);
           return `
@@ -3429,7 +3971,7 @@
       // 1) 실시간 예보 (오늘부터 16일 이내)
       try {
         const u = `https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}` +
-          `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,sunrise,sunset` +
+          `&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_probability_max,wind_speed_10m_max,sunrise,sunset` +
           `&timezone=auto&start_date=${dateStr}&end_date=${dateStr}`;
         const r = await fetch(u);
         if (r.ok) {
@@ -3437,9 +3979,13 @@
           const tmax = j.daily?.temperature_2m_max?.[0];
           const tmin = j.daily?.temperature_2m_min?.[0];
           if (typeof tmax === "number" && typeof tmin === "number") {
+            const amax = j.daily?.apparent_temperature_max?.[0];
+            const amin = j.daily?.apparent_temperature_min?.[0];
             return {
               source: "forecast", sourceLabel: "실시간 예보",
               min: tmin, max: tmax,
+              apparentMax: typeof amax === "number" ? amax : apparentFromDry(tmax, tmin),
+              apparentMin: typeof amin === "number" ? amin : apparentFromDry(tmax, tmin),
               code: j.daily.weather_code?.[0],
               wind: j.daily.wind_speed_10m_max?.[0],
               rainProb: j.daily.precipitation_probability_max?.[0],
@@ -3456,7 +4002,7 @@
         const to = new Date(d.getFullYear() - 1, d.getMonth(), d.getDate() + 2);
         const u = `https://archive-api.open-meteo.com/v1/archive?latitude=${geo.lat}&longitude=${geo.lon}` +
           `&start_date=${ymdLocal(from)}&end_date=${ymdLocal(to)}` +
-          `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,sunrise,sunset&timezone=auto`;
+          `&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_sum,wind_speed_10m_max,sunrise,sunset&timezone=auto`;
         const r = await fetch(u);
         if (r.ok) {
           const j = await r.json();
@@ -3468,9 +4014,14 @@
             const code = codes.length ? codes.sort((a, b) => codes.filter(x => x === b).length - codes.filter(x => x === a).length)[0] : 3;
             const rains = (j.daily?.precipitation_sum || []).filter(v => typeof v === "number");
             const winds = (j.daily?.wind_speed_10m_max || []).filter(v => typeof v === "number");
+            const appMaxes = (j.daily?.apparent_temperature_max || []).filter(v => typeof v === "number");
+            const appMins = (j.daily?.apparent_temperature_min || []).filter(v => typeof v === "number");
+            const aMax = appMaxes.length ? avg(appMaxes) : apparentFromDry(avg(maxes), avg(mins));
+            const aMin = appMins.length ? avg(appMins) : apparentFromDry(avg(maxes), avg(mins));
             return {
               source: "archive", sourceLabel: "작년 같은 기간 실측",
               min: avg(mins), max: avg(maxes), code,
+              apparentMax: aMax, apparentMin: aMin,
               wind: winds.length ? avg(winds) : null,
               rainProb: rains.length ? Math.min(90, Math.round(rains.filter(r => r > 0.5).length / rains.length * 100)) : null,
               sunrise: fmtSunset((j.daily?.sunrise || [])[0]),
@@ -3517,6 +4068,8 @@
           const est = seasonalEstimate(city.label, month, geo?.lat ?? city.lat);
           const minT = got ? got.min : est.min;
           const maxT = got ? got.max : est.max;
+          const appMaxT = (got && typeof got.apparentMax === "number") ? got.apparentMax : apparentFromDry(maxT, minT);
+          const appMinT = (got && typeof got.apparentMin === "number") ? got.apparentMin : apparentFromDry(maxT, minT);
           const [icon, condition] = got ? wmoInfo(got.code) : ["🌤️", "계절 평년 기준"];
           const sunTimes = geo ? estimateSunTimes(geo.lat, geo.lon, day.date) : { sunrise: "", sunset: "" };
           entries.push({
@@ -3524,11 +4077,12 @@
             cityLabel: city.label, area: [city.label, day.areaDetail].filter(Boolean).join(" · "),
             icon, condition,
             minTemp: Math.round(minT), maxTemp: Math.round(maxT),
+            apparentMax: Math.round(appMaxT), apparentMin: Math.round(appMinT),
             wind: got && typeof got.wind === "number" ? `${Math.round(got.wind)}km/h` : "",
-            feelsLike: `체감 ${Math.round(minT - 1)}~${Math.round(maxT + 1)}°C`,
+            feelsLike: `체감 ${Math.round(appMinT)}~${Math.round(appMaxT)}°C`,
             sunrise: got?.sunrise || sunTimes.sunrise,
             sunset: got?.sunset || sunTimes.sunset,
-            outfit: outfitFor(minT, maxT, got?.rainProb || 0),
+            outfit: outfitFor(minT, maxT, got?.rainProb || 0, appMaxT),
             tip: got
               ? `${city.label} ${got.sourceLabel} 기준` + (typeof got.rainProb === "number" ? ` · 강수확률 ${Math.round(got.rainProb)}%` : "")
               : `${city.label}의 계절 평년값이에요. 출발 2주 전부터는 실시간 예보로 바뀝니다.`,
@@ -3565,6 +4119,8 @@
         const month = new Date(d.date + "T00:00:00").getMonth();
         const est = seasonalEstimate(label, month, lat);
         const sun = estimateSunTimes(lat, lon, d.date);
+        const seedAppMax = apparentFromDry(est.max, est.min);
+        const seedAppMin = (typeof seedAppMax === "number" ? seedAppMax : est.max) - Math.max(2, Math.round((est.max - est.min) / 2));
         return {
           dayNum: d.day,
           day: `${d.day}일차 · ${fmtMD(d.date)}`,
@@ -3572,9 +4128,10 @@
           area: [label, d.areaDetail].filter(Boolean).join(" · "),
           icon: "🌤️", condition: "계절 평년 기준",
           minTemp: est.min, maxTemp: est.max,
-          feelsLike: `체감 ${est.min - 1}~${est.max + 1}°C`,
+          apparentMax: seedAppMax, apparentMin: seedAppMin,
+          feelsLike: `체감 ${seedAppMin}~${seedAppMax}°C`,
           sunrise: sun.sunrise, sunset: sun.sunset,
-          outfit: outfitFor(est.min, est.max, 0),
+          outfit: outfitFor(est.min, est.max, 0, seedAppMax),
           tip: `${label ? label + " " : ""}계절 평년값이에요. '일정 도시별 날씨 새로고침'을 누르면 실제 예보로 바뀝니다.`,
           source: "seasonal", sourceLabel: "계절 평년 추정"
         };
@@ -3653,19 +4210,28 @@
               <span>${g.group}</span>
               <span class="cnt">${done}/${g.items.length} 완료</span>
             </div>
-            ${g.items.map(c => `
+            ${g.items.map(c => editingCheckId === c.id ? `
+              <div class="expense-item chk-editing">
+                <input id="chk-edit-input" class="input" value="${escapeAttr(c.text)}" style="flex:1;min-width:0;font-size:13px;"
+                  onkeydown="if(event.key==='Enter'){event.preventDefault();saveCheckEdit('${c.id}');}else if(event.key==='Escape'){cancelCheckEdit();}" />
+                <button class="btn btn-primary btn-sm" onclick="saveCheckEdit('${c.id}')">저장</button>
+                <button class="btn btn-soft btn-sm" onclick="cancelCheckEdit()">취소</button>
+              </div>
+            ` : `
               <div class="expense-item ${c.urgent && !c.done ? "chk-item-urgent" : ""}">
                 <label style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer;font-size:13px;${c.done ? "text-decoration:line-through;color:var(--muted);" : ""}">
                   <input type="checkbox" ${c.done ? "checked" : ""} onchange="toggleCheck('${c.id}')" />
-                  <span>${c.text}${c.urgent && !c.done ? '<span class="chk-tag">필수</span>' : ""}</span>
+                  <span>${escapeAttr(c.text)}${c.urgent && !c.done ? '<span class="chk-tag">필수</span>' : ""}</span>
                 </label>
-                <button class="btn btn-danger btn-sm" onclick="delCheck('${c.id}')">삭제</button>
+                ${canEdit() ? `<button class="btn btn-soft btn-sm" title="내용 수정" onclick="startCheckEdit('${c.id}')">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="delCheck('${c.id}')">삭제</button>` : ""}
               </div>
             `).join("")}
           </div>`;
         }).join("");
       }
       renderOverseasEmphasis();
+      renderPhrasebook();
       renderExchangeRate();
     }
 
@@ -3815,6 +4381,7 @@
       saveState();
     }
     function addChecklist() {
+      if (!canEdit()) return alert("읽기 전용 권한이라 체크리스트를 수정할 수 없어요.");
       const t = document.getElementById("chk-new").value.trim();
       if (!t) return;
       state.checklist.push({ id: "c" + Date.now(), text: t, done: false });
@@ -3822,8 +4389,354 @@
       saveState();
     }
     function delCheck(id) {
+      if (!canEdit()) return alert("읽기 전용 권한이라 체크리스트를 수정할 수 없어요.");
+      const c = (state.checklist || []).find(x => x.id === id);
+      if (!c) return;
+      if (!confirm(`'${c.text}' 항목을 삭제할까요?`)) return;
       state.checklist = state.checklist.filter(x => x.id !== id);
+      if (editingCheckId === id) editingCheckId = null;
       saveState();
+    }
+    let editingCheckId = null;
+    function startCheckEdit(id) {
+      if (!canEdit()) return alert("읽기 전용 권한이라 체크리스트를 수정할 수 없어요.");
+      const c = (state.checklist || []).find(x => x.id === id);
+      if (!c) return;
+      editingCheckId = id;
+      renderChecklist();
+      setTimeout(() => {
+        const el = document.getElementById("chk-edit-input");
+        if (el) { el.focus(); el.select(); }
+      }, 30);
+    }
+    function cancelCheckEdit() {
+      editingCheckId = null;
+      renderChecklist();
+    }
+    function saveCheckEdit(id) {
+      const el = document.getElementById("chk-edit-input");
+      const v = (el?.value || "").trim();
+      if (!v) return alert("항목 내용을 입력해 주세요.");
+      const c = (state.checklist || []).find(x => x.id === id);
+      if (!c) return;
+      c.text = v;
+      c.editedAt = new Date().toISOString();
+      editingCheckId = null;
+      saveState();
+      alert("✏️ 체크리스트 항목을 저장했어요.");
+    }
+
+    /* =====================================================================
+       🏨 숙소 · 🚆 교통편 예약 내역 (state.bookings — 클라우드/로컬·동반인 동기화)
+       ===================================================================== */
+    function ensureBookings() {
+      if (!Array.isArray(state.bookings)) state.bookings = [];
+    }
+
+    function bookingProfiles() {
+      const out = [];
+      const hostId = state.meta?.hostId || "host";
+      const hostNick = isHost() ? (myProfile.nickname || "나") : (state.meta?.hostNickname || "호스트");
+      const hostAv = isHost() ? (myProfile.avatar || "") : (state.meta?.hostAvatar || "");
+      out.push({ id: hostId, nickname: hostNick, avatar: hostAv, role: "host" });
+      (state.members || []).forEach(m => {
+        if (!m || !m.id) return;
+        if (out.some(x => x.id === m.id)) return;
+        out.push({ id: m.id, nickname: m.nickname || "동반인", avatar: m.avatar || "", role: m.role || "member" });
+      });
+      if (myProfile.id && !out.some(x => x.id === myProfile.id)) {
+        out.push({ id: myProfile.id, nickname: myProfile.nickname || "나", avatar: myProfile.avatar || "", role: "me" });
+      }
+      return out;
+    }
+
+    function bookingBookerHtml(b) {
+      const bk = b.booker || {};
+      const nm = bk.nickname || "예약자 미지정";
+      const av = bk.avatar
+        ? `<img src="${escapeAttr(bk.avatar)}" style="width:16px;height:16px;border-radius:50%;object-fit:cover;" />`
+        : `<span style="width:16px;height:16px;border-radius:50%;background:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;">${escapeAttr(String(nm).slice(0, 1))}</span>`;
+      return `<span class="bk-booker" title="예약자">${av}${escapeAttr(nm)}</span>`;
+    }
+
+    function bookingPayBits(b) {
+      const price = Number(b.price) || 0;
+      if (b.payStatus === "paid") {
+        return {
+          cls: "paid", short: "✅ 결제 완료",
+          detail: `${b.paidDate ? `${fmtMD(b.paidDate)} 결제` : "결제일 미기록"}${price ? ` · ${fmt(price)}` : ""}`
+        };
+      }
+      const due = Number(b.dueAmount) || price;
+      return {
+        cls: "planned", short: "⏳ 결제 예정",
+        detail: `${b.dueDate ? `${fmtMD(b.dueDate)}에 ` : "날짜 미정 · "}${due ? fmt(due) : "금액 미입력"} 결제 예정`
+      };
+    }
+
+    function bookingHotelHtml(b) {
+      const pay = bookingPayBits(b);
+      const inTxt = b.inDate ? `${fmtMD(b.inDate)}${b.inTime ? ` ${b.inTime}` : ""}` : "체크인 미입력";
+      const outTxt = b.outDate ? `${fmtMD(b.outDate)}${b.outTime ? ` ${b.outTime}` : ""}` : "체크아웃 미입력";
+      const nights = (b.inDate && b.outDate)
+        ? Math.max(0, Math.round((new Date(b.outDate + "T00:00:00") - new Date(b.inDate + "T00:00:00")) / 86400000))
+        : null;
+      return `
+        <div class="bk-card ${pay.cls}">
+          <div class="bk-head">
+            <div style="min-width:0;">
+              <div class="bk-name">🏨 ${escapeAttr(b.name || "숙소 이름 미입력")}</div>
+              <div class="bk-line">🛏 체크인 ${inTxt} → 체크아웃 ${outTxt}${nights ? ` · ${nights}박` : ""}</div>
+              ${b.room ? `<div class="bk-line">🛌 ${escapeAttr(b.room)}</div>` : ""}
+            </div>
+            <span class="bk-pay ${pay.cls}">${pay.short}</span>
+          </div>
+          <div class="bk-line" style="margin-top:5px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;">
+            <span>💳 ${pay.detail}</span>
+            ${bookingBookerHtml(b)}
+            ${b.url ? `<a class="btn btn-soft btn-sm" style="text-decoration:none;padding:2px 8px;font-size:10.5px;" href="${escapeAttr(b.url)}" target="_blank" rel="noopener">예약 링크</a>` : ""}
+          </div>
+          ${b.memo ? `<div class="bk-line" style="margin-top:3px;">📝 ${escapeAttr(b.memo)}</div>` : ""}
+          ${canEdit() ? `<div style="display:flex;gap:6px;margin-top:7px;">
+            <button class="btn btn-soft btn-sm" style="flex:1;" onclick="openBookingModal('${b.id}')">✏️ 수정</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteBooking('${b.id}')">삭제</button>
+          </div>` : ""}
+        </div>`;
+    }
+
+    function bookingTransitHtml(b) {
+      const pay = bookingPayBits(b);
+      const dep = b.depDate ? `${fmtMD(b.depDate)}${b.depTime ? ` ${b.depTime}` : ""}` : (b.depTime || "출발 미입력");
+      const arr = b.arrDate ? `${fmtMD(b.arrDate)}${b.arrTime ? ` ${b.arrTime}` : ""}` : (b.arrTime || "");
+      const title = [b.mode, b.name].filter(Boolean).join(" · ") || "교통편 이름 미입력";
+      return `
+        <div class="bk-card ${pay.cls}">
+          <div class="bk-head">
+            <div style="min-width:0;">
+              <div class="bk-name">🚆 ${escapeAttr(title)}</div>
+              <div class="bk-line">📍 ${escapeAttr(b.from || "출발지 미입력")} → ${escapeAttr(b.to || "도착지 미입력")}</div>
+              <div class="bk-line">🕒 ${dep}${arr ? ` → ${arr}` : ""}</div>
+              ${b.seat ? `<div class="bk-line">💺 ${escapeAttr(b.seat)}</div>` : ""}
+            </div>
+            <span class="bk-pay ${pay.cls}">${pay.short}</span>
+          </div>
+          <div class="bk-line" style="margin-top:5px;display:flex;flex-wrap:wrap;align-items:center;gap:6px;">
+            <span>💳 ${pay.detail}</span>
+            ${bookingBookerHtml(b)}
+          </div>
+          ${b.memo ? `<div class="bk-line" style="margin-top:3px;">📝 ${escapeAttr(b.memo)}</div>` : ""}
+          ${canEdit() ? `<div style="display:flex;gap:6px;margin-top:7px;">
+            <button class="btn btn-soft btn-sm" style="flex:1;" onclick="openBookingModal('${b.id}')">✏️ 수정</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteBooking('${b.id}')">삭제</button>
+          </div>` : ""}
+        </div>`;
+    }
+
+    function renderBookings() {
+      const box = document.getElementById("bookings-section");
+      if (!box) return;
+      ensureBookings();
+      const hotels = state.bookings.filter(b => b.type === "hotel")
+        .sort((a, b) => String(a.inDate || "").localeCompare(String(b.inDate || "")));
+      const transits = state.bookings.filter(b => b.type === "transit")
+        .sort((a, b) => String(`${a.depDate || ""} ${a.depTime || ""}`).localeCompare(String(`${b.depDate || ""} ${b.depTime || ""}`)));
+      const paidList = state.bookings.filter(b => b.payStatus === "paid");
+      const plannedList = state.bookings.filter(b => b.payStatus !== "paid");
+      const paidSum = paidList.reduce((sum, b) => sum + (Number(b.price) || 0), 0);
+      const plannedSum = plannedList.reduce((sum, b) => sum + (Number(b.dueAmount) || Number(b.price) || 0), 0);
+      const nextDue = plannedList.filter(b => b.dueDate).sort((a, b) => String(a.dueDate).localeCompare(String(b.dueDate)))[0];
+      const total = state.bookings.length;
+      const addBtns = canEdit() ? `
+        <div class="row" style="margin:8px 0 0;">
+          <button class="btn btn-soft btn-sm" style="flex:1;" onclick="openBookingModal(null,'hotel')">+ 🏨 숙소 추가</button>
+          <button class="btn btn-soft btn-sm" style="flex:1;" onclick="openBookingModal(null,'transit')">+ 🚆 교통편 추가</button>
+        </div>` : "";
+
+      box.innerHTML = `
+        <div class="card" id="bookings-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+            <div>
+              <div style="font-size:14px;font-weight:800;">🏨 숙소 · 🚆 교통편 예약 내역</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px;">예약자·결제 상태까지 적어 두면 동반인과 한눈에 확인할 수 있어요.</div>
+            </div>
+            ${total ? `<span class="tag blue">${total}건</span>` : ""}
+          </div>
+          ${total ? `<div class="bk-sum">
+            <span>✅ 결제 완료 ${paidList.length}건 · ${fmt(paidSum)}</span>
+            <span>⏳ 결제 예정 ${plannedList.length}건 · ${fmt(plannedSum)}</span>
+            ${nextDue ? `<span>📅 다음 결제 ${fmtMD(nextDue.dueDate)}</span>` : ""}
+          </div>` : ""}
+
+          <div class="bk-sub-title">🏨 호텔(숙소) 예약</div>
+          ${hotels.length ? hotels.map(bookingHotelHtml).join("") : `<div class="bk-line" style="color:var(--muted);padding:2px 0 4px;">아직 등록된 숙소 예약이 없어요. 체크인·체크아웃 시간과 결제 상태를 남겨 두면 출발 전 확인이 쉬워요.</div>`}
+
+          <div class="bk-sub-title">🚆 교통편 예약</div>
+          ${transits.length ? transits.map(bookingTransitHtml).join("") : `<div class="bk-line" style="color:var(--muted);padding:2px 0 4px;">KTX·항공·버스 예약을 추가하면 좌석·결제 예정일까지 같이 볼 수 있어요.</div>`}
+          ${addBtns}
+        </div>`;
+    }
+
+    let editingBookingId = null;
+    function openBookingModal(id, type) {
+      ensureBookings();
+      if (!canEdit()) return alert("읽기 전용 권한이라 예약 내역을 수정할 수 없어요. 호스트에게 수정 권한을 요청해 주세요.");
+      const b = id ? state.bookings.find(x => x.id === id) : null;
+      const t = b ? b.type : (type === "transit" ? "transit" : "hotel");
+      editingBookingId = b ? b.id : null;
+      document.getElementById("bk-type").value = t;
+      document.getElementById("booking-modal-title").textContent = `${t === "hotel" ? "🏨 숙소" : "🚆 교통편"} 예약 ${b ? "수정" : "추가"}`;
+      document.getElementById("bk-hotel-fields").style.display = t === "hotel" ? "block" : "none";
+      document.getElementById("bk-transit-fields").style.display = t === "transit" ? "block" : "none";
+
+      const tripStart = state.meta?.startDate || "";
+      const tripEnd = state.meta?.endDate || tripStart;
+      const dayDate = (state.days || []).find(d => d.day === currentDay)?.date || tripStart;
+
+      document.getElementById("bk-name").value = b ? (b.name || "") : "";
+      document.getElementById("bk-price").value = b && b.price ? String(b.price) : "";
+      document.getElementById("bk-memo").value = b ? (b.memo || "") : "";
+      document.getElementById("bk-pay").value = b ? (b.payStatus || "planned") : "planned";
+      document.getElementById("bk-paid-date").value = b ? (b.paidDate || "") : "";
+      document.getElementById("bk-due-date").value = b ? (b.dueDate || "") : "";
+      document.getElementById("bk-due-amount").value = b && b.dueAmount ? String(b.dueAmount) : "";
+
+      document.getElementById("bk-in-date").value = b ? (b.inDate || "") : tripStart;
+      document.getElementById("bk-in-time").value = b ? (b.inTime || "") : "15:00";
+      document.getElementById("bk-out-date").value = b ? (b.outDate || "") : tripEnd;
+      document.getElementById("bk-out-time").value = b ? (b.outTime || "") : "11:00";
+      document.getElementById("bk-hotel-room").value = b ? (b.room || "") : "";
+      document.getElementById("bk-hotel-url").value = b ? (b.url || "") : "";
+
+      document.getElementById("bk-mode").value = b && b.mode ? b.mode : "KTX";
+      if (![...document.getElementById("bk-mode").options].some(o => o.value === document.getElementById("bk-mode").value)) {
+        document.getElementById("bk-mode").value = "기타";
+      }
+      document.getElementById("bk-code").value = b ? (b.name || "") : "";
+      document.getElementById("bk-from").value = b ? (b.from || "") : "";
+      document.getElementById("bk-to").value = b ? (b.to || "") : "";
+      document.getElementById("bk-dep-date").value = b ? (b.depDate || "") : dayDate;
+      document.getElementById("bk-dep-time").value = b ? (b.depTime || "") : "";
+      document.getElementById("bk-arr-date").value = b ? (b.arrDate || "") : (b ? "" : dayDate);
+      document.getElementById("bk-arr-time").value = b ? (b.arrTime || "") : "";
+      document.getElementById("bk-seat").value = b ? (b.seat || "") : "";
+
+      const profs = bookingProfiles();
+      const sel = document.getElementById("bk-booker");
+      sel.innerHTML = profs.map(p => `<option value="${escapeAttr(p.id)}">${escapeAttr(p.nickname)}${p.role === "host" ? " (호스트)" : ""}</option>`).join("")
+        + `<option value="__custom">✍️ 직접 입력</option>`;
+      const curId = b?.booker?.custom ? "__custom" : (b?.booker?.id || profs[0]?.id || "__custom");
+      sel.value = [...sel.options].some(o => o.value === curId) ? curId : "__custom";
+      document.getElementById("bk-booker-name").value = b?.booker?.custom ? (b.booker.nickname || "") : "";
+      onBookingBookerChange();
+      onBookingPayChange();
+      document.getElementById("booking-modal").classList.add("open");
+    }
+
+    function closeBookingModal() {
+      document.getElementById("booking-modal").classList.remove("open");
+      editingBookingId = null;
+    }
+
+    function onBookingPayChange() {
+      const paid = document.getElementById("bk-pay").value === "paid";
+      document.getElementById("bk-paid-row").style.display = paid ? "flex" : "none";
+      document.getElementById("bk-planned-row").style.display = paid ? "none" : "flex";
+      if (!paid) {
+        const price = document.getElementById("bk-price").value;
+        const dueAmt = document.getElementById("bk-due-amount");
+        if (!dueAmt.value && price) dueAmt.value = price;
+      }
+    }
+
+    function onBookingBookerChange() {
+      const sel = document.getElementById("bk-booker");
+      document.getElementById("bk-booker-name").style.display = sel.value === "__custom" ? "block" : "none";
+    }
+
+    function saveBooking() {
+      if (!canEdit()) return alert("읽기 전용 권한이라 예약 내역을 저장할 수 없어요.");
+      ensureBookings();
+      const t = document.getElementById("bk-type").value === "transit" ? "transit" : "hotel";
+      const name = document.getElementById("bk-name").value.trim();
+      const price = Math.max(0, Number(document.getElementById("bk-price").value) || 0);
+      const memo = document.getElementById("bk-memo").value.trim();
+      const payStatus = document.getElementById("bk-pay").value === "paid" ? "paid" : "planned";
+      const paidDate = document.getElementById("bk-paid-date").value;
+      const dueDate = document.getElementById("bk-due-date").value;
+      const dueAmount = Math.max(0, Number(document.getElementById("bk-due-amount").value) || 0);
+
+      if (t === "transit" && !document.getElementById("bk-code").value.trim() && !name) {
+        return alert("교통편 이름(편명·열차)을 입력해 주세요.");
+      }
+      if (t === "hotel" && !name) return alert("숙소 이름을 입력해 주세요.");
+
+      const selVal = document.getElementById("bk-booker").value;
+      let booker = null;
+      if (selVal === "__custom") {
+        const nm = document.getElementById("bk-booker-name").value.trim();
+        if (!nm) return alert("예약자 이름을 입력해 주세요.");
+        booker = { id: "custom", nickname: nm, avatar: "", custom: true };
+      } else {
+        const p = bookingProfiles().find(x => x.id === selVal);
+        booker = p ? { id: p.id, nickname: p.nickname, avatar: p.avatar || "", custom: false } : null;
+      }
+
+      const existing = editingBookingId ? state.bookings.find(x => x.id === editingBookingId) : null;
+      const rec = existing || { id: "bk-" + Date.now().toString(36), createdAt: new Date().toISOString() };
+      rec.type = t;
+      rec.price = price;
+      rec.payStatus = payStatus;
+      rec.paidDate = payStatus === "paid" ? paidDate : "";
+      rec.dueDate = payStatus === "paid" ? "" : dueDate;
+      rec.dueAmount = payStatus === "paid" ? 0 : (dueAmount || price);
+      rec.booker = booker;
+      rec.memo = memo;
+      rec.updatedAt = new Date().toISOString();
+      if (t === "hotel") {
+        rec.name = name;
+        rec.inDate = document.getElementById("bk-in-date").value;
+        rec.inTime = document.getElementById("bk-in-time").value;
+        rec.outDate = document.getElementById("bk-out-date").value;
+        rec.outTime = document.getElementById("bk-out-time").value;
+        rec.room = document.getElementById("bk-hotel-room").value.trim();
+        rec.url = document.getElementById("bk-hotel-url").value.trim();
+        delete rec.mode; delete rec.from; delete rec.to; delete rec.depDate; delete rec.depTime;
+        delete rec.arrDate; delete rec.arrTime; delete rec.seat;
+      } else {
+        const code = document.getElementById("bk-code").value.trim();
+        rec.mode = document.getElementById("bk-mode").value;
+        rec.name = code || "교통편";
+        rec.from = document.getElementById("bk-from").value.trim();
+        rec.to = document.getElementById("bk-to").value.trim();
+        rec.depDate = document.getElementById("bk-dep-date").value;
+        rec.depTime = document.getElementById("bk-dep-time").value;
+        rec.arrDate = document.getElementById("bk-arr-date").value;
+        rec.arrTime = document.getElementById("bk-arr-time").value;
+        rec.seat = document.getElementById("bk-seat").value.trim();
+        delete rec.inDate; delete rec.inTime; delete rec.outDate; delete rec.outTime;
+        delete rec.room; delete rec.url;
+      }
+      if (!existing) state.bookings.push(rec);
+      closeBookingModal();
+      saveState();
+      alert(`✅ ${t === "hotel" ? "숙소" : "교통편"} 예약 내역을 저장했어요.`);
+    }
+
+    function deleteBooking(id) {
+      if (!canEdit()) return alert("읽기 전용 권한이라 예약 내역을 삭제할 수 없어요.");
+      const b = state.bookings.find(x => x.id === id);
+      if (!b) return;
+      if (!confirm(`'${b.name || "예약"}' 내역을 삭제할까요?`)) return;
+      state.bookings = state.bookings.filter(x => x.id !== id);
+      saveState();
+    }
+
+    /* 지도 아래 3버튼 설명 */
+    function openActionHelp() {
+      document.getElementById("action-help-modal").classList.add("open");
+    }
+    function closeActionHelp() {
+      document.getElementById("action-help-modal").classList.remove("open");
     }
 
     /* Profile, Invite & Member Approval */
@@ -4836,6 +5749,7 @@
           memo: s.desc
         };
         if (tgt.purpose === "음식점" || tgt.purpose === "카페") item.menus = [];
+        applyAutoBookingBadge(item);
         return item;
       });
       dayObj.items.splice(Math.min(insertAt, dayObj.items.length), 0, ...newItems);
@@ -5048,7 +5962,7 @@
       "다리집": { closed: "", lat: 35.1436, lng: 129.1103, cat: "음식점", cost: 18000, stay: "체류 45분", desc: "남천동 떡볶이·오징어튀김" },
       "본전돼지국밥": { closed: "", lat: 35.1165, lng: 129.0432, cat: "음식점", cost: 22000, stay: "체류 45분", desc: "부산역 인근 돼지국밥" },
       "광안리": { closed: "", lat: 35.1532, lng: 129.1187, cat: "관광", cost: 0, stay: "체류 60분", desc: "광안대교 정면 해변 산책" },
-      "스카이캡슐": { closed: "", lat: 35.1617, lng: 129.1912, cat: "관광", cost: 35000, stay: "체류 40분", desc: "해운대 블루라인파크" },
+      "스카이캡슐": { closed: "", lat: 35.1617, lng: 129.1912, cat: "관광", cost: 35000, stay: "체류 40분", booking: "예약 권장", desc: "해운대 블루라인파크" },
       "흰여울": { closed: "", lat: 35.0789, lng: 129.0445, cat: "관광", cost: 0, stay: "체류 70분", desc: "영도 바다 절벽 산책로" },
       "해동용궁사": { closed: "", lat: 35.1884, lng: 129.2233, cat: "관광", cost: 0, stay: "체류 60분", desc: "기장 바다 절벽 사찰" },
       "동화가든": { closed: "수", lat: 37.7911, lng: 128.9144, cat: "음식점", cost: 24000, stay: "체류 50분", desc: "초당순두부마을 (수요일 휴무 회피)" },
@@ -5058,6 +5972,42 @@
       "국립현대미술관": { closed: "", lat: 37.5786, lng: 126.9804, cat: "관광", cost: 4000, stay: "체류 80분", desc: "전시 관람" },
       "자매국수": { closed: "", lat: 33.4985, lng: 126.5269, cat: "음식점", cost: 20000, stay: "체류 45분", desc: "제주 고기국수" }
     };
+
+    /* =====================================================================
+       예약이 필요한 성격의 장소에 '예약 권장' 배지를 자동으로 붙인다
+       (장소 직접 추가 · 추천에서 담기 · 추천 루트 적용 시 공통 사용)
+       ===================================================================== */
+    const BOOKING_KEYWORDS = [
+      { re: /스카이캡슐|해변열차|블루라인파크|케이블카|곤돌라|짚라인|루지|크루즈|유람선|관광열차|전망대|스카이워크|루프탑|워터파크|아쿠아리움|테마파크|디즈니|유니버설|레고랜드|액티비티|클래스|체험|투어|가이드/i, label: "예약 권장" },
+      { re: /오마카세|파인다이닝|미쉐린|코스요리|디너쇼|뷔페|공연|뮤지컬|콘서트/i, label: "예약 권장" },
+      { re: /웨이팅|줄서기|캐치테이블|테이블링|현지 인기|인기 맛집/i, label: "예약 권장" }
+    ];
+
+    function bookingBadgeFor(name) {
+      const q = String(name || "");
+      if (!q) return "";
+      const knownKey = Object.keys(KNOWN_SPOT_META).find(k => q.includes(k));
+      if (knownKey && KNOWN_SPOT_META[knownKey].booking) return KNOWN_SPOT_META[knownKey].booking;
+      for (const rule of BOOKING_KEYWORDS) {
+        if (rule.re.test(q)) return rule.label;
+      }
+      return "";
+    }
+
+    function applyAutoBookingBadge(item) {
+      if (!item) return "";
+      const label = bookingBadgeFor(item.place);
+      if (!label) return "";
+      if (!Array.isArray(item.badges)) item.badges = [];
+      if (item.badges.some(b => /예약\s*(권장|필수)|예매\s*필수/.test(String(b)))) return "";
+      item.badges.push(label);
+      item.bookingAuto = true;
+      return label;
+    }
+
+    function applyAutoBookingBadgesToDays() {
+      (state.days || []).forEach(d => (d.items || []).forEach(it => applyAutoBookingBadge(it)));
+    }
 
     function parseOsmClosedDay(oh) {
       if (!oh) return "";
@@ -5505,6 +6455,7 @@
       state.meta.startDate = plan.startDate;
       state.meta.endDate = plan.endDate;
       state.days = plan.days;
+      applyAutoBookingBadgesToDays();
       currentDay = 1;
       saveState();
       document.querySelector('.nav-btn[data-tab="timeline"]')?.click();
@@ -5530,23 +6481,29 @@
     function tripTempRange() {
       const ws = (state.weather || []).filter(w => typeof w.maxTemp === "number" && typeof w.minTemp === "number");
       if (ws.length) {
+        const min = Math.min(...ws.map(w => w.minTemp));
+        const max = Math.max(...ws.map(w => w.maxTemp));
+        const apps = ws.map(w => typeof w.apparentMax === "number" ? w.apparentMax : apparentFromDry(w.maxTemp, w.minTemp)).filter(v => typeof v === "number");
+        const appMins = ws.map(w => typeof w.apparentMin === "number" ? w.apparentMin : apparentFromDry(w.maxTemp, w.minTemp)).filter(v => typeof v === "number");
         return {
-          min: Math.min(...ws.map(w => w.minTemp)),
-          max: Math.max(...ws.map(w => w.maxTemp))
+          min, max,
+          apparentMax: apps.length ? Math.max(...apps) : apparentFromDry(max, min),
+          apparentMin: appMins.length ? Math.min(...appMins) : apparentFromDry(max, min)
         };
       }
       const dates = (state.days || []).map(d => d.date).filter(Boolean);
       const month = dates.length ? new Date(dates[0] + "T00:00:00").getMonth() : new Date().getMonth();
       const dest = String(state.meta?.destination || "부산");
       const key = Object.keys(CITY_GEO).find(k => dest.includes(k));
-      return seasonalEstimate(dest, month, key ? CITY_GEO[key].lat : undefined);
+      const est = seasonalEstimate(dest, month, key ? CITY_GEO[key].lat : undefined);
+      return { ...est, apparentMax: apparentFromDry(est.max, est.min), apparentMin: apparentFromDry(est.max, est.min) };
     }
 
     function planBHeadline() {
       const t = tripTempRange();
       if (!t || typeof t.max !== "number") return { title: "☔ 플랜 B", sub: "우천·실내 대체", full: "☔ 플랜 B (우천·실내 대체)" };
       if (t.max <= 10) return { title: "☔ 플랜 B", sub: "우천·한파 대체", full: "☔ 플랜 B (우천·한파 대체)" };
-      if (t.max >= 26) return { title: "☀️ 플랜 B", sub: "우천·폭염 대체", full: "☀️ 플랜 B (우천·폭염 대체)" };
+      if (typeof t.apparentMax === "number" && t.apparentMax >= HEATWAVE_APPARENT) return { title: "☀️ 플랜 B", sub: "우천·폭염 대체", full: "☀️ 플랜 B (우천·폭염 대체)" };
       return { title: "☔ 플랜 B", sub: "우천·실내 대체", full: "☔ 플랜 B (우천·실내 대체)" };
     }
 
@@ -5570,8 +6527,8 @@
       if (t.max <= 10) {
         return `<div style="margin-top:7px;font-size:12px;color:#1e40af;line-height:1.5;">🧊 최고 ${t.max}°C · 한파 대비 — 야외 일정은 실내 온천·전시·카페로 돌리고, 대기 시간엔 핫팩·장갑을 챙기세요.</div>`;
       }
-      if (t.max >= 26) {
-        return `<div style="margin-top:7px;font-size:12px;color:#1e40af;line-height:1.5;">🔥 최고 ${t.max}°C · 폭염 대비 — 12~16시 야외 일정은 실내로 옮기고 물·양산·선크림을 챙기세요.</div>`;
+      if (typeof t.apparentMax === "number" && t.apparentMax >= HEATWAVE_APPARENT) {
+        return `<div style="margin-top:7px;font-size:12px;color:#1e40af;line-height:1.5;">🔥 체감 최고 ${Math.round(t.apparentMax)}°C (기온 ${t.max}°C) · 폭염 대비 — 12~16시 야외 일정은 실내로 옮기고 물·양산·선크림을 챙기세요.</div>`;
       }
       return `<div style="margin-top:7px;font-size:12px;color:#1e40af;line-height:1.5;">🌦️ 최고 ${t.max}°C · 무난한 편 — 비만 피하면 실내·실외 모두 가능해요.</div>`;
     }
@@ -5698,30 +6655,93 @@
       return s.replace(/\s+/g, " ").slice(0, 42);
     }
 
+    const WEEKDAY_CHARS = ["일", "월", "화", "수", "목", "금", "토"];
+    // "Su" · "일요일" · "매주 일요일 휴무" · "일" 을 모두 "일"로 정규화
+    function normWeekday(v) {
+      const raw = String(v == null ? "" : v).trim();
+      if (!raw) return "";
+      const en = {
+        SU: "일", SUN: "일", SUNDAY: "일", MO: "월", MON: "월", MONDAY: "월",
+        TU: "화", TUE: "화", TUESDAY: "화", WE: "수", WED: "수", WEDNESDAY: "수",
+        TH: "목", THU: "목", THURSDAY: "목", FR: "금", FRI: "금", FRIDAY: "금",
+        SA: "토", SAT: "토", SATURDAY: "토"
+      };
+      const up = raw.toUpperCase().replace(/[^A-Z]/g, "");
+      if (en[up]) return en[up];
+      const ko = raw.match(/([월화수목금토일])\s*요일/);
+      if (ko) return ko[1];
+      if (WEEKDAY_CHARS.includes(raw)) return raw;
+      const anyKo = raw.match(/([월화수목금토일])/);
+      return anyKo ? anyKo[1] : "";
+    }
+
+    function isClosedBadge(b) {
+      const s = String(b || "");
+      if (/연중무휴/.test(s)) return false;
+      if (/영업/.test(s) && !/휴무|휴궁|휴관/.test(s)) return false;
+      return /휴무|휴궁|휴관/.test(s);
+    }
+
+    // 같은 휴무일이 메모에 두 번 이상 적히면 한 번만 남긴다
+    function dedupeClosedText(text) {
+      let s = String(text || "");
+      if (!s) return s;
+      const seen = new Set();
+      s = s.replace(/(?:매주\s*)?([월화수목금토일])요일\s*(?:정기\s*)?(?:휴무|휴궁|휴관)(?:\s*주의)?/g, (m, d) => {
+        if (seen.has(d)) return "";
+        seen.add(d);
+        return `${d}요일 휴무`;
+      });
+      s = s.replace(/(\s*·\s*){2,}/g, " · ");
+      s = s.replace(/^[\s·]+|[\s·]+$/g, "");
+      return s.replace(/\s{2,}/g, " ");
+    }
+
     function applyHoursToItem(it, info) {
       const oh = info.oh || "";
       const short = shortenOpeningHours(oh);
-      const closed = info.closed || "";
+      const closedDay = normWeekday(info.closed || "");
       it.hoursCheckedAt = new Date().toISOString();
       it.hoursSource = info.source || "";
-      // 새 정보가 없으면 기존 일정에 적힌 영업시간 배지를 지우지 않는다
-      if (!short && !closed) return false;
-      it.badges = (it.badges || []).filter(b =>
-        !/^🕒/.test(b) &&
-        !/^\d{1,2}:\d{2}~\d{1,2}:\d{2}$/.test(b) &&
-        !/요일 (영업|휴무)/.test(b) &&
-        !/휴무 주의$/.test(b) &&
-        b !== "연중무휴" && b !== "휴무일 미확인" && b !== "영업시간 확인 필요"
-      );
+      // 새 정보가 없으면 기존 일정에 적힌 영업시간·휴무 배지를 지우지 않는다
+      if (!short && !closedDay) return false;
+
+      const nextBadges = [];
+      const seenClosed = new Set();
+      (it.badges || []).forEach(b => {
+        if (/^🕒/.test(b)) return;
+        if (/^\d{1,2}:\d{2}~\d{1,2}:\d{2}$/.test(b)) return;
+        if (/요일\s*(영업|휴무)/.test(b)) return;
+        if (/휴무\s*주의$/.test(b)) return;
+        if (b === "연중무휴" || b === "휴무일 미확인" || b === "영업시간 확인 필요") return;
+        if (isClosedBadge(b)) {
+          const d = normWeekday(b);
+          if (!d) return;                       // 요일을 못 읽는 휴무 배지는 새 정보로 대체
+          if (closedDay && d === closedDay) return; // 같은 휴무일은 새 배지 하나로 통일
+          if (seenClosed.has(d)) return;        // 같은 요일 중복 배지 제거
+          seenClosed.add(d);
+        }
+        const key = String(b).replace(/\s+/g, "");
+        if (nextBadges.some(x => String(x).replace(/\s+/g, "") === key)) return;
+        nextBadges.push(b);
+      });
+      it.badges = nextBadges;
+      if (closedDay) it.badges.unshift(`${closedDay}요일 휴무`);
       if (short) it.badges.unshift(`🕒 ${short}`);
-      if (closed) it.badges.unshift(`${closed} 휴무`);
       if (short) {
-        const memo = String(it.memo || "");
-        if (!memo.includes(short)) it.memo = (memo ? memo + " · " : "") + `영업시간 ${short}`;
+        const memo0 = String(it.memo || "");
+        if (!memo0.includes(short)) it.memo = (memo0 ? memo0 + " · " : "") + `영업시간 ${short}`;
       }
-      if (short && !closed) {
+      if (short && !closedDay) {
         const m0 = String(it.memo || "");
         if (!m0.includes("휴무일은 방문 전")) it.memo = (m0 ? m0 + " · " : "") + "휴무일은 방문 전 확인";
+      }
+      if (closedDay) {
+        const m1 = String(it.memo || "");
+        if (!new RegExp(`${closedDay}요일\\s*휴무`).test(m1)) {
+          it.memo = (m1 ? m1 + " · " : "") + `${closedDay}요일 휴무`;
+        }
+        it.memo = dedupeClosedText(it.memo);
       }
       return true;
     }
@@ -6632,19 +7652,22 @@
       const month = isNaN(d0) ? new Date().getMonth() : d0.getMonth();
       const overseas = state.meta?.tripType === "overseas";
       const dest = String(state.meta?.destination || "부산").split(/[(\s]/)[0] || "부산";
-      let minT = null, maxT = null;
+      let minT = null, maxT = null, appMaxT = null;
       const ws = (state.weather || []).filter(w => typeof w.minTemp === "number" && typeof w.maxTemp === "number");
       if (ws.length) {
         minT = Math.round(ws.reduce((a, w) => a + w.minTemp, 0) / ws.length);
         maxT = Math.round(ws.reduce((a, w) => a + w.maxTemp, 0) / ws.length);
+        const apps = ws.map(w => typeof w.apparentMax === "number" ? w.apparentMax : apparentFromDry(w.maxTemp, w.minTemp));
+        appMaxT = Math.round(apps.reduce((a, b) => a + (Number(b) || 0), 0) / apps.length);
       } else {
         const g = Object.keys(CITY_GEO).find(k => dest.includes(k));
         const est = seasonalEstimate(dest, month, g ? CITY_GEO[g].lat : undefined);
         minT = est.min; maxT = est.max;
+        appMaxT = apparentFromDry(est.max, est.min);
       }
       const blob = JSON.stringify((state.days || []).map(d => [d.area, d.areaDetail, d.subtitle, (d.items || []).map(i => `${i.place} ${i.memo || ""}`)]));
       const sea = /바다|해변|해수욕|광안리|해운대|본다이|맨리|워터파크|수영|오션|비치|beach/i.test(blob);
-      return { nights, days, month, overseas, dest, minT, maxT, sea };
+      return { nights, days, month, overseas, dest, minT, maxT, apparentMax: appMaxT, sea };
     }
 
     function generatePackingList() {
@@ -6657,7 +7680,8 @@
       const dips = Math.max(0, Math.min(3, Number(d.waterDips) || 0));
       const extra = dips;
       const hasWaterDip = dips > 0;
-      const cold = ctx.maxT <= 10, hot = ctx.maxT >= 26;
+      const feelsMax = typeof ctx.apparentMax === "number" ? ctx.apparentMax : ctx.maxT;
+      const cold = ctx.maxT <= 10, hot = feelsMax >= HEATWAVE_APPARENT;
       const rows = [];
       const add = (group, name, qty = 1) => rows.push({ group, name, qty: Math.max(1, Math.round(qty)) });
 
@@ -6669,7 +7693,6 @@
       add("👕 의류·신발", "잠옷", 1);
       if (hasWaterDip) {
         add("👕 의류·신발", "수영복", 1);
-        add("👕 의류·신발", "래시가드", 1);
         add("👕 의류·신발", "비치타월·여분 수건", dips);
         add("👕 의류·신발", "슬리퍼·아쿠아슈즈", 1);
       }
@@ -6906,10 +7929,11 @@
       const items = p.items || [];
       const done = items.filter(i => i.checked).length;
       const pct = items.length ? Math.round(done / items.length * 100) : 0;
+      const feelsCtxMax = typeof ctx.apparentMax === "number" ? ctx.apparentMax : ctx.maxT;
       const seasonLabel = ctx.maxT <= 10
         ? `❄️ 겨울·한파 (최고 ${ctx.maxT}°C)`
-        : ctx.maxT >= 26
-          ? `☀️ 더위 (최고 ${ctx.maxT}°C)`
+        : feelsCtxMax >= HEATWAVE_APPARENT
+          ? `☀️ 폭염 (체감 최고 ${feelsCtxMax}°C)`
           : `${ctx.maxT >= 17 ? "🌤️ 선선" : "🍂 쌀쌀"} (최고 ${ctx.maxT}°C)`;
       const styleLabel = (PACKING_STYLES.find(s => s.key === p.tripStyle) || {}).label || "";
       const genderLabel = (PACKING_GENDERS.find(g => g.key === p.gender) || {}).label || "";
