@@ -5275,8 +5275,10 @@
       const wrap = document.createElement("div");
       wrap.className = "ac-wrap";
       if (input.style.flex) { wrap.style.flex = input.style.flex; input.style.flex = "1 1 auto"; }
-      if (input.style.width) { wrap.style.width = input.style.width; input.style.width = "100%"; }
+      if (input.style.width) wrap.style.width = input.style.width;
       wrap.style.minWidth = "0";
+      input.style.width = "100%";
+      input.style.minWidth = "0";
       input.parentNode.insertBefore(wrap, input);
       wrap.appendChild(input);
       const list = document.createElement("div");
