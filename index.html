@@ -392,6 +392,12 @@
       margin: 0;
       padding: 0 1px;
     }
+    /* 크롬이 달력·시계 아이콘을 오른쪽으로 밀어내려고 넣는 빈 칸(gap) — 남겨 두면 값이 왼쪽으로 치우친다 */
+    input::-webkit-datetime-edit-gap {
+      display: none;
+      flex: 0 0 0;
+      width: 0;
+    }
     /* 달력·시계 아이콘은 흐름에서 빼서 오른쪽에 띄운다 — 아이콘 몫만큼 값이 왼쪽으로 밀리지 않게 */
     input[type="date"]::-webkit-calendar-picker-indicator,
     input[type="time"]::-webkit-calendar-picker-indicator,
