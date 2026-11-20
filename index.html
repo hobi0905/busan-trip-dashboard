@@ -742,6 +742,33 @@
     }
     .airport-alert .ttl { font-size: 13.5px; font-weight: 800; color: #b45309; line-height: 1.45; }
     .airport-alert .body { font-size: 12px; color: #7c2d12; margin-top: 5px; line-height: 1.5; }
+
+    /* 🏠 자주 쓰는 거점 칩 */
+    .sp-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 2px 0 8px; }
+    .sp-chip {
+      display: inline-flex; align-items: center; gap: 4px; max-width: 100%;
+      padding: 5px 9px; border-radius: 999px; border: 1px solid var(--ocean-border);
+      background: var(--ocean-soft); color: var(--ocean-dark);
+      font-family: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sp-chip:active { background: var(--ocean); color: #fff; }
+    .sp-chip.sp-manage { background: #fff; border-style: dashed; color: var(--muted); }
+    .sp-empty { font-size: 11px; color: var(--muted); }
+    .sp-empty a { color: var(--ocean-dark); font-weight: 700; text-decoration: none; }
+    .place-row { display: flex; align-items: center; gap: 7px; padding: 7px 0; border-bottom: 1px solid #f1f5f9; }
+    .place-row:last-child { border-bottom: none; }
+
+    /* 🌤️ 집 + 여행지 날씨 나란히 */
+    .wx-home-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 4px; }
+    .wx-cell { border: 1px solid var(--border); border-radius: 12px; padding: 8px 9px; background: #fff; min-width: 0; }
+    .wx-cell.home { background: var(--ocean-soft); border-color: var(--ocean-border); }
+    .wx-cell-label { font-size: 10.5px; font-weight: 800; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .wx-cell-temp { font-size: 15px; font-weight: 800; margin-top: 2px; }
+    .wx-cell-sub { font-size: 11px; color: #334155; margin-top: 2px; line-height: 1.35; }
+
+    /* 🔗 예약 연동 타임라인 카드 */
+    .tl-virtual { border-left: 4px solid var(--ocean); background: var(--ocean-soft); }
   </style>
 </head>
 <body>
@@ -840,6 +867,9 @@
           <button class="btn btn-soft" style="flex:1;" onclick="openPlaceModal(null)">+ 일정 추가</button>
           <button class="btn btn-primary" style="flex:1;" onclick="openTransitModal()">🚆 교통편 추가</button>
         </div>
+        <div style="margin:0 0 12px;">
+          <button class="btn btn-soft btn-sm" style="width:100%;" onclick="openPlacesModal()">🏠 자주 쓰는 거점 (집·공항·역·호텔) 관리</button>
+        </div>
         <div id="timeline-list"></div>
         <div id="bookings-section"></div>
         <div style="margin-top:16px;margin-bottom:6px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
@@ -904,6 +934,11 @@
             </div>
             <button class="btn btn-soft btn-sm" style="white-space:nowrap;" onclick="refreshCityWeather(false)" id="weather-refresh-btn">🔄 일정 도시별 날씨 새로고침</button>
           </div>
+          <div class="row" style="margin:9px 0 0;align-items:center;">
+            <input id="home-city-input" class="input" style="flex:1;min-width:0;" placeholder="집(출발지) 도시 · 예: 인천" />
+            <button class="btn btn-soft btn-sm" style="white-space:nowrap;" onclick="saveHomeCity()">🏠 집 도시 저장</button>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:5px;" id="home-city-note">첫날(출발일)과 마지막 날(귀가일) 카드에 집 날씨를 여행지와 나란히 보여드러요.</div>
         </div>
         <div class="card" id="weather-climate-card" style="background:var(--ocean-soft);border-color:#bae6fd;">
           <div style="font-weight:800;font-size:14px;color:var(--ocean-dark);">🌊 1월 말~2월 초 부산 해변 체감 날씨 포인트</div>
@@ -1164,13 +1199,15 @@
         <input id="tr-code" class="input" placeholder="편명/노선 (예: KTX 25열차)" />
       </div>
       <div class="row">
-        <input id="tr-from" class="input" placeholder="출발지 (예: 광명역)" onkeydown="if(event.key==='Enter')searchTransitPlace('from')" />
+        <input id="tr-from" class="input" placeholder="출발지 (예: 광명역)" onkeydown="if(event.key==='Enter')searchTransitPlace('from')" onfocus="focusSavedPlaceChips('tr-saved-from')" />
         <button class="btn btn-soft btn-sm" style="white-space:nowrap;" onclick="searchTransitPlace('from')">출발 검색</button>
       </div>
+      <div id="tr-saved-from" style="margin-top:-2px;"></div>
       <div class="row">
-        <input id="tr-to" class="input" placeholder="도착지 (예: 부산역)" onkeydown="if(event.key==='Enter')searchTransitPlace('to')" />
+        <input id="tr-to" class="input" placeholder="도착지 (예: 부산역)" onkeydown="if(event.key==='Enter')searchTransitPlace('to')" onfocus="focusSavedPlaceChips('tr-saved-to')" />
         <button class="btn btn-soft btn-sm" style="white-space:nowrap;" onclick="searchTransitPlace('to')">도착 검색</button>
       </div>
+      <div id="tr-saved-to" style="margin-top:-2px;"></div>
       <div id="tr-search-results" style="max-height:110px;overflow-y:auto;margin-bottom:6px;"></div>
       <div class="row" style="align-items:center;">
         <input id="tr-dep" class="input" placeholder="출발 (10:17)" style="flex:1;" oninput="renderTransitPredictions()" />
@@ -1213,18 +1250,21 @@
           <button class="btn btn-primary btn-sm" style="flex:0 0 auto;white-space:nowrap;" onclick="searchPlaceOnMap('single')">검색</button>
         </div>
         <div class="row">
-          <input id="pm-place" class="input" placeholder="장소명" />
+          <input id="pm-place" class="input" placeholder="장소명" onfocus="focusSavedPlaceChips('pm-saved-single')" />
         </div>
+        <div id="pm-saved-single"></div>
       </div>
       <div id="pm-route-box" style="display:none;">
         <div class="row">
-          <input id="pm-from" class="input" style="flex:1;min-width:0;" placeholder="출발지 (예: 숭의역)" onkeydown="if(event.key==='Enter')searchPlaceOnMap('from')" />
+          <input id="pm-from" class="input" style="flex:1;min-width:0;" placeholder="출발지 (예: 숭의역)" onkeydown="if(event.key==='Enter')searchPlaceOnMap('from')" onfocus="focusSavedPlaceChips('pm-saved-from')" />
           <button class="btn btn-soft btn-sm" style="flex:0 0 auto;white-space:nowrap;" onclick="searchPlaceOnMap('from')">출발 검색</button>
         </div>
+        <div id="pm-saved-from"></div>
         <div class="row">
-          <input id="pm-to" class="input" style="flex:1;min-width:0;" placeholder="도착지 (예: 광명역)" onkeydown="if(event.key==='Enter')searchPlaceOnMap('to')" />
+          <input id="pm-to" class="input" style="flex:1;min-width:0;" placeholder="도착지 (예: 광명역)" onkeydown="if(event.key==='Enter')searchPlaceOnMap('to')" onfocus="focusSavedPlaceChips('pm-saved-to')" />
           <button class="btn btn-soft btn-sm" style="flex:0 0 auto;white-space:nowrap;" onclick="searchPlaceOnMap('to')">도착 검색</button>
         </div>
+        <div id="pm-saved-to"></div>
       </div>
       <div id="pm-search-results" style="max-height:130px;overflow-y:auto;margin-bottom:8px;"></div>
       <div class="row">
@@ -1564,10 +1604,12 @@
           </select>
           <input id="bk-code" class="input" placeholder="편명·열차 (예: KTX 25열차 / KE401)" />
         </div>
-        <div class="row" style="margin-bottom:6px;">
-          <input id="bk-from" class="input" placeholder="출발지 (예: 광명역)" />
-          <input id="bk-to" class="input" placeholder="도착지 (예: 부산역)" />
+        <div class="row">
+          <input id="bk-from" class="input" placeholder="출발지 (예: 광명역)" onfocus="focusSavedPlaceChips('bk-saved-from')" />
+          <input id="bk-to" class="input" placeholder="도착지 (예: 부산역)" onfocus="focusSavedPlaceChips('bk-saved-to')" />
         </div>
+        <div id="bk-saved-from" style="margin-top:-2px;"></div>
+        <div id="bk-saved-to" style="margin-top:-4px;"></div>
         <div class="row" style="margin-bottom:6px;">
           <div style="flex:1;min-width:0;"><div class="bk-label">출발 날짜</div><input id="bk-dep-date" type="date" class="input" /></div>
           <div style="width:108px;"><div class="bk-label">출발 시간</div><input id="bk-dep-time" type="time" class="input" /></div>
@@ -1605,6 +1647,38 @@
       </div>
       <input id="bk-memo" class="input" placeholder="메모 (취소 규정·조식·요청사항 등)" style="margin-bottom:10px;" />
       <button class="btn btn-primary" style="width:100%;" onclick="saveBooking()">저장하기</button>
+    </div>
+  </div>
+
+  <!-- 🏠 자주 쓰는 거점 (집·공항·역·호텔) 관리 -->
+  <div id="places-modal" class="modal-backdrop" onclick="if(event.target===this)closePlacesModal()">
+    <div class="modal-sheet" style="max-height:92vh;overflow-y:auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:16px;font-weight:800;">🏠 자주 쓰는 거점</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closePlacesModal()">닫기</button>
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:10px;">집·공항·기차역·호텔을 저장해 두면 일정·교통편·예약 입력칸에서 칩을 눌러 바로 채울 수 있어요.</div>
+      <div id="places-list"></div>
+      <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;">
+        <div style="font-size:12.5px;font-weight:800;margin-bottom:6px;" id="place-form-title">＋ 거점 추가</div>
+        <input type="hidden" id="place-edit-id" value="" />
+        <div class="row" style="margin-bottom:6px;">
+          <select id="place-kind" class="input" style="width:130px;">
+            <option value="home">🏠 집</option>
+            <option value="airport">✈️ 공항</option>
+            <option value="station">🚆 기차역</option>
+            <option value="hotel">🏨 호텔</option>
+          </select>
+          <input id="place-label" class="input" placeholder="별명 (예: 집, 인천공항 T1)" />
+        </div>
+        <div class="row" style="margin-bottom:6px;">
+          <input id="place-address" class="input" style="flex:1;min-width:0;" placeholder="주소·장소명 (예: 인천 미추홀구 … / 광명역)" />
+          <button class="btn btn-soft btn-sm" style="white-space:nowrap;" onclick="searchSavedPlaceAddress()">🔎 좌표 찾기</button>
+        </div>
+        <div id="place-search-results" style="max-height:120px;overflow-y:auto;margin-bottom:6px;"></div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;" id="place-coord-note">좌표(선택): 검색으로 찾으면 지도·경로 계산에 쓰여요.</div>
+        <button class="btn btn-primary" style="width:100%;" onclick="savePlaceFromModal()">저장</button>
+      </div>
     </div>
   </div>
 
@@ -2729,6 +2803,7 @@
       const statusMap = state.expenseStatusMap || {};
       const list = [];
       let transitBusSum = 0;
+      const bookings = Array.isArray(state.bookings) ? state.bookings : [];
 
       (state.days || []).forEach(day => {
         (day.items || []).forEach(it => {
@@ -2737,6 +2812,8 @@
           const cat = inferItemExpenseCategory(it);
 
           if (ct > 0) {
+            // 같은 지출이 🏨🚆 예약 내역에 등록돼 있으면 예약 쪽을 대표로 쓰고 여기는 건너뛴다(중복 합산 방지)
+            if (expenseMatchesBooking(it, cat, ct, bookings)) return;
             const eid = "tl_" + it.id;
             const defStatus = /예약 완료/.test((it.badges || []).join(" ")) ? "완료" : (/예약|예매|오픈|숙소/.test(cat + " " + (it.badges || []).join(" ")) ? "예정" : "현장");
             list.push({
@@ -2768,12 +2845,64 @@
         });
       }
 
+      // 🏨 숙소 · 🚆 교통편 예약 내역 → 경비 목록(금액·결제 상태 그대로 반영)
+      bookingExpenseList().forEach(e => {
+        list.push({ ...e, status: statusMap[e.id] || e.status });
+      });
+
       (state.expenses || []).forEach(e => {
         if (e.manual || !/^e[1-9]$/.test(e.id)) {
           list.push(e);
         }
       });
       return list;
+    }
+
+    /* =====================================================================
+       🏨 숙소 · 🚆 교통편 예약 → 경비·일정 연동 공통 규칙
+       ===================================================================== */
+    function bookingAmount(b) {
+      if (!b) return 0;
+      const price = Number(b.price) || 0;
+      const due = Number(b.dueAmount) || 0;
+      return b.payStatus === "paid" ? (price || due) : (due || price);
+    }
+
+    function bookingCategoryOf(b) {
+      return b && b.type === "hotel" ? "숙소" : "교통";
+    }
+
+    function bookingExpenseList() {
+      return (Array.isArray(state.bookings) ? state.bookings : []).map(b => {
+        const amount = bookingAmount(b);
+        return {
+          id: "bk_" + b.id,
+          bookingId: b.id,
+          bookingType: b.type,
+          category: bookingCategoryOf(b),
+          name: `${b.type === "hotel" ? "🏨" : "🚆"} ${b.name || "예약"}`,
+          amount,
+          status: b.payStatus === "paid" ? "완료" : "예정",
+          fromBooking: true
+        };
+      }).filter(e => e.amount > 0);
+    }
+
+    // 일정 항목과 예약 내역이 같은 지출을 가리키는지 (금액 일치 + 카테고리, 또는 이름 일부 + 금액 근접)
+    function expenseMatchesBooking(it, cat, amount, bookings) {
+      if (!amount || !Array.isArray(bookings) || !bookings.length) return false;
+      const place = String(it.place || "");
+      return bookings.some(b => {
+        if (!b || bookingCategoryOf(b) !== cat) return false;
+        const bAmt = bookingAmount(b);
+        if (!bAmt) return false;
+        if (Math.abs(bAmt - amount) <= 1) return true;
+        const tokens = String(b.name || "")
+          .replace(/[()[\]{}·,\-]/g, " ")
+          .split(/\s+/)
+          .filter(t => t.length >= 2 && !/^(ktx|srt|호텔|숙소|리조트|예약|디럭스|오션뷰|스탠다드|체크인)$/i.test(t));
+        return tokens.some(t => place.includes(t)) && Math.abs(bAmt - amount) <= Math.max(1000, bAmt * 0.05);
+      });
     }
 
     function renderHeader() {
@@ -2867,7 +2996,12 @@
 
       const n = Math.max(1, Number(state.meta.travelers) || 2);
       const listEl = document.getElementById("timeline-list");
-      const cardBlocks = dayObj.items.map((it, idx) => {
+      // 🏨🚆 예약 내역도 해당 일차 타임라인에 같이 보여 준다 (원본 데이터는 그대로 두고 표시만 연동)
+      const feed = [
+        ...dayObj.items.map((it, idx) => ({ it, idx, virtual: false })),
+        ...bookingTimelineItems(dayObj).map(it => ({ it, idx: -1, virtual: true }))
+      ].sort((a, b) => String(a.it.time || "99:99").localeCompare(String(b.it.time || "99:99")));
+      const cardBlocks = feed.map(({ it, idx, virtual }) => {
         // 일출·일몰 시각은 카드 안 배지가 아니라 타임라인의 한 줄 마커로만 보여 준다
         const badges = (it.badges || []).filter(b => !/^\s*(일출|일몰)\s*\d{1,2}:\d{2}/.test(String(b))).map(b => {
           let cls = "tag";
@@ -2879,8 +3013,13 @@
         const hasMenus = Array.isArray(it.menus);
         const picked = hasMenus ? it.menus.filter(m => m.qty > 0) : [];
         const pickedText = picked.length ? picked.map(m => `${m.name}×${m.qty}`).join(" · ") : "";
+        const virtualActions = virtual && canEdit()
+          ? `<div style="display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid #bae6fd;" onclick="event.stopPropagation()">
+              <button class="btn btn-soft btn-sm" style="flex:1;" onclick="openBookingModal('${it.bookingId}')">✏️ 예약 수정</button>
+            </div>`
+          : "";
         return `
-          <div class="card" ${hasMenus ? `onclick="openMenuModal('${it.id}')" style="cursor:pointer;"` : ""}>
+          <div class="card ${virtual ? "tl-virtual" : ""}" ${hasMenus ? `onclick="openMenuModal('${it.id}')" style="cursor:pointer;"` : ""}>
             <div class="tl-head">
               <span class="tl-time">${it.time}</span>
               <div class="tl-place">${it.place}</div>
@@ -2890,19 +3029,21 @@
             ${pickedText ? `<div style="font-size:12.5px;font-weight:700;color:var(--ocean-dark);background:var(--ocean-soft);padding:6px 9px;border-radius:8px;margin-bottom:6px;">🍴 ${pickedText} (${fmt(it.costTotal)})</div>` : ""}
             <div class="tl-memo">${it.memo || ""}</div>
             <div class="tl-meta">
-              <div class="tl-move">🚶 ${it.moveMode || ""} (${it.moveMin || 0}분 · ${fmt(it.moveCost || 0)})</div>
-              <div style="display:flex;align-items:center;gap:6px;">
+              <div class="tl-move">🚶 ${it.moveMode || ""} ${virtual ? "" : `(${it.moveMin || 0}분 · ${fmt(it.moveCost || 0)})`}</div>
+              ${virtual
+                ? `<div style="display:flex;align-items:center;gap:6px;"><span class="tl-cost">${fmt(it.costTotal || 0)}</span>${it.mapUrl ? `<a class="map-btn" href="${it.mapUrl}" target="_blank" onclick="event.stopPropagation()">지도</a>` : ""}</div>`
+                : `<div style="display:flex;align-items:center;gap:6px;">
                 <span class="tl-cost">${fmt(it.costTotal || 0)} <span style="font-weight:500;color:var(--muted);">(1인 ${fmt(per)})</span></span>
                 <a class="map-btn" href="${it.mapUrl}" target="_blank" onclick="event.stopPropagation()">지도</a>
-              </div>
+              </div>`}
             </div>
-            ${editMode ? `
+            ${virtual ? virtualActions : (editMode ? `
             <div style="display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9;" onclick="event.stopPropagation()">
               <button class="btn btn-soft btn-sm" onclick="moveItem(${idx}, -1)" ${idx === 0 ? "disabled" : ""}>↑</button>
               <button class="btn btn-soft btn-sm" onclick="moveItem(${idx}, 1)" ${idx === dayObj.items.length - 1 ? "disabled" : ""}>↓</button>
               <button class="btn btn-soft btn-sm" style="flex:1;" onclick="openPlaceModal('${it.id}')">✏️ 장소 수정</button>
               <button class="btn btn-danger btn-sm" onclick="deleteItem('${it.id}')">삭제</button>
-            </div>` : ""}
+            </div>` : "")}
           </div>
         `;
       });
@@ -2910,12 +3051,12 @@
       const sunRows = daySunTimeRows(dayObj);
       const blocks = [];
       let sunIdx = 0;
-      dayObj.items.forEach((it, idx) => {
+      feed.forEach(({ it }, i) => {
         while (sunIdx < sunRows.length && sunRows[sunIdx].time <= (it.time || "99:99")) {
           blocks.push(sunRows[sunIdx].html);
           sunIdx++;
         }
-        blocks.push(cardBlocks[idx]);
+        blocks.push(cardBlocks[i]);
       });
       while (sunIdx < sunRows.length) {
         blocks.push(sunRows[sunIdx].html);
@@ -2955,6 +3096,8 @@
       document.getElementById("tr-search-results").innerHTML = "";
       document.getElementById("tr-est-box").innerHTML = "";
       trFromCoord = null; trToCoord = null; trRouteCache = null;
+      renderSavedPlaceChips("tr-saved-from");
+      renderSavedPlaceChips("tr-saved-to");
       document.getElementById("transit-modal").classList.add("open");
     }
 
@@ -3257,6 +3400,9 @@
       document.getElementById("pm-mode-single").className = mode === "single" ? "btn btn-primary btn-sm" : "btn btn-soft btn-sm";
       document.getElementById("pm-mode-route").className = mode === "route" ? "btn btn-primary btn-sm" : "btn btn-soft btn-sm";
       document.getElementById("pm-search-results").innerHTML = "";
+      document.getElementById("pm-saved-single") && renderSavedPlaceChips("pm-saved-single");
+      renderSavedPlaceChips("pm-saved-from");
+      renderSavedPlaceChips("pm-saved-to");
     }
 
     function openPlaceModal(itemId) {
@@ -3796,11 +3942,11 @@
         return `
           <div class="expense-item">
             <div style="flex:1;">
-              <div style="font-size:13.5px;font-weight:700;">[${e.category}] ${e.name} ${e.fromTimeline ? '<span class="tag blue" style="font-size:10px;padding:1px 5px;">일정 연동</span>' : ""}</div>
+              <div style="font-size:13.5px;font-weight:700;">[${e.category}] ${e.name} ${e.fromTimeline ? '<span class="tag blue" style="font-size:10px;padding:1px 5px;">일정 연동</span>' : ""}${e.fromBooking ? '<span class="tag blue" style="font-size:10px;padding:1px 5px;">예약 연동</span>' : ""}</div>
               <div style="font-size:12px;color:var(--muted);">${fmt(e.amount)} · 1인 ${fmt(e.amount / n)}</div>
             </div>
             <button class="status-btn ${stCls}" onclick="cycleStatus('${e.id}')">${stLabel}</button>
-            ${e.fromTimeline ? "" : `<button class="btn btn-danger btn-sm" onclick="delExpense('${e.id}')">삭제</button>`}
+            ${(e.fromTimeline || e.fromBooking) ? "" : `<button class="btn btn-danger btn-sm" onclick="delExpense('${e.id}')">삭제</button>`}
           </div>
         `;
       }).join("");
@@ -3828,6 +3974,24 @@
         if (!state.expenseStatusMap) state.expenseStatusMap = {};
         const cur = getSyncedExpenses().find(e => e.id === id)?.status || "현장";
         state.expenseStatusMap[id] = order[(order.indexOf(cur) + 1) % order.length];
+        saveState();
+        return;
+      }
+      // 🏨🚆 예약 내역에서 온 지출은 결제 상태 자체를 바꾼다 (예약/경비 양쪽에 반영)
+      if (id.startsWith("bk_")) {
+        const b = (state.bookings || []).find(x => x.id === id.slice(3));
+        if (!b) return;
+        if (!canEdit()) return alert("읽기 전용 권한이라 바꿀 수 없어요.");
+        if (b.payStatus === "paid") {
+          b.payStatus = "planned";
+          if (!b.dueAmount) b.dueAmount = Number(b.price) || 0;
+          b.paidDate = "";
+        } else {
+          b.payStatus = "paid";
+          b.paidDate = b.paidDate || ymdLocal(new Date());
+          b.dueDate = "";
+        }
+        if (state.expenseStatusMap) delete state.expenseStatusMap[id];
         saveState();
         return;
       }
@@ -3867,6 +4031,19 @@
                 <div class="w-temp">${temps}</div>
               </div>
               ${metaBits.length ? `<div style="font-size:12px;color:#475569;">${metaBits.join(" · ")}</div>` : ""}
+              ${w.home ? `
+              <div class="wx-home-row">
+                <div class="wx-cell home">
+                  <div class="wx-cell-label">🏠 집 · ${escapeAttr(w.home.label)} (${w.home.dayKind || "출발·귀가"})</div>
+                  <div class="wx-cell-temp">${w.home.icon} ${w.home.minTemp}° / ${w.home.maxTemp}°</div>
+                  <div class="wx-cell-sub">${escapeAttr(w.home.condition || "")}${w.home.feelsLike ? ` · ${escapeAttr(w.home.feelsLike)}` : ""}${w.home.wind ? ` · 💨 ${escapeAttr(w.home.wind)}` : ""}</div>
+                </div>
+                <div class="wx-cell">
+                  <div class="wx-cell-label">🏙️ 여행지 · ${escapeAttr(w.cityLabel || "")}</div>
+                  <div class="wx-cell-temp">${w.icon} ${temps}</div>
+                  <div class="wx-cell-sub">${escapeAttr(w.condition || "")}${w.feelsLike ? ` · ${escapeAttr(w.feelsLike)}` : ""}${w.wind ? ` · 💨 ${escapeAttr(w.wind)}` : ""}</div>
+                </div>
+              </div>` : ""}
               <div class="outfit-box">
                 <div style="font-weight:800;color:var(--ocean-dark);margin-bottom:3px;">🧥 권장 옷차림: ${w.outfit || "-"}</div>
                 <div style="color:#334155;">${w.tip || ""}</div>
@@ -3877,6 +4054,16 @@
         }).join("");
       }
       const note = document.getElementById("weather-city-note");
+      const homeInput = document.getElementById("home-city-input");
+      if (homeInput && document.activeElement !== homeInput) homeInput.value = defaultHomeCity();
+      const homeNote = document.getElementById("home-city-note");
+      if (homeNote) {
+        const ds = state.days || [];
+        const hasHome = list.some(w => w && w.home);
+        homeNote.textContent = hasHome
+          ? "첫날·마지막 날 카드에 🏠 집(출발지) 날씨를 여행지와 나란히 보여줘요."
+          : (ds.length ? "첫날·마지막 날 카드에 집 날씨도 함께 보여줘요. '🔄 일정 도시별 날씨 새로고침'을 누르면 같이 조회됩니다." : "일정에 날짜가 있어야 집 날씨도 함께 보여질 수 있어요.");
+      }
       if (note) {
         const isOverseas = state.meta?.tripType === "overseas";
         note.textContent = isOverseas
@@ -4136,6 +4323,38 @@
             fetchedAt: new Date().toISOString()
           });
         }
+        // 🏠 첫날(출발일)·마지막 날(귀가일)은 집(출발지) 날씨도 함께 조회
+        const dayList = state.days || [];
+        if (dayList.length) {
+          const homeName = defaultHomeCity();
+          const homeGeo = await geocodeCity({ query: homeName, label: homeName });
+          if (homeGeo) {
+            const targets = dayList.length > 1 ? [dayList[0], dayList[dayList.length - 1]] : [dayList[0]];
+            for (const d of targets) {
+              const entry = entries.find(e => e.dayNum === d.day);
+              if (!entry || !d.date) continue;
+              const hGot = await fetchDayWeather(homeGeo, d.date);
+              const hMonth = new Date(d.date + "T00:00:00").getMonth();
+              const hEst = seasonalEstimate(homeName, hMonth, homeGeo.lat);
+              const hMin = hGot ? hGot.min : hEst.min;
+              const hMax = hGot ? hGot.max : hEst.max;
+              const hMinA = hGot && typeof hGot.apparentMin === "number" ? hGot.apparentMin : apparentFromDry(hMax, hMin);
+              const hMaxA = hGot && typeof hGot.apparentMax === "number" ? hGot.apparentMax : apparentFromDry(hMax, hMin);
+              const [hIcon, hCond] = hGot ? wmoInfo(hGot.code) : ["🌤️", "계절 평년 기준"];
+              entry.home = {
+                label: homeName,
+                icon: hIcon,
+                condition: hCond,
+                minTemp: Math.round(hMin), maxTemp: Math.round(hMax),
+                wind: hGot && typeof hGot.wind === "number" ? `${Math.round(hGot.wind)}km/h` : "",
+                feelsLike: `체감 ${Math.round(hMinA)}~${Math.round(hMaxA)}°C`,
+                sourceLabel: hGot ? hGot.sourceLabel : "계절 평년 추정",
+                dayKind: d.day === dayList[0].day ? "출발일" : "귀가일"
+              };
+            }
+          }
+        }
+
         state.weather = entries;
         saveState(true);
         renderWeather();
@@ -4152,6 +4371,20 @@
         weatherFetching = false;
         if (btn) { btn.disabled = false; btn.textContent = "🔄 일정 도시별 날씨 새로고침"; }
       }
+    }
+
+    // 🏠 집(출발지) 도시 지정 — 첫날·마지막 날 카드에 함께 표시
+    function saveHomeCity() {
+      const el = document.getElementById("home-city-input");
+      const v = (el?.value || "").trim();
+      if (!v) return alert("집(출발지) 도시를 입력해 주세요. 예: 인천");
+      if (!canEdit()) return alert("읽기 전용 권한이라 설정을 바꿀 수 없어요.");
+      state.meta = state.meta || {};
+      state.meta.homeCity = v.slice(0, 20);
+      saveState();
+      const homeNote = document.getElementById("home-city-note");
+      if (homeNote) homeNote.textContent = `🏠 집 도시를 '${state.meta.homeCity}'(으)로 저장했어요. 날씨를 다시 불러오는 중...`;
+      refreshCityWeather(true);
     }
 
     function buildOverseasWeatherSeed(days, preset) {
@@ -4693,6 +4926,8 @@
       document.getElementById("bk-booker-name").value = b?.booker?.custom ? (b.booker.nickname || "") : "";
       onBookingBookerChange();
       onBookingPayChange();
+      renderSavedPlaceChips("bk-saved-from");
+      renderSavedPlaceChips("bk-saved-to");
       document.getElementById("booking-modal").classList.add("open");
     }
 
@@ -4700,7 +4935,6 @@
       document.getElementById("booking-modal").classList.remove("open");
       editingBookingId = null;
     }
-
     function onBookingPayChange() {
       const paid = document.getElementById("bk-pay").value === "paid";
       document.getElementById("bk-paid-row").style.display = paid ? "flex" : "none";
@@ -4793,6 +5027,268 @@
       if (!confirm(`'${b.name || "예약"}' 내역을 삭제할까요?`)) return;
       state.bookings = state.bookings.filter(x => x.id !== id);
       saveState();
+    }
+
+    // 예약 내역 → 일정 타임라인 표시용 항목 (원본 일정 데이터는 건드리지 않음)
+    function bookingTimelineItems(dayObj) {
+      const out = [];
+      const date = dayObj?.date || "";
+      if (!date) return out;
+      (state.bookings || []).forEach(b => {
+        if (!b) return;
+        if (b.type === "transit") {
+          if (b.depDate && b.depDate === date) {
+            out.push({
+              id: "bkvl-" + b.id + "-dep",
+              virtual: true, bookingId: b.id,
+              time: b.depTime || "00:00",
+              place: `${b.from || "출발지"} → ${b.to || "도착지"}`,
+              stay: b.depTime && b.arrTime ? `${b.depTime}~${b.arrTime}` : "",
+              moveMode: [b.mode, b.name].filter(Boolean).join(" "),
+              moveMin: 0, moveCost: 0, costTotal: 0,
+              memo: [b.seat, b.payStatus === "paid" ? "결제 완료" : "결제 예정", b.memo].filter(Boolean).join(" · "),
+              mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(b.to || b.from || "")}`,
+              badges: ["🔗 예약 연동", b.mode || "교통편"].filter(Boolean)
+            });
+          }
+        } else if (b.type === "hotel") {
+          const nights = (b.inDate && b.outDate)
+            ? Math.max(0, Math.round((new Date(b.outDate + "T00:00:00") - new Date(b.inDate + "T00:00:00")) / 86400000))
+            : null;
+          if (b.inDate && b.inDate === date) {
+            out.push({
+              id: "bkvl-" + b.id + "-in",
+              virtual: true, bookingId: b.id,
+              time: b.inTime || "15:00",
+              place: `🏨 ${b.name || "숙소"} 체크인`,
+              stay: nights ? `${nights}박` : "",
+              moveMode: "", moveMin: 0, moveCost: 0, costTotal: 0,
+              memo: [b.room, b.payStatus === "paid" ? "결제 완료" : "결제 예정"].filter(Boolean).join(" · "),
+              mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(b.name || "숙소")}`,
+              badges: ["🔗 예약 연동", "숙소"]
+            });
+          }
+          if (b.outDate && b.outDate === date) {
+            out.push({
+              id: "bkvl-" + b.id + "-out",
+              virtual: true, bookingId: b.id,
+              time: b.outTime || "11:00",
+              place: `🏨 ${b.name || "숙소"} 체크아웃`,
+              stay: "",
+              moveMode: "", moveMin: 0, moveCost: 0, costTotal: 0,
+              memo: "",
+              mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(b.name || "숙소")}`,
+              badges: ["🔗 예약 연동"]
+            });
+          }
+        }
+      });
+      return out;
+    }
+
+    /* =====================================================================
+       🏠 자주 쓰는 거점 (집 · 공항 · 기차역 · 호텔) — 주소 입력칸에서 칩으로 바로 선택
+       ===================================================================== */
+    const PLACE_KINDS = [
+      { key: "home", icon: "🏠", label: "집" },
+      { key: "airport", icon: "✈️", label: "공항" },
+      { key: "station", icon: "🚆", label: "기차역" },
+      { key: "hotel", icon: "🏨", label: "호텔" }
+    ];
+    const SAVED_PLACE_BOXES = ["pm-saved-single", "pm-saved-from", "pm-saved-to", "tr-saved-from", "tr-saved-to", "bk-saved-from", "bk-saved-to"];
+    let savedPlacePickCoords = null;
+
+    function placeKindMeta(key) {
+      return PLACE_KINDS.find(k => k.key === key) || PLACE_KINDS[0];
+    }
+    function ensureSavedPlaces() {
+      if (!Array.isArray(state.savedPlaces)) state.savedPlaces = [];
+      return state.savedPlaces;
+    }
+    function defaultHomeCity() {
+      return String(state.meta?.homeCity || "인천");
+    }
+    function chipsTargetFor(boxId) {
+      if (boxId === "pm-saved-single") return "pm-place";
+      const m = String(boxId || "").match(/^(pm|tr|bk)-saved-(from|to)$/);
+      return m ? `${m[1]}-${m[2]}` : "";
+    }
+    function targetBoxFor(target) {
+      if (target === "pm-place") return "pm-saved-single";
+      const m = String(target || "").match(/^(pm|tr|bk)-(from|to)$/);
+      return m ? `${m[1]}-saved-${m[2]}` : "";
+    }
+    function renderSavedPlaceChips(boxId, note) {
+      const box = document.getElementById(boxId);
+      if (!box) return;
+      const target = chipsTargetFor(boxId);
+      if (!target) return;
+      const list = ensureSavedPlaces().filter(p => p && (p.address || p.label));
+      const chips = list.map(p => {
+        const k = placeKindMeta(p.kind);
+        const name = p.label || k.label;
+        const title = [k.label, name, p.address].filter(Boolean).join(" · ");
+        return `<button type="button" class="sp-chip" title="${escapeAttr(title)}" onclick="applySavedPlace('${p.id}','${target}')">${k.icon} ${escapeAttr(name)}</button>`;
+      }).join("");
+      const manage = `<button type="button" class="sp-chip sp-manage" onclick="openPlacesModal()">＋ 관리</button>`;
+      box.innerHTML = `<div class="sp-chips">${note ? `<span class="sp-empty" style="color:var(--success);align-self:center;">${escapeAttr(note)}</span>` : ""}${chips || `<span class="sp-empty">저장한 거점 없음</span>`}${manage}</div>`;
+    }
+    function focusSavedPlaceChips(boxId) {
+      renderSavedPlaceChips(boxId);
+    }
+    function renderAllSavedPlaceChips() {
+      SAVED_PLACE_BOXES.forEach(id => renderSavedPlaceChips(id));
+    }
+
+    function applySavedPlace(pid, target) {
+      const pl = ensureSavedPlaces().find(p => p.id === pid);
+      const el = document.getElementById(target);
+      if (!pl || !el) return;
+      const val = String(pl.address || pl.label || "").trim();
+      if (!val) return;
+      el.value = val;
+      try { el.dispatchEvent(new Event("input", { bubbles: true })); } catch {}
+      if (typeof pl.lat === "number" && typeof pl.lng === "number") {
+        if (target === "pm-place" || target === "pm-to") { pickedLat = pl.lat; pickedLng = pl.lng; }
+        else if (target === "tr-from") trFromCoord = { lat: pl.lat, lng: pl.lng, name: val };
+        else if (target === "tr-to") trToCoord = { lat: pl.lat, lng: pl.lng, name: val };
+      }
+      const boxId = targetBoxFor(target);
+      if (boxId) renderSavedPlaceChips(boxId, `✓ ${pl.label || val} 채움`);
+    }
+
+    function renderPlacesList() {
+      const box = document.getElementById("places-list");
+      if (!box) return;
+      const list = ensureSavedPlaces();
+      if (!list.length) {
+        box.innerHTML = `<div class="sp-empty" style="padding:4px 0;">아직 저장한 거점이 없어요. 아래에서 추가하고 '일정 추가'·'교통편' 입력칸에서 눌러 쓰세요.</div>`;
+        return;
+      }
+      box.innerHTML = list.map(p => {
+        const k = placeKindMeta(p.kind);
+        const coord = (typeof p.lat === "number" && typeof p.lng === "number") ? ` · 📍${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}` : "";
+        return `<div class="place-row">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12.5px;font-weight:800;">${k.icon} ${escapeAttr(p.label || k.label)}</div>
+            <div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeAttr(p.address || "주소 미입력")}${coord}</div>
+          </div>
+          <button class="btn btn-soft btn-sm" onclick="editSavedPlace('${p.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteSavedPlace('${p.id}')">×</button>
+        </div>`;
+      }).join("");
+    }
+
+    function openPlacesModal() {
+      const list = ensureSavedPlaces();
+      const hasHome = list.some(p => p.kind === "home");
+      document.getElementById("place-edit-id").value = "";
+      document.getElementById("place-form-title").textContent = "＋ 거점 추가";
+      document.getElementById("place-kind").value = hasHome ? "station" : "home";
+      document.getElementById("place-label").value = hasHome ? "" : "집";
+      document.getElementById("place-address").value = hasHome ? "" : defaultHomeCity();
+      savedPlacePickCoords = null;
+      document.getElementById("place-search-results").innerHTML = "";
+      document.getElementById("place-coord-note").textContent = "좌표(선택): '좌표 찾기'로 고르면 지도·경로 계산에 쓰여요.";
+      renderPlacesList();
+      document.getElementById("places-modal").classList.add("open");
+    }
+    function closePlacesModal() {
+      document.getElementById("places-modal").classList.remove("open");
+      renderAllSavedPlaceChips();
+    }
+
+    function editSavedPlace(id) {
+      const pl = ensureSavedPlaces().find(p => p.id === id);
+      if (!pl) return;
+      document.getElementById("place-edit-id").value = pl.id;
+      document.getElementById("place-form-title").textContent = "✏️ 거점 수정";
+      document.getElementById("place-kind").value = pl.kind || "home";
+      document.getElementById("place-label").value = pl.label || "";
+      document.getElementById("place-address").value = pl.address || "";
+      savedPlacePickCoords = (typeof pl.lat === "number") ? { lat: pl.lat, lng: pl.lng } : null;
+      document.getElementById("place-search-results").innerHTML = "";
+      document.getElementById("place-coord-note").textContent = savedPlacePickCoords
+        ? `저장된 좌표: ${pl.lat.toFixed(4)}, ${pl.lng.toFixed(4)}`
+        : "좌표(선택): '좌표 찾기'로 고르면 지도·경로 계산에 쓰여요.";
+    }
+
+    async function searchSavedPlaceAddress() {
+      const q = document.getElementById("place-address").value.trim();
+      if (!q) return alert("주소나 장소명을 입력해 주세요.");
+      const box = document.getElementById("place-search-results");
+      box.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:4px;">'${escapeAttr(q)}' 찾는 중...</div>`;
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(q)}`);
+        const list = await r.json();
+        if (!list || !list.length) {
+          box.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:4px;">검색 결과가 없어요. 주소를 조금 더 자세히 적어 보세요.</div>`;
+          return;
+        }
+        window._savedPlaceResults = list;
+        box.innerHTML = list.map((p, i) => `
+          <div class="expense-item" style="padding:6px 4px;cursor:pointer;" onclick="pickSavedPlaceCoords(${i})">
+            <div style="font-size:12px;"><strong>${escapeAttr(p.name || q)}</strong>
+              <div style="color:var(--muted);font-size:11px;">${escapeAttr(p.display_name || "")}</div>
+            </div>
+            <span class="tag blue">선택</span>
+          </div>`).join("");
+      } catch {
+        box.innerHTML = `<div style="font-size:12px;color:var(--danger);padding:4px;">검색 중 오류가 발생했어요.</div>`;
+      }
+    }
+
+    function pickSavedPlaceCoords(i) {
+      const p = (window._savedPlaceResults || [])[i];
+      if (!p) return;
+      savedPlacePickCoords = { lat: parseFloat(p.lat), lng: parseFloat(p.lon) };
+      const addrEl = document.getElementById("place-address");
+      if (p.display_name) addrEl.value = p.name ? `${p.name} (${p.display_name})` : p.display_name;
+      document.getElementById("place-search-results").innerHTML = `<div style="font-size:12px;color:var(--success);padding:4px;">✓ 좌표 선택됨 (${savedPlacePickCoords.lat.toFixed(4)}, ${savedPlacePickCoords.lng.toFixed(4)})</div>`;
+      document.getElementById("place-coord-note").textContent = `좌표: ${savedPlacePickCoords.lat.toFixed(4)}, ${savedPlacePickCoords.lng.toFixed(4)}`;
+    }
+
+    function savePlaceFromModal() {
+      if (!canEdit()) return alert("읽기 전용 권한이라 거점을 저장할 수 없어요.");
+      const kind = document.getElementById("place-kind").value;
+      const label = document.getElementById("place-label").value.trim();
+      const address = document.getElementById("place-address").value.trim();
+      if (!label && !address) return alert("별명이나 주소를 입력해 주세요.");
+      const list = ensureSavedPlaces();
+      const editId = document.getElementById("place-edit-id").value;
+      let rec = editId ? list.find(p => p.id === editId) : null;
+      if (!rec) {
+        rec = { id: "pl-" + Date.now().toString(36), createdAt: new Date().toISOString() };
+        list.push(rec);
+      }
+      rec.kind = kind;
+      rec.label = label || placeKindMeta(kind).label;
+      rec.address = address || rec.label;
+      if (savedPlacePickCoords) { rec.lat = savedPlacePickCoords.lat; rec.lng = savedPlacePickCoords.lng; }
+      if (kind === "home" && rec.address) {
+        state.meta = state.meta || {};
+        if (!state.meta.homeCity) state.meta.homeCity = rec.address;
+      }
+      saveState();
+      document.getElementById("place-edit-id").value = "";
+      document.getElementById("place-form-title").textContent = "＋ 거점 추가";
+      document.getElementById("place-label").value = "";
+      document.getElementById("place-address").value = "";
+      savedPlacePickCoords = null;
+      document.getElementById("place-search-results").innerHTML = "";
+      renderPlacesList();
+      renderAllSavedPlaceChips();
+    }
+
+    function deleteSavedPlace(id) {
+      if (!canEdit()) return alert("읽기 전용 권한이라 거점을 삭제할 수 없어요.");
+      const pl = ensureSavedPlaces().find(p => p.id === id);
+      if (!pl) return;
+      if (!confirm(`'${pl.label || pl.address}' 거점을 삭제할까요?`)) return;
+      state.savedPlaces = ensureSavedPlaces().filter(p => p.id !== id);
+      saveState();
+      renderPlacesList();
+      renderAllSavedPlaceChips();
     }
 
     /* 지도 아래 3버튼 설명 */
