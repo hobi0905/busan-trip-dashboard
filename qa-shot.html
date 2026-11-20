@@ -18,11 +18,25 @@
     (function () {
       var p = new URLSearchParams(location.search);
       var off = Number(p.get("off") || 0);
-      if (p.get("trip")) {
-        document.getElementById("qa-frame").src = "./?trip=" + encodeURIComponent(p.get("trip"));
+      var day = Number(p.get("day") || 0);
+      var frame = document.getElementById("qa-frame");
+      if (p.get("trip")) frame.src = "./?trip=" + encodeURIComponent(p.get("trip"));
+      frame.style.marginTop = (-off) + "px";
+      document.getElementById("bar").textContent = "390px 폭 · offset " + off + "px" + (day ? " · " + day + "일차" : "");
+      if (day) {
+        frame.addEventListener("load", function () {
+          setTimeout(function () {
+            try {
+              var doc = frame.contentDocument;
+              var btns = [].slice.call(doc.querySelectorAll(".day-btn"));
+              var target = btns.filter(function (b) { return (b.textContent || "").trim().indexOf(day + "일차") === 0; })[0];
+              if (target) target.click();
+              doc.documentElement.scrollTop = 0;
+              doc.body.scrollTop = 0;
+            } catch (e) {}
+          }, 600);
+        });
       }
-      document.getElementById("qa-frame").style.marginTop = (-off) + "px";
-      document.getElementById("bar").textContent = "390px 폭 · offset " + off + "px";
     })();
   </script>
 </body>
