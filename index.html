@@ -863,7 +863,7 @@
     }
     body:not(.unlocked) #day-float-bar { display: none !important; }
     /* 삭제·나간 여행 링크로 들어왔을 때는 뒤 내용을 가린다 */
-    body.trip-is-gone main, body.trip-is-gone .banner, body.trip-is-gone #day-float-bar { visibility: hidden; }
+    body.trip-is-gone main, body.trip-is-gone .sticky-header, body.trip-is-gone #day-float-bar { visibility: hidden; }
     .nav-badge { top: 1px; right: calc(50% - 24px); }
 
     .hidden { display: none !important; }
@@ -7124,9 +7124,14 @@
       const showFormFirst = !myProfile.nickname || !saved.length;
       toggleProfileForm(showFormFirst);
       if (showFormFirst) profileCreateFresh = !myProfile.nickname;
+      document.getElementById("trip-gone-modal")?.classList.remove("open");
+      document.body.classList.remove("trip-is-gone");
       document.getElementById("profile-modal").classList.add("open");
     }
-    function closeProfileModal() { document.getElementById("profile-modal").classList.remove("open"); }
+    function closeProfileModal() {
+      document.getElementById("profile-modal").classList.remove("open");
+      setTimeout(() => { try { checkTripGoneGate(); } catch {} }, 30);
+    }
 
     /* =====================================================================
        프로필 전환 · 로그아웃 · 새 프로필 시작
