@@ -1613,7 +1613,12 @@
             </div>
             <div id="bk-sched-coord" style="font-size:10.5px;color:var(--muted);margin-bottom:6px;line-height:1.45;"></div>
             <div class="row" style="margin-bottom:2px;">
-              <button type="button" class="btn btn-soft btn-sm" style="flex:1;" onclick="findBookingHotelCoords()">📍 호텔 좌표 찾기</button>
+              <input id="bk-sched-search" class="input" placeholder="호텔 주소·가까운 역 (예: 부산역)" style="flex:1;min-width:0;" onkeydown="if(event.key==='Enter'){event.preventDefault();searchBookingHotelCoords();}" />
+              <button type="button" class="btn btn-soft btn-sm" style="flex:0 0 auto;white-space:nowrap;" onclick="searchBookingHotelCoords()">🔎 좌표 검색</button>
+            </div>
+            <div id="bk-sched-search-results" style="max-height:100px;overflow-y:auto;margin-bottom:4px;"></div>
+            <div class="row" style="margin-bottom:2px;">
+              <button type="button" class="btn btn-soft btn-sm" style="flex:1;" onclick="findBookingHotelCoords()">📍 호텔명으로 좌표 찾기</button>
               <button type="button" class="btn btn-soft btn-sm" style="flex:1;" onclick="previewBookingRoute()">🛣️ 이동 루트 미리보기</button>
             </div>
             <div id="bk-sched-preview" style="font-size:11.5px;color:var(--ocean-dark);line-height:1.6;margin-top:4px;"></div>
@@ -4200,7 +4205,7 @@
           label: anchor?.label || pick.name,
           query: anchor?.label || pick.name,
           lat: pick.lat, lon: pick.lon,
-          areaDetail: pick.name
+          areaDetail: pick.move ? pick.name : ""
         };
       }
       if (pick) return { label: pick.name, query: pick.name, lat: pick.lat, lon: pick.lon };
@@ -5040,7 +5045,7 @@
       const pl = hotelSavedPlaceMatch(name);
       el.innerHTML = (pl && typeof pl.lat === "number")
         ? `📍 저장된 거점 '${escapeAttr(pl.label || name)}'에 좌표가 있어요 — 미리보기를 누르면 계산해요.`
-        : `📍 좌표가 아직 없어요. 저장할 때 저장된 거점·Nominatim에서 자동으로 찾고, 필요하면 '호텔 좌표 찾기'를 눌러 주세요.`;
+        : `📍 좌표가 아직 없어요. 저장할 때 저장된 거점·일정 장소·Nominatim에서 자동으로 찾아요. 못 찾으면 호텔 주소·가까운 역으로 '🔎 좌표 검색'을 해 주세요.`;
     }
 
     function hotelSavedPlaceMatch(name) {
@@ -5052,21 +5057,48 @@
         || null;
     }
 
+    async function nominatimSearch(query, limit = 5) {
+      const q = String(query || "").trim();
+      if (!q) return [];
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=${limit}${state.meta?.tripType === "overseas" ? "" : "&countrycodes=kr"}&q=${encodeURIComponent(q)}`);
+        const list = await r.json();
+        return Array.isArray(list) ? list : [];
+      } catch { return []; }
+    }
+
     async function geocodeByName(name) {
       const q0 = String(name || "").trim();
       if (!q0) return null;
-      const overseas = state.meta?.tripType === "overseas";
-      const city = String(state.meta?.destination || "").split(/[(\s]/)[0];
-      const q = (overseas || (city && q0.includes(city))) ? q0 : [q0, city].filter(Boolean).join(" ");
-      try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1${overseas ? "" : "&countrycodes=kr"}&q=${encodeURIComponent(q)}`);
-        const list = await r.json();
-        if (Array.isArray(list) && list.length) {
+      const city = String(state.meta?.destination || "").split(/[(\s·,]/)[0].trim();
+      const variants = [q0];
+      const bare = q0.replace(/^(호텔|Hotel|HOTEL)\s*/i, "").replace(/\s*(호텔|Hotel)$/i, "").trim();
+      if (bare && bare !== q0) variants.push(bare);
+      if (city && !q0.includes(city)) variants.push(`${q0} ${city}`);
+      if (city && bare && bare !== q0 && !bare.includes(city)) variants.push(`${bare} ${city}`);
+      for (const q of variants) {
+        const list = await nominatimSearch(q, 1);
+        if (list.length) {
           const lat = parseFloat(list[0].lat), lng = parseFloat(list[0].lon);
           if (!isNaN(lat) && !isNaN(lng)) return { lat, lng, source: "Nominatim 검색", query: q };
         }
-      } catch {}
+      }
       return null;
+    }
+
+    // 일정에 이미 같은 이름의 장소(예: '호텔 OO 체크인')가 좌표와 함께 있으면 그 좌표를 쓴다
+    function findItemCoordsByName(name) {
+      const key = normalizePlaceKey(name);
+      if (!key || key.length < 3) return null;
+      let hit = null;
+      (state.days || []).forEach(d => (d.items || []).forEach(it => {
+        if (hit || typeof it.lat !== "number" || typeof it.lng !== "number") return;
+        const texts = [it.place, it.toPlace, it.fromPlace].filter(Boolean).map(normalizePlaceKey).filter(Boolean);
+        if (texts.some(t => t.includes(key) || key.includes(t))) {
+          hit = { lat: it.lat, lng: it.lng, source: `일정 '${it.place || "장소"}' 좌표` };
+        }
+      }));
+      return hit;
     }
 
     async function resolveBookingHotelCoords(name) {
@@ -5076,9 +5108,43 @@
         bkSchedCoords = { lat: pl.lat, lng: pl.lng, source: "저장된 거점" };
         return bkSchedCoords;
       }
+      const fromItem = findItemCoordsByName(name);
+      if (fromItem) { bkSchedCoords = fromItem; return bkSchedCoords; }
       const g = await geocodeByName(name);
       if (g) bkSchedCoords = g;
       return g;
+    }
+
+    async function searchBookingHotelCoords() {
+      const q = (document.getElementById("bk-sched-search")?.value || "").trim();
+      const box = document.getElementById("bk-sched-search-results");
+      if (!q) return alert("호텔 주소나 가까운 역·동네 이름을 입력해 주세요.");
+      if (box) box.innerHTML = `<div style="font-size:11.5px;color:var(--muted);padding:3px;">'${escapeAttr(q)}' 찾는 중...</div>`;
+      const list = await nominatimSearch(q, 5);
+      if (!list.length) {
+        if (box) box.innerHTML = `<div style="font-size:11.5px;color:var(--muted);padding:3px;">결과가 없어요. 가까운 역·동네·도로명주소로 다시 찾아 보세요.</div>`;
+        return;
+      }
+      window._bkCoordResults = list;
+      if (box) box.innerHTML = list.map((p, i) => `
+        <div class="expense-item" style="padding:5px 4px;cursor:pointer;" onclick="pickBookingHotelCoords(${i})">
+          <div style="font-size:11.5px;"><strong>${escapeAttr(p.name || q)}</strong>
+            <div style="color:var(--muted);font-size:10.5px;">${escapeAttr(p.display_name || "")}</div>
+          </div>
+          <span class="tag blue">선택</span>
+        </div>`).join("");
+    }
+
+    function pickBookingHotelCoords(i) {
+      const p = (window._bkCoordResults || [])[i];
+      if (!p) return;
+      const lat = parseFloat(p.lat), lng = parseFloat(p.lon);
+      if (isNaN(lat) || isNaN(lng)) return;
+      bkSchedCoords = { lat, lng, source: `검색: ${String(p.name || p.display_name || "").slice(0, 24)}` };
+      const box = document.getElementById("bk-sched-search-results");
+      if (box) box.innerHTML = `<div style="font-size:11.5px;color:var(--success);padding:3px;">✓ 좌표 선택됨 (${lat.toFixed(4)}, ${lng.toFixed(4)})</div>`;
+      renderBookingScheduleCoordNote();
+      previewBookingRoute();
     }
 
     function persistHotelCoords(name, coords) {
@@ -5213,7 +5279,7 @@
       if (box) {
         box.innerHTML = g
           ? `<span style="color:var(--success);">✓ '${escapeAttr(name)}' 좌표를 찾았어요 (${g.lat.toFixed(4)}, ${g.lng.toFixed(4)}).</span>`
-          : `<span style="color:var(--danger);">좌표를 찾지 못했어요. 저장할 때 한 번 더 시도하고, 그래도 없으면 이동 시간 없이 저장돼요.</span>`;
+          : `<span style="color:var(--danger);">좌표를 찾지 못했어요. 위 왜에 호텔 주소나 가까운 역 이름을 넣고 '🔎 좌표 검색'을 눌러 보세요.</span>`;
       }
       if (g) previewBookingRoute();
     }
