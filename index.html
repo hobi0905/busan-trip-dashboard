@@ -5044,7 +5044,7 @@
               time: b.depTime || "00:00",
               place: `${b.from || "출발지"} → ${b.to || "도착지"}`,
               stay: b.depTime && b.arrTime ? `${b.depTime}~${b.arrTime}` : "",
-              moveMode: [b.mode, b.name].filter(Boolean).join(" "),
+              moveMode: (b.name && b.mode && String(b.name).startsWith(b.mode)) ? b.name : [b.mode, b.name].filter(Boolean).join(" "),
               moveMin: 0, moveCost: 0, costTotal: 0,
               memo: [b.seat, b.payStatus === "paid" ? "결제 완료" : "결제 예정", b.memo].filter(Boolean).join(" · "),
               mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(b.to || b.from || "")}`,
