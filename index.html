@@ -5963,7 +5963,7 @@
               ].filter(Boolean).join(" · "),
               mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(hotel)}`,
               routeUrl: est?.routeUrl || "",
-              routeSummary: est ? `숙소 → 첫 장소 ${est.summary}` : (coord ? "첫 장소 좌표를 찾지 못해 이동 시간은 계산하지 못했어요." : "호텔 좌표가 없어 이동 시간은 계산하지 못했어요."),
+              routeSummary: est ? `숙소 → 첫 장소 ${est.summary}` : (coord ? "첫 장소 좌표를 찾지 못해 이동 시간은 계산하지 못했어요." : "📍 호텔 좌표가 없어 이동 시간은 못 쟀어요 — '✏️ 예약 수정'에서 ‘🔎 좌표 검색’으로 호텔 주소·가까운 역을 찾아 주세요."),
               badges: ["🔗 예약 연동", "숙소 출발"].filter(Boolean)
             });
           }
@@ -6002,7 +6002,7 @@
               ].filter(Boolean).join(" · "),
               mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(hotel)}`,
               routeUrl: est?.routeUrl || "",
-              routeSummary: est ? `마지막 장소 → 숙소 ${est.summary}` : (coord ? "마지막 장소 좌표를 찾지 못해 이동 시간은 계산하지 못했어요." : "호텔 좌표가 없어 이동 시간은 계산하지 못했어요."),
+              routeSummary: est ? `마지막 장소 → 숙소 ${est.summary}` : (coord ? "마지막 장소 좌표를 찾지 못해 이동 시간은 계산하지 못했어요." : "📍 호텔 좌표가 없어 이동 시간은 못 쟀어요 — '✏️ 예약 수정'에서 ‘🔎 좌표 검색’으로 호텔 주소·가까운 역을 찾아 주세요."),
               badges: ["🔗 예약 연동", "숙소 복귀"].filter(Boolean)
             });
           }
