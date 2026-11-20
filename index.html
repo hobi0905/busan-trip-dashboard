@@ -7232,12 +7232,21 @@
       return o ? o.label : key;
     }
 
+    function renderLikesBox() {
+      const box = document.getElementById("prof-likes-box");
+      if (!box) return;
+      const mine = Array.isArray(myProfile.likes) ? myProfile.likes : [];
+      box.innerHTML = LIKE_OPTIONS.map(o =>
+        `<span class="chip ${mine.includes(o.key) ? "selected" : ""}" onclick="toggleMyLike('${o.key}')">${mine.includes(o.key) ? "✓ " : ""}${o.label}</span>`
+      ).join("");
+    }
+
     function toggleMyLike(key) {
       const likes = Array.isArray(myProfile.likes) ? myProfile.likes.slice() : [];
       const i = likes.indexOf(key);
       if (i >= 0) likes.splice(i, 1); else likes.push(key);
       myProfile.likes = likes;
-      renderMyPageBox();
+      renderLikesBox(); // 소개글 입력 중인 값은 건드리지 않는다
     }
 
     function renderMyPageBox() {
@@ -7254,13 +7263,7 @@
         : "닉네임과 사진을 정하면 여행마다 표시돼요.";
       const bio = document.getElementById("prof-bio");
       if (bio) bio.value = myProfile.bio || "";
-      const box = document.getElementById("prof-likes-box");
-      if (box) {
-        const mine = Array.isArray(myProfile.likes) ? myProfile.likes : [];
-        box.innerHTML = LIKE_OPTIONS.map(o =>
-          `<span class="chip ${mine.includes(o.key) ? "selected" : ""}" onclick="toggleMyLike('${o.key}')">${mine.includes(o.key) ? "✓ " : ""}${o.label}</span>`
-        ).join("");
-      }
+      renderLikesBox();
     }
 
     async function saveMyPageInfo() {
