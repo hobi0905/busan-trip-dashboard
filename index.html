@@ -4157,22 +4157,60 @@
       return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
     }
 
+    // 🏙️ 여행지(목적지) 기준점 — state.meta.destination의 도시
+    function tripDestinationAnchor() {
+      const dest = String(state.meta?.destination || "").split(/[(\s·,]/)[0].replace(/\(.*?\)/g, "").trim();
+      if (!dest) return null;
+      const knownKey = Object.keys(CITY_GEO).find(k => dest.includes(k) || k.includes(dest));
+      if (knownKey) return { label: knownKey, lat: CITY_GEO[knownKey].lat, lon: CITY_GEO[knownKey].lon };
+      return { label: dest, lat: null, lon: null };
+    }
+
+    // 일정 항목에서 '그 일정이 실제로 있는 곳' (출발/귀가 이동 구간이면 도착지)
+    function itemArrivePlace(it) {
+      if (!it) return null;
+      if (typeof it.lat !== "number" || typeof it.lng !== "number") return null;
+      const isMove = Boolean(it.fromPlace || it.toPlace || String(it.place || "").includes("→"));
+      let name = "";
+      if (isMove) {
+        name = it.toPlace || String(it.place || "").split("→").pop().replace(/\(.*?\)/g, "").trim();
+      } else {
+        name = String(it.place || "").replace(/\(.*?\)/g, "").trim();
+      }
+      return { name, lat: it.lat, lon: it.lng, move: isMove };
+    }
+
+    // 그날 여행지 도시: 집·출발지가 아니라 실제 여행지(목적지) 좌표를 우선한다
     function deriveDayCity(day) {
       if (!day) return null;
       if (day.city) return { label: day.cityLabel || day.city, query: day.city, lat: day.lat, lon: day.lng };
+      const anchor = tripDestinationAnchor();
+      const anchorHasCoord = Boolean(anchor && typeof anchor.lat === "number");
+      const places = (day.items || []).map(itemArrivePlace).filter(Boolean);
+      let pick = null;
+      if (anchorHasCoord) {
+        // 여행지 도시와 같은 권역(45km 이내)에 있는 첫 장소 — 1일차는 '부산역 도착'이 여기가 된다
+        pick = places.find(p => calcDistKm(anchor.lat, anchor.lon, p.lat, p.lon) <= 45) || null;
+      }
+      if (!pick) pick = places.find(p => !p.move) || places[0] || null;
+
+      if (pick && (!anchor || !anchorHasCoord || calcDistKm(anchor.lat, anchor.lon, pick.lat, pick.lon) <= 45)) {
+        // 여행지 도시 안이면 도시 이름으로 표시 (예: 🏙️ 부산 · 부산역)
+        return {
+          label: anchor?.label || pick.name,
+          query: anchor?.label || pick.name,
+          lat: pick.lat, lon: pick.lon,
+          areaDetail: pick.name
+        };
+      }
+      if (pick) return { label: pick.name, query: pick.name, lat: pick.lat, lon: pick.lon };
       const area = String(day.area || "").trim();
       if (area) {
         const first = area.split(/[·,>\/]/)[0].replace(/\(.*?\)/g, "").trim();
         if (first) return { label: first, query: first };
       }
-      const withCoord = (day.items || []).find(it => typeof it.lat === "number");
-      if (withCoord) {
-        const nm = String(withCoord.place || "").split(/\s*(?:→|\()/)[0].trim();
-        return { label: nm, query: nm, lat: withCoord.lat, lon: withCoord.lng };
-      }
       // 새로 만든 일정처럼 날짜만 있는 경우 목적지로 조회
-      const dest = String(state.meta?.destination || "").split(/[(\s]/)[0].trim();
-      if (dest) return { label: dest, query: dest };
+      if (anchor?.label) return { label: anchor.label, query: anchor.label };
       return null;
     }
 
@@ -4358,7 +4396,8 @@
           const sunTimes = geo ? estimateSunTimes(geo.lat, geo.lon, day.date) : { sunrise: "", sunset: "" };
           entries.push({
             dayNum: day.day, day: dayLabel,
-            cityLabel: city.label, area: [city.label, day.areaDetail].filter(Boolean).join(" · "),
+            cityLabel: city.label,
+            area: [city.areaDetail, day.areaDetail].filter(Boolean).filter(v => v !== city.label).filter((v, i, a) => a.indexOf(v) === i).join(" · "),
             icon, condition,
             minTemp: Math.round(minT), maxTemp: Math.round(maxT),
             apparentMax: Math.round(appMaxT), apparentMin: Math.round(appMinT),
