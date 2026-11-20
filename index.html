@@ -1327,12 +1327,16 @@
 
       /* ─────────────── 나머지 탭: 넓은 2열 카드 그리드 ─────────────── */
       #tab-expenses.active,
-      #tab-checklist.active,
       #tab-sync.active {
         display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 0 16px; align-items: start;
       }
       #tab-expenses.active > .card:last-child { grid-column: 1 / -1; }
+      /* 넓은 화면에서 '추가' 버튼 글자가 두 줄로 쪼개지지 않게 */
+      #tab-expenses.active .row > .btn,
+      #tab-checklist.active .row > .btn { flex: 0 0 auto; white-space: nowrap; padding-left: 16px; padding-right: 16px; }
+      #tab-checklist.active { columns: 2; column-gap: 16px; }
+      #tab-checklist.active > * { break-inside: avoid; -webkit-column-break-inside: avoid; }
       #tab-checklist.active > div:empty { display: none; }
       #tab-sync.active > details { grid-column: 1 / -1; }
 
