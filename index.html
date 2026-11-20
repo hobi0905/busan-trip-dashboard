@@ -4290,7 +4290,7 @@
     function jumpToChecklist() {
       const btn = document.querySelector('.nav-btn[data-tab="checklist"]');
       if (btn) btn.click();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      resetScrollToTop();
     }
 
     const DOMESTIC_APP_LINKS_HTML = [
@@ -5352,7 +5352,7 @@
       await switchTrip(syncId);
       document.querySelector('.nav-btn[data-tab="timeline"]')?.click();
       renderHeader();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      resetScrollToTop();
     }
 
     function openNewTripModal() { openTripTypeModal(); }
@@ -5592,11 +5592,38 @@
       saveState();
     }
 
+    /* =====================================================================
+       탭 전환 시 스크롤 맨 위 초기화
+       하단 탭(일정·추천·경비·날씨·옷·정보•체크·짐)이나 상단 ☁️ 동기화 탭으로
+       넘어갈 때마다 창 스크롤과 스크롤 가능한 컨테이너를 모두 맨 위로 되돌린다.
+       ===================================================================== */
+    function resetScrollToTop() {
+      const apply = () => {
+        try { window.scrollTo({ top: 0, left: 0, behavior: "auto" }); } catch (e) { try { window.scrollTo(0, 0); } catch (e2) {} }
+        try { document.documentElement.scrollTop = 0; } catch (e) {}
+        try { document.body.scrollTop = 0; } catch (e) {}
+        const se = document.scrollingElement || document.documentElement;
+        if (se) se.scrollTop = 0;
+        // 페이지 골격·탭 패널·모달 시트 등 스크롤 컨테이너
+        document.querySelectorAll(".main, .container, .app, .tab-panel, .modal-sheet, [data-scroll-container]").forEach(el => {
+          if (el && el.scrollTop) el.scrollTop = 0;
+        });
+        // 그 안에서 실제로 스크롤된 목록·영역도 함께 초기화
+        document.querySelectorAll(".tab-panel *, .modal-sheet *").forEach(el => {
+          if (el.scrollTop > 0) el.scrollTop = 0;
+        });
+      };
+      apply();
+      // 탭 렌더링으로 높이가 바뀐 뒤 한 번 더 보정
+      if (typeof requestAnimationFrame === "function") requestAnimationFrame(apply);
+      setTimeout(apply, 120);
+    }
+
     function openSyncTab() {
       document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
       document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
       document.getElementById("tab-sync")?.classList.add("active");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      resetScrollToTop();
     }
 
     document.querySelectorAll(".nav-btn").forEach(btn => {
@@ -5605,6 +5632,7 @@
         document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
         btn.classList.add("active");
         document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+        resetScrollToTop();
         if (btn.dataset.tab === "weather") autoRefreshWeather();
         if (btn.dataset.tab === "packing") renderPacking();
       });
