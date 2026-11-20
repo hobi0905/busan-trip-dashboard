@@ -7241,6 +7241,7 @@
       toggleProfileForm(showFormFirst);
       if (showFormFirst) profileCreateFresh = !myProfile.nickname;
       document.getElementById("trip-gone-modal")?.classList.remove("open");
+      document.getElementById("join-modal")?.classList.remove("open");
       document.body.classList.remove("trip-is-gone");
       document.getElementById("profile-modal").classList.add("open");
     }
@@ -7431,7 +7432,8 @@
             res = role === "host" ? await deleteTripFromCloud(t.syncId) : await removeMeFromCloudTrip(t.syncId);
           } catch (e) { res = { ok: false, error: String((e && e.message) || e) }; }
           if (res && res.ok === false) failed++;
-          if (role === "host") hostCount++; else guestCount++;
+          if (role === "host") hostCount++;
+          else if (!res || res.mode !== "noop") guestCount++; // 실제로 내 이름이 빠졌을 때만 센다
           addTripTombstone(t.syncId, role === "host" ? "deleted" : "left", t.title || "");
           removeTripFromMyTrips(t.syncId);
           try { localStorage.removeItem(STORAGE_KEY + "_" + t.syncId); } catch {}
@@ -7709,8 +7711,10 @@
         return;
       }
       const needsApproval = Boolean(
-        (state.meta && state.meta.hostId && !isHost() && !(state.members || []).some(m => m.id === myProfile.id)) ||
-        (isInviteLink && !isHost() && !(state.members || []).some(m => m.id === myProfile.id))
+        !isTripTombstoned(currentSyncId) && !(state && state.deleted === true) && (
+          (state.meta && state.meta.hostId && !isHost() && !(state.members || []).some(m => m.id === myProfile.id)) ||
+          (isInviteLink && !isHost() && !(state.members || []).some(m => m.id === myProfile.id))
+        )
       );
       if (needsApproval) {
         document.body.classList.remove("unlocked");
