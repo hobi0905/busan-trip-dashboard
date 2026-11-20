@@ -4108,7 +4108,7 @@
     function moveIconOf(mode) {
       const t = String(mode || "");
       if (/택시/.test(t)) return "🚕";
-      if (/지하철|버스|전철|환승/.test(t)) return "🚇";
+      if (/지하철|버스|전철|환승|대중교통/.test(t)) return "🚇";
       if (/KTX|SRT|기차|열차|항공|비행|페리|크루즈/.test(t)) return "🚆";
       if (/자전거|바이크/.test(t)) return "🚲";
       if (/차량|렌터카|자가용/.test(t)) return "🚗";
@@ -4118,7 +4118,7 @@
     function inferItemExpenseCategory(it) {
       const text = `${it.place || ""} ${(it.badges || []).join(" ")} ${it.moveMode || ""}`;
       if (/호텔|숙소|펜션|리조트|체크인|에어비앤비|모텔|게스트하우스/.test(text)) return "숙소";
-      if (it.fromPlace || it.toPlace || /택시|KTX|SRT|버스|전철|지하철|열차|비행기|항공|시외버스|공항/.test(it.place || "") || (it.badges || []).some(b => /택시|KTX|항공|버스|전철/.test(b))) {
+      if (it.fromPlace || it.toPlace || /택시|KTX|SRT|버스|전철|지하철|열차|비행기|항공|시외버스|공항|대중교통/.test(it.place || "") || (it.badges || []).some(b => /택시|KTX|항공|버스|전철|대중교통/.test(b))) {
         if (/해변열차|스카이캡슐|케이블카|유람선/.test(it.place || "")) return "관광";
         if (/물품보관함/.test(it.place || "")) return "기타";
         return "교통";
