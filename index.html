@@ -7299,7 +7299,7 @@
       const added = [];
       names.forEach(name => {
         if (p.items.some(i => i.name === name)) return;
-        p.items.push({ id: "pk-" + Date.now().toString(36) + "-" + (++packingDraftSeq), name, qty: 1, group: "🎒 기타", checked: false });
+        p.items.push({ id: "pk-" + Date.now().toString(36) + "-" + (++packingDraftSeq), name, qty: 1, group: normalizePackingGroup(name, PACKING_ETC_GROUP), checked: false });
         added.push(name);
       });
       return added;
@@ -7683,7 +7683,18 @@
       { key: "solo", label: "🧳 혼자여행" },
       { key: "family", label: "👨‍👩‍👧 가족여행" }
     ];
-    const PACKING_GROUPS = ["👕 의류·신발", "🧴 세면·뷰티", "📱 전자기기", "📷 촬영·기타", "💊 건강·상비약", "📄 서류·결제", "🎒 기타"];
+    // 짐 카테고리는 국내·해외 공통으로 📷 촬영과 📦 기타를 분리해 쓴다
+    const PACKING_CAMERA_GROUP = "📷 촬영";
+    const PACKING_ETC_GROUP = "📦 기타";
+    const PACKING_GROUPS = ["👕 의류·신발", "🧴 세면·뷰티", "📱 전자기기", PACKING_CAMERA_GROUP, "💊 건강·상비약", "📄 서류·결제", PACKING_ETC_GROUP];
+    // 촬영 장비로 보이는 이름(삼각대·셀카봉 등)은 📷 촬영으로 모은다
+    const PACKING_CAMERA_RE = /(삼각대|셀카봉|카메라|짐벌|액션캠|고프로|gopro|촬영|플래시|메모리카드|sd카드|드론)/i;
+    const PACKING_VISION = [
+      { key: "none", label: "해당 없음" },
+      { key: "glasses", label: "👓 안경" },
+      { key: "lens", label: "👁️ 콘택트렌즈" },
+      { key: "both", label: "👓👁️ 둘 다" }
+    ];
     const PERIOD_ITEM_NAMES = ["생리대 중형", "생리대 대형", "오버나이트 생리대", "생리통 진통제", "여분 속옷 (생리 대비)"];
     let packingDraft = null;
     let packingDraftTrip = "";
@@ -7719,15 +7730,34 @@
         }
       }
       const pk = state.packingByUser[uid];
+      migratePackingGroups(pk);
       ensureTripodInPacking(pk);
       return pk;
+    }
+
+    // 예전 카테고리(📷 촬영·기타 · 🎒 기타)로 저장된 목록을 📷 촬영 / 📦 기타로 정리
+    function normalizePackingGroup(name, group) {
+      const g = String(group || "");
+      // 예전 두 카테고리는 이름을 보고 📷 촬영 / 📦 기타로 나눈다 (삼각대·셀카봉은 촬영)
+      if (g === "🎒 기타" || g === "📷 촬영·기타") {
+        return PACKING_CAMERA_RE.test(String(name || "")) ? PACKING_CAMERA_GROUP : PACKING_ETC_GROUP;
+      }
+      return g || PACKING_ETC_GROUP;
+    }
+
+    function migratePackingGroups(pk) {
+      if (!pk || !Array.isArray(pk.items)) return;
+      pk.items.forEach(it => {
+        if (!it) return;
+        it.group = normalizePackingGroup(it.name, it.group);
+      });
     }
 
     // 이미 만들어 둔 짐 목록에도 '삼각대'를 한 번만 채워 넣는다
     function ensureTripodInPacking(pk) {
       if (!pk || !pk.setupDone || !Array.isArray(pk.items)) return;
       if (pk.items.some(it => it && String(it.name || "").includes("삼각대"))) return;
-      pk.items.push({ id: "pk-tripod", name: "삼각대", qty: 1, group: "📷 촬영·기타", checked: false });
+      pk.items.push({ id: "pk-tripod", name: "삼각대", qty: 1, group: PACKING_CAMERA_GROUP, checked: false });
     }
 
     function packingDraftInit() {
@@ -7739,7 +7769,8 @@
           gender: p.gender || "female",
           age: p.age || "20",
           style: p.tripStyle || "couple",
-          waterDips: typeof p.waterDips === "number" ? p.waterDips : defaultDips
+          waterDips: typeof p.waterDips === "number" ? p.waterDips : defaultDips,
+          vision: p.vision || "none"
         };
         packingDraftTrip = currentSyncId;
       }
@@ -7786,6 +7817,10 @@
       const cold = ctx.maxT <= 10, hot = feelsMax >= HEATWAVE_APPARENT;
       const rows = [];
       const add = (group, name, qty = 1) => rows.push({ group, name, qty: Math.max(1, Math.round(qty)) });
+      const addUnique = (group, name, qty = 1) => { if (!rows.some(r => r.name === name)) add(group, name, qty); };
+      const vision = d.vision || "none";
+      const wantGlasses = vision === "glasses" || vision === "both";
+      const wantLens = vision === "lens" || vision === "both";
 
       add("👕 의류·신발", "속옷", sets + extra);
       add("👕 의류·신발", "양말", sets + extra);
@@ -7822,7 +7857,7 @@
       add("📱 전자기기", "보조배터리", 1);
       add("📱 전자기기", "충전기·케이블", 2);
       add("📱 전자기기", "이어폰", 1);
-      add("📷 촬영·기타", "삼각대", 1);
+      add(PACKING_CAMERA_GROUP, "삼각대", 1);
       if (hasWaterDip || hot) add("📱 전자기기", "방수팩", 1);
 
       add("💊 건강·상비약", "상비약 (소화제·진통제·밴드)", 1);
@@ -7842,10 +7877,23 @@
         add("📄 서류·결제", "숙소·교통 예약 내역", 1);
       }
 
-      add("🎒 기타", "물병·텀블러", 1);
-      add("🎒 기타", "비닐봉지·지퍼백", 3);
-      add("🎒 기타", "우산", 1);
-      add("🎒 기타", "작은 크로스백", 1);
+      add(PACKING_ETC_GROUP, "물병·텀블러", 1);
+      add(PACKING_ETC_GROUP, "비닐봉지·지퍼백", 3);
+      add(PACKING_ETC_GROUP, "우산", 1);
+      add(PACKING_ETC_GROUP, "작은 크로스백", 1);
+
+      // 👓 렌즈 / 안경 조건
+      if (wantGlasses) {
+        addUnique(PACKING_ETC_GROUP, "안경 클리너", 1);
+        addUnique(PACKING_ETC_GROUP, "안경집", 1);
+        addUnique(PACKING_ETC_GROUP, "안경(여분)", 1);
+      }
+      if (wantLens) {
+        addUnique(PACKING_ETC_GROUP, "콘택트렌즈(일정 일수+여분)", Math.max(2, ctx.days + 2));
+        addUnique(PACKING_ETC_GROUP, "렌즈 세척·보존액", 1);
+        addUnique(PACKING_ETC_GROUP, "렌즈 케이스", 1);
+        addUnique("💊 건강·상비약", "인공눈물", 1);
+      }
 
       if (d.gender === "female" && p.periodMode) {
         add("💊 건강·상비약", "생리대 중형", ctx.days * 4);
@@ -7860,23 +7908,24 @@
       if (d.age === "30") add("💊 건강·상비약", "피로회복제", 1);
       if (d.age === "40") {
         add("💊 건강·상비약", "정기 복용약", 1);
-        add("👕 의류·신발", "여분 안경", 1);
+        if (!wantGlasses) add("👕 의류·신발", "여분 안경", 1);
       }
 
       const styleExtra = {
-        couple: [["🎒 기타", "커플룩·커플 소품"], ["🎒 기타", "셀카봉"], ["🎒 기타", "공용 지출 메모"]],
-        honeymoon: [["👕 의류·신발", "신혼 촬영 드레스·정장"], ["🎒 기타", "부케·리본 소품"], ["🎒 기타", "기념 편지"]],
-        anniversary: [["🎒 기타", "기념 선물"], ["🎒 기타", "케이크 초·파티 소품"], ["👕 의류·신발", "기념일 한 벌"]],
-        friends: [["🎒 기타", "보드게임·카드"], ["🎒 기타", "공금 통장·더치페이 앱"], ["💊 건강·상비약", "공용 상비약"]],
-        solo: [["📄 서류·결제", "비상 연락처 메모"], ["🎒 기타", "소형 자물쇠"], ["🎒 기타", "일정 캡처 공유"]],
-        family: [["🎒 기타", "아이 간식·물티슈"], ["💊 건강·상비약", "유아 상비약"], ["👕 의류·신발", "아이 여벌 옷"]]
+        couple: [[PACKING_ETC_GROUP, "커플룩·커플 소품"], [PACKING_CAMERA_GROUP, "셀카봉"], [PACKING_ETC_GROUP, "공용 지출 메모"]],
+        honeymoon: [["👕 의류·신발", "신혼 촬영 드레스·정장"], [PACKING_ETC_GROUP, "부케·리본 소품"], [PACKING_ETC_GROUP, "기념 편지"]],
+        anniversary: [[PACKING_ETC_GROUP, "기념 선물"], [PACKING_ETC_GROUP, "케이크 초·파티 소품"], ["👕 의류·신발", "기념일 한 벌"]],
+        friends: [[PACKING_ETC_GROUP, "보드게임·카드"], [PACKING_ETC_GROUP, "공금 통장·더치페이 앱"], ["💊 건강·상비약", "공용 상비약"]],
+        solo: [["📄 서류·결제", "비상 연락처 메모"], [PACKING_ETC_GROUP, "소형 자물쇠"], [PACKING_ETC_GROUP, "일정 캡처 공유"]],
+        family: [[PACKING_ETC_GROUP, "아이 간식·물티슈"], ["💊 건강·상비약", "유아 상비약"], ["👕 의류·신발", "아이 여벌 옷"]]
       };
       (styleExtra[d.style] || []).forEach(([g, n]) => add(g, n, 1));
-      if (ctx.overseas) add("🎒 기타", "돌아오는 날 캐리어 여유 공간", 1);
+      if (ctx.overseas) add(PACKING_ETC_GROUP, "돌아오는 날 캐리어 여유 공간", 1);
 
       p.gender = d.gender;
       p.age = d.age;
       p.tripStyle = d.style;
+      p.vision = vision;
       p.waterDips = dips;
       p.setupDone = true;
       p.generatedAt = new Date().toISOString();
@@ -7898,6 +7947,7 @@
       if (kind === "age") d.age = value;
       if (kind === "style") d.style = value;
       if (kind === "waterDips") d.waterDips = Number(value) || 0;
+      if (kind === "vision") d.vision = value;
       renderPacking();
     }
 
@@ -7984,7 +8034,7 @@
         id: "pk-" + Date.now().toString(36) + "-" + (++packingDraftSeq),
         name: name.slice(0, 40),
         qty: 1,
-        group: sel?.value || "🎒 기타",
+        group: sel?.value || PACKING_ETC_GROUP,
         checked: false
       });
       if (input) input.value = "";
@@ -8023,6 +8073,9 @@
               ${[{ k: 0, l: "안 들어감" }, { k: 1, l: "1회" }, { k: 2, l: "2회" }, { k: 3, l: "3회+" }].map(w => chip("waterDips", w.k, w.l, Number(draft.waterDips) === w.k)).join("")}
             </div>
             <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">${ctx.maxT < 18 ? "쌀쌀/겨울 일정이라 기본 ‘안 들어감’으로 맞춰 뒀어요. 들어갈 예정이면 횟수를 골라 주세요!" : "입수 횟수만큼 속옷·양말·수건·수영복이 자동 추가돼요."}</div>
+            <div style="font-size:11.5px;font-weight:800;color:var(--ocean-dark);margin-bottom:4px;">👓 렌즈 / 안경</div>
+            <div class="pk-setup-chips" style="margin-bottom:6px;">${PACKING_VISION.map(v => chip("vision", v.key, v.label, (draft.vision || "none") === v.key)).join("")}</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">${(draft.vision || "none") === "none" ? "안경이나 콘택트렌즈를 쓰면 클리너·여분렌즈 등이 같이 담겨요." : (draft.vision === "glasses" ? "안경 클리너·안경집·여분 안경을 넣어 드려요." : draft.vision === "lens" ? "콘택트렌즈·보존액·렌즈 케이스·인공눈물을 넣어 드려요." : "안경과 콘택트렌즈 용품을 모두 넣어 드려요.")}</div>
             <button class="btn btn-primary" style="width:100%;" onclick="confirmPackingSetup()">✨ 짐 목록 자동 만들기</button>
             ${hasItems ? `<button class="btn btn-soft btn-sm" style="width:100%;margin-top:8px;" onclick="cancelPackingSetup()">그대로 두기 (기존 목록 유지)</button>` : ""}
           </div>`;
@@ -8041,20 +8094,25 @@
       const styleLabel = (PACKING_STYLES.find(s => s.key === p.tripStyle) || {}).label || "";
       const genderLabel = (PACKING_GENDERS.find(g => g.key === p.gender) || {}).label || "";
       const ageLabel = (PACKING_AGES.find(a => a.key === p.age) || {}).label || "";
+      const visionLabel = p.vision && p.vision !== "none" ? (PACKING_VISION.find(v => v.key === p.vision) || {}).label || "" : "";
       const groups = [];
       const gmap = {};
       items.forEach(it => {
-        const g = it.group || "🎒 기타";
+        const g = normalizePackingGroup(it.name, it.group);
+        it.group = g;
         if (!gmap[g]) { gmap[g] = []; groups.push(g); }
         gmap[g].push(it);
       });
+      // 카테고리 순서를 📷 촬영 → 📦 기타 순으로 고정
+      const gOrder = (g) => { const i = PACKING_GROUPS.indexOf(g); return i < 0 ? PACKING_GROUPS.length : i; };
+      groups.sort((a, b) => gOrder(a) - gOrder(b));
 
       host.innerHTML = `
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
             <div>
               <div style="font-size:15px;font-weight:800;">🧳 ${myNick}짐 챙기기</div>
-              <div style="font-size:11.5px;color:var(--muted);margin-top:2px;">${ctx.nights}박 ${ctx.days}일 · ${styleLabel} · ${genderLabel} ${ageLabel}</div>
+              <div style="font-size:11.5px;color:var(--muted);margin-top:2px;">${ctx.nights}박 ${ctx.days}일 · ${styleLabel} · ${genderLabel} ${ageLabel}${visionLabel ? ` · ${visionLabel}` : ""}</div>
             </div>
             <div style="font-size:13px;font-weight:800;color:var(--ocean-dark);white-space:nowrap;">${done}/${items.length}</div>
           </div>
@@ -8063,6 +8121,7 @@
             <span class="tag blue">${seasonLabel}</span>
             ${(Number(p.waterDips) || 0) > 0 ? `<span class="tag blue">🏖️ 입수 ${p.waterDips >= 3 ? "3회+" : p.waterDips + "회"} (+${p.waterDips}세트)</span>` : `<span class="tag">🏖️ 물놀이 없음</span>`}
             <span class="tag">${ctx.overseas ? "✈️ 해외" : "🇰🇷 국내"}</span>
+            ${visionLabel ? `<span class="tag">${visionLabel}</span>` : ""}
             <span class="tag">속옷·양말 ${ctx.nights + 1 + Math.min(3, Number(p.waterDips) || 0)}세트</span>
           </div>
           <div class="pk-toolbar">
