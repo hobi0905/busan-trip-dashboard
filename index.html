@@ -1636,6 +1636,22 @@
         <input id="nts-start" type="date" class="input" style="flex:1;" />
         <input id="nts-end" type="date" class="input" style="flex:1;" />
       </div>
+      <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:3px;">가는 날 · 오는 날 교통수단</div>
+      <div class="row" style="gap:6px;">
+        <select id="nts-out-mode" class="input" style="flex:1;" title="가는 날 교통수단">
+          <option value="기차">🚆 가는 날 · KTX·기차</option>
+          <option value="버스">🚌 가는 날 · 고속·시외버스</option>
+          <option value="비행기">✈️ 가는 날 · 비행기</option>
+          <option value="자차">🚗 가는 날 · 자차·기타</option>
+        </select>
+        <select id="nts-in-mode" class="input" style="flex:1;" title="오는 날 교통수단">
+          <option value="기차">🚆 오는 날 · KTX·기차</option>
+          <option value="버스">🚌 오는 날 · 고속·시외버스</option>
+          <option value="비행기">✈️ 오는 날 · 비행기</option>
+          <option value="자차">🚗 오는 날 · 자차·기타</option>
+        </select>
+      </div>
+      <div style="font-size:10.5px;color:var(--muted);margin-bottom:8px;line-height:1.45;">자차·기타를 빼고는 예매 오픈일 알림이 자동으로 들어가요 (기차 30일·버스 20일·항공 60일 전).</div>
       <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:3px;">인원수 (명)</div>
       <div class="row"><input id="nts-travelers" type="number" min="1" max="20" value="2" class="input" /></div>
       <button class="btn btn-primary" style="width:100%;" onclick="createGuidedTrip()">🚀 이 설정으로 여행 시작하기</button>
@@ -1698,6 +1714,21 @@
       <div class="row">
         <input id="os-start" type="date" class="input" style="flex:1;" />
         <input id="os-end" type="date" class="input" style="flex:1;" />
+      </div>
+      <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:3px;">가는 날 · 오는 날 교통수단</div>
+      <div class="row" style="gap:6px;">
+        <select id="os-out-mode" class="input" style="flex:1;" title="가는 날 교통수단">
+          <option value="비행기">✈️ 가는 날 · 비행기</option>
+          <option value="기차">🚆 가는 날 · KTX·기차</option>
+          <option value="버스">🚌 가는 날 · 고속·시외버스</option>
+          <option value="자차">🚗 가는 날 · 자차·기타</option>
+        </select>
+        <select id="os-in-mode" class="input" style="flex:1;" title="오는 날 교통수단">
+          <option value="비행기">✈️ 오는 날 · 비행기</option>
+          <option value="기차">🚆 오는 날 · KTX·기차</option>
+          <option value="버스">🚌 오는 날 · 고속·시외버스</option>
+          <option value="자차">🚗 오는 날 · 자차·기타</option>
+        </select>
       </div>
       <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:3px;">인원수 (명)</div>
       <div class="row"><input id="os-travelers" type="number" min="1" max="20" value="2" class="input" /></div>
@@ -3308,6 +3339,7 @@
     const AUTO_ALERT_RULES = [
       { key: "blueline", re: /스카이캡슐|해변열차|블루라인파크/i, leadDays: 14, hour: 10, minute: 0, fallbackDays: 3, channel: "블루라인파크", verb: "예매 오픈", offsets: ["1d", "1h", "30m", "10m"] },
       { key: "rail", re: /KTX|SRT|ITX|새마을|무궁화|코레일|기차|열차/i, leadDays: 30, hour: 7, minute: 0, fallbackDays: 3, channel: "코레일톡", verb: "예매 오픈", offsets: ["1d", "1h", "10m"] },
+      { key: "bus", re: /고속버스|시외버스|시외\s*버스|버스터미널|버스\s*터미널|코버스|kobus/i, leadDays: 20, hour: 9, minute: 0, fallbackDays: 3, channel: "고속버스 예매", verb: "예매 오픈", offsets: ["1d", "1h", "10m"] },
       { key: "flight", re: /항공|비행|공항|flight|airline|AIR\b/i, leadDays: 60, hour: 9, minute: 0, fallbackDays: 7, channel: "항공사·OTA", verb: "예매 오픈", offsets: ["1d", "1h", "10m"] },
       { key: "stay", re: /호텔|숙소|리조트|펜션|게스트하우스|에어비앤비|모텔/i, leadDays: 14, hour: 10, minute: 0, fallbackDays: 3, channel: "예약 사이트", verb: "예약 오픈", offsets: ["1d", "1h", "10m"] },
       { key: "book", re: /투어|공연|전망대|클래스|체험|액티비티|뮤지컬|콘서트|케이블카|곤돌라|크루즈|유람선|아쿠아리움|워터파크|오마카세|파인다이닝|미쉐린|코스요리|뷔페/i, leadDays: 14, hour: 10, minute: 0, fallbackDays: 3, channel: "예약 앱", verb: "예약 오픈", offsets: ["1d", "1h", "10m"] }
@@ -3360,14 +3392,14 @@
     }
 
     // 자동 알림 하나 만들기 (중복이면 갱신만) — date: 이용일, time: 이용 시각, topic: 대상 이름
-    function upsertAutoAlert({ ruleKey, date, time, topic, desc, titlePrefix }) {
+    function upsertAutoAlert({ ruleKey, date, time, topic, desc, titlePrefix, titleOverride, datetimeAt }) {
       if (!date) return null;
       const rule = AUTO_ALERT_RULES.find(r => r.key === ruleKey) || AUTO_ALERT_RULES.find(r => r.key === "book");
       if (!rule) return null;
-      const open = alertOpenMoment(date, rule);
+      const open = datetimeAt || alertOpenMoment(date, rule);
       const datetime = `${open.getFullYear()}-${String(open.getMonth() + 1).padStart(2, "0")}-${String(open.getDate()).padStart(2, "0")}T${String(open.getHours()).padStart(2, "0")}:${String(open.getMinutes()).padStart(2, "0")}`;
       const shortTopic = String(topic || "").replace(/\s*(체크인|체크아웃|예약|예매)\s*$/g, "").trim().slice(0, 26);
-      const title = `${titlePrefix || fmtMD(date).replace(/\s*\(.*\)\s*/, "")} ${shortTopic} ${rule.verb}`.replace(/\s+/g, " ").trim();
+      const title = String(titleOverride || `${titlePrefix || fmtMD(date).replace(/\s*\(.*\)\s*/, "")} ${shortTopic} ${rule.verb}`).replace(/\s+/g, " ").trim();
       const spec = {
         autoKey: `${rule.key}|${placeCoreKey(topic)}|${date}`,
         title,
@@ -3382,8 +3414,11 @@
       if (Array.isArray(state.alertSkip) && state.alertSkip.includes(spec.autoKey)) return null;
       const same = state.bookingAlerts.find(a => a && a.autoKey && a.autoKey === spec.autoKey);
       if (same) {
-        same.title = spec.title; same.datetime = spec.datetime; same.displayTime = spec.displayTime;
-        same.desc = spec.desc; same.auto = true;
+        if (!same.userEdited) { // 사용자가 직접 고진 알림은 덮어쓰지 않는다
+          same.title = spec.title; same.desc = spec.desc;
+        }
+        same.datetime = spec.datetime; same.displayTime = spec.displayTime;
+        same.auto = true;
         return same;
       }
       const tokens = alertTitleTokens(shortTopic);
@@ -3427,9 +3462,19 @@
       if (!b) return null;
       if (b.type === "hotel") {
         if (!b.inDate || !b.name) return null;
+        // 숙소는 누구에게나 맞는 범용 문구로만: 🏨 {숙소명} 결제하기
+        const shortName = String(b.name).replace(/\s*(체크인|체크아웃|호텔|숙소|리조트|펜션)\s*$/g, "").trim().slice(0, 20) || "숙소";
+        const title = `🏨 ${shortName} 결제하기`;
+        const payBits = [
+          b.dueDate ? `${fmtMD(b.dueDate)} 결제 예정` : "",
+          (Number(b.dueAmount) || Number(b.price)) ? fmt(Number(b.dueAmount) || Number(b.price)) : "",
+          b.room || "",
+          b.inTime ? `${fmtMD(b.inDate)} ${b.inTime} 체크인` : `${fmtMD(b.inDate)} 체크인`
+        ].filter(Boolean);
         return upsertAutoAlert({
-          ruleKey: "stay", date: b.inDate, time: b.inTime, topic: b.name,
-          desc: ["예약 사이트", b.inTime ? `${fmtMD(b.inDate)} ${b.inTime} 체크인` : `${fmtMD(b.inDate)} 체크인`, b.room, b.memo].filter(Boolean).join(" · ")
+          ruleKey: "stay", date: b.inDate, time: b.inTime, topic: shortName,
+          titleOverride: title,
+          desc: payBits.join(" · ")
         });
       }
       if (b.type === "transit") {
@@ -3443,6 +3488,25 @@
         });
       }
       return null;
+    }
+
+    // 가는 날 / 오는 날 교통수단 → 예매 오픈일 알림 (자차·기타는 만들지 않음)
+    function addTransportBookingAlert(dateStr, mode, label) {
+      if (!dateStr) return null;
+      const map = {
+        "기차": { key: "rail", icon: "🚆" },
+        "버스": { key: "bus", icon: "🚌" },
+        "비행기": { key: "flight", icon: "✈️" }
+      };
+      const hit = map[mode];
+      if (!hit) return null;
+      return upsertAutoAlert({
+        ruleKey: hit.key,
+        date: dateStr,
+        topic: `${label} ${mode}`,
+        titleOverride: `${hit.icon} ${label} ${mode} 예매 오픈`,
+        desc: `${fmtMD(dateStr)} ${label} · ${mode} 예매 오픈 알림`
+      });
     }
 
     // 생성 결과를 한 줄로 알려 주기 (저장 alert 문구용)
@@ -5121,15 +5185,33 @@
           const on = (a.offsets || []).includes(o.key);
           return `<span class="chip ${on ? "selected" : ""}" onclick="toggleAlertOffset('${a.id}','${o.key}')">${on ? "✓ " : ""}${o.label}</span>`;
         }).join("");
+        if (editingAlertId === a.id) {
+          const dt = String(a.datetime || "").split("T");
+          return `
+          <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+            <div style="font-size:11.5px;font-weight:800;color:var(--ocean-dark);margin-bottom:4px;">✏️ 알림 수정</div>
+            <div class="row" style="margin-bottom:6px;"><input id="ae-title" class="input" maxlength="40" value="${escapeAttr(a.title || "")}" placeholder="알림 제목" /></div>
+            <div class="row" style="gap:6px;margin-bottom:6px;">
+              <input id="ae-date" type="date" class="input" style="flex:1;" value="${escapeAttr(dt[0] || "")}" />
+              <input id="ae-time" type="time" class="input" style="flex:1;" value="${escapeAttr((dt[1] || "10:00").slice(0, 5))}" />
+            </div>
+            <div class="row" style="margin-bottom:6px;"><input id="ae-desc" class="input" maxlength="120" value="${escapeAttr(a.desc || "")}" placeholder="상세 메모" /></div>
+            <div class="row" style="margin-bottom:0;">
+              <button class="btn btn-primary btn-sm" style="flex:1;" onclick="saveAlertEdit('${a.id}')">저장</button>
+              <button class="btn btn-soft btn-sm" style="flex:1;" onclick="cancelAlertEdit()">취소</button>
+            </div>
+          </div>`;
+        }
         return `
           <div style="padding:10px 0;border-bottom:1px solid var(--border);">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
               <div>
-                <div style="font-weight:800;font-size:13.5px;">${a.title}${a.auto ? ` <span style="font-size:9.5px;font-weight:800;color:var(--ocean-dark);background:var(--ocean-soft);border:1px solid var(--ocean-border);border-radius:999px;padding:1px 6px;vertical-align:middle;">🤖 자동</span>` : ""}</div>
+                <div style="font-weight:800;font-size:13.5px;">${a.title}${a.auto ? ` <span style="font-size:9.5px;font-weight:800;color:var(--ocean-dark);background:var(--ocean-soft);border:1px solid var(--ocean-border);border-radius:999px;padding:1px 6px;vertical-align:middle;">🤖 자동</span>` : ""}${a.userEdited ? ` <span style="font-size:9.5px;font-weight:800;color:#7c2d12;background:#fff7ed;border:1px solid #fdba74;border-radius:999px;padding:1px 6px;vertical-align:middle;">✏️ 수정함</span>` : ""}</div>
                 <div style="font-size:11.5px;color:var(--ocean-dark);font-weight:700;">${a.displayTime}</div>
                 <div style="font-size:11.5px;color:var(--muted);margin-top:2px;">${a.desc}</div>
               </div>
               <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+                ${canEdit() ? `<button class="btn btn-soft btn-sm" onclick="startEditAlert('${a.id}')">✏️ 수정</button>` : ""}
                 <button class="btn btn-soft btn-sm" onclick="downloadAlertIcs('${a.id}')">📅 캘린더 저장</button>
                 ${a.auto && canEdit() ? `<button class="btn btn-sm" style="background:#f1f5f9;color:var(--muted);" onclick="deleteAlert('${a.id}')">✕ 빼기</button>` : ""}
               </div>
@@ -5442,6 +5524,35 @@
       }
     }
 
+    // 예매 오픈일 알림 직접 수정 (제목·날짜·시간·메모)
+    function startEditAlert(id) {
+      if (!canEdit()) return alert("읽기 전용 권한이라 알림을 수정할 수 없어요.");
+      editingAlertId = id;
+      renderChecklist();
+    }
+    function cancelAlertEdit() {
+      editingAlertId = null;
+      renderChecklist();
+    }
+    function saveAlertEdit(id) {
+      const a = (state.bookingAlerts || []).find(x => x.id === id);
+      if (!a) return;
+      const title = (document.getElementById("ae-title")?.value || "").trim();
+      const date = document.getElementById("ae-date")?.value || "";
+      const time = document.getElementById("ae-time")?.value || "10:00";
+      const desc = (document.getElementById("ae-desc")?.value || "").trim();
+      if (!title) return alert("알림 제목을 입력해 주세요.");
+      if (!date) return alert("알림 날짜를 선택해 주세요.");
+      a.title = title;
+      a.datetime = `${date}T${time}`;
+      a.displayTime = alertDisplayTime(a.datetime);
+      a.desc = desc;
+      a.userEdited = true;
+      editingAlertId = null;
+      saveState();
+      renderChecklist();
+    }
+
     function toggleAlertOffset(id, key) {
       const a = state.bookingAlerts.find(x => x.id === id);
       if (!a) return;
@@ -5529,6 +5640,7 @@
       saveState();
     }
     let editingCheckId = null;
+    let editingAlertId = null;
     function startCheckEdit(id) {
       if (!canEdit()) return alert("읽기 전용 권한이라 체크리스트를 수정할 수 없어요.");
       const c = (state.checklist || []).find(x => x.id === id);
@@ -7794,6 +7906,8 @@
       const startDate = document.getElementById("os-start").value;
       const endDate = document.getElementById("os-end").value;
       const travelers = Math.max(1, Number(document.getElementById("os-travelers").value) || 2);
+      const outMode = document.getElementById("os-out-mode")?.value || "비행기";
+      const inMode = document.getElementById("os-in-mode")?.value || "비행기";
       if (!startDate || !endDate || endDate < startDate) return alert("여행 날짜를 올바르게 선택해 주세요.");
       const nights = Math.max(1, Math.round((new Date(endDate + "T00:00:00") - new Date(startDate + "T00:00:00")) / 86400000));
       const preset = getCountryPreset(country);
@@ -7816,6 +7930,8 @@
           startDate, endDate, travelers,
           tripType: "overseas", country, countryCode: preset.code || "",
           hostId: myProfile.id, themeColor: "#0284c7",
+          transportOut: outMode,
+          transportIn: inMode,
           note: `${country} 해외여행 · ${preset.entry}`
         },
         days,
@@ -7828,6 +7944,8 @@
       };
       currentSyncId = newId;
       currentDay = 1;
+      const outAlert = addTransportBookingAlert(startDate, outMode, "가는 날");
+      const inAlert = addTransportBookingAlert(endDate, inMode, "오는 날");
       localStorage.setItem(getLocalKey(), JSON.stringify(state));
       registerMyTrip(currentSyncId, state.meta);
       const u = new URL(location.href);
@@ -7842,6 +7960,8 @@
       await startSupabase(DEFAULT_SB.url, DEFAULT_SB.key, currentSyncId);
       await pushToCloud(true);
       refreshCityWeather(true);
+      const al = [outAlert, inAlert].filter(Boolean);
+      if (al.length) setTimeout(() => alert(`⏰ 가는 날·오는 날 교통수단 예매 오픈일 알림을 넣었어요.\n${al.map(r => `· ${r.displayTime} ${r.title}`).join("\n")}`), 150);
     }
 
     async function openSampleTrip(syncId = "au-sydney-4n5d") {
@@ -8837,6 +8957,8 @@
       const startDate = document.getElementById("nts-start").value;
       const endDate = document.getElementById("nts-end").value;
       const travelers = Math.max(1, Number(document.getElementById("nts-travelers").value) || 2);
+      const outMode = document.getElementById("nts-out-mode")?.value || "기차";
+      const inMode = document.getElementById("nts-in-mode")?.value || "기차";
       if (!title) return alert("여행 계획 이름을 입력해 주세요.");
       if (!startDate || !endDate || endDate < startDate) return alert("여행 날짜를 올바르게 선택해 주세요.");
 
@@ -8850,6 +8972,8 @@
           travelers,
           hostId: myProfile.id,
           themeColor: "#0284c7",
+          transportOut: outMode,
+          transportIn: inMode,
           note: `${dest} 여행`
         },
         days: buildDateRangeDays(startDate, endDate, dest),
@@ -8866,6 +8990,9 @@
       currentSyncId = newId;
       state = newTrip;
       currentDay = 1;
+      // 가는 날·오는 날 교통수단에 맞춰 예매 오픈일 알림 자동 생성 (자차·기타 제외)
+      const outAlert = addTransportBookingAlert(startDate, outMode, "가는 날");
+      const inAlert = addTransportBookingAlert(endDate, inMode, "오는 날");
       localStorage.setItem(getLocalKey(), JSON.stringify(state));
       registerMyTrip(currentSyncId, state.meta);
       const u = new URL(location.href);
@@ -8878,6 +9005,8 @@
       updateAccessGate();
       await startSupabase(DEFAULT_SB.url, DEFAULT_SB.key, currentSyncId);
       await pushToCloud(true);
+      const al = [outAlert, inAlert].filter(Boolean);
+      if (al.length) setTimeout(() => alert(`⏰ 가는 날·오는 날 교통수단 예매 오픈일 알림을 넣었어요.\n${al.map(r => `· ${r.displayTime} ${r.title}`).join("\n")}`), 150);
     }
 
     function setRecommendMode(mode) {
