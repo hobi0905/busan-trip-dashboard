@@ -541,7 +541,7 @@
       width: 100%;
       max-width: 560px;
       display: grid;
-      grid-template-columns: repeat(6, 1fr);
+      grid-template-columns: repeat(7, 1fr);
     }
     .nav-btn {
       background: none;
@@ -850,10 +850,10 @@
     }
     .w-src { font-size: 10px; color: var(--muted); }
 
-    /* 6탭 하단 네비 (360px 폭에서도 한 줄) */
-    .nav-inner { grid-template-columns: repeat(6, 1fr); }
-    .nav-btn { font-size: 9.6px; padding: 7px 1px 9px; gap: 1px; letter-spacing: -0.03em; }
-    .nav-btn .ico { font-size: 16px; }
+    /* 7탭 하단 네비 (390px 폭에서도 글자 잘림·줄바꿈 없이 한 줄) */
+    .nav-inner { grid-template-columns: repeat(7, 1fr); }
+    .nav-btn { font-size: 9.2px; padding: 7px 0 9px; gap: 1px; letter-spacing: -0.04em; overflow: hidden; }
+    .nav-btn .ico { font-size: 15px; }
 
     /* Day 1 / Day 2 … 플로팅 바 (일정 탭에서만, 하단 탭 바 위) */
     #day-float-bar {
@@ -1039,9 +1039,163 @@
       border-radius: var(--radius);
       padding: 14px;
     }
+
+    /* =====================================================================
+       🏠 홈 탭 — 지도 중심 + 하단 요약 시트 (시안 2)
+       ===================================================================== */
+    body.home-mode .sticky-header { display: none !important; }
+    body.home-mode .main { padding: 0; }
+    body.home-mode { padding-bottom: 56px; background: #eef4fb; }
+    body.home-mode #day-float-bar { display: none !important; }
+    body.home-sheet-open { overflow: hidden; }
+
+    #tab-home { padding: 0; }
+    .home-stage { position: relative; }
+    #home-map {
+      width: 100%; height: 52vh; min-height: 280px; max-height: 560px;
+      background: #dbeafe; z-index: 1;
+    }
+    #home-map .leaflet-control-attribution { display: none; }
+
+    .home-float { position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 600; pointer-events: none; }
+    .home-float > * { pointer-events: auto; }
+
+    .home-title-pill {
+      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+      display: inline-flex; align-items: center; gap: 6px;
+      max-width: calc(100% - 44px);
+      padding: 11px 16px; border: none; border-radius: 999px;
+      background: #fff; color: var(--text);
+      font-family: inherit; font-size: 15px; font-weight: 800; letter-spacing: -0.02em;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.16); cursor: pointer;
+      white-space: nowrap;
+    }
+    .home-title-pill .ht-ico { font-size: 15px; line-height: 1; }
+    .home-title-pill .ht-title { overflow: hidden; text-overflow: ellipsis; max-width: 46vw; }
+    .home-title-pill .ht-dot { color: #94a3b8; font-weight: 700; }
+    .home-title-pill .ht-dday { color: var(--ocean); }
+    .home-title-pill .ht-caret { color: #94a3b8; font-size: 11px; margin-left: -1px; }
+
+    .home-day-col {
+      position: absolute; top: 64px; left: 12px;
+      display: flex; flex-direction: column; gap: 8px; align-items: flex-start;
+    }
+    .home-day-pill {
+      min-width: 78px; padding: 10px 15px; border: none; border-radius: 999px;
+      background: rgba(255, 255, 255, 0.96); color: #334155;
+      font-family: inherit; font-size: 13px; font-weight: 800; letter-spacing: -0.01em;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.14); cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+    }
+    .home-day-pill:active { transform: scale(0.97); }
+    .home-day-pill.active { background: var(--ocean); color: #fff; box-shadow: 0 6px 16px rgba(2, 132, 199, 0.4); }
+
+    .home-wx-pill {
+      position: absolute; top: 64px; right: 12px;
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 9px 13px; border: none; border-radius: 999px;
+      background: rgba(255, 255, 255, 0.96); color: #334155;
+      font-family: inherit; font-size: 12.5px; font-weight: 800; letter-spacing: -0.02em;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.14); cursor: pointer; white-space: nowrap;
+    }
+    .home-credit {
+      position: absolute; left: 8px; bottom: 32px;
+      font-size: 9px; color: #475569; background: rgba(255, 255, 255, 0.75);
+      padding: 1px 5px; border-radius: 5px; pointer-events: none;
+    }
+
+    .home-sheet {
+      position: relative; z-index: 620; margin-top: -22px;
+      min-height: calc(48vh - 34px);
+      padding: 4px 14px 16px;
+      background: #f6f9fd; border-radius: 24px 24px 0 0;
+      box-shadow: 0 -8px 26px rgba(15, 23, 42, 0.13);
+    }
+    .sheet-handle { display: flex; justify-content: center; padding: 8px 0 8px; cursor: pointer; }
+    .sheet-handle span { width: 42px; height: 5px; border-radius: 999px; background: #cbd5e1; }
+    .sheet-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 0 2px 10px; }
+    .sheet-title { font-size: 16.5px; font-weight: 800; letter-spacing: -0.02em; min-width: 0; color: #0f172a; }
+    .sheet-count { color: var(--ocean); font-weight: 800; }
+    .sheet-all-btn {
+      flex-shrink: 0; display: inline-flex; align-items: center; gap: 3px;
+      padding: 7px 11px; border: 1px solid var(--ocean-border); border-radius: 999px;
+      background: #fff; color: var(--ocean-dark);
+      font-family: inherit; font-size: 11.5px; font-weight: 800; cursor: pointer; white-space: nowrap;
+    }
+    .sheet-all-btn .arr { font-size: 13px; line-height: 1; }
+    .sheet-body { display: flex; flex-direction: column; }
+
+    .home-row {
+      display: grid; grid-template-columns: 24px 38px minmax(0, 1fr) 58px 54px 10px;
+      gap: 7px; align-items: center;
+      padding: 8px 9px; margin-bottom: 7px;
+      background: #fff; border: 1px solid #eaf1f9; border-radius: 14px;
+      cursor: pointer;
+    }
+    .home-row:active { background: #f8fbff; }
+    .home-row.hr-hide { display: none; }
+    .home-row.focused { border-color: var(--ocean-border); background: #f4faff; box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.12); }
+    .hr-num {
+      width: 22px; height: 22px; border-radius: 50%; background: var(--ocean); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11.5px; font-weight: 800;
+    }
+    .hr-num.no-pin { background: #94a3b8; }
+    .hr-time { font-size: 11.5px; font-weight: 800; color: var(--ocean-dark); white-space: nowrap; }
+    .hr-main { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+    .hr-place {
+      font-size: 13.5px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .hr-memo {
+      font-size: 10.5px; color: var(--muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .hr-photo { display: flex; justify-content: center; }
+    .hr-photo .ph-thumb { width: 54px; height: 54px; border-radius: 11px; }
+    .hr-photo .ph-btn { font-size: 9px; padding: 3px 5px; }
+    .hr-emo {
+      width: 54px; height: 54px; border-radius: 11px; background: var(--ocean-soft);
+      border: 1px solid #e2eefb; display: flex; align-items: center; justify-content: center; font-size: 22px;
+    }
+    .hr-move {
+      display: inline-flex; align-items: center; justify-content: center; gap: 2px;
+      padding: 4px 5px; border-radius: 999px; background: #eff6ff; color: #1d4ed8;
+      font-size: 10px; font-weight: 800; white-space: nowrap;
+    }
+    .hr-chev {
+      border: none; background: none; padding: 0; cursor: pointer;
+      color: #94a3b8; font-size: 15px; line-height: 1; font-family: inherit; text-align: center;
+    }
+    .sheet-more {
+      display: block; width: 100%; margin: 3px 0 4px; padding: 8px;
+      border: none; background: transparent; color: var(--muted);
+      font-family: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer;
+    }
+    .sheet-more.hide { display: none; }
+
+    .home-scrim {
+      position: fixed; inset: 0; z-index: 610; display: none;
+      background: rgba(15, 23, 42, 0.38);
+    }
+    .home-scrim.open { display: block; }
+    .home-sheet.expanded {
+      position: fixed; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 560px; top: 7vh; bottom: 0;
+      min-height: 0; margin-top: 0; padding-bottom: 28px;
+      border-radius: 24px 24px 0 0; overflow-y: auto;
+      -webkit-overflow-scrolling: touch; z-index: 620;
+    }
+    .home-sheet.expanded .sheet-handle { position: sticky; top: 0; background: #f6f9fd; z-index: 2; }
+    .home-sheet.expanded .sheet-head { position: sticky; top: 24px; background: #f6f9fd; z-index: 2; }
+    .pin-num.home-pin {
+      width: 26px; height: 26px; font-size: 13px;
+      background: #2563eb; border: 2.5px solid #fff;
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.45);
+    }
   </style>
 </head>
-<body>
+<body class="home-mode">
   <div id="splash-screen">
     <div class="splash-sky">
       <div class="splash-trail"></div>
@@ -1096,8 +1250,37 @@
     </header>
 
     <main class="main">
+      <!-- TAB 0: HOME — 지도 중심 + 하단 일정 요약 시트 (시안 2) -->
+      <section id="tab-home" class="tab-panel active">
+        <div class="home-stage">
+          <div id="home-map"></div>
+          <div class="home-float">
+            <button class="home-title-pill" onclick="openTripsModal()" title="내 여행 목록">
+              <span class="ht-ico">🧳</span>
+              <span class="ht-title" id="home-trip-title">부산 2박 3일</span>
+              <span class="ht-dot">·</span>
+              <span class="ht-dday" id="home-dday">D-0</span>
+              <span class="ht-caret">▾</span>
+            </button>
+            <div class="home-day-col" id="home-day-pills"></div>
+            <button class="home-wx-pill" id="home-wx-pill" onclick="switchTab('weather')" title="날씨·짐 탭으로 이동">🌤️ --/--</button>
+            <div class="home-credit">© OpenStreetMap</div>
+          </div>
+          <div class="home-sheet" id="home-sheet">
+            <div class="sheet-handle" onclick="toggleHomeSheet()" title="시트 펼치기 / 접기"><span></span></div>
+            <div class="sheet-head">
+              <div class="sheet-title"><b id="home-sheet-title">1일차 일정 요약</b><span class="sheet-count" id="home-sheet-count"> · 0곳</span></div>
+              <button class="sheet-all-btn" onclick="openTimelineFromHome()">전체 일정 보기 <span class="arr">›</span></button>
+            </div>
+            <div class="sheet-body" id="home-sheet-body"></div>
+            <button class="sheet-more hide" id="home-more-btn" onclick="toggleHomeSheet(true)">펼쳐서 더 보기 ⌄</button>
+          </div>
+        </div>
+        <div class="home-scrim" id="home-scrim" onclick="toggleHomeSheet(false)"></div>
+      </section>
+
       <!-- TAB 1: TIMELINE -->
-      <section id="tab-timeline" class="tab-panel active">
+      <section id="tab-timeline" class="tab-panel">
         <div class="day-tabs" id="day-tabs"></div>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
           <div class="planb-bar" style="flex:1;margin-bottom:0;padding:8px 12px;">
@@ -2211,11 +2394,12 @@
 
   <nav class="bottom-nav">
     <div class="nav-inner">
-      <button class="nav-btn active" data-tab="timeline"><span class="ico">🗓️</span>일정</button>
+      <button class="nav-btn active" data-tab="home"><span class="ico">🏠</span>홈</button>
+      <button class="nav-btn" data-tab="timeline"><span class="ico">🗓️</span>일정</button>
       <button class="nav-btn" data-tab="recommend"><span class="ico">✨</span>추천</button>
       <button class="nav-btn" data-tab="expenses"><span class="ico">💰</span>경비</button>
       <button class="nav-btn" data-tab="weather-packing"><span class="ico">🌤️</span>날씨·짐</button>
-      <button class="nav-btn" data-tab="checklist"><span class="ico">✅</span>정보·체크<span class="nav-badge" id="nav-check-badge" style="display:none;">0</span></button>
+      <button class="nav-btn" data-tab="checklist"><span class="ico">✅</span>체크<span class="nav-badge" id="nav-check-badge" style="display:none;">0</span></button>
       <button class="nav-btn" data-tab="mypage"><span class="ico">👤</span>마이</button>
     </div>
   </nav>
@@ -3710,6 +3894,7 @@
       }
       const emBtn = document.getElementById("edit-mode-btn");
       if (emBtn) emBtn.style.display = canEdit() ? "inline-flex" : "none";
+      try { refreshHomeHeader(); } catch (e) {}
     }
 
     // 그날 일출·일몰 시각을 구해 타임라인에 끼울 한 줄 마커로 만든다 (일정/경비/지도 핀과 무관)
@@ -4844,6 +5029,7 @@
       renderTimeline();
       renderDayMap();
       updateDayFloatBar();
+      try { renderHome(); } catch (e) { console.warn(e); }
       // 해당 일차 상단으로 깔끔하게 이동
       try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { window.scrollTo(0, 0); }
     }
@@ -4869,6 +5055,291 @@
       }
     }
     document.getElementById("planb-toggle").addEventListener("change", renderTimeline);
+
+    /* =====================================================================
+       🏠 홈 탭 — 지도 중심 + 하단 일정 요약 시트 (시안 2)
+       ===================================================================== */
+    let homeMap = null, homeLayer = null;
+    let homePts = [], homeMarkers = {};
+
+    // 여행 제목을 지도 위 알약에 맞게 줄인다 (예: 부산 2박 3일)
+    function homeShortTitle() {
+      const m = state.meta || {};
+      const dest = String(m.destination || m.title || "여행").split(/[(\s·>]/)[0].trim() || "여행";
+      const s = new Date(String(m.startDate || "") + "T00:00:00");
+      const e = new Date(String(m.endDate || "") + "T00:00:00");
+      if (isNaN(s.getTime()) || isNaN(e.getTime())) return m.title || dest;
+      const days = Math.max(1, Math.round((e - s) / 86400000) + 1);
+      const nights = days - 1;
+      return nights > 0 ? `${dest} ${nights}박 ${days}일` : `${dest} ${days}일`;
+    }
+
+    function homeDdayText() {
+      const m = state.meta || {};
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const start = new Date(String(m.startDate || "") + "T00:00:00");
+      if (isNaN(start.getTime())) return "";
+      const diff = Math.ceil((start - today) / 86400000);
+      return diff > 0 ? `D-${diff}` : diff === 0 ? "D-Day" : `D+${Math.abs(diff)}`;
+    }
+
+    // 해당 일차 날씨 알약 — 실시간 예보가 있으면 그것, 없으면 여행 시기 평년 기온
+    function homeDayWeather(dayObj) {
+      const list = state.weather || [];
+      const idx = (state.days || []).findIndex(d => d.day === dayObj?.day);
+      const w = list.find(x => x.dayNum === dayObj?.day) || (idx >= 0 ? list[idx] : null);
+      const r = (v) => Math.round(v);
+      if (w && typeof w.minTemp === "number" && typeof w.maxTemp === "number") {
+        return { icon: w.icon || "🌤️", text: `${r(w.minTemp)}°/${r(w.maxTemp)}°`, tip: `${w.sourceLabel || "날씨"}${w.condition ? " · " + w.condition : ""}` };
+      }
+      const dest = String(state.meta?.destination || state.meta?.title || "");
+      const key = Object.keys(CITY_GEO).find(k => dest.includes(k));
+      const geo = key ? CITY_GEO[key] : { lat: 35.17, lon: 129.07 };
+      const d = new Date(String(dayObj?.date || state.meta?.startDate || "") + "T00:00:00");
+      const month = isNaN(d.getTime()) ? 0 : d.getMonth();
+      const est = seasonalEstimate(key || dest, month, geo.lat);
+      return { icon: "🌤️", text: `${est.min}°/${est.max}°`, tip: "여행 시기 평년 기온 (실시간 예보는 출발 16일 전부터)" };
+    }
+
+    // 지도에 올릴 순서 = 요약 시트 번호와 같은 번호를 쓴다
+    function homeGeoPts() {
+      const dayObj = (state.days || []).find(d => d.day === currentDay) || (state.days || [])[0];
+      return (dayObj?.items || []).map((it, idx) => {
+        const ll = (typeof it.lat === "number" && typeof it.lng === "number") ? [it.lat, it.lng] : (COORD_BY_ID[it.id] || null);
+        return ll ? { it, num: idx + 1, ll } : null;
+      }).filter(Boolean);
+    }
+
+    function homeMemoLine(it) {
+      const raw = String(it.memo || "").replace(/\s+/g, " ").trim();
+      if (raw) return raw;
+      if (it.stay) return String(it.stay);
+      const b = (it.badges || []).filter(Boolean);
+      return b.length ? b.join(" · ") : String(it.moveMode || "");
+    }
+
+    function homePlaceEmoji(it) {
+      const p = String(it.place || "");
+      if (/호텔|숙소|체크인/.test(p)) return "🏨";
+      if (/KTX|기차|열차|전철|역/.test(p)) return "🚆";
+      if (/버스/.test(p)) return "🚌";
+      if (/카페|커피/.test(p)) return "☕";
+      if (/국밥|피자|떡볶이|식당|시장/.test(p)) return "🍽️";
+      return "📍";
+    }
+
+    function homeMoveChip(it) {
+      const mode = String(it.moveMode || "");
+      let ico = "🚶";
+      if (/택시/.test(mode)) ico = "🚕";
+      else if (/버스|급행/.test(mode)) ico = "🚌";
+      else if (/해변열차|스카이캡슐/.test(mode)) ico = "🚡";
+      else if (/페리|선박/.test(mode)) ico = "⛴️";
+      else if (/KTX|열차|기차|전철|지하철|호선|분당|ITX|SRT/.test(mode)) ico = "🚆";
+      const min = Number(it.moveMin);
+      const txt = Number.isFinite(min) && min > 0 ? `${Math.round(min)}분` : "—";
+      return `<span class="hr-move">${ico} ${txt}</span>`;
+    }
+
+    function renderHomeMap() {
+      const el = document.getElementById("home-map");
+      if (!el || !window.L) return;
+      if (!el.offsetWidth) return; // 아직 화면에 없으면 탭이 열릴 때 다시 그린다
+      if (!homeMap) {
+        homeMap = L.map("home-map", { zoomControl: false, attributionControl: false, scrollWheelZoom: false }).setView([35.15, 129.11], 12);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(homeMap);
+        homeLayer = L.layerGroup().addTo(homeMap);
+        homeMap.on("click", () => { try { openBigMap(0); } catch (e) {} });
+        homeMap.on("zoomend", () => { if (homePts.length) drawHomePins(); });
+      }
+      homePts = homeGeoPts();
+      homeMap.invalidateSize();
+      homeLayer.clearLayers();
+      homeMarkers = {};
+      if (!homePts.length) return;
+      homeMap.fitBounds(homePts.map(p => p.ll), { paddingTopLeft: [42, 92], paddingBottomRight: [42, 64] });
+      drawHomePins();
+      setTimeout(() => {
+        if (!homeMap) return;
+        homeMap.invalidateSize();
+        if (!homePts.length) return;
+        homeMap.fitBounds(homePts.map(p => p.ll), { paddingTopLeft: [42, 92], paddingBottomRight: [42, 64] });
+        drawHomePins();
+      }, 140);
+    }
+
+    function drawHomePins() {
+      if (!homeMap || !homeLayer) return;
+      homeLayer.clearLayers();
+      homeMarkers = {};
+      const zoom = homeMap.getZoom();
+      const MAX_DEG = 0.003, GAP = 17;
+      const placed = [];
+      const shown = homePts.map(p => {
+        const base = homeMap.project(L.latLng(p.ll), zoom);
+        let pt = base;
+        for (let k = 1; k <= 14; k++) {
+          if (!placed.some(q => q.distanceTo(pt) < GAP)) break;
+          const ang = k * 2.399963;
+          const r = 7 * Math.sqrt(k);
+          pt = L.point(base.x + Math.cos(ang) * r, base.y + Math.sin(ang) * r);
+        }
+        const ll = homeMap.unproject(pt, zoom);
+        const dLat = Math.min(MAX_DEG, Math.max(-MAX_DEG, ll.lat - p.ll[0]));
+        const dLng = Math.min(MAX_DEG, Math.max(-MAX_DEG, ll.lng - p.ll[1]));
+        const out = [p.ll[0] + dLat, p.ll[1] + dLng];
+        placed.push(homeMap.project(L.latLng(out), zoom));
+        return out;
+      });
+      homePts.forEach((p, i) => {
+        const icon = L.divIcon({
+          className: "",
+          html: `<div class="pin-num home-pin">${p.num}</div>`,
+          iconSize: [26, 26],
+          iconAnchor: [13, 13]
+        });
+        const sub = [p.it.time, p.it.moveMode].filter(Boolean).join(" · ");
+        homeMarkers[p.num] = L.marker(shown[i], { icon, riseOnHover: true })
+          .bindPopup(`<strong>${p.num}. ${escapeAttr(p.it.place || "")}</strong>${sub ? `<br>${escapeAttr(sub)}` : ""}`)
+          .addTo(homeLayer);
+      });
+      if (shown.length > 1) {
+        L.polyline(shown, { color: "#2563eb", weight: 3.5, dashArray: "7, 7", opacity: 0.9 }).addTo(homeLayer);
+      }
+    }
+
+    function renderHomeSheet(dayObj) {
+      const bodyEl = document.getElementById("home-sheet-body");
+      if (!bodyEl) return;
+      const items = dayObj?.items || [];
+      const region = photoRegionOfDay(dayObj);
+      bodyEl.innerHTML = items.map((it, idx) => {
+        const num = idx + 1;
+        const hasPin = homePts.some(p => p.num === num);
+        const photo = shouldLookupPhoto(it)
+          ? photoSlotHtml(it.place, region, "sm")
+          : `<span class="hr-emo">${homePlaceEmoji(it)}</span>`;
+        return `<div class="home-row" data-num="${num}" role="button" tabindex="0" onclick="homeFocusPin(${num})">
+          <span class="hr-num${hasPin ? "" : " no-pin"}">${num}</span>
+          <span class="hr-time">${escapeAttr(it.time || "—")}</span>
+          <span class="hr-main">
+            <span class="hr-place">${escapeAttr(it.place || "이름 없음")}</span>
+            <span class="hr-memo">${escapeAttr(homeMemoLine(it))}</span>
+          </span>
+          <span class="hr-photo">${photo}</span>
+          ${homeMoveChip(it)}
+          <button class="hr-chev" onclick="event.stopPropagation();openTimelineFromHome(${dayObj?.day || currentDay})" title="일정 탭에서 상세히 보기">›</button>
+        </div>`;
+      }).join("");
+      const titleEl = document.getElementById("home-sheet-title");
+      if (titleEl) titleEl.textContent = `${dayObj?.day || currentDay}일차 일정 요약`;
+      const countEl = document.getElementById("home-sheet-count");
+      if (countEl) countEl.textContent = ` · ${items.length}곳`;
+      syncHomeRowsHidden();
+      try { hydratePlacePhotos(bodyEl); } catch (e) { console.warn(e); }
+    }
+
+    // 접힌 상태에서는 4개만, 펼치면 전부 보여 준다
+    function syncHomeRowsHidden() {
+      const sheet = document.getElementById("home-sheet");
+      const moreBtn = document.getElementById("home-more-btn");
+      if (!sheet) return;
+      const rows = Array.from(sheet.querySelectorAll(".home-row"));
+      const expanded = sheet.classList.contains("expanded");
+      rows.forEach((row, i) => row.classList.toggle("hr-hide", !expanded && i >= 4));
+      if (moreBtn) {
+        const rest = rows.length - 4;
+        moreBtn.classList.toggle("hide", expanded || rest <= 0);
+        if (rest > 0) moreBtn.innerHTML = `펼쳐서 ${rest}개 더 보기 ⌄`;
+      }
+    }
+
+    function refreshHomeHeader() {
+      if (!document.getElementById("tab-home")) return;
+      const dayObj = (state.days || []).find(d => d.day === currentDay) || (state.days || [])[0];
+      const titleEl = document.getElementById("home-trip-title");
+      if (titleEl) titleEl.textContent = homeShortTitle();
+      const dd = document.getElementById("home-dday");
+      if (dd) dd.textContent = homeDdayText();
+      const pills = document.getElementById("home-day-pills");
+      if (pills) {
+        pills.innerHTML = (state.days || []).map(d =>
+          `<button class="home-day-pill ${d.day === currentDay ? "active" : ""}" onclick="setHomeDay(${d.day})">Day ${d.day}</button>`
+        ).join("");
+      }
+      const wxBtn = document.getElementById("home-wx-pill");
+      if (wxBtn) {
+        const wx = homeDayWeather(dayObj);
+        wxBtn.textContent = `${wx.icon} ${wx.text}`;
+        wxBtn.title = `${wx.tip} · 눌러서 날씨·짐 탭으로`;
+      }
+    }
+
+    function renderHome() {
+      if (!document.getElementById("tab-home")) return;
+      refreshHomeHeader();
+      const dayObj = (state.days || []).find(d => d.day === currentDay) || (state.days || [])[0];
+      homePts = homeGeoPts();
+      renderHomeSheet(dayObj);
+      renderHomeMap();
+    }
+
+    // Day 알약 — 지도 핀·동선과 요약 시트를 그 일차로 즉시 바꾼다
+    function setHomeDay(d) {
+      currentDay = Number(d) || 1;
+      try { renderTimeline(); } catch (e) { console.warn(e); }
+      try { renderDayMap(); } catch (e) { console.warn(e); }
+      try { updateDayFloatBar(); } catch (e) {}
+      renderHome();
+    }
+
+    // 요약 시트의 항목 → 지도 핀으로 초점
+    function homeFocusPin(num) {
+      const row = document.querySelector(`.home-row[data-num="${num}"]`);
+      document.querySelectorAll(".home-row.focused").forEach(r => r.classList.remove("focused"));
+      if (row) row.classList.add("focused");
+      const p = homePts.find(x => x.num === Number(num));
+      if (!p || !homeMap) return;
+      const mapEl = document.getElementById("home-map");
+      if (mapEl && mapEl.getBoundingClientRect().top < 0) {
+        try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { window.scrollTo(0, 0); }
+      }
+      homeMap.flyTo(p.ll, Math.max(homeMap.getZoom(), 14), { duration: 0.45 });
+      const mk = homeMarkers[Number(num)];
+      if (mk) setTimeout(() => { try { mk.openPopup(); } catch (e) {} }, 520);
+    }
+
+    // 요약 시트 높이 확장 / 기본 전환
+    function toggleHomeSheet(next) {
+      const sheet = document.getElementById("home-sheet");
+      const scrim = document.getElementById("home-scrim");
+      if (!sheet) return;
+      const open = typeof next === "boolean" ? next : !sheet.classList.contains("expanded");
+      sheet.classList.toggle("expanded", open);
+      if (scrim) scrim.classList.toggle("open", open);
+      document.body.classList.toggle("home-sheet-open", open);
+      syncHomeRowsHidden();
+      if (open) {
+        try { sheet.scrollTop = 0; } catch (e) {}
+      }
+    }
+
+    // 전체 일정 보기 → 📅 일정 탭의 같은 일차 상세로
+    function openTimelineFromHome(dayNum) {
+      if (typeof dayNum === "number") currentDay = dayNum;
+      try { toggleHomeSheet(false); } catch (e) {}
+      activateTab("timeline");
+      try { renderTimeline(); } catch (e) { console.warn(e); }
+      setTimeout(() => { try { renderDayMap(); } catch (e) {} }, 70);
+    }
+
+    // 화면 폭이 바뀌면 홈 지도 크기도 다시 잡는다
+    window.addEventListener("resize", () => {
+      if (!homeMap) return;
+      if (!document.body.classList.contains("home-mode")) return;
+      try { homeMap.invalidateSize(); } catch (e) {}
+    });
 
     let leafletMap = null;
     let mapLayerGroup = null;
@@ -8002,7 +8473,7 @@
       pool.sort((a, b) => tripRecencyScore(b) - tripRecencyScore(a));
       if (pool.length) {
         await switchTrip(pool[0].syncId);
-        document.querySelector('.nav-btn[data-tab="timeline"]')?.click();
+        document.querySelector('.nav-btn[data-tab="home"]')?.click();
         renderMyTrips();
         renderTripsModalList();
         return;
@@ -8502,6 +8973,7 @@
         setTimeout(() => dayMap.invalidateSize(), 60);
       }
       try { updateDayFloatBar(); } catch {}
+      if (wasLocked) setTimeout(() => { try { renderHome(); } catch (e) {} }, 80);
     }
 
     function checkInviteFlow() {
@@ -8883,7 +9355,7 @@
         target = fallback ? fallback.syncId : DEFAULT_SB.syncId;
       }
       await switchTrip(target);
-      document.querySelector('.nav-btn[data-tab="timeline"]')?.click();
+      document.querySelector('.nav-btn[data-tab="home"]')?.click();
       updateAccessGate();
     }
 
@@ -9396,8 +9868,18 @@
       if (!target) return;
       document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tabId));
       document.querySelectorAll(".tab-panel").forEach(p => p.classList.toggle("active", p.id === "tab-" + tabId));
+      const isHome = tabId === "home";
+      document.body.classList.toggle("home-mode", isHome);
+      if (!isHome) { try { toggleHomeSheet(false); } catch (e) {} }
       resetScrollToTop();
       updateDayFloatBar();
+      if (isHome) {
+        try { renderHome(); } catch (e) { console.warn(e); }
+        setTimeout(() => { try { renderHomeMap(); } catch (e) {} }, 80);
+      }
+      if (tabId === "timeline") {
+        setTimeout(() => { try { renderDayMap(); } catch (e) {} }, 60);
+      }
     }
 
     // 🌤️ 날씨·옷차림 / 🧳 짐 챙기기 — 통합 탭 안쪽 화면 전환
@@ -12329,6 +12811,7 @@
       checkInviteFlow();
       checkTripGoneGate();
       updateDayFloatBar();
+      try { renderHome(); } catch (e) { console.warn(e); }
     }
 
     try { renderAll(); } catch (e) { console.error("renderAll error:", e); }
