@@ -7637,17 +7637,24 @@
         if (isOwner && state.packing && typeof state.packing === "object" && state.packing.setupDone) {
           state.packingByUser[uid] = structuredClone(state.packing);
         } else {
+          let loaded = null;
           try {
             const raw = localStorage.getItem(getPersonalPackingStorageKey());
-            if (raw) {
-              state.packingByUser[uid] = JSON.parse(raw);
-              return state.packingByUser[uid];
-            }
+            if (raw) loaded = JSON.parse(raw);
           } catch {}
-          state.packingByUser[uid] = {};
+          state.packingByUser[uid] = loaded || {};
         }
       }
-      return state.packingByUser[uid];
+      const pk = state.packingByUser[uid];
+      ensureTripodInPacking(pk);
+      return pk;
+    }
+
+    // 이미 만들어 둔 짐 목록에도 '삼각대'를 한 번만 채워 넣는다
+    function ensureTripodInPacking(pk) {
+      if (!pk || !pk.setupDone || !Array.isArray(pk.items)) return;
+      if (pk.items.some(it => it && String(it.name || "").includes("삼각대"))) return;
+      pk.items.push({ id: "pk-tripod", name: "삼각대", qty: 1, group: "📷 촬영·기타", checked: false });
     }
 
     function packingDraftInit() {
@@ -7742,6 +7749,7 @@
       add("📱 전자기기", "보조배터리", 1);
       add("📱 전자기기", "충전기·케이블", 2);
       add("📱 전자기기", "이어폰", 1);
+      add("📷 촬영·기타", "삼각대", 1);
       if (hasWaterDip || hot) add("📱 전자기기", "방수팩", 1);
 
       add("💊 건강·상비약", "상비약 (소화제·진통제·밴드)", 1);
@@ -7783,7 +7791,7 @@
       }
 
       const styleExtra = {
-        couple: [["🎒 기타", "커플룩·커플 소품"], ["🎒 기타", "셀카봉·삼각대"], ["🎒 기타", "공용 지출 메모"]],
+        couple: [["🎒 기타", "커플룩·커플 소품"], ["🎒 기타", "셀카봉"], ["🎒 기타", "공용 지출 메모"]],
         honeymoon: [["👕 의류·신발", "신혼 촬영 드레스·정장"], ["🎒 기타", "부케·리본 소품"], ["🎒 기타", "기념 편지"]],
         anniversary: [["🎒 기타", "기념 선물"], ["🎒 기타", "케이크 초·파티 소품"], ["👕 의류·신발", "기념일 한 벌"]],
         friends: [["🎒 기타", "보드게임·카드"], ["🎒 기타", "공금 통장·더치페이 앱"], ["💊 건강·상비약", "공용 상비약"]],
