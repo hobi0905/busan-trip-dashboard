@@ -5087,7 +5087,7 @@
             ${b.url ? `<a class="btn btn-soft btn-sm" style="text-decoration:none;padding:2px 8px;font-size:10.5px;" href="${escapeAttr(b.url)}" target="_blank" rel="noopener">예약 링크</a>` : ""}
           </div>
           ${b.memo ? `<div class="bk-line" style="margin-top:3px;">📝 ${escapeAttr(b.memo)}</div>` : ""}
-          ${b.schedule && b.schedule.on
+          ${bookingAutoOn(b)
             ? `<div class="bk-line" style="margin-top:3px;color:var(--ocean-dark);font-weight:700;">📅 일정 자동 반영 · ${escapeAttr(bookingSchedulePlanText(b))}</div>`
             : `<div class="bk-line" style="margin-top:3px;color:var(--muted);">📅 일정 미등록 · 예약 내역에만 표시</div>`}
           ${canEdit() ? `<div style="display:flex;gap:6px;margin-top:7px;">
@@ -5248,8 +5248,11 @@
     }
 
     function bookingAutoOn(b) {
-      // 예전(일차·순서 선택) 레코드도 자동 배치로 읽는다 — 저장된 데이터는 그대로 둔다
-      return Boolean(b && b.type === "hotel" && b.schedule && b.schedule.on);
+      // 예전 레코드(일차·순서 선택)도 자동 배치로 읽고, 일정 정보가 아예 없는 숙소는 기본 ON.
+      // 사용자가 체크를 꺼서 저장한 경우(schedule.on === false)만 OFF.
+      if (!b || b.type !== "hotel") return false;
+      if (b.schedule) return b.schedule.on !== false;
+      return Boolean(b.inDate && b.outDate);
     }
 
     function bookingSchedulePlanText(b) {
@@ -5351,12 +5354,19 @@
     // 일정에 이미 같은 이름의 장소(예: '호텔 OO 체크인')가 좌표와 함께 있으면 그 좌표를 쓴다
     function findItemCoordsByName(name) {
       const key = normalizePlaceKey(name);
-      if (!key || key.length < 3) return null;
+      const core = placeCoreKey(name);
+      if ((!key || key.length < 3) && (!core || core.length < 2)) return null;
       let hit = null;
       (state.days || []).forEach(d => (d.items || []).forEach(it => {
         if (hit || typeof it.lat !== "number" || typeof it.lng !== "number") return;
-        const texts = [it.place, it.toPlace, it.fromPlace].filter(Boolean).map(normalizePlaceKey).filter(Boolean);
-        if (texts.some(t => t.includes(key) || key.includes(t))) {
+        const texts = [it.place, it.toPlace, it.fromPlace].filter(Boolean);
+        const match = texts.some(t => {
+          const k = normalizePlaceKey(t);
+          if (key && key.length >= 3 && k && (k.includes(key) || key.includes(k))) return true;
+          const c = placeCoreKey(t);
+          return Boolean(core && core.length >= 2 && c && (c.includes(core) || core.includes(c)));
+        });
+        if (match) {
           hit = { lat: it.lat, lng: it.lng, source: `일정 '${it.place || "장소"}' 좌표` };
         }
       }));
@@ -5505,7 +5515,8 @@
       ].filter(c => !(c.mode === "도보" && km > 3));
       const score = (c) => c.min + (c.cost / 1000) * 1.2;
       const best = cands.slice().sort((a, b) => score(a) - score(b))[0];
-      const summary = `${from.name || "출발지"} → ${to.name || "숙소"} · 도보 ${walkMin}분${km > 3 ? "(먼 거리)" : ""} / 지하철·버스 ${transitMin}분 ₩${transitFare.toLocaleString("ko-KR")} / 택시 ${taxi.mins}분 ₩${taxi.fare.toLocaleString("ko-KR")} → 최적 ${best.mode}`;
+      const walkPart = km > 3 ? "" : `도보 ${walkMin}분 / `;
+      const summary = `${from.name || "출발지"} → ${to.name || "숙소"} · ${walkPart}지하철·버스 ${transitMin}분 ₩${transitFare.toLocaleString("ko-KR")} / 택시 ${taxi.mins}분 ₩${taxi.fare.toLocaleString("ko-KR")} → 최적 ${best.mode}`;
       return {
         moveMode: best.mode,
         moveMin: best.min,
@@ -5725,9 +5736,9 @@
         ? { lat: sch.lat, lng: sch.lng, source: sch.coordSource || "저장된 좌표" }
         : null;
       const schedOnEl = document.getElementById("bk-sched-on");
-      if (schedOnEl) schedOnEl.checked = b ? Boolean(b.schedule && b.schedule.on) : true;
+      if (schedOnEl) schedOnEl.checked = b ? bookingAutoOn(b) : true;
       const schedPv = document.getElementById("bk-sched-preview");
-      if (schedPv) schedPv.innerHTML = (b && b.schedule && b.schedule.on) ? `<div>📅 <b>${escapeAttr(bookingSchedulePlanText(b))}</b></div>` : "";
+      if (schedPv) schedPv.innerHTML = (b && bookingAutoOn(b)) ? `<div>📅 <b>${escapeAttr(bookingSchedulePlanText(b))}</b></div>` : "";
       onBookingScheduleToggle();
 
       document.getElementById("bk-mode").value = b && b.mode ? b.mode : "KTX";
@@ -5858,7 +5869,7 @@
           };
           if (hotelCoord && typeof hotelCoord.lat === "number") persistHotelCoords(name, hotelCoord);
         } else {
-          delete rec.schedule;
+          rec.schedule = { on: false, auto: true, offAt: new Date().toISOString() };
         }
       }
       if (!existing) state.bookings.push(rec);
