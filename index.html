@@ -5061,7 +5061,7 @@
        🏠 홈 탭 — 지도 중심 + 하단 일정 요약 시트 (시안 2)
        ===================================================================== */
     let homeMap = null, homeLayer = null;
-    let homePts = [], homeMarkers = {};
+    let homePts = [], homeMarkers = {}, homeFocusNum = null;
 
     // 여행 제목을 지도 위 알약에 맞게 줄인다 (예: 부산 2박 3일)
     function homeShortTitle() {
@@ -5211,6 +5211,10 @@
       if (shown.length > 1) {
         L.polyline(shown, { color: "#2563eb", weight: 3.5, dashArray: "7, 7", opacity: 0.9 }).addTo(homeLayer);
       }
+      // 확대·이동으로 핀을 다시 그리면 말풍선이 사라지므로, 보고 있던 항목은 다시 열어 준다
+      if (homeFocusNum && homeMarkers[homeFocusNum]) {
+        try { homeMarkers[homeFocusNum].openPopup(); } catch (e) {}
+      }
     }
 
     function renderHomeSheet(dayObj) {
@@ -5305,6 +5309,7 @@
 
     function renderHome() {
       if (!document.getElementById("tab-home")) return;
+      homeFocusNum = null;
       refreshHomeHeader();
       const dayObj = (state.days || []).find(d => d.day === currentDay) || (state.days || [])[0];
       homePts = homeGeoPts();
@@ -5315,6 +5320,7 @@
     // Day 알약 — 지도 핀·동선과 요약 시트를 그 일차로 즉시 바꾼다
     function setHomeDay(d) {
       currentDay = Number(d) || 1;
+      homeFocusNum = null;
       try { renderTimeline(); } catch (e) { console.warn(e); }
       try { renderDayMap(); } catch (e) { console.warn(e); }
       try { updateDayFloatBar(); } catch (e) {}
@@ -5328,13 +5334,14 @@
       if (row) row.classList.add("focused");
       const p = homePts.find(x => x.num === Number(num));
       if (!p || !homeMap) return;
+      homeFocusNum = Number(num);
       const mapEl = document.getElementById("home-map");
       if (mapEl && mapEl.getBoundingClientRect().top < 0) {
         try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch { window.scrollTo(0, 0); }
       }
       homeMap.flyTo(p.ll, Math.max(homeMap.getZoom(), 14), { duration: 0.45 });
       const mk = homeMarkers[Number(num)];
-      if (mk) setTimeout(() => { try { mk.openPopup(); } catch (e) {} }, 520);
+      if (mk) setTimeout(() => { try { mk.openPopup(); } catch (e) {} }, 620);
     }
 
     // 요약 시트 높이 확장 / 기본 전환
