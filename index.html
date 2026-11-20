@@ -516,14 +516,14 @@
       width: 100%;
       max-width: 560px;
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(6, 1fr);
     }
     .nav-btn {
       background: none;
       border: none;
-      padding: 8px 2px 10px;
+      padding: 8px 1px 10px;
       font-family: inherit;
-      font-size: 10.5px;
+      font-size: 10px;
       font-weight: 700;
       color: var(--muted);
       display: flex;
@@ -531,8 +531,10 @@
       align-items: center;
       gap: 2px;
       cursor: pointer;
+      letter-spacing: -0.3px;
+      white-space: nowrap;
     }
-    .nav-btn .ico { font-size: 18px; }
+    .nav-btn .ico { font-size: 17px; }
     .nav-btn.active { color: var(--ocean); }
     .sec-title { font-size: 14.5px; font-weight: 800; margin: 0 0 10px; }
 
@@ -968,6 +970,50 @@
 
     /* 🔗 예약 연동 타임라인 카드 */
     .tl-virtual { border-left: 4px solid var(--ocean); background: var(--ocean-soft); }
+
+    /* 🌤️ 날씨·짐 통합 탭 — 상단 세그먼트 전환 */
+    .wp-seg {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+      background: var(--ocean-soft);
+      border: 1px solid var(--ocean-border);
+      border-radius: 13px;
+      padding: 4px;
+      margin-bottom: 12px;
+    }
+    .wp-seg-btn {
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 800;
+      color: var(--muted);
+      padding: 9px 4px;
+      border-radius: 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      letter-spacing: -0.2px;
+    }
+    .wp-seg-btn.active {
+      background: #fff;
+      color: var(--ocean-dark);
+      box-shadow: 0 1px 5px rgba(15, 23, 42, 0.12);
+    }
+    .wp-pane { display: none; }
+    .wp-pane.active { display: block; }
+
+    /* 👤 마이페이지 카드 (모달 시트를 탭 화면에 그대로 얹었을 때) */
+    .modal-sheet.tall { max-height: 88vh; overflow-y: auto; }
+    .modal-sheet.tall.in-tab {
+      max-width: none;
+      max-height: none;
+      overflow: visible;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
   </style>
 </head>
 <body>
@@ -997,7 +1043,7 @@
       <div class="badges-row">
         <span class="pill" id="hdr-travel-time">총 이동 0분</span>
         <span class="pill sync-local" id="hdr-sync">로컬 저장됨</span>
-        <button class="pill" style="cursor:pointer;" onclick="openProfileModal()" id="hdr-profile-btn">👤 프로필 설정</button>
+        <button class="pill" style="cursor:pointer;" onclick="openMyPageTab()" id="hdr-profile-btn" title="마이페이지">👤 마이페이지</button>
         <button class="pill" style="cursor:pointer;" onclick="openMembersModal()" id="hdr-members-btn">👥 동반인 <span id="hdr-req-badge" class="badge-dot" style="display:none;">0</span></button>
       </div>
       <div class="summary-strip">
@@ -1124,7 +1170,13 @@
       </section>
 
       <!-- TAB 3: WEATHER & OUTFIT -->
-      <section id="tab-weather" class="tab-panel">
+      <!-- TAB: WEATHER + PACKING (🌤️ 날씨·짐 통합) -->
+      <section id="tab-weather-packing" class="tab-panel">
+        <div class="wp-seg" role="tablist" aria-label="날씨·옷차림과 짐 챙기기 전환">
+          <button type="button" id="wp-seg-weather" class="wp-seg-btn active" role="tab" aria-selected="true" aria-controls="wp-pane-weather" onclick="setWeatherPackingView('weather')">🌤️ 날씨·옷차림</button>
+          <button type="button" id="wp-seg-packing" class="wp-seg-btn" role="tab" aria-selected="false" aria-controls="wp-pane-packing" onclick="setWeatherPackingView('packing')">🧳 짐 챙기기</button>
+        </div>
+        <div id="wp-pane-weather" class="wp-pane active" role="tabpanel" aria-labelledby="wp-seg-weather">
         <div class="card" style="padding:11px 12px;">
           <div class="city-weather-head" style="flex-wrap:wrap;">
             <div style="flex:1;min-width:150px;">
@@ -1147,6 +1199,10 @@
         </div>
         <div id="weather-alert-box"></div>
         <div id="weather-list"></div>
+        </div>
+        <div id="wp-pane-packing" class="wp-pane" role="tabpanel" aria-labelledby="wp-seg-packing">
+          <div id="packing-body"></div>
+        </div>
       </section>
 
       <!-- TAB 4: CHECKLIST & ALERTS -->
@@ -1205,9 +1261,9 @@
         </div>
       </section>
 
-      <!-- TAB: PACKING -->
-      <section id="tab-packing" class="tab-panel">
-        <div id="packing-body"></div>
+      <!-- TAB: MY PAGE -->
+      <section id="tab-mypage" class="tab-panel">
+        <div id="mypage-host"></div>
       </section>
 
       <!-- TAB 6: RECOMMEND -->
@@ -1739,7 +1795,7 @@
 
   <!-- PROFILE MODAL / MY PAGE -->
   <div id="profile-modal" class="modal-backdrop center" onclick="if(event.target===this && myProfile.nickname)closeProfileModal()">
-    <div class="modal-sheet" style="max-height:88vh;overflow-y:auto;">
+    <div class="modal-sheet tall" id="profile-sheet">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
         <div style="font-size:16px;font-weight:800;">👤 마이페이지</div>
         <button id="prof-close-btn" class="btn btn-sm" style="background:#f1f5f9;" onclick="closeProfileModal()">닫기</button>
@@ -2106,9 +2162,9 @@
       <button class="nav-btn active" data-tab="timeline"><span class="ico">🗓️</span>일정</button>
       <button class="nav-btn" data-tab="recommend"><span class="ico">✨</span>추천</button>
       <button class="nav-btn" data-tab="expenses"><span class="ico">💰</span>경비</button>
-      <button class="nav-btn" data-tab="weather"><span class="ico">🧥</span>날씨·옷</button>
-      <button class="nav-btn" data-tab="checklist"><span class="ico">✅</span>정보•체크<span class="nav-badge" id="nav-check-badge" style="display:none;">0</span></button>
-      <button class="nav-btn" data-tab="packing"><span class="ico">🧳</span>짐</button>
+      <button class="nav-btn" data-tab="weather-packing"><span class="ico">🌤️</span>날씨·짐</button>
+      <button class="nav-btn" data-tab="checklist"><span class="ico">✅</span>정보·체크<span class="nav-badge" id="nav-check-badge" style="display:none;">0</span></button>
+      <button class="nav-btn" data-tab="mypage"><span class="ico">👤</span>마이</button>
     </div>
   </nav>
 
@@ -7402,6 +7458,7 @@
     }
 
     function openProfileModal(forced = false, defaultMode = "create") {
+      mountProfileSheet("modal");
       draftAvatarDataUrl = myProfile.avatar || "";
       document.getElementById("prof-nickname").value = myProfile.nickname || "";
       document.getElementById("prof-password").value = "";
@@ -7424,6 +7481,12 @@
     }
     function closeProfileModal() {
       document.getElementById("profile-modal").classList.remove("open");
+      // 마이 탭을 보고 있었다면 이어서 탭 화면으로 돌려 둔다
+      if (document.getElementById("tab-mypage")?.classList.contains("active")) {
+        mountProfileSheet("tab");
+        const closeBtn = document.getElementById("prof-close-btn");
+        if (closeBtn) closeBtn.style.display = "none";
+      }
       setTimeout(() => { try { checkTripGoneGate(); } catch {} }, 30);
     }
 
@@ -8806,16 +8869,102 @@
       updateDayFloatBar();
     }
 
+    /* =====================================================================
+       하단 탭 6개: 일정 · 추천 · 경비 · 날씨·짐 · 정보·체크 · 마이
+       ===================================================================== */
+    let weatherPackingView = "weather";
+    let mypageFormPrepared = false;
+
+    function activateTab(tabId) {
+      const target = document.getElementById("tab-" + tabId);
+      if (!target) return;
+      document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tabId));
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.toggle("active", p.id === "tab-" + tabId));
+      resetScrollToTop();
+      updateDayFloatBar();
+    }
+
+    // 🌤️ 날씨·옷차림 / 🧳 짐 챙기기 — 통합 탭 안쪽 화면 전환
+    function setWeatherPackingView(view, opts) {
+      const next = view === "packing" ? "packing" : "weather";
+      weatherPackingView = next;
+      document.getElementById("wp-pane-weather")?.classList.toggle("active", next === "weather");
+      document.getElementById("wp-pane-packing")?.classList.toggle("active", next === "packing");
+      const wBtn = document.getElementById("wp-seg-weather");
+      const pBtn = document.getElementById("wp-seg-packing");
+      if (wBtn) { wBtn.classList.toggle("active", next === "weather"); wBtn.setAttribute("aria-selected", String(next === "weather")); }
+      if (pBtn) { pBtn.classList.toggle("active", next === "packing"); pBtn.setAttribute("aria-selected", String(next === "packing")); }
+      if (next === "packing") { try { renderPacking(); } catch (e) { console.warn(e); } }
+      else { try { autoRefreshWeather(); } catch (e) { console.warn(e); } }
+      if (!opts || opts.scroll !== false) resetScrollToTop();
+    }
+
+    // 마이페이지 시트는 한 벌만 두고, 탭 화면(#mypage-host)과 모달(#profile-modal) 사이를 옮겨 쓴다
+    function mountProfileSheet(where) {
+      const sheet = document.getElementById("profile-sheet");
+      if (!sheet) return;
+      if (where === "tab") {
+        const host = document.getElementById("mypage-host");
+        if (host && sheet.parentElement !== host) host.appendChild(sheet);
+        sheet.classList.add("in-tab");
+      } else {
+        const modal = document.getElementById("profile-modal");
+        if (modal && sheet.parentElement !== modal) modal.appendChild(sheet);
+        sheet.classList.remove("in-tab");
+      }
+    }
+
+    function prepareMyPageTab() {
+      mountProfileSheet("tab");
+      const closeBtn = document.getElementById("prof-close-btn");
+      if (closeBtn) closeBtn.style.display = "none";
+      try { renderMyPageBox(); } catch (e) { console.warn(e); }
+      try { renderSavedProfilesBox(); } catch (e) { console.warn(e); }
+      try { setProfileMode(profileModalMode); } catch (e) { console.warn(e); }
+      const formEl = document.getElementById("prof-form-box");
+      const formVisible = Boolean(formEl) && formEl.style.display !== "none";
+      if (!myProfile.nickname) {
+        mypageFormPrepared = false;
+        if (!formVisible) toggleProfileForm(true, "create");
+      } else if (!mypageFormPrepared) {
+        mypageFormPrepared = true;
+        // 이미 프로필이 있으면 소개·취향이 먼저 보이도록 계정 관리 폼은 접어 둔다
+        if (formVisible) toggleProfileForm(false);
+      }
+    }
+
+    function openMyPageTab() {
+      prepareMyPageTab();
+      activateTab("mypage");
+      resetScrollToTop();
+    }
+
+    // 예전 코드 호환: switchTab('packing') → 통합 탭의 '🧳 짐 챙기기' 화면
+    function switchTab(name) {
+      const target = String(name || "");
+      if (target === "packing" || target === "weather") {
+        activateTab("weather-packing");
+        setWeatherPackingView(target);
+        return;
+      }
+      if (target === "weather-packing" || target === "weatherPacking") {
+        activateTab("weather-packing");
+        setWeatherPackingView(weatherPackingView);
+        return;
+      }
+      if (target === "mypage") { openMyPageTab(); return; }
+      if (document.getElementById("tab-" + target)) activateTab(target);
+    }
+
     document.querySelectorAll(".nav-btn").forEach(btn => {
       btn.addEventListener("click", () => {
-        document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
-        document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-        btn.classList.add("active");
-        document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
-        resetScrollToTop();
-        if (btn.dataset.tab === "weather") autoRefreshWeather();
-        if (btn.dataset.tab === "packing") renderPacking();
-        updateDayFloatBar();
+        const tab = btn.dataset.tab;
+        if (tab === "mypage") prepareMyPageTab();
+        activateTab(tab);
+        if (tab === "weather-packing") {
+          if (weatherPackingView === "packing") { try { renderPacking(); } catch (e) { console.warn(e); } }
+          else { try { autoRefreshWeather(); } catch (e) { console.warn(e); } }
+        }
       });
     });
 
