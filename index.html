@@ -1283,6 +1283,7 @@
 
         <div class="card">
           <h3 class="sec-title">📂 내 여행 목록</h3>
+          <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px;line-height:1.45;">👑 내가 만든 여행은 <b>🗑️ 삭제</b>, 다른 사람이 만든 여행은 <b>🚪 나가기</b>로 목록에서 정리할 수 있어요.</div>
           <div id="my-trips-list" style="margin-bottom:10px;"></div>
           <button class="btn btn-soft" style="width:100%;" onclick="openNewTripModal()">+ 새 여행 만들기 (국내 / 해외 선택)</button>
         </div>
@@ -1571,7 +1572,8 @@
         <input id="tm-rename-input" class="input" placeholder="여행 계획 이름" maxlength="40" />
         <button class="btn btn-primary btn-sm" style="white-space:nowrap;flex-shrink:0;min-width:56px;" onclick="renameCurrentTrip()">저장</button>
       </div>
-      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;">내 여행 목록</div>
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;">내 여행 목록</div>
+      <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px;line-height:1.45;">👑 내가 만든 여행은 <b>🗑️ 삭제</b>, 다른 사람이 만든 여행은 <b>🚪 나가기</b>로 목록에서 정리할 수 있어요.</div>
       <div id="trips-modal-list" style="max-height:32vh;overflow-y:auto;margin-bottom:10px;"></div>
       <div class="row" style="margin-bottom:0;">
         <button class="btn btn-primary" style="flex:1;" onclick="closeTripsModal();openTripTypeModal()">+ 새 여행 만들기</button>
@@ -1695,6 +1697,8 @@
       </div>
       <div id="prof-msg" style="font-size:12px;color:var(--danger);margin-bottom:8px;display:none;"></div>
       <button id="prof-submit-btn" class="btn btn-primary" style="width:100%;" onclick="submitProfileModal()">프로필 저장하기</button>
+      <button id="prof-delete-btn" class="btn btn-danger" style="width:100%;margin-top:8px;display:none;" onclick="deleteMyProfile()">🗑️ 내 프로필 삭제 (탈퇴)</button>
+      <div id="prof-delete-note" style="font-size:10.5px;color:var(--muted);margin-top:6px;display:none;line-height:1.45;text-align:center;">탈퇴하면 내가 만든 여행은 삭제되고, 동반인 여행에서는 나가게 되며, 저장된 프로필도 지워져요.</div>
     </div>
   </div>
 
@@ -1932,6 +1936,30 @@
       </div>
       <div id="lock-err" style="font-size:12px;color:var(--danger);margin-bottom:8px;"></div>
       <button class="btn btn-primary" style="width:100%;" onclick="unlockTrip()">잠금 해제</button>
+    </div>
+  </div>
+
+  <!-- DANGER CONFIRM (삭제·나가기·탈퇴 마지막 확인) -->
+  <div id="danger-confirm-modal" class="modal-backdrop center" style="background:rgba(15,23,42,0.78);z-index:300;" onclick="if(event.target===this)closeDangerConfirm(false)">
+    <div class="modal-sheet" style="max-width:420px;border:1.5px solid #fecaca;">
+      <div id="danger-confirm-title" style="font-size:17px;font-weight:800;color:var(--danger);line-height:1.35;">정말 진행할까요?</div>
+      <div id="danger-confirm-desc" style="font-size:13px;font-weight:700;margin-top:8px;line-height:1.55;"></div>
+      <div id="danger-confirm-keep" style="font-size:11.5px;color:#7f1d1d;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:9px 11px;margin-top:10px;line-height:1.65;"></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">되돌릴 수 없어요. 한 번 더 확인해 주세요.</div>
+      <div class="row" style="margin-top:12px;margin-bottom:0;">
+        <button class="btn btn-soft" style="flex:1;min-height:44px;" onclick="closeDangerConfirm(false)">취소</button>
+        <button id="danger-confirm-ok" class="btn btn-danger" style="flex:1.1;min-height:44px;font-weight:800;" onclick="closeDangerConfirm(true)">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELETED / LEFT TRIP GATE -->
+  <div id="trip-gone-modal" class="modal-backdrop center" style="background:rgba(15,23,42,0.72);">
+    <div class="modal-sheet" style="text-align:center;">
+      <div id="trip-gone-title" style="font-size:17px;font-weight:800;">🗑️ 삭제된 여행입니다</div>
+      <div id="trip-gone-desc" style="font-size:12.5px;color:var(--muted);margin-top:6px;margin-bottom:14px;line-height:1.55;">이 여행 계획은 삭제됐어요.</div>
+      <button class="btn btn-primary" style="width:100%;margin-bottom:8px;" onclick="openTripsModal()">📂 내 여행 목록</button>
+      <button class="btn btn-soft" style="width:100%;" onclick="goToFreshStart()">✈️ 새 여행 시작하기</button>
     </div>
   </div>
 
@@ -2921,6 +2949,7 @@
 
     const STORAGE_KEY = "busan_trip_dashboard_v1";
     const MY_TRIPS_KEY = "busan_trip_my_trips_v1";
+    const DELETED_TRIPS_KEY = "busan_trip_deleted_trips_v1";
     const PROFILE_KEY = "busan_trip_my_profile_v1";
     const SB_CONF_KEY = "busan_trip_supabase_conf_v1";
     const DEFAULT_SB = {
@@ -3004,6 +3033,8 @@
     }
 
     function saveState(skipCloud = false) {
+      // 삭제했거나 나간 여행은 로컬·클라우드 어디에도 다시 쓰지 않는다(되살아남 방지)
+      if (isTripUnavailable(currentSyncId)) return;
       try { syncDiningChecklist(); ensureAirportOutfitAlert(); } catch (e) { console.warn("checklist sync error", e); }
       try { savePersonalPackingLocal(getPacking()); } catch (e) {}
       localStorage.setItem(getLocalKey(), JSON.stringify(state));
@@ -6876,6 +6907,12 @@
         : "내 프로필 불러오기";
       const msg = document.getElementById("prof-msg");
       if (msg) { msg.style.display = "none"; msg.textContent = ""; }
+      // 프로필이 있는 사람만 탈퇴(프로필 삭제) 버튼을 본다
+      const delBtn = document.getElementById("prof-delete-btn");
+      const delNote = document.getElementById("prof-delete-note");
+      const canDelete = Boolean(myProfile && myProfile.nickname);
+      if (delBtn) delBtn.style.display = canDelete ? "inline-flex" : "none";
+      if (delNote) delNote.style.display = canDelete ? "block" : "none";
     }
 
     function openProfileModal(forced = false, defaultMode = "create") {
@@ -6902,6 +6939,91 @@
         sbClient = window.supabase.createClient(DEFAULT_SB.url, DEFAULT_SB.key);
       }
       return sbClient;
+    }
+
+    /* =====================================================================
+       내 프로필 삭제(탈퇴) — 호스트 여행 삭제 · 동반인 여행 나가기 · 프로필 지우기
+       ===================================================================== */
+    async function deleteCloudProfileRow(nickname) {
+      const key = "__profile__:" + String(nickname || "").toLowerCase();
+      if (!window.supabase) return { ok: false, error: "클라우드 모듈을 불러오지 못했어요" };
+      let client = null;
+      try { client = ensureSbClient() || window.supabase.createClient(DEFAULT_SB.url, DEFAULT_SB.key); } catch (e) { return { ok: false, error: String(e) }; }
+      if (!client) return { ok: false, error: "클라우드 연결을 준비하지 못했어요" };
+      try {
+        const { data, error } = await client.from("trip_dashboards").delete().eq("sync_id", key).select("sync_id");
+        if (!error && Array.isArray(data) && data.length) return { ok: true, mode: "delete" };
+      } catch {}
+      // RLS/권한으로 DELETE가 막히면 탈퇴 표시를 남겨 로그인이 되지 않게 한다
+      const nowIso = new Date().toISOString();
+      try {
+        const { error: upErr } = await client.from("trip_dashboards").upsert({
+          sync_id: key,
+          data: { deleted: true, deletedAt: nowIso, nickname: nickname || "", kind: "profile" },
+          updated_at: nowIso
+        });
+        if (upErr) return { ok: false, error: upErr.message };
+        return { ok: true, mode: "soft" };
+      } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
+    }
+
+    function clearAllLocalTripData() {
+      const drop = [];
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (!k) continue;
+          if (k === PROFILE_KEY || k === MY_TRIPS_KEY || k === DELETED_TRIPS_KEY) { drop.push(k); continue; }
+          if (k === STORAGE_KEY || k.indexOf(STORAGE_KEY + "_") === 0) { drop.push(k); continue; }
+          if (k.indexOf("trip_packing_") === 0) { drop.push(k); }
+        }
+      } catch {}
+      drop.forEach(k => { try { localStorage.removeItem(k); } catch {} });
+      try { sessionStorage.clear(); } catch {}
+    }
+
+    async function deleteMyProfile() {
+      if (!myProfile || !myProfile.nickname) return alert("저장된 프로필이 없어요.");
+      const ok = await askDangerConfirm({
+        title: "🗑️ 정말 탈퇴할까요?",
+        desc: "정말 프로필을 삭제(탈퇴)할까요? 내가 호스트인 여행은 모두 삭제되고, 동반인으로 참여한 여행에서는 나가게 되며, 저장된 프로필도 지워져요.",
+        detail: "🗑️ <b>지워짐</b> — 내가 호스트인 여행 전부, 이 기기에 저장된 프로필·여행 목록·짐 목록, 클라우드 프로필(이 닉네임으로 다시 로그인할 수 없어요)<br>🚪 <b>나가기</b> — 동반인으로 참여한 여행(호스트의 계획은 그대로 유지돼요)",
+        confirmLabel: "🗑️ 탈퇴"
+      });
+      if (!ok) return;
+      const nick = myProfile.nickname;
+      const btn = document.getElementById("prof-delete-btn");
+      const prevTxt = btn ? btn.textContent : "";
+      if (btn) { btn.disabled = true; btn.textContent = "정리하는 중..."; }
+      const trips = getMyTrips().slice();
+      let hostCount = 0, guestCount = 0, failed = 0;
+      try {
+        for (const t of trips) {
+          const role = tripRoleOf(t.syncId);
+          let res = null;
+          try {
+            res = role === "host" ? await deleteTripFromCloud(t.syncId) : await removeMeFromCloudTrip(t.syncId);
+          } catch (e) { res = { ok: false, error: String((e && e.message) || e) }; }
+          if (res && res.ok === false) failed++;
+          if (role === "host") hostCount++; else guestCount++;
+          addTripTombstone(t.syncId, role === "host" ? "deleted" : "left", t.title || "");
+          removeTripFromMyTrips(t.syncId);
+          try { localStorage.removeItem(STORAGE_KEY + "_" + t.syncId); } catch {}
+        }
+        if (sbChannel && sbClient) { try { sbClient.removeChannel(sbChannel); } catch {} sbChannel = null; }
+        sbClient = null;
+        const profRes = await deleteCloudProfileRow(nick);        if (profRes && profRes.ok === false) failed++;
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = prevTxt; }
+      }
+      clearAllLocalTripData();
+      myProfile = loadMyProfile();
+      draftAvatarDataUrl = "";
+      const msg = `프로필을 삭제했어요.\n내가 만든 여행 ${hostCount}개를 삭제하고, 동반인 여행 ${guestCount}개에서 나왔어요.`
+        + (failed ? `\n(클라우드에서 ${failed}건은 정리를 마치지 못했어요.)` : "");
+      alert(msg);
+      // 비공개 게이트(초기 프로필 설정) 화면으로 돌아간다
+      location.replace(location.pathname);
     }
 
     function handleAvatarUpload(file) {
@@ -6945,6 +7067,7 @@
           const { data, error } = await client.from("trip_dashboards").select("data").eq("sync_id", nickKey).maybeSingle();
           if (error) { showProfError("불러오기 오류: " + error.message); return; }
           if (!data || !data.data) { showProfError("등록된 닉네임이 없어요. '새 프로필 만들기'로 먼저 만들어 주세요."); return; }
+          if (data.data.deleted === true) { showProfError("탈퇴한 프로필이에요. '새 프로필 만들기'로 다시 시작해 주세요."); return; }
           if (data.data.passHash !== passHash) { showProfError("비밀번호가 맞지 않아요."); return; }
           myProfile = {
             id: data.data.id,
@@ -6963,7 +7086,7 @@
         // create / update mode
         if (client) {
           const { data: existing } = await client.from("trip_dashboards").select("data").eq("sync_id", nickKey).maybeSingle();
-          if (existing && existing.data && existing.data.id !== myProfile.id) {
+          if (existing && existing.data && existing.data.deleted !== true && existing.data.id !== myProfile.id) {
             if (existing.data.passHash === passHash) {
               // Same nickname + same password -> log right in seamlessly!
               myProfile = {
@@ -7117,6 +7240,7 @@
         .some(id => document.getElementById(id)?.classList.contains("open"));
       if (newTripFlowOpen) {
         if (jm) jm.classList.remove("open");
+        document.getElementById("trip-gone-modal")?.classList.remove("open");
         return;
       }
       if (isNewFlow && !myProfile.nickname) {
@@ -7156,6 +7280,7 @@
         return;
       }
       if (jm) jm.classList.remove("open");
+      checkTripGoneGate();
       const wasLocked = !document.body.classList.contains("unlocked");
       document.body.classList.add("unlocked");
       if (wasLocked && typeof dayMap !== "undefined" && dayMap) {
@@ -7463,16 +7588,18 @@
             list.push({ ...s });
           }
         });
-        return list;
+        // 삭제·나간 여행은 코드 기본 목록에서 다시 살아나지 않도록 잘라낸다
+        return list.filter(t => t && t.syncId && !isTripTombstoned(t.syncId));
       } catch {
         return [
           { syncId: DEFAULT_SB.syncId, title: DEFAULT_DATA.meta.title, startDate: DEFAULT_DATA.meta.startDate, endDate: DEFAULT_DATA.meta.endDate, locked: false },
           ...SAMPLE_TRIP_LIST.map(s => ({ ...s }))
-        ];
+        ].filter(t => !isTripTombstoned(t.syncId));
       }
     }
 
     function registerMyTrip(syncId, meta, stamp = false) {
+      if (isTripTombstoned(syncId)) return; // 삭제·나간 여행은 목록에 다시 올리지 않는다
       const current = getMyTrips();
       const prev = current.find(t => t.syncId === syncId) || {};
       const list = current.filter(t => t.syncId !== syncId);
@@ -7515,6 +7642,7 @@
       history.replaceState(null, "", cleanUrl.toString());
       const list = getMyTrips().filter(t => t.syncId !== "au-sydney-4n5d");
       list.sort((a, b) => tripRecencyScore(b) - tripRecencyScore(a));
+      if (!list.length) { goToFreshStart(); return; }
       let target = (list[0] && list[0].syncId) || DEFAULT_SB.syncId;
       if (target !== DEFAULT_SB.syncId && !localStorage.getItem(STORAGE_KEY + "_" + target)) {
         const fallback = list.find(t => t.syncId === DEFAULT_SB.syncId);
@@ -7525,23 +7653,327 @@
       updateAccessGate();
     }
 
+    /* =====================================================================
+       삭제·나가기 — 호스트는 여행 삭제, 동반인은 여행에서 나가기
+       ===================================================================== */
+    function getTripTombstones() {
+      try {
+        const raw = localStorage.getItem(DELETED_TRIPS_KEY);
+        const list = raw ? JSON.parse(raw) : [];
+        return Array.isArray(list) ? list.filter(t => t && t.syncId) : [];
+      } catch { return []; }
+    }
+
+    function getTripTombstone(syncId) {
+      if (!syncId) return null;
+      return getTripTombstones().find(t => t.syncId === syncId) || null;
+    }
+
+    function isTripTombstoned(syncId) {
+      return Boolean(getTripTombstone(syncId));
+    }
+
+    function addTripTombstone(syncId, kind, title) {
+      if (!syncId) return;
+      const list = getTripTombstones().filter(t => t.syncId !== syncId);
+      list.push({ syncId, kind: kind || "deleted", title: title || "", at: new Date().toISOString(), by: myProfile.id });
+      try { localStorage.setItem(DELETED_TRIPS_KEY, JSON.stringify(list)); } catch {}
+    }
+
+    function removeTripFromMyTrips(syncId) {
+      try {
+        const raw = localStorage.getItem(MY_TRIPS_KEY);
+        const list = (raw ? JSON.parse(raw) : []).filter(t => t && t.syncId !== syncId);
+        localStorage.setItem(MY_TRIPS_KEY, JSON.stringify(list));
+      } catch {}
+    }
+
+    // 이 여행을 지금 열어도 되는 상태인가 (삭제·나간 여행은 링크로 들어와도 막힘)
+    function isTripUnavailable(syncId) {
+      if (!syncId) return false;
+      if (isTripTombstoned(syncId)) return true;
+      if (syncId !== currentSyncId) return false;
+      return Boolean(state && (state.deleted === true || state.meta?.deleted === true));
+    }
+
+    function tripMetaOf(syncId) {
+      if (syncId === currentSyncId && state && state.meta) return state.meta;
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY + "_" + syncId);
+        if (raw) return JSON.parse(raw).meta || {};
+      } catch {}
+      if (syncId === DEFAULT_SB.syncId) return DEFAULT_DATA.meta || {};
+      const sample = SAMPLE_TRIP_LIST.find(s => s.syncId === syncId);
+      return sample ? { ...sample } : {};
+    }
+
+    function tripMembersOf(syncId) {
+      if (syncId === currentSyncId) return state.members || [];
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY + "_" + syncId);
+        if (raw) return JSON.parse(raw).members || [];
+      } catch {}
+      return [];
+    }
+
+    // 목록의 각 여행에서 내 역할: host(내가 만든 여행) / editor·viewer·guest(동반인)
+    function tripRoleOf(syncId) {
+      const meta = tripMetaOf(syncId) || {};
+      const hostId = meta.hostId;
+      if (!hostId) return "host"; // 호스트 정보가 없는 옛 여행·코드 기본 여행은 내 여행으로 본다
+      if (hostId === myProfile.id) return "host";
+      const me = tripMembersOf(syncId).find(m => m.id === myProfile.id);
+      return me ? (me.role || "viewer") : "guest";
+    }
+
+    function tripListRowHtml(t) {
+      const active = t.syncId === currentSyncId;
+      const role = tripRoleOf(t.syncId);
+      const isHost = role === "host";
+      const icon = t.locked ? "🔒" : "🗺️";
+      const id = escapeAttr(t.syncId);
+      const title = escapeAttr(t.title || t.syncId);
+      const dates = [t.startDate, t.endDate].filter(Boolean).join(" ~ ");
+      const roleTag = isHost
+        ? '<span class="tag blue" style="font-size:10px;">👑 호스트</span>'
+        : '<span class="tag" style="font-size:10px;">🙋 동반인</span>';
+      const actionBtn = isHost
+        ? `<button class="btn btn-danger btn-sm" style="white-space:nowrap;flex-shrink:0;" onclick="deleteTrip('${id}')" title="이 여행을 삭제">🗑️ 삭제</button>`
+        : `<button class="btn btn-soft btn-sm" style="white-space:nowrap;flex-shrink:0;" onclick="leaveTrip('${id}')" title="이 여행에서 나가기">🚪 나가기</button>`;
+      return `
+        <div class="expense-item" style="padding:8px 0;align-items:center;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${icon} ${title} ${active ? '<span class="tag blue">현재</span>' : ""}</div>
+            <div style="font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:2px;">${roleTag}<span>${dates}</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+            ${active ? "" : `<button class="btn btn-soft btn-sm" onclick="switchTrip('${id}')">열기</button>`}
+            ${actionBtn}
+          </div>
+        </div>
+      `;
+    }
+
+    function tripListHtml(list) {
+      if (!list.length) {
+        return `<div style="padding:14px 10px;text-align:center;font-size:12.5px;color:var(--muted);">정리된 여행이 없어요.<br>아래 <b>+ 새 여행 만들기</b>로 새 계획을 시작해 보세요.</div>`;
+      }
+      return list.map(tripListRowHtml).join("");
+    }
+
     function renderMyTrips() {
       const el = document.getElementById("my-trips-list");
       if (!el) return;
-      const list = getMyTrips();
-      el.innerHTML = list.map(t => {
-        const active = t.syncId === currentSyncId;
-        const icon = t.locked ? "🔒" : "🗺️";
-        return `
-          <div class="expense-item" style="padding:8px 0;">
-            <div style="flex:1;">
-              <div style="font-size:13.5px;font-weight:700;">${icon} ${t.title} ${active ? '<span class="tag blue">현재</span>' : ""}</div>
-              <div style="font-size:11.5px;color:var(--muted);">${t.startDate} ~ ${t.endDate}</div>
-            </div>
-            ${active ? "" : `<button class="btn btn-soft btn-sm" onclick="switchTrip('${t.syncId}')">열기</button>`}
-          </div>
-        `;
-      }).join("");
+      el.innerHTML = tripListHtml(getMyTrips());
+    }
+
+    // 호스트가 지운 여행이 클라우드에서 날아왔을 때(동반인 기기 포함): 목록에서 지우고 안내 화면
+    function handleIncomingDeletedTrip(syncId, data) {
+      const incoming = data && typeof data === "object" ? data : {};
+      const title = (incoming.meta && incoming.meta.title) || incoming.title || "";
+      addTripTombstone(syncId, "deleted", title);
+      removeTripFromMyTrips(syncId);
+      try { localStorage.removeItem(STORAGE_KEY + "_" + syncId); } catch {}
+      if (syncId === currentSyncId) state = { ...incoming, meta: incoming.meta || { title: title || "삭제된 여행" } };
+      setSyncStatus("삭제된 여행", false);
+      try { renderMyTrips(); } catch {}
+      try { renderTripsModalList(); } catch {}
+      checkTripGoneGate();
+    }
+
+    // 마지막으로 본/수정한 여행 순서로 남은 여행 하나를 고른다
+    function nextTripAfterRemoval(removedId) {
+      const list = getMyTrips().filter(t => t.syncId !== removedId);
+      list.sort((a, b) => tripRecencyScore(b) - tripRecencyScore(a));
+      return list[0] || null;
+    }
+
+    function stopCloudChannel() {
+      if (sbChannel && sbClient) { try { sbClient.removeChannel(sbChannel); } catch {} }
+      sbChannel = null;
+    }
+
+    async function afterTripRemoved(removedId) {
+      if (removedId !== currentSyncId) {
+        renderMyTrips();
+        renderTripsModalList();
+        return;
+      }
+      stopCloudChannel();
+      const next = nextTripAfterRemoval(removedId);
+      if (next) {
+        await switchTrip(next.syncId);
+        document.querySelector('.nav-btn[data-tab="timeline"]')?.click();
+        renderMyTrips();
+        renderTripsModalList();
+        return;
+      }
+      // 남은 여행이 없으면 새 여행 시작/프로필 화면으로 안전하게 이동
+      goToFreshStart();
+    }
+
+    function goToFreshStart() {
+      isNewFlow = true;
+      pendingNewTripSetup = false;
+      stopCloudChannel();
+      const u = new URL(location.href);
+      u.searchParams.delete("trip");
+      u.searchParams.delete("invite");
+      u.searchParams.set("new", "1");
+      history.replaceState(null, "", u.toString());
+      document.getElementById("trip-gone-modal")?.classList.remove("open");
+      document.getElementById("join-modal")?.classList.remove("open");
+      closeTripsModal();
+      if (!myProfile.nickname) { openProfileModal(true, "create"); return; }
+      openTripTypeModal();
+    }
+
+    // 클라우드에서 여행 행 삭제 시도 → RLS/권한으로 막히면 data.deleted soft delete 폴백
+    async function deleteTripFromCloud(syncId) {
+      if (/^qa-/i.test(String(syncId || "")) || SAMPLE_TRIP_LIST.some(s => s.syncId === syncId)) {
+        return { ok: true, mode: "local-only" };
+      }
+      if (!window.supabase) return { ok: false, error: "클라우드 모듈을 불러오지 못했어요" };
+      let client = null;
+      try {
+        client = (sbClient && syncId === currentSyncId) ? sbClient : window.supabase.createClient(DEFAULT_SB.url, DEFAULT_SB.key);
+      } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
+      let hardErr = "";
+      try {
+        const { data, error } = await client.from("trip_dashboards").delete().eq("sync_id", syncId).select("sync_id");
+        if (!error && Array.isArray(data) && data.length) return { ok: true, mode: "delete" };
+        hardErr = error ? error.message : "삭제 권한이 없어 행이 지워지지 않았어요";
+      } catch (e) { hardErr = String((e && e.message) || e); }
+      try {
+        const { data: row, error: readErr } = await client.from("trip_dashboards").select("data").eq("sync_id", syncId).maybeSingle();
+        if (readErr) return { ok: false, error: readErr.message, hardError: hardErr };
+        const nowIso = new Date().toISOString();
+        const base = row && row.data && typeof row.data === "object" ? row.data : {};
+        const next = { ...base, deleted: true, deletedAt: nowIso, deletedBy: myProfile.id };
+        const { error: upErr } = await client.from("trip_dashboards").upsert({ sync_id: syncId, data: next, updated_at: nowIso });
+        if (upErr) return { ok: false, error: upErr.message, hardError: hardErr };
+        return { ok: true, mode: row ? "soft" : "soft-placeholder", hardError: hardErr };
+      } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
+    }
+
+    // 동반인 나가기: 호스트 여행 데이터는 건드리지 않고 members·joinRequests에서 내 프로필만 뺀다
+    async function removeMeFromCloudTrip(syncId) {
+      if (/^qa-/i.test(String(syncId || "")) || SAMPLE_TRIP_LIST.some(s => s.syncId === syncId)) {
+        return { ok: true, mode: "local-only" };
+      }
+      if (!window.supabase) return { ok: false, error: "클라우드 모듈을 불러오지 못했어요" };
+      let client = null;
+      try {
+        client = (sbClient && syncId === currentSyncId) ? sbClient : window.supabase.createClient(DEFAULT_SB.url, DEFAULT_SB.key);
+      } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
+      try {
+        const { data, error } = await client.from("trip_dashboards").select("data").eq("sync_id", syncId).maybeSingle();
+        if (error) return { ok: false, error: error.message };
+        const cloud = data && data.data && typeof data.data === "object" ? data.data : null;
+        if (!cloud) return { ok: true, mode: "no-cloud-row" };
+        if (cloud.deleted === true) return { ok: true, mode: "already-deleted" };
+        const next = {
+          ...cloud,
+          members: (cloud.members || []).filter(m => m && m.id !== myProfile.id),
+          joinRequests: (cloud.joinRequests || []).filter(r => r && r.id !== myProfile.id)
+        };
+        const nowIso = new Date().toISOString();
+        const { error: upErr } = await client.from("trip_dashboards").update({ data: next, updated_at: nowIso }).eq("sync_id", syncId);
+        if (upErr) return { ok: false, error: upErr.message };
+        return { ok: true, mode: "patched" };
+      } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
+    }
+
+    /* =====================================================================
+       삭제·나가기·탈퇴 전 마지막 경고 확인 모달
+       ===================================================================== */
+    let dangerConfirmResolver = null;
+
+    function askDangerConfirm(opts = {}) {
+      return new Promise((resolve) => {
+        const wasOpen = dangerConfirmResolver;
+        if (wasOpen) wasOpen(false); // 이전 대기는 취소 처리
+        dangerConfirmResolver = resolve;
+        document.getElementById("danger-confirm-title").textContent = opts.title || "정말 진행할까요?";
+        document.getElementById("danger-confirm-desc").innerHTML = opts.desc || "";
+        const keep = document.getElementById("danger-confirm-keep");
+        keep.innerHTML = opts.detail || "";
+        keep.style.display = opts.detail ? "block" : "none";
+        const ok = document.getElementById("danger-confirm-ok");
+        ok.textContent = opts.confirmLabel || "확인";
+        ok.disabled = true; // 여는 데 쓴 손가락이 바로 눌리지 않도록 잠깐 잠근다
+        document.getElementById("danger-confirm-modal").classList.add("open");
+        setTimeout(() => { if (dangerConfirmResolver === resolve) ok.disabled = false; }, 700);
+      });
+    }
+
+    function closeDangerConfirm(ok) {
+      const modal = document.getElementById("danger-confirm-modal");
+      if (modal) modal.classList.remove("open");
+      const r = dangerConfirmResolver;
+      dangerConfirmResolver = null;
+      if (r) r(Boolean(ok));
+    }
+
+    async function deleteTrip(syncId) {
+      if (tripRoleOf(syncId) !== "host") return leaveTrip(syncId);
+      const t = getMyTrips().find(x => x.syncId === syncId) || {};
+      const ok = await askDangerConfirm({
+        title: "🗑️ 이 여행을 삭제할까요?",
+        desc: "이 여행 계획을 완전히 삭제할까요? 동반인 화면에서도 더 이상 보이지 않아요.",
+        detail: `🗑️ <b>지워짐</b> — “${escapeAttr(t.title || syncId)}”의 일정·경비·체크리스트, 내 기기 저장본, 클라우드 백업<br>👥 동반인 화면에서도 이 여행이 사라져요.`,
+        confirmLabel: "🗑️ 삭제"
+      });
+      if (!ok) return;
+      const res = await deleteTripFromCloud(syncId);
+      addTripTombstone(syncId, "deleted", t.title || "");
+      removeTripFromMyTrips(syncId);
+      try { localStorage.removeItem(STORAGE_KEY + "_" + syncId); } catch {}
+      if (syncId === DEFAULT_SB.syncId) { try { localStorage.removeItem(STORAGE_KEY); } catch {} }
+      closeTripsModal();
+      await afterTripRemoved(syncId);
+      if (res && res.ok === false) {
+        setTimeout(() => alert(`내 기기 목록에서는 삭제했어요.\n다만 클라우드 정리는 실패했어요 (${res.error || "연결 오류"}).`), 120);
+      }
+    }
+
+    async function leaveTrip(syncId) {
+      if (tripRoleOf(syncId) === "host") return deleteTrip(syncId);
+      const t = getMyTrips().find(x => x.syncId === syncId) || {};
+      const ok = await askDangerConfirm({
+        title: "🚪 이 여행에서 나갈까요?",
+        desc: "이 여행에서 나가시겠어요? 호스트의 여행 계획은 유지되고 내 목록에서만 사라져요.",
+        detail: `🛡️ <b>유지됨</b> — 호스트의 여행 계획·일정·경비는 그대로예요.<br>🗑️ <b>지워짐</b> — 내 목록의 “${escapeAttr(t.title || syncId)}”, 내 기기 저장본, 호스트 화면의 동반인 목록에 있는 내 이름.`,
+        confirmLabel: "🚪 나가기"
+      });
+      if (!ok) return;
+      const res = await removeMeFromCloudTrip(syncId);
+      addTripTombstone(syncId, "left");
+      removeTripFromMyTrips(syncId);
+      try { localStorage.removeItem(STORAGE_KEY + "_" + syncId); } catch {}
+      closeTripsModal();
+      await afterTripRemoved(syncId);
+      if (res && res.ok === false) {
+        setTimeout(() => alert(`내 목록에서는 나갔어요.\n다만 호스트 쪽 동반인 목록 정리는 실패했어요 (${res.error || "연결 오류"}).`), 120);
+      }
+    }
+
+    // 삭제·나간 여행을 링크로 열었을 때 안내 화면
+    function checkTripGoneGate() {
+      const modal = document.getElementById("trip-gone-modal");
+      if (!modal) return;
+      const newTripFlowOpen = ["trip-type-modal", "new-trip-setup-modal", "overseas-setup-modal", "profile-modal", "welcome-host-modal"]
+        .some(id => document.getElementById(id)?.classList.contains("open"));
+      if (newTripFlowOpen) { modal.classList.remove("open"); return; }
+      const tt = getTripTombstone(currentSyncId);
+      const deletedByData = Boolean(state && (state.deleted === true || state.meta?.deleted === true));
+      if (!tt && !deletedByData) { modal.classList.remove("open"); return; }
+      const left = Boolean(tt && tt.kind === "left");
+      document.getElementById("trip-gone-title").textContent = left ? "🚪 나간 여행입니다" : "🗑️ 삭제된 여행입니다";
+      document.getElementById("trip-gone-desc").innerHTML = left
+        ? "이 여행에서 나갔어요.<br>호스트의 여행 계획은 그대로 유지되고, 내 목록에서만 사라져요."
+        : "이 여행 계획은 삭제됐어요.<br>링크로 다시 들어와도 열리지 않고, 동반인 화면에서도 더 이상 보이지 않아요.";
+      modal.classList.add("open");
     }
 
     async function switchTrip(syncId) {
@@ -7551,6 +7983,7 @@
       history.replaceState(null, "", getShareUrl());
       renderAll();
       checkLockScreen();
+      checkTripGoneGate();
       await startSupabase(DEFAULT_SB.url, DEFAULT_SB.key, currentSyncId);
       autoRefreshWeather();
     }
@@ -7574,7 +8007,12 @@
       sbChannel = sbClient
         .channel("trip_" + syncId)
         .on("postgres_changes", { event: "*", schema: "public", table: "trip_dashboards", filter: `sync_id=eq.${syncId}` }, (payload) => {
+          if (syncId !== currentSyncId) return; // 이미 다른 여행으로 넘어갔으면 무시
           if (payload.new && payload.new.data) {
+            if (payload.new.data.deleted === true) {
+              handleIncomingDeletedTrip(syncId, payload.new.data);
+              return;
+            }
             state = payload.new.data;
             localStorage.setItem(getLocalKey(), JSON.stringify(state));
             renderAll();
@@ -7595,6 +8033,11 @@
       const { data, error } = await sbClient.from("trip_dashboards").select("data, updated_at").eq("sync_id", currentSyncId).maybeSingle();
       if (error) return setSyncStatus("백업 불러오기 오류: " + error.message, false);
       if (data && data.data) {
+        if (data.data.deleted === true) {
+          // 호스트가 삭제한 여행: 내용은 그리지 않고 안내 화면만 보여 준다
+          handleIncomingDeletedTrip(currentSyncId, data.data);
+          return;
+        }
         state = hydrateDefaults(data.data);
         localStorage.setItem(getLocalKey(), JSON.stringify(state));
         renderAll();
@@ -7608,6 +8051,7 @@
 
     async function pushToCloud(silent = false) {
       if (!sbClient) return;
+      if (isTripUnavailable(currentSyncId)) return; // 삭제·나간 여행은 클라우드에 다시 쓰지 않는다
       const nowIso = new Date().toISOString();
       const { error } = await sbClient.from("trip_dashboards").upsert({
         sync_id: currentSyncId,
@@ -7948,27 +8392,20 @@
       if (persist) saveState();
     }
 
+    function renderTripsModalList() {
+      const box = document.getElementById("trips-modal-list");
+      if (!box) return;
+      box.innerHTML = tripListHtml(getMyTrips());
+    }
+
     function openTripsModal() {
       document.getElementById("tm-rename-input").value = state.meta?.title || "";
-      const list = getMyTrips();
-      const box = document.getElementById("trips-modal-list");
-      box.innerHTML = list.map(t => {
-        const active = t.syncId === currentSyncId;
-        const icon = t.locked ? "🔒" : "🗺️";
-        return `
-          <div class="expense-item" style="padding:7px 0;">
-            <div style="flex:1;">
-              <div style="font-size:13.5px;font-weight:700;">${icon} ${t.title} ${active ? '<span class="tag blue">현재</span>' : ""}</div>
-              <div style="font-size:11.5px;color:var(--muted);">${t.startDate} ~ ${t.endDate}</div>
-            </div>
-            ${active ? "" : `<button class="btn btn-soft btn-sm" onclick="closeTripsModal();switchTrip('${t.syncId}')">열기</button>`}
-          </div>
-        `;
-      }).join("");
+      renderTripsModalList();
       document.getElementById("trips-modal").classList.add("open");
     }
     function closeTripsModal() { document.getElementById("trips-modal").classList.remove("open"); }
     function renameCurrentTrip() {
+      if (isTripUnavailable(currentSyncId)) return alert("삭제했거나 나간 여행은 이름을 바꿀 수 없어요.");
       const next = document.getElementById("tm-rename-input").value.trim();
       if (!next) return alert("여행 이름을 입력해 주세요.");
       state.meta.title = next;
@@ -10501,6 +10938,7 @@
       renderExchangeRate();
       initRecommendSelectors();
       checkInviteFlow();
+      checkTripGoneGate();
     }
 
     try { renderAll(); } catch (e) { console.error("renderAll error:", e); }
