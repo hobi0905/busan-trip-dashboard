@@ -11570,6 +11570,25 @@
       (p.items || []).forEach(i => { i.checked = false; });
       saveState();
     }
+    async function savePackingNow() {
+      const p = getPacking();
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, "0");
+      const mm = String(now.getMinutes()).padStart(2, "0");
+      p.savedAt = `${hh}:${mm}`;
+      try { savePersonalPackingLocal(p); } catch {}
+      try { localStorage.setItem(getLocalKey(), JSON.stringify(state)); } catch {}
+      if (typeof sbClient !== "undefined" && sbClient) {
+        try { await pushToCloud(true); } catch {}
+      }
+      renderPacking();
+      const btn = document.getElementById("pk-save-btn");
+      if (btn) {
+        const orig = btn.textContent;
+        btn.textContent = "✅ 저장됨!";
+        setTimeout(() => { if (btn) btn.textContent = orig; }, 1600);
+      }
+    }
 
     function renderPacking() {
       const host = document.getElementById("packing-body");
@@ -11650,9 +11669,11 @@
             <span class="tag">속옷·양말 ${ctx.nights + 1 + Math.min(3, Number(p.waterDips) || 0)}세트</span>
           </div>
           <div class="pk-toolbar">
+            <button class="btn btn-primary btn-sm" id="pk-save-btn" onclick="savePackingNow()">💾 짐 목록 저장</button>
             <button class="btn btn-soft btn-sm" onclick="reopenPackingSetup()">⚙️ 조건 다시 고르기</button>
             <button class="btn btn-soft btn-sm" onclick="resetPackingChecks()">↺ 체크 초기화</button>
           </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px;">${p.savedAt ? `💾 마지막 저장: ${escapeAttr(p.savedAt)} (수량·체크 변경 시에도 자동 저장돼요)` : "수량·체크를 바꾸면 자동 저장되고, 💾 버튼으로 바로 저장할 수도 있어요."}</div>
           ${p.gender === "female" ? `
           <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <button class="btn btn-sm ${p.periodMode ? "btn-primary" : "btn-soft"}" onclick="togglePeriodMode()">🩸 생리예정 ${p.periodMode ? "ON" : "OFF"}</button>
