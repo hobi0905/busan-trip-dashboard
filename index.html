@@ -1657,7 +1657,7 @@
         <div style="font-size:16px;font-weight:800;">🏠 자주 쓰는 거점</div>
         <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closePlacesModal()">닫기</button>
       </div>
-      <div style="font-size:11.5px;color:var(--muted);margin-bottom:10px;">집·공항·기차역·호텔을 저장해 두면 일정·교통편·예약 입력칸에서 칩을 눌러 바로 채울 수 있어요.</div>
+      <div style="font-size:11.5px;color:var(--muted);margin-bottom:10px;">집·공항·기차역·호텔을 저장해 두면 일정·교통편·예약 입력칸에서 칩을 눌러 바로 채울 수 있어요. 숙소·교통편 예약에 적은 호텔과 역·공항은 자동으로 함께 등록됩니다.</div>
       <div id="places-list"></div>
       <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;">
         <div style="font-size:12.5px;font-weight:800;margin-bottom:6px;" id="place-form-title">＋ 거점 추가</div>
@@ -5016,6 +5016,7 @@
       }
       if (!existing) state.bookings.push(rec);
       closeBookingModal();
+      syncPlacesFromBookings();
       saveState();
       alert(`✅ ${t === "hotel" ? "숙소" : "교통편"} 예약 내역을 저장했어요.`);
     }
@@ -5026,6 +5027,7 @@
       if (!b) return;
       if (!confirm(`'${b.name || "예약"}' 내역을 삭제할까요?`)) return;
       state.bookings = state.bookings.filter(x => x.id !== id);
+      syncPlacesFromBookings();
       saveState();
     }
 
@@ -5103,7 +5105,56 @@
     }
     function ensureSavedPlaces() {
       if (!Array.isArray(state.savedPlaces)) state.savedPlaces = [];
+      syncPlacesFromBookings();
       return state.savedPlaces;
+    }
+
+    // 🏨🚆 예약 내역의 호텔·출발/도착 역·공항을 자주 쓰는 거점에 자동 반영 (중복 없이 갱신·삭제)
+    function normalizePlaceKey(s) {
+      return String(s || "").replace(/\s+/g, " ").replace(/[()\[\]{}·,]/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
+    }
+
+    function syncPlacesFromBookings() {
+      if (!Array.isArray(state.savedPlaces)) state.savedPlaces = [];
+      const bookings = Array.isArray(state.bookings) ? state.bookings : [];
+      const wanted = [];
+      bookings.forEach(b => {
+        if (!b) return;
+        if (b.type === "hotel" && b.name) {
+          wanted.push({ kind: "hotel", label: String(b.name).trim(), address: `${b.name}${b.room ? ` (${b.room})` : ""}` });
+        } else if (b.type === "transit") {
+          const isAir = /항공|비행|air|plane/i.test([b.mode, b.name].filter(Boolean).join(" "));
+          const kind = isAir ? "airport" : "station";
+          [b.from, b.to].forEach(v => {
+            const nm = String(v || "").trim();
+            if (nm) wanted.push({ kind, label: nm, address: nm });
+          });
+        }
+      });
+      const seen = {};
+      const uniq = wanted.filter(w => {
+        const key = `${w.kind}|${normalizePlaceKey(w.label)}`;
+        if (seen[key]) return false;
+        seen[key] = true;
+        return true;
+      }).map(w => ({ ...w, key: `${w.kind}|${normalizePlaceKey(w.label)}` }));
+
+      // 예약에서 사라진 자동 거점은 같이 정리
+      state.savedPlaces = state.savedPlaces.filter(p => !p.auto || uniq.some(u => u.key === p.key));
+      uniq.forEach(u => {
+        const cur = state.savedPlaces.find(p => p.auto && p.key === u.key);
+        if (cur) {
+          cur.kind = u.kind;
+          cur.label = u.label;
+          cur.address = u.address;
+        } else if (!state.savedPlaces.some(p => !p.auto && p.kind === u.kind && normalizePlaceKey(p.label) === normalizePlaceKey(u.label))) {
+          // 같은 곳을 직접 등록해 둔 경우는 그대로 두고 중복으로 추가하지 않는다
+          state.savedPlaces.push({
+            id: "pl-auto-" + u.key.replace(/[^a-z0-9가-힣]/gi, "").slice(0, 20),
+            auto: true, key: u.key, kind: u.kind, label: u.label, address: u.address
+          });
+        }
+      });
     }
     function defaultHomeCity() {
       return String(state.meta?.homeCity || "인천");
@@ -5168,15 +5219,16 @@
       box.innerHTML = list.map(p => {
         const k = placeKindMeta(p.kind);
         const coord = (typeof p.lat === "number" && typeof p.lng === "number") ? ` · 📍${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}` : "";
+        const tag = p.auto ? `<span class="tag blue" style="font-size:10px;padding:1px 5px;margin-left:4px;">예약 연동</span>` : "";
         return `<div class="place-row">
           <div style="flex:1;min-width:0;">
-            <div style="font-size:12.5px;font-weight:800;">${k.icon} ${escapeAttr(p.label || k.label)}</div>
+            <div style="font-size:12.5px;font-weight:800;">${k.icon} ${escapeAttr(p.label || k.label)}${tag}</div>
             <div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeAttr(p.address || "주소 미입력")}${coord}</div>
           </div>
-          <button class="btn btn-soft btn-sm" onclick="editSavedPlace('${p.id}')">✏️</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteSavedPlace('${p.id}')">×</button>
+          ${p.auto ? "" : `<button class="btn btn-soft btn-sm" onclick="editSavedPlace('${p.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteSavedPlace('${p.id}')">×</button>`}
         </div>`;
-      }).join("");
+      }).join("");;
     }
 
     function openPlacesModal() {
@@ -5284,6 +5336,7 @@
       if (!canEdit()) return alert("읽기 전용 권한이라 거점을 삭제할 수 없어요.");
       const pl = ensureSavedPlaces().find(p => p.id === id);
       if (!pl) return;
+      if (pl.auto) return alert("예약 연동 거점이에요. 🏨 숙소·🚆 교통편 예약 내역에서 지우면 여기서도 같이 사라져요.");
       if (!confirm(`'${pl.label || pl.address}' 거점을 삭제할까요?`)) return;
       state.savedPlaces = ensureSavedPlaces().filter(p => p.id !== id);
       saveState();
