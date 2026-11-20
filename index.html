@@ -1491,7 +1491,7 @@
 
   <!-- 지도 아래 3버튼 설명 모달 -->
   <div id="action-help-modal" class="modal-backdrop" onclick="if(event.target===this)closeActionHelp()">
-    <div class="modal-sheet">
+    <div class="modal-sheet" style="max-height:92vh;overflow-y:auto;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
         <div style="font-size:16px;font-weight:800;">💡 지도 아래 3버튼, 이렇게 써요</div>
         <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeActionHelp()">닫기</button>
@@ -4591,13 +4591,21 @@
       const tripStart = state.meta?.startDate || "";
       const tripEnd = state.meta?.endDate || tripStart;
       const dayDate = (state.days || []).find(d => d.day === currentDay)?.date || tripStart;
+      let defaultDue = "";
+      if (tripStart) {
+        const dStart = new Date(tripStart + "T00:00:00");
+        if (!isNaN(dStart)) {
+          const dDue = new Date(dStart.getFullYear(), dStart.getMonth(), dStart.getDate() - 7);
+          defaultDue = `${dDue.getFullYear()}-${String(dDue.getMonth() + 1).padStart(2, "0")}-${String(dDue.getDate()).padStart(2, "0")}`;
+        }
+      }
 
       document.getElementById("bk-name").value = b ? (b.name || "") : "";
       document.getElementById("bk-price").value = b && b.price ? String(b.price) : "";
       document.getElementById("bk-memo").value = b ? (b.memo || "") : "";
       document.getElementById("bk-pay").value = b ? (b.payStatus || "planned") : "planned";
       document.getElementById("bk-paid-date").value = b ? (b.paidDate || "") : "";
-      document.getElementById("bk-due-date").value = b ? (b.dueDate || "") : "";
+      document.getElementById("bk-due-date").value = b ? (b.dueDate || "") : defaultDue;
       document.getElementById("bk-due-amount").value = b && b.dueAmount ? String(b.dueAmount) : "";
 
       document.getElementById("bk-in-date").value = b ? (b.inDate || "") : tripStart;
