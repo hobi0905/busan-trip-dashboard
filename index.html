@@ -3794,8 +3794,10 @@
       const a = photoNorm(cand), b = photoNorm(base || t);
       if (!a || !b) return 0;
       if (a === b) return 3;
+      // 한국어 지명은 핵심어가 뒤에 온다 — 마지막 단어가 문서 제목과 같을 때만 인정
       const toks = String(cand).split(/[\s\-_·,.&/()]+/).map(photoNorm).filter(t => t.length >= 3);
-      for (const t of toks) if (b === t) return 2;
+      const head = toks.length ? toks[toks.length - 1] : "";
+      if (head && b === head) return 2;
       const short = a.length <= b.length ? a : b;
       const long = a.length <= b.length ? b : a;
       if (short.length >= 4 && long.includes(short) && short.length / long.length >= 0.85) return 2;
@@ -3849,7 +3851,7 @@
       // 5) '하버브리지 파이론 룩아웃'처럼 수식어가 붙은 이름은 앞쪽 핵심어만
       const words = cleaned.split(" ").filter(Boolean);
       if (words.length > 3) push(words.slice(0, 3).join(" "));
-      if (words.length >= 2 && photoNorm(words[0]).length >= 3) push(words[0]);
+      if (words.length >= 2 && photoNorm(words[0]).length >= 4) push(words[0]);
       // 6) 그래도 없으면 괄호 안에 적힌 이름(예: 루나파크)을 마지막으로 시도
       parens.slice(0, 2).forEach(p => push(p));
       return out.slice(0, 4);
