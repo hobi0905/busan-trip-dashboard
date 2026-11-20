@@ -5103,6 +5103,7 @@
               <div class="bk-name">🏨 ${escapeAttr(b.name || "숙소 이름 미입력")}</div>
               <div class="bk-line">🛏 체크인 ${inTxt} → 체크아웃 ${outTxt}${nights ? ` · ${nights}박` : ""}</div>
               ${b.room ? `<div class="bk-line">🛌 ${escapeAttr(b.room)}</div>` : ""}
+              ${b.schedule?.station?.name ? `<div class="bk-line">${escapeAttr(stationLine(b.schedule.station))}</div>` : ""}
             </div>
             <span class="bk-pay ${pay.cls}">${pay.short}</span>
           </div>
@@ -5207,6 +5208,9 @@
           + 마지막 장소→호텔 / 호텔→첫 장소 이동 시간·최적 루트 계산
        ===================================================================== */
     let bkSchedCoords = null;
+    let bkSchedStation = null;        // 🚇 호텔 좌표 기준 가장 가까운 지하철역
+    let bkStationLoading = false;
+    let bkFallbackStations = [];      // 호텔명을 못 찾았을 때 여행지 주요 역 후보
     const bkRouteCache = new Map();   // '출발|도착' → 계산 결과 (세션 내 재사용)
     const bkRouteInflight = new Set();
 
@@ -5307,6 +5311,9 @@
     function onBookingNameInput() {
       // 이름을 바꾸면 이전 이름으로 찾은 좌표는 버린다
       bkSchedCoords = null;
+      bkSchedStation = null;
+      bkStationLoading = false;
+      bkFallbackStations = [];
       if (document.getElementById("bk-sched-on")?.checked) renderBookingScheduleCoordNote();
     }
 
@@ -5324,11 +5331,73 @@
       return `<div style="color:#b45309;font-size:11px;line-height:1.5;margin-top:4px;">⚠️ 일정에 이미 숙소 관련 카드가 있어요 — ${escapeAttr(hits.slice(0, 3).join(", "))}. 자동 카드와 겹쳐 보이면 기존 카드를 지워 주세요.</div>`;
     }
 
+    // 🚇 역 이름 표시 (OSM은 '광안'처럼 역 이름만 두는 경우가 많다)
+    function stationDisplayName(name) {
+      const n = String(name || "").trim();
+      if (!n) return "";
+      if (/[\uac00-\ud7a3]/.test(n) && !/역$/.test(n)) return `${n}역`;
+      return n;
+    }
+
+    // 🚇 역까지 거리·도보 시간 문구
+    function stationLine(st) {
+      if (!st || !st.name) return "";
+      const nm = stationDisplayName(st.name);
+      if (!(typeof st.distM === "number") || st.approx || st.distM <= 0) return `🚇 기준역: ${nm}`;
+      const m = Math.round(st.distM);
+      const distTxt = m >= 1000 ? `${(m / 1000).toFixed(1)}km` : `${m}m`;
+      const walkTxt = `도보 ${Math.max(1, Math.round(m / 67))}분`;
+      return `🚇 가장 가까운 역: ${nm} (직선 약 ${distTxt} · ${walkTxt})`;
+    }
+
+    // 호텔 좌표 주변 지하철역 목록 (Overpass · 가까운 순)
+    async function nearbySubwayStations(lat, lng, radius = 3000, limit = 6) {
+      if (typeof lat !== "number" || typeof lng !== "number") return [];
+      const q = `[out:json][timeout:8];(`
+        + `node["railway"="station"]["station"="subway"](around:${radius},${lat},${lng});`
+        + `node["railway"="station"]["subway"="yes"](around:${radius},${lat},${lng});`
+        + `node["public_transport"="station"]["subway"="yes"](around:${radius},${lat},${lng});`
+        + `node["railway"="halt"]["subway"="yes"](around:${radius},${lat},${lng});`
+        + `way["railway"="station"]["station"="subway"](around:${radius},${lat},${lng});`
+        + `);out center ${Math.max(60, limit * 10)};`;
+      try {
+        const ctrl = typeof AbortController === "function" ? new AbortController() : null;
+        const timer = ctrl ? setTimeout(() => ctrl.abort(), 8000) : null;
+        const r = await fetch("https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(q), ctrl ? { signal: ctrl.signal } : undefined);
+        if (timer) clearTimeout(timer);
+        const data = await r.json();
+        const seen = new Set();
+        const list = (data.elements || []).map(el => ({
+          name: el.tags?.["name:ko"] || el.tags?.name || "",
+          lat: el.lat ?? el.center?.lat,
+          lng: el.lon ?? el.center?.lon
+        })).filter(s => {
+          if (!s.name || typeof s.lat !== "number" || typeof s.lng !== "number") return false;
+          const k = s.name.replace(/역$/, "").replace(/\s+/g, "");
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        }).map(s => ({ ...s, distM: Math.round(calcDistKm(lat, lng, s.lat, s.lng) * 1000) }))
+          .sort((a, b) => a.distM - b.distM);
+        return list.slice(0, limit);
+      } catch { return []; }
+    }
+
+    async function nearestSubwayStation(lat, lng, radius = 3000) {
+      const list = await nearbySubwayStations(lat, lng, radius, 1);
+      return list.length ? list[0] : null;
+    }
+
     function renderBookingScheduleCoordNote() {
       const el = document.getElementById("bk-sched-coord");
       if (!el) return;
       if (bkSchedCoords && typeof bkSchedCoords.lat === "number") {
-        el.innerHTML = `📍 호텔 좌표 ${bkSchedCoords.lat.toFixed(4)}, ${bkSchedCoords.lng.toFixed(4)}${bkSchedCoords.source ? ` (${escapeAttr(bkSchedCoords.source)})` : ""}`;
+        el.innerHTML = `📍 호텔 좌표 ${bkSchedCoords.lat.toFixed(4)}, ${bkSchedCoords.lng.toFixed(4)}${bkSchedCoords.source ? ` (${escapeAttr(bkSchedCoords.source)})` : ""}`
+          + (bkStationLoading
+            ? `<div style="color:var(--muted);margin-top:2px;">🚇 가장 가까운 지하철역 찾는 중...</div>`
+            : (bkSchedStation
+              ? `<div style="color:var(--ocean-dark);font-weight:800;margin-top:2px;">${escapeAttr(stationLine(bkSchedStation))}</div>`
+              : ""));
         return;
       }
       const name = document.getElementById("bk-name")?.value.trim() || "";
@@ -5361,12 +5430,26 @@
       const q0 = String(name || "").trim();
       if (!q0) return null;
       const city = String(state.meta?.destination || "").split(/[(\s·,]/)[0].trim();
-      const variants = [q0];
       const bare = q0.replace(/^(호텔|Hotel|HOTEL)\s*/i, "").replace(/\s*(호텔|Hotel)$/i, "").trim();
-      if (bare && bare !== q0) variants.push(bare);
-      if (city && !q0.includes(city)) variants.push(`${q0} ${city}`);
-      if (city && bare && bare !== q0 && !bare.includes(city)) variants.push(`${bare} ${city}`);
-      for (const q of variants) {
+      // 🇰🇷 한글 상호는 붙여쓰기·'호텔' 붙임말로만 OSM에 있는 경우가 많다 (예: '아쿠아 펠리스' → '아쿠아펠리스호텔')
+      const compact = q0.replace(/\s+/g, "");
+      const variants = [];
+      const addVariant = v => {
+        const t = String(v || "").trim();
+        if (t && !variants.includes(t)) variants.push(t);
+      };
+      addVariant(q0);
+      addVariant(bare);
+      addVariant(compact);
+      addVariant(`${compact}호텔`);
+      if (city && !q0.includes(city)) {
+        addVariant(`${q0} ${city}`);
+        addVariant(`${compact}${city}`);
+        if (bare && bare !== q0) addVariant(`${bare} ${city}`);
+      }
+      for (let i = 0; i < variants.length; i++) {
+        const q = variants[i];
+        if (i) await new Promise(r => setTimeout(r, 260));   // Nominatim 1req/s 예의
         const list = await nominatimSearch(q, 1);
         if (list.length) {
           const lat = parseFloat(list[0].lat), lng = parseFloat(list[0].lon);
@@ -5438,9 +5521,18 @@
       const lat = parseFloat(p.lat), lng = parseFloat(p.lon);
       if (isNaN(lat) || isNaN(lng)) return;
       bkSchedCoords = { lat, lng, source: `검색: ${String(p.name || p.display_name || "").slice(0, 24)}` };
+      bkSchedStation = null;
       const box = document.getElementById("bk-sched-search-results");
       if (box) box.innerHTML = `<div style="font-size:11.5px;color:var(--success);padding:3px;">✓ 좌표 선택됨 (${lat.toFixed(4)}, ${lng.toFixed(4)})</div>`;
       renderBookingScheduleCoordNote();
+      // 선택한 좌표 기준 가장 가까운 역도 함께 찾아 준다
+      bkStationLoading = true;
+      renderBookingScheduleCoordNote();
+      nearestSubwayStation(lat, lng).then(st => {
+        bkStationLoading = false;
+        bkSchedStation = st;
+        renderBookingScheduleCoordNote();
+      });
       previewBookingRoute();
     }
 
@@ -5690,9 +5782,43 @@
         rows.push(line + `</div>`);
       }
       box.innerHTML = `<div style="font-weight:800;">📅 일정 자동 배치 미리보기</div>`
+        + (bkSchedStation && bkSchedStation.name ? `<div style="color:var(--ocean-dark);font-weight:800;">${escapeAttr(stationLine(bkSchedStation))}</div>` : "")
         + rows.join("")
         + `<div style="margin-top:4px;color:var(--muted);font-size:10.5px;">저장하면 이 날짜마다 맨 마지막에 '숙소 복귀', 맨 처음에 '숙소 출발' 카드가 자동으로 들어갑니다.</div>`
         + duplicateScheduleHint();
+    }
+
+    // 호텔명으로 좌표를 못 찾았을 때: 여행지 기준 가까운 역 후보를 보여 준다
+    async function renderHotelStationFallbacks() {
+      const box = document.getElementById("bk-station-cands");
+      if (!box) return;
+      bkFallbackStations = [];
+      const city = String(state.meta?.destination || "").split(/[(\s·,]/)[0].trim();
+      if (!city) { box.innerHTML = ""; return; }
+      const cityCoords = await geocodeByName(city);
+      if (!cityCoords) { box.innerHTML = ""; return; }
+      const list = await nearbySubwayStations(cityCoords.lat, cityCoords.lng, 7000, 5);
+      bkFallbackStations = list;
+      if (!list.length) { box.innerHTML = ""; return; }
+      box.innerHTML = `<div style="margin-bottom:3px;">📍 ${escapeAttr(city)} 기준 가까운 역 — 호텔 위치를 모를 땐 동네 기준으로 잡아 둘 수 있어요.</div>`
+        + `<div class="chip-group" style="margin-top:2px;">`
+        + list.map((s, i) => `<span class="chip" onclick="pickHotelFallbackStation(${i})">${escapeAttr(stationDisplayName(s.name))} · ${s.distM >= 1000 ? (s.distM / 1000).toFixed(1) + "km" : s.distM + "m"}</span>`).join("")
+        + `</div>`;
+    }
+
+    function pickHotelFallbackStation(i) {
+      const st = bkFallbackStations[i];
+      if (!st) return;
+      bkSchedCoords = { lat: st.lat, lng: st.lng, source: `여행지 기준역(${st.name}) 근사` };
+      bkSchedStation = { ...st, distM: 0, approx: true };
+      bkStationLoading = false;
+      renderBookingScheduleCoordNote();
+      const pv = document.getElementById("bk-sched-preview");
+      if (pv) {
+        pv.innerHTML = `<span style="color:var(--success);">✓ '${escapeAttr(st.name)}' 역 기준으로 좌표를 잡았어요 (${st.lat.toFixed(4)}, ${st.lng.toFixed(4)}).</span>`
+          + `<div style="color:#b45309;margin-top:3px;">⚠️ 호텔 정확한 위치가 아니에요. 주소를 알면 ‘호텔 주소·가까운 역’ 칸에 넣고 '🔎 좌표 검색'으로 다시 맞춰 주세요.</div>`;
+      }
+      previewBookingRoute();
     }
 
     async function findBookingHotelCoords() {
@@ -5701,15 +5827,40 @@
       const box = document.getElementById("bk-sched-preview");
       if (box) box.innerHTML = `<span style="color:var(--muted);">'${escapeAttr(name)}' 좌표 찾는 중...</span>`;
       bkSchedCoords = null;
+      bkSchedStation = null;
+      bkStationLoading = false;
+      bkFallbackStations = [];
+      renderBookingScheduleCoordNote();
       const g = await geocodeByName(name);
-      if (g) bkSchedCoords = g;
+      if (!g) {
+        if (box) {
+          box.innerHTML = `<span style="color:var(--danger);">좌표를 찾지 못했어요. 위 칸에 호텔 주소나 가까운 역 이름을 넣고 '🔎 좌표 검색'을 눌러 보세요.</span>`
+            + `<div id="bk-station-cands" style="margin-top:5px;font-size:11px;line-height:1.6;"></div>`;
+        }
+        renderHotelStationFallbacks();
+        return;
+      }
+      bkSchedCoords = g;
+      bkStationLoading = true;
       renderBookingScheduleCoordNote();
       if (box) {
-        box.innerHTML = g
-          ? `<span style="color:var(--success);">✓ '${escapeAttr(name)}' 좌표를 찾았어요 (${g.lat.toFixed(4)}, ${g.lng.toFixed(4)}).</span>`
-          : `<span style="color:var(--danger);">좌표를 찾지 못했어요. 위 칸에 호텔 주소나 가까운 역 이름을 넣고 '🔎 좌표 검색'을 눌러 보세요.</span>`;
+        box.innerHTML = `<span style="color:var(--success);">✓ '${escapeAttr(name)}' 좌표를 찾았어요 (${g.lat.toFixed(4)}, ${g.lng.toFixed(4)}).</span>`
+          + `<div style="color:var(--muted);margin-top:3px;">🚇 가장 가까운 지하철역 찾는 중...</div>`;
       }
-      if (g) previewBookingRoute();
+      const st = await nearestSubwayStation(g.lat, g.lng);
+      bkStationLoading = false;
+      bkSchedStation = st;
+      renderBookingScheduleCoordNote();
+      // 주소·가까운 역 칸이 비어 있으면 가장 가까운 역 이름을 채워 둔다
+      const searchEl = document.getElementById("bk-sched-search");
+      if (st && searchEl && !searchEl.value.trim()) searchEl.value = stationDisplayName(st.name);
+      if (box) {
+        box.innerHTML = `<span style="color:var(--success);">✓ '${escapeAttr(name)}' 좌표를 찾았어요 (${g.lat.toFixed(4)}, ${g.lng.toFixed(4)}).</span>`
+          + (st
+            ? `<div style="color:var(--ocean-dark);font-weight:800;margin-top:3px;">${escapeAttr(stationLine(st))}</div>`
+            : `<div style="color:var(--muted);margin-top:3px;">🚇 주변 3km 안에 지하철역이 없거나 조회에 실패했어요. ‘호텔 주소·가까운 역’ 칸에 역 이름을 직접 넣어 검색해 보세요.</div>`);
+      }
+      previewBookingRoute();
     }
 
     function openBookingModal(id, type) {
@@ -5760,6 +5911,8 @@
       bkSchedCoords = (sch && typeof sch.lat === "number" && typeof sch.lng === "number")
         ? { lat: sch.lat, lng: sch.lng, source: sch.coordSource || "저장된 좌표" }
         : null;
+      bkSchedStation = (sch && sch.station && sch.station.name) ? sch.station : null;
+      bkStationLoading = false;
       const schedOnEl = document.getElementById("bk-sched-on");
       if (schedOnEl) schedOnEl.checked = b ? bookingAutoOn(b) : true;
       const schedPv = document.getElementById("bk-sched-preview");
@@ -5889,6 +6042,9 @@
             lat: (hotelCoord && typeof hotelCoord.lat === "number") ? hotelCoord.lat : null,
             lng: (hotelCoord && typeof hotelCoord.lng === "number") ? hotelCoord.lng : null,
             coordSource: hotelCoord?.source || "",
+            station: (bkSchedStation && bkSchedStation.name)
+              ? { name: bkSchedStation.name, distM: Math.round(Number(bkSchedStation.distM) || 0), approx: Boolean(bkSchedStation.approx) }
+              : (existing?.schedule?.station || null),
             plan: { nights: stay.nights, mornings: stay.mornings },
             calcAt: new Date().toISOString()
           };
