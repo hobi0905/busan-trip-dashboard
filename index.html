@@ -2035,7 +2035,7 @@
             </div>
             <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:4px;">어디로 떠나나요?</div>
             <div class="row" style="margin-bottom:6px;">
-              <input id="route-dest" class="input" placeholder="예: 부산, 제주, 강릉, 여수, 경주, 서울" value="부산" oninput="renderRouteStyleChips()" />
+              <input id="route-dest" class="input" placeholder="예: 부산, 제주, 강릉, 여수, 경주, 서울" value="부산" oninput="markRecommendDestEdited('route-dest');renderRouteStyleChips()" />
             </div>
             <div class="rec-wide" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;">
               <button class="btn btn-soft btn-sm" onclick="document.getElementById('route-dest').value='부산'">부산</button>
@@ -2065,7 +2065,7 @@
             </div>
             <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:4px;">여행 지역 & 날짜</div>
             <div class="row" style="margin-bottom:6px;">
-              <input id="must-dest" class="input" placeholder="예: 부산, 제주, 강릉, 경주" value="부산" />
+              <input id="must-dest" class="input" placeholder="예: 부산, 제주, 강릉, 경주" value="부산" oninput="markRecommendDestEdited('must-dest')" />
             </div>
             <div class="row" style="margin-bottom:10px;">
               <input id="must-start" type="date" class="input" style="flex:1;" />
@@ -13635,6 +13635,8 @@
             cat: p.k === "area" ? "산책" : "관광",
             lat: p.lat, lng: p.lng,
             cost: 0, stay: "체류 60분",
+            // 지명 DB의 nature·area는 야외 명소다 — 실내 모드에서 걸러지도록 표시
+            indoor: (p.k === "nature" || p.k === "area") ? false : undefined,
             desc: [p.n, p.s].filter(Boolean).join(" · ")
           });
         });
@@ -13788,8 +13790,9 @@
               usedNames.add(normPlaceQuery(spare.n));
               spot = { name: spare.n, cat: spare.k === "area" ? "산책" : "관광", lat: spare.lat, lng: spare.lng, cost: 0, stay: "체류 60분", desc: spare.s || "" };
             } else {
+              const indoorRest = ["실내 카페에서 쉬어 가기", "복합쇼핑몰에서 쇼핑·구경", "북카페·서점에서 한숨 돌리기", "실내 전시·갤러리 둘러보기"];
               spot = recWeatherOn()
-                ? { name: `${destRaw} ${d.day}일차 실내 카페에서 쉬어 가기`, cat: "카페", cost: 12000, stay: "체류 50분", desc: "더위·추위를 피해 실내에서 쉬는 시간", indoor: true }
+                ? { name: `${destRaw} ${d.day}일차 ${indoorRest[(i + di) % indoorRest.length]}`, cat: "카페", cost: 12000, stay: "체류 50분", desc: "더위·추위를 피해 실내에서 쉬는 시간", indoor: true }
                 : { name: `${destRaw} ${d.day}일차 여유 산책`, cat: "산책", cost: 0, stay: "체류 45분", desc: "주변 골목을 천천히 둘러보는 여유 시간" };
             }
           }
