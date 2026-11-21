@@ -1659,6 +1659,8 @@
     .card.tl-open .tl-extra { display: block; }
     /* 접힌 카드는 시간·장소·메모만 깔끔하게 */
     .card.tl-collapsible:not(.tl-open) .tl-stay { display: none; }
+    /* 🔗 예약 연동 카드(호텔 출발·북귀·교통편)도 일반 카드처럼 접힌다 — 접힌 땐 한 줄 요약만 */
+    .card.tl-virtual.tl-collapsible:not(.tl-open) .tl-memo { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden; }
     /* 접힌 카드에서도 대표 사진 1장은 보인다 (조금 작게) */
     .card.tl-collapsible:not(.tl-open) .ph-slot .ph-thumb { width: 56px; height: 56px; border-radius: 12px; }
     .tl-body .ph-slot .ph-thumb { cursor: zoom-in; }
@@ -5797,7 +5799,7 @@
         const photoRegion = photoRegionOfDay(dayObj);
         // 모든 카드에 대표 사진 1장 — 이동 카드는 목적지(toPlace) 사진
         const photoSlot = photoSlotHtml(photoSubjectOf(it) || it.place || "", photoRegion, "md", tlTimeCat(it));
-        const isOpen = virtual || expandedTimelineCards.has(String(it.id));
+        const isOpen = expandedTimelineCards.has(String(it.id));
         const actions = virtual
           ? virtualActions
           : `<div class="tl-extra-actions">
@@ -5806,14 +5808,14 @@
               ${it.mapUrl ? `<a class="map-btn" href="${it.mapUrl}" target="_blank" onclick="event.stopPropagation()">🗺️ 지도</a>` : ""}
             </div>`;
         return `
-          <div class="card ${virtual ? "tl-virtual tl-open" : "tl-collapsible"} ${!virtual && isOpen ? "tl-open" : ""}" data-card-id="${escapeAttr(it.id)}" ${virtual ? "" : `onclick="toggleTimelineCard('${it.id}',event)"`}>
+          <div class="card tl-collapsible${virtual ? " tl-virtual" : ""}${isOpen ? " tl-open" : ""}" data-card-id="${escapeAttr(it.id)}" onclick="toggleTimelineCard('${it.id}',event)">
             <div class="tl-body">
             <div class="tl-main">
             <div class="tl-head">
               <span class="tl-time tt-${tlTimeCat(it)}">${it.time}</span>
               <div class="tl-place">${it.place}</div>
               <span class="tl-stay">${it.stay || ""}</span>
-              ${virtual ? "" : `<span class="tl-fold-cue">${isOpen ? "접기 ▴" : "더 보기 ▾"}</span>`}
+              <span class="tl-fold-cue">${isOpen ? "접기 ▴" : "더 보기 ▾"}</span>
             </div>
             <div class="tl-memo">${it.memo || ""}</div>
             <div class="tl-extra">

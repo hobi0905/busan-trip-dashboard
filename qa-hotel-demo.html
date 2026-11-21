@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>hotel card demo booting</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #fff; }
+  iframe { border: 0; display: block; }
+  #log { position: fixed; left: 400px; top: 0; width: 760px; font: 11px ui-monospace, monospace; color: #334155; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<iframe id="m390" src="index.html?trip=qa-hotel-390&v=hotel1" width="390" height="844"></iframe>
+<div id="log">booting…</div>
+<script>
+(function () {
+  var f = document.getElementById("m390");
+  var logEl = document.getElementById("log");
+  var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+  var setTitle = function (s) { document.title = s; logEl.textContent = s; };
+
+  f.addEventListener("load", function () { boot().catch(function (e) { setTitle("ERR " + (e && e.message)); }); });
+
+  async function boot() {
+    var W = f.contentWindow, D = W.document;
+    for (var i = 0; i < 60 && !D.querySelector('.nav-btn[data-tab="timeline"]'); i++) await sleep(100);
+    await sleep(3500);   // 날씨 자동 갱신 등 초기 작업이 끝나길 기다린다
+
+    // QA 여행(qa-hotel-390)에만 호텔 예약을 심는다 (실제 클라우드 데이터 없음)
+    W.eval([
+      "state.meta = { title:'호텔 카드 확인', destination:'부산', startDate:'2027-01-31', endDate:'2027-02-02', travelers:2 };",
+      "state.days = [",
+      " {day:1,date:'2027-01-31',label:'1일차 (일)', items:[",
+      "   {id:'q1',time:'10:17',place:'광명역 → 부산역 (KTX 25)',fromPlace:'광명역',toPlace:'부산역',moveMode:'KTX 25',lat:35.1151,lng:129.0413},",
+      "   {id:'q2',time:'12:55',place:'본전돼지국밥',lat:35.1348,lng:129.1010},",
+      "   {id:'q3',time:'18:50',place:'광안대교 야경',lat:35.1531,lng:129.1186}]},",
+      " {day:2,date:'2027-02-01',label:'2일차 (월)', items:[{id:'q4',time:'10:00',place:'감천문화마을',lat:35.0975,lng:129.0106}]},",
+      " {day:3,date:'2027-02-02',label:'3일차 (화)', items:[{id:'q5',time:'14:00',place:'부산역 → 광명역',fromPlace:'부산역',toPlace:'광명역',moveMode:'KTX 28',lat:35.1151,lng:129.0413}]}];",
+      "state.bookings = [{id:'hbqa',type:'hotel',name:'호텔 아쿠아 펠리스',inDate:'2027-01-31',outDate:'2027-02-02',inTime:'15:00',outTime:'11:00',price:200000,payStatus:'reserved',room:'디럭스 오션뷰 더블',lat:35.1531,lng:129.1186}];",
+      "state.expenses = []; currentDay = 1; expandedTimelineCards.clear(); saveState();"
+    ].join("\n"));
+    D.querySelector('.nav-btn[data-tab="timeline"]').click();
+    await sleep(700);
+    W.scrollTo(0, 0);
+    await sleep(300);
+
+    var cards = [].slice.call(D.querySelectorAll("#timeline-list .card.tl-virtual"));
+    var info = cards.map(function (c) {
+      var b = c.getBoundingClientRect();
+      return c.className.replace(/card /, "") + " y" + Math.round(b.top) + " h" + Math.round(b.height);
+    }).join(" | ");
+    setTitle("COLLAPSED cards=" + cards.length + " " + info + " | cues=" + cards.map(function (c) { return (c.querySelector(".tl-fold-cue") || {}).textContent; }).join(","));
+
+    await sleep(14000);   // 스크린샷 1 (접힌 호텔 카드)
+
+    if (!cards.length) { setTitle("NO HOSPITAL CARD"); return; }
+    var target = cards[0];
+    target.querySelector(".tl-place").click();
+    await sleep(800);
+    var extra = target.querySelector(".tl-extra");
+    setTitle("EXPANDED cls=" + target.className.replace(/card /, "") + " | cue=" + target.querySelector(".tl-fold-cue").textContent
+      + " | extra=" + (extra ? W.getComputedStyle(extra).display : "none")
+      + " | detail=" + (extra ? extra.textContent.replace(/\s+/g, " ").slice(0, 150) : ""));
+
+    await sleep(14000);   // 스크린샷 2 (펼친 호텔 카드)
+
+    target.querySelector(".tl-place").click();
+    await sleep(600);
+    setTitle("DONE collapsed=" + !target.classList.contains("tl-open") + " | cue=" + target.querySelector(".tl-fold-cue").textContent);
+  }
+})();
+</script>
+</body>
+</html>

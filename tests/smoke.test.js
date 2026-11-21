@@ -590,6 +590,35 @@ setTimeout(async () => {
     w.document.dispatchEvent(rEvt("touchend", 190));
     w.toggleEditMode();
 
+    /* ================= 2026-11-21 (예약 연동 카드도 접힘/펼침) ================= */
+
+    // 37) 🏨 자동 추가된 호텔 카드(복귀·출발)도 일반 카드처럼 접힘/펼침
+    ev("state.meta = { title:'호텔 카드 테스트', destination:'부산', startDate:'2027-01-31', endDate:'2027-02-02', travelers:2 }; state.days = [{day:1,date:'2027-01-31',label:'1일차 (일)', items:[{id:'h1',time:'12:55',place:'본전돼지국밥'},{id:'h2',time:'15:40',place:'광안대교 야경'}]},{day:2,date:'2027-02-01',label:'2일차 (월)', items:[{id:'h3',time:'10:00',place:'감천문화마을'}]}]; state.bookings = [{id:'hb1',type:'hotel',name:'호텔 아쿠아 펠리스',inDate:'2027-01-31',outDate:'2027-02-02',inTime:'15:00',outTime:'11:00',price:200000,payStatus:'reserved',room:'디럭스 오션뷰 더블'}]; state.expenses = []; currentDay = 1; saveState();");
+    w.renderTimeline();
+    const vCards = [...w.document.querySelectorAll("#timeline-list .card.tl-virtual")];
+    ok("호텔 연동 카드 생성", vCards.length >= 1, `${vCards.length}장`);
+    ok("호텔 카드 기본은 접힘", vCards.every(c => c.classList.contains("tl-collapsible") && !c.classList.contains("tl-open")), vCards.map(c => c.className).join(" | "));
+    ok("호텔 카드에 더 보기 표시", vCards.every(c => /더 보기/.test((c.querySelector(".tl-fold-cue") || {}).textContent || "")), "");
+    ok("호텔 카드: 제목·메모·사진 1장", vCards.every(c => !!c.querySelector(".tl-place") && !!c.querySelector(".tl-memo")
+      && c.querySelectorAll(".ph-slot").length === 1 && !!c.querySelector(".tl-extra")), "");
+    ok("호텔 카드: 접힐 때 한 줄 요약 CSS", /\.card\.tl-virtual\.tl-collapsible:not\(\.tl-open\) \.tl-memo \{[^}]*-webkit-line-clamp: 1;/.test(html), "");
+    ok("호텔 카드: 상세는 .tl-extra 안", vCards.every(c => !!c.querySelector(".tl-extra .tl-meta")),
+      vCards.map(c => c.querySelectorAll(".tl-extra .tl-meta").length).join(","));
+    const vCard = vCards[0];
+    const vId = vCard.getAttribute("data-card-id");
+    vCard.querySelector(".tl-place").click();
+    ok("호텔 카드 탭 → 펼침", vCard.classList.contains("tl-open") && /접기/.test(vCard.querySelector(".tl-fold-cue").textContent)
+      && ev(`expandedTimelineCards.has(${JSON.stringify(vId)})`), vCard.className);
+    vCard.querySelector(".tl-place").click();
+    ok("다시 탭 → 접힘", !vCard.classList.contains("tl-open") && /더 보기/.test(vCard.querySelector(".tl-fold-cue").textContent), "");
+    ok("호텔 카드: 펼치면 루트·금액·버튼", (() => {
+      w.renderTimeline();
+      const c = w.document.querySelector(`#timeline-list .card[data-card-id="${vId}"]`);
+      c.querySelector(".tl-place").click();
+      const extra = c.querySelector(".tl-extra");
+      return /🛣️|좌표가 없어|이동 시간/.test(extra.textContent) && !!extra.querySelector(".tl-meta .tl-cost");
+    })(), "");
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }
