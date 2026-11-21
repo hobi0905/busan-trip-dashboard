@@ -46,9 +46,11 @@
 
     var cards = [].slice.call(D.querySelectorAll("#timeline-list .card.tl-virtual"));
     if (cards.length) {
-      var cb = cards[0].getBoundingClientRect();
-      W.scrollBy(0, Math.round(cb.top + cb.height / 2 - 430));
-      await sleep(600);
+      target0 = cards[0];
+      var cb = target0.getBoundingClientRect();
+      W.scrollBy(0, Math.round(cb.top - 250));
+      await sleep(700);
+      cards = [].slice.call(D.querySelectorAll("#timeline-list .card.tl-virtual"));
     }
     var info = cards.map(function (c) {
       var b = c.getBoundingClientRect();
@@ -59,11 +61,13 @@
     await sleep(14000);   // 스크린샷 1 (접힌 호텔 카드)
 
     if (!cards.length) { setTitle("NO HOSPITAL CARD"); return; }
-    var target = cards[0];
+    var target = D.querySelectorAll("#timeline-list .card.tl-virtual")[0];
     target.querySelector(".tl-place").click();
-    await sleep(800);
+    await sleep(900);
     var tb = target.getBoundingClientRect();
-    if (tb.bottom > 800) { W.scrollBy(0, Math.round(tb.bottom - 800 + 24)); await sleep(500); }
+    if (tb.top < 200) { W.scrollBy(0, Math.round(tb.top - 200)); await sleep(400); }
+    tb = target.getBoundingClientRect();
+    if (tb.bottom > 780) { W.scrollBy(0, Math.round(tb.bottom - 780 + 20)); await sleep(500); }
     var extra = target.querySelector(".tl-extra");
     setTitle("EXPANDED cls=" + target.className.replace(/card /, "") + " | cue=" + target.querySelector(".tl-fold-cue").textContent
       + " | extra=" + (extra ? W.getComputedStyle(extra).display : "none")
