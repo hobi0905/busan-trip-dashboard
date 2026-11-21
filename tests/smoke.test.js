@@ -878,6 +878,16 @@ setTimeout(async () => {
     ok("폭염 루트: 실내 배지", plan45.days.flatMap(d => d.items).some(it => (it.badges || []).includes("🏠 실내")), "");
     w.pickRecWeatherMode("none");
 
+    // 46) 🍽️ 일정 카드에도 점심·식후 카페·저녁 칩이 보인다
+    ev("(function(){ const p = window._generatedRoutePlan; if (p && p.days) { state.days = JSON.parse(JSON.stringify(p.days)); state.meta.destination = p.dest; saveState(); } })()");
+    ev("currentDay = 1");
+    w.renderTimeline();
+    const mealChips = [...w.document.querySelectorAll("#timeline-list .tl-meal")].map(e => e.textContent);
+    ok("카드에 점심·카페·저녁 칩", mealChips.some(t => /점심/.test(t)) && mealChips.some(t => /카페/.test(t)) && mealChips.some(t => /저녁/.test(t)),
+      mealChips.join(","));
+    ok("칩 색 구분(식사·카페)", w.document.querySelectorAll("#timeline-list .tl-meal.food").length > 0
+      && w.document.querySelectorAll("#timeline-list .tl-meal.cafe").length > 0, "");
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }
