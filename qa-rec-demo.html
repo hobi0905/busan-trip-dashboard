@@ -46,7 +46,8 @@
       clickText(D, "폭염 실내위주");
       await sleep(400);
       clickText(D, "AI 추천 루트 생성하기");
-      await sleep(3000);
+      for (var w2 = 0; w2 < 40; w2++) { var b0 = D.getElementById("route-results"); if (b0 && b0.querySelectorAll(".card").length >= 2) break; await sleep(400); }
+      await sleep(600);
       var box = D.getElementById("route-results");
       if (box) { var r = box.getBoundingClientRect(); W.scrollBy(0, Math.round(r.top - 150)); }
       await sleep(600);
@@ -58,7 +59,8 @@
       clickText(D, "폭염 실내위주");
       await sleep(400);
       clickText(D, "장소 5곳 추천 받기");
-      await sleep(2600);
+      for (var w = 0; w < 40; w++) { if (D.querySelectorAll("#rec-results .rec-pick").length >= 5) break; await sleep(400); }
+      await sleep(600);
       var res = D.getElementById("rec-results");
       if (res) { var rb = res.getBoundingClientRect(); W.scrollBy(0, Math.round(rb.top - 60)); }
       await sleep(600);
