@@ -39,7 +39,10 @@
     if (phase === "route") {
       clickText(D, "2. 신규 루트");
       await sleep(500);
-      D.getElementById("route-dest").value = "서울";
+      var dEl = D.getElementById("route-dest");
+      dEl.dataset.userDest = "1";
+      dEl.value = "서울";
+      dEl.dispatchEvent(new W.Event("input", { bubbles: true }));
       D.getElementById("route-start").value = "2027-03-06";
       D.getElementById("route-end").value = "2027-03-08";
       await sleep(300);
