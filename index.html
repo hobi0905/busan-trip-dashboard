@@ -1625,10 +1625,25 @@
     .tl-edit-card { flex: 1; min-width: 0; background: #f3f4f6; border-radius: 14px; padding: 11px 14px; cursor: pointer; }
     .tl-edit-cat { font-size: 11.5px; color: #94a3b8; font-weight: 700; margin-bottom: 3px; }
     .tl-edit-place { font-size: 15px; font-weight: 700; color: #0f172a; line-height: 1.35; }
-    .tl-edit-handle { width: 34px; height: 44px; flex: 0 0 34px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #cbd5e1; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; letter-spacing: -1px; }
-    .tl-edit-handle:active { cursor: grabbing; }
+    /* ≡ 손잡이 — iOS Safari 에서도 누르는 즉시 잡히도록 터치 제스처를 모두 끈다 */
+    .tl-edit-handle, .tl-drag-handle { width: 34px; height: 44px; flex: 0 0 34px; display: flex; align-items: center; justify-content: center; font-size: 20px; color: #cbd5e1; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; letter-spacing: -1px; }
+    .tl-edit-handle:active, .tl-drag-handle:active { cursor: grabbing; color: var(--ocean); }
+    .tl-edit-row { transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.3, 1); }
+    /* 드래그 중인 행은 자리만 차지하고(순서 계산용) 보이지 않는다 — 들린 카드는 .tl-drag-ghost 가 그린다 */
+    .tl-edit-row.tl-drag-slot { visibility: hidden; }
     .tl-edit-row.dragging { opacity: 0.55; }
     .tl-edit-row.drag-over .tl-edit-card { box-shadow: inset 0 0 0 2px var(--ocean); }
+    /* ✏️ 들림 효과 (참고 사진 IMG_1013) — 흰 배경 + scale(1.03) + 뚜렷한 그림자 + z-index 100 */
+    .tl-drag-ghost { position: fixed; left: 0; top: 0; z-index: 100; margin: 0; pointer-events: none; will-change: transform; }
+    .tl-drag-ghost .tl-drag-ghost-in { position: absolute; inset: 0; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; gap: 0; padding: 11px 14px; background: #ffffff; border-radius: 14px; box-shadow: 0 14px 30px rgba(15, 23, 42, 0.18); transform: scale(1.03); transform-origin: center center; animation: tl-lift-in 130ms ease-out; }
+    .tl-drag-ghost .tl-edit-cat { font-size: 11.5px; color: #94a3b8; font-weight: 700; margin-bottom: 3px; }
+    .tl-drag-ghost .tl-edit-place { font-size: 15px; font-weight: 700; color: #0f172a; line-height: 1.35; }
+    @keyframes tl-lift-in {
+      from { transform: scale(0.99); box-shadow: 0 2px 8px rgba(15, 23, 42, 0.10); }
+      to { transform: scale(1.03); box-shadow: 0 14px 30px rgba(15, 23, 42, 0.18); }
+    }
+    /* 드래그 중 페이지 전체에서 글자 선택·롱프레스 메뉴를 막는다 */
+    body.tl-dragging, body.tl-dragging * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
     .tl-edit-row.tl-edit-virtual { opacity: 0.95; }
     .tl-edit-row.tl-edit-virtual .tl-edit-card { background: #e0f2fe; }
     .tl-edit-hint { font-size: 11px; color: var(--muted); margin: 0 0 10px; text-align: center; }
@@ -5975,7 +5990,7 @@
           <div class="tl-edit-cat">${escapeHtmlText(cat)}</div>
           <div class="tl-edit-place">${name}</div>
         </div>
-        <div class="tl-edit-handle" onpointerdown="tlEditDragStart(event,'${it.id}')" title="드래그해서 순서 바꾸기">≡</div>
+        <div class="tl-edit-handle tl-drag-handle" data-drag-handle="1" title="드래그해서 순서 바꾸기" aria-label="드래그해서 순서 바꾸기">≡</div>
       </div>`;
     }
 
@@ -5990,49 +6005,273 @@
       </div>`;
     }
 
+    /* =====================================================================
+       ≡ 손잡이 드래그 — iOS Safari 터치 + 마우스 + 펜
+       · touchstart / touchmove({passive:false} + preventDefault) / touchend
+       · mousedown / mousemove / mouseup, 펜은 pointerdown·pointermove·pointerup
+       · 누르는 순간(0ms) 카드가 흰 배경·그림자·scale(1.03)으로 떠올라 손끝을 따라오고,
+         다른 카드는 transform 0.15s 로 자리를 비켜 준다.
+       ===================================================================== */
     let tlDragState = null;
+    let tlDragLastTouchAt = 0;
 
-    function tlEditDragStart(ev, itemId) {
-      if (!editMode) return;
-      const row = ev.target.closest(".tl-edit-row");
-      if (!row) return;
-      ev.preventDefault();
-      try { ev.target.setPointerCapture(ev.pointerId); } catch (e) {}
-      tlDragState = { id: String(itemId), row };
-      row.classList.add("dragging");
-      document.addEventListener("pointermove", tlEditDragMove, { passive: false });
-      document.addEventListener("pointerup", tlEditDragEnd);
-      document.addEventListener("pointercancel", tlEditDragEnd);
+    // 이벤트 대상에서 드래그 가능한 행을 찾는다 (🔗 예약 카드 손잡이는 제외)
+    function tlEditHandleOf(target) {
+      if (!target || typeof target.closest !== "function") return null;
+      const handle = target.closest(".tl-edit-handle, .tl-drag-handle");
+      if (!handle || handle.getAttribute("data-drag-handle") !== "1") return null;
+      return handle.closest(".tl-edit-row[data-item-id]") || null;
     }
 
-    function tlEditDragMove(ev) {
-      if (!tlDragState) return;
-      ev.preventDefault();
-      const rows = [...document.querySelectorAll("#timeline-list .tl-edit-row[data-item-id]")];
-      let over = null;
-      rows.forEach(r => {
+    function tlEditBegin(row, x, y, source, touchId) {
+      if (!row || tlDragState) return false;
+      if (!editMode) return false;
+      const rect = row.getBoundingClientRect();
+      if (!rect || !rect.height) return false;
+      const card = row.querySelector(".tl-edit-card");
+      const ghost = document.createElement("div");
+      ghost.className = "tl-drag-ghost";
+      ghost.style.width = rect.width + "px";
+      ghost.style.height = rect.height + "px";
+      ghost.style.transform = `translate3d(${Math.round(rect.left)}px, ${Math.round(rect.top)}px, 0)`;
+      const inner = document.createElement("div");
+      inner.className = "tl-drag-ghost-in";
+      inner.innerHTML = card ? card.innerHTML : "";
+      ghost.appendChild(inner);
+      document.body.appendChild(ghost);
+      // 원래 행은 자리만 지키는 빈 칸이 되고, 순서 계산은 이 행의 DOM 위치로 한다
+      row.classList.add("tl-drag-slot");
+      document.body.classList.add("tl-dragging");
+      tlDragState = {
+        row, itemId: row.getAttribute("data-item-id"), ghost,
+        startX: x, startY: y, curX: x, curY: y,
+        left: rect.left, top: rect.top, height: rect.height,
+        source: source || "touch", touchId: touchId == null ? null : touchId,
+        raf: 0, moved: false
+      };
+      try { if (navigator.vibrate) navigator.vibrate(6); } catch (e) {}
+      tlEditAttachMoveListeners(tlDragState.source);
+      tlEditFollow(y, x);
+      tlEditAutoScrollLoop();
+      return true;
+    }
+
+    // 드래그하는 동안에만 이동/종료 리스너를 달아 둔다 (평소엔 페이지 스크롤을 막지 않게)
+    function tlEditAttachMoveListeners(source) {
+      if (source === "mouse") {
+        document.addEventListener("mousemove", tlEditMouseMove);
+        document.addEventListener("mouseup", tlEditMouseUp);
+      } else if (source === "pen") {
+        document.addEventListener("pointermove", tlEditPointerMove, { passive: false });
+        document.addEventListener("pointerup", tlEditPointerUp);
+        document.addEventListener("pointercancel", tlEditPointerUp);
+      } else {
+        document.addEventListener("touchmove", tlEditTouchMove, { passive: false });
+        document.addEventListener("touchend", tlEditTouchEnd, { passive: false });
+        document.addEventListener("touchcancel", tlEditTouchEnd, { passive: false });
+      }
+    }
+
+    function tlEditDetachMoveListeners(source) {
+      if (source === "mouse") {
+        document.removeEventListener("mousemove", tlEditMouseMove);
+        document.removeEventListener("mouseup", tlEditMouseUp);
+      } else if (source === "pen") {
+        document.removeEventListener("pointermove", tlEditPointerMove);
+        document.removeEventListener("pointerup", tlEditPointerUp);
+        document.removeEventListener("pointercancel", tlEditPointerUp);
+      } else {
+        document.removeEventListener("touchmove", tlEditTouchMove);
+        document.removeEventListener("touchend", tlEditTouchEnd);
+        document.removeEventListener("touchcancel", tlEditTouchEnd);
+      }
+    }
+
+    // 손가락/마우스를 따라 카드를 띄워 옮기고, 지나는 자리마다 순서를 다시 계산한다
+    function tlEditFollow(y, x) {
+      const st = tlDragState;
+      if (!st) return;
+      if (typeof x === "number" && !isNaN(x)) st.curX = x;
+      st.curY = y;
+      const dy = y - st.startY;
+      if (Math.abs(dy) > 3 || Math.abs(st.curX - st.startX) > 3) st.moved = true;
+      st.ghost.style.transform = `translate3d(${Math.round(st.left)}px, ${Math.round(st.top + dy)}px, 0)`;
+      tlEditReorderAt(st.top + dy + st.height / 2);
+    }
+
+    function tlEditReorderAt(centerY) {
+      const st = tlDragState;
+      if (!st) return;
+      const list = document.getElementById("timeline-list");
+      if (!list) return;
+      const rows = [...list.querySelectorAll(".tl-edit-row[data-item-id]")];
+      const others = rows.filter(r => r !== st.row);
+      let refRow = null;
+      for (const r of others) {
         const b = r.getBoundingClientRect();
-        if (ev.clientY >= b.top && ev.clientY <= b.bottom) over = r;
+        if (centerY < b.top + b.height / 2) { refRow = r; break; }
+      }
+      const want = others.slice();
+      want.splice(refRow ? want.indexOf(refRow) : want.length, 0, st.row);
+      if (want.every((r, i) => r === rows[i])) return;   // 이미 그 자리
+      // FLIP: 다른 카드의 이전 위치를 재고 → 자리를 비켜 준 뒤 → 0.15s 로 되돌린다
+      const before = new Map(others.map(r => [r, r.getBoundingClientRect().top]));
+      if (refRow) {
+        list.insertBefore(st.row, refRow);
+      } else {
+        const tail = [...list.querySelectorAll(".tl-edit-row")].find(r => r !== st.row && !r.hasAttribute("data-item-id"));
+        if (tail) list.insertBefore(st.row, tail);
+        else list.appendChild(st.row);
+      }
+      others.forEach(r => {
+        const shift = before.get(r) - r.getBoundingClientRect().top;
+        if (!shift) return;
+        r.style.transition = "none";
+        r.style.transform = `translateY(${shift}px)`;
+        void r.offsetHeight;
+        r.style.transition = "";
+        r.style.transform = "";
       });
-      if (!over || over === tlDragState.row) return;
-      const b = over.getBoundingClientRect();
-      const after = ev.clientY > b.top + b.height / 2;
-      over.parentNode.insertBefore(tlDragState.row, after ? over.nextSibling : over);
-      // 드래그 중 자동 스크롤
-      const sc = document.scrollingElement || document.documentElement;
-      if (ev.clientY < 90) sc.scrollTop -= 12;
-      else if (ev.clientY > window.innerHeight - 90) sc.scrollTop += 12;
     }
 
-    function tlEditDragEnd() {
-      document.removeEventListener("pointermove", tlEditDragMove);
-      document.removeEventListener("pointerup", tlEditDragEnd);
-      document.removeEventListener("pointercancel", tlEditDragEnd);
-      if (!tlDragState) return;
-      try { tlDragState.row.classList.remove("dragging"); } catch (e) {}
-      tlDragState = null;
-      commitTimelineEditOrder();
+    // 화면 가장자리로 끌면 자동 스크롤 (스크롤로 카드가 지나가도 순서를 다시 계산)
+    function tlEditAutoScrollLoop() {
+      const st = tlDragState;
+      if (!st) return;
+      const sc = document.scrollingElement || document.documentElement;
+      const edge = 84;
+      const vh = window.innerHeight || 800;
+      let dv = 0;
+      if (st.curY < edge) dv = -Math.min(20, Math.ceil((edge - st.curY) / 3));
+      else if (st.curY > vh - edge) dv = Math.min(20, Math.ceil((st.curY - (vh - edge)) / 3));
+      if (dv) {
+        const prev = sc.scrollTop;
+        sc.scrollTop = prev + dv;
+        if (sc.scrollTop !== prev) tlEditFollow(st.curY, st.curX);
+      }
+      st.raf = requestAnimationFrame(tlEditAutoScrollLoop);
     }
+
+    function tlEditEnd() {
+      const st = tlDragState;
+      if (!st) return;
+      tlDragState = null;
+      tlEditDetachMoveListeners(st.source);
+      if (st.raf) { try { cancelAnimationFrame(st.raf); } catch (e) {} }
+      document.body.classList.remove("tl-dragging");
+      const ghost = st.ghost;
+      if (ghost) {
+        ghost.style.transition = "opacity 120ms ease";
+        ghost.style.opacity = "0";
+        setTimeout(() => { try { ghost.remove(); } catch (e) {} }, 130);
+      }
+      try { st.row.classList.remove("tl-drag-slot"); } catch (e) {}
+      [...document.querySelectorAll("#timeline-list .tl-edit-row")].forEach(r => {
+        r.style.transition = "";
+        r.style.transform = "";
+      });
+      const moved = st.moved;
+      if (moved) commitTimelineEditOrder();   // 저장 · 시간표 재배정 · 지도 핀 번호 갱신
+    }
+
+    /* ---- 입력 경로별 시작/이동/종료 ---- */
+    function tlEditTouchStart(ev) {
+      if (!editMode || tlDragState) return;
+      if (!ev.touches || ev.touches.length !== 1) return;
+      const row = tlEditHandleOf(ev.target);
+      if (!row) return;
+      const t = ev.touches[0];
+      if (ev.cancelable) ev.preventDefault();   // 스크롤·확대·롱프레스 콜아웃 차단
+      tlDragLastTouchAt = Date.now();
+      tlEditBegin(row, t.clientX, t.clientY, "touch", t.identifier);
+    }
+
+    function tlEditDragTouch(ev) {
+      const st = tlDragState;
+      if (!st || st.source !== "touch") return null;
+      const list = ev.touches || ev.changedTouches || [];
+      for (let i = 0; i < list.length; i++) {
+        if (list[i].identifier === st.touchId) return list[i];
+      }
+      return list[0] || null;
+    }
+
+    function tlEditTouchMove(ev) {
+      const st = tlDragState;
+      if (!st || st.source !== "touch") return;
+      if (ev.cancelable) ev.preventDefault();
+      const t = tlEditDragTouch(ev);
+      if (t) tlEditFollow(t.clientY, t.clientX);
+    }
+
+    function tlEditTouchEnd() {
+      const st = tlDragState;
+      if (!st || st.source !== "touch") return;
+      tlEditEnd();
+    }
+
+    function tlEditMouseDown(ev) {
+      if (!editMode || tlDragState) return;
+      if (ev.button !== 0) return;
+      if (Date.now() - tlDragLastTouchAt < 800) return;   // 터치 뒤 따라오는 합성 마우스 이벤트 무시
+      const row = tlEditHandleOf(ev.target);
+      if (!row) return;
+      if (ev.cancelable) ev.preventDefault();
+      tlEditBegin(row, ev.clientX, ev.clientY, "mouse", null);
+    }
+
+    function tlEditMouseMove(ev) {
+      const st = tlDragState;
+      if (!st || st.source !== "mouse") return;
+      if (ev.cancelable) ev.preventDefault();
+      tlEditFollow(ev.clientY, ev.clientX);
+    }
+
+    function tlEditMouseUp() {
+      const st = tlDragState;
+      if (!st || st.source !== "mouse") return;
+      tlEditEnd();
+    }
+
+    // 애플펜슬 등 펜 입력
+    function tlEditPointerDown(ev) {
+      if (!ev || ev.pointerType !== "pen") return;
+      if (!editMode || tlDragState) return;
+      const row = tlEditHandleOf(ev.target);
+      if (!row) return;
+      if (ev.cancelable) ev.preventDefault();
+      tlEditBegin(row, ev.clientX, ev.clientY, "pen", null);
+    }
+
+    function tlEditPointerMove(ev) {
+      const st = tlDragState;
+      if (!st || st.source !== "pen") return;
+      tlEditFollow(ev.clientY, ev.clientX);
+    }
+
+    function tlEditPointerUp() {
+      const st = tlDragState;
+      if (!st || st.source !== "pen") return;
+      tlEditEnd();
+    }
+
+    // 예전 이름(다른 곳에서 부를 수 있음) — 같은 시작 루틴
+    function tlEditDragStart(ev) {
+      const row = tlEditHandleOf(ev.target);
+      if (!row) return;
+      if (ev.cancelable) ev.preventDefault();
+      tlEditBegin(row, ev.clientX || 0, ev.clientY || 0, "mouse", null);
+    }
+
+    (function tlBindDragEvents() {
+      const host = document.getElementById("timeline-list") || document.body;
+      host.addEventListener("touchstart", tlEditTouchStart, { passive: false });
+      host.addEventListener("mousedown", tlEditMouseDown);
+      host.addEventListener("pointerdown", tlEditPointerDown);
+      document.addEventListener("dragstart", (e) => { if (tlDragState) e.preventDefault(); });
+      document.addEventListener("contextmenu", (e) => { if (tlDragState) e.preventDefault(); });
+      window.addEventListener("blur", () => { if (tlDragState) tlEditEnd(); });
+    })();
 
     // 화면에 놓인 순서를 데이터에 확정하고, 기존 시간표를 새 순서에 다시 매긴다
     function commitTimelineEditOrder() {
