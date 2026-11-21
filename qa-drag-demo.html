@@ -10,7 +10,7 @@
 </style>
 </head>
 <body>
-<iframe id="m390" src="index.html?trip=qa-drag-390&v=drag6" width="390" height="844"></iframe>
+<iframe id="m390" src="index.html?trip=qa-drag-390&v=drag7" width="390" height="844"></iframe>
 <div id="log">booting…</div>
 <script>
 (function () {
@@ -28,7 +28,7 @@
     D.querySelector('.nav-btn[data-tab="timeline"]').click();
     await sleep(600);
 
-    await sleep(4000);   // 날씨 자동 갱신이 끝난 뒤에 시작한다
+    await sleep(9000);   // 날씨 자동 갱신·사진 불러오기가 끝난 뒤에 시작한다
     var eb = D.getElementById("edit-mode-btn");
     if (eb && /일정 편집/.test(eb.textContent)) { eb.click(); await sleep(500); }
 
