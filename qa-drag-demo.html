@@ -4,13 +4,13 @@
 <meta charset="utf-8" />
 <title>drag demo booting</title>
 <style>
-  body { margin: 0; padding: 8px; background: #e5e7eb; font: 12px -apple-system, system-ui, sans-serif; }
-  iframe { border: 0; border-radius: 10px; background: #fff; display: block; }
-  #log { margin-top: 6px; font: 11px ui-monospace, monospace; color: #334155; max-width: 900px; white-space: pre-wrap; }
+  html, body { margin: 0; padding: 0; background: #fff; font: 11px ui-monospace, monospace; }
+  iframe { border: 0; display: block; }
+  #log { position: fixed; left: 400px; top: 0; width: 700px; font: 11px ui-monospace, monospace; color: #334155; white-space: pre-wrap; }
 </style>
 </head>
 <body>
-<iframe id="m390" src="index.html?trip=qa-drag-390&v=drag2" width="390" height="844"></iframe>
+<iframe id="m390" src="index.html?trip=qa-drag-390&v=drag3" width="390" height="844"></iframe>
 <div id="log">booting…</div>
 <script>
 (function () {
@@ -19,7 +19,7 @@
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   var setTitle = function (s) { document.title = s; logEl.textContent = s; };
 
-  f.addEventListener("load", function () { boot().catch(function (e) { setTitle("ERR " + e.message); }); });
+  f.addEventListener("load", function () { boot().catch(function (e) { setTitle("ERR " + (e && e.message)); }); });
 
   async function boot() {
     var W = f.contentWindow, D = W.document;
@@ -31,7 +31,6 @@
     var eb = D.getElementById("edit-mode-btn");
     if (eb && /일정 편집/.test(eb.textContent)) { eb.click(); await sleep(500); }
 
-    // 첫 행이 상단 고정 헤더(약 180px) 아래로 오도록 스크롤
     var hint = D.querySelector(".tl-edit-hint");
     if (hint) {
       var absTop = hint.getBoundingClientRect().top + W.scrollY;
@@ -46,8 +45,7 @@
     var rowH = rows[0].getBoundingClientRect().height + 9;
 
     var mkTouch = function (cy) {
-      var t = { identifier: 11, target: handle, clientX: x, clientY: cy, pageX: x, pageY: cy + W.scrollY, screenX: x, screenY: cy };
-      return t;
+      return { identifier: 11, target: handle, clientX: x, clientY: cy, pageX: x, pageY: cy + W.scrollY, screenX: x, screenY: cy };
     };
     var fire = function (type, target, list) {
       var e = new W.Event(type, { bubbles: true, cancelable: true });
@@ -55,7 +53,7 @@
       target.dispatchEvent(e);
     };
 
-    var targetY = y0 + rowH * 3 + 24;   // 1번째 행을 4번째 자리까지 끌어내린다
+    var targetY = y0 + rowH * 3 + 24;
     fire("touchstart", handle, [mkTouch(y0)]);
     for (var s = 1; s <= 6; s++) {
       await sleep(80);
@@ -63,24 +61,36 @@
     }
 
     var g = D.querySelector(".tl-drag-ghost");
-    var order = [].slice.call(D.querySelectorAll(".tl-edit-row[data-item-id]")).map(function (r) { return r.getAttribute("data-item-id"); }).join(">");
     var gs = g ? W.getComputedStyle(g.firstElementChild) : null;
     var gr = g ? g.getBoundingClientRect() : null;
-    setTitle("HOLD ghost=" + (g ? "yes" : "no") + " box=" + (gr ? Math.round(gr.width) + "x" + Math.round(gr.height) + "@" + Math.round(gr.top) : "-")
-      + " scale=" + (gs ? gs.transform : "-") + " shadow=" + (gs ? gs.boxShadow : "-") + " order=" + order);
+    var orderHold = [].slice.call(D.querySelectorAll(".tl-edit-row[data-item-id]")).map(function (r) { return r.getAttribute("data-item-id"); }).join(">");
+    setTitle("HOLD ghost=" + (g ? "yes" : "no") + " " + (gr ? Math.round(gr.width) + "x" + Math.round(gr.height) + "@y" + Math.round(gr.top) : "-")
+      + " scale=" + (gs ? gs.transform : "-") + " | shadow=" + (gs ? gs.boxShadow : "-") + " | bg=" + (gs ? gs.backgroundColor : "-")
+      + " | order=" + orderHold);
 
-    await sleep(6000);   // 이 사이에 스크린샷을 찍는다
+    await sleep(18000);   // 이 사이에 스크린샷 1 (들린 카드)
 
-    var endY = targetY;
     var e2 = new W.Event("touchend", { bubbles: true, cancelable: true });
-    e2.touches = []; e2.targetTouches = []; e2.changedTouches = [mkTouch(endY)];
+    e2.touches = []; e2.targetTouches = []; e2.changedTouches = [mkTouch(targetY)];
     D.dispatchEvent(e2);
-    await sleep(600);
+    await sleep(900);
 
     var rows2 = [].slice.call(D.querySelectorAll(".tl-edit-row[data-item-id]"));
-    var order2 = rows2.map(function (r) { return r.getAttribute("data-item-id"); }).join(">");
-    var places2 = rows2.map(function (r) { return r.querySelector(".tl-edit-place").textContent; }).join(" > ");
-    setTitle("DONE order=" + order2 + " | " + places2 + " | ghostLeft=" + (D.querySelector(".tl-drag-ghost") ? "yes" : "no"));
+    setTitle("DROP order=" + rows2.map(function (r) { return r.getAttribute("data-item-id"); }).join(">")
+      + " | ghostLeft=" + (D.querySelector(".tl-drag-ghost") ? "yes" : "no")
+      + " | " + rows2.map(function (r) { return r.querySelector(".tl-edit-place").textContent; }).join(" > "));
+
+    await sleep(8000);    // 이 사이에 스크린샷 2 (놓은 뒤 순서 유지)
+
+    // 편집 완료 → 카드 시간이 새 순서대로 재배정됐는지 보여 준다
+    var eb2 = D.getElementById("edit-mode-btn");
+    if (eb2) eb2.click();
+    await sleep(900);
+    var cards = [].slice.call(D.querySelectorAll("#timeline-list .card .tl-time")).map(function (e) { return e.textContent; });
+    var places = [].slice.call(D.querySelectorAll("#timeline-list .card .tl-place")).map(function (e) { return e.textContent; });
+    var pins = [].slice.call(D.querySelectorAll("#day-map .map-pin-num, #day-map .pin-num")).map(function (e) { return e.textContent; });
+    setTitle("FINAL times=" + cards.join(",") + " | " + places.map(function (p, i) { return cards[i] + " " + p; }).join(" > ")
+      + " | pins=" + pins.join(","));
   }
 })();
 </script>
