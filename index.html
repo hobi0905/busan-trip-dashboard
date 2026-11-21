@@ -5719,6 +5719,9 @@
     }
 
     function renderTimeline() {
+      // 드래그 중에 날씨·동기화 등으로 목록이 다시 그려지면, 손을 떼기 전의 순서가 통째로 사라진다.
+      // 목록을 다시 그리기 전에 지금까지의 드래그를 먼저 마무리(확정)한다.
+      if (tlDragState) { try { tlEditEnd(); } catch (e) { console.warn("drag end before render", e); } }
       const destShort = String(state.meta?.destination || "부산").split(/[(\s]/)[0] || "부산";
       const mapTitleEl = document.getElementById("map-card-title");
       if (mapTitleEl) mapTitleEl.textContent = `🗺️ 오늘의 ${destShort} 동선 지도`;
@@ -6012,8 +6015,9 @@
        · 누르는 순간(0ms) 카드가 흰 배경·그림자·scale(1.03)으로 떠올라 손끝을 따라오고,
          다른 카드는 transform 0.15s 로 자리를 비켜 준다.
        ===================================================================== */
-    let tlDragState = null;
-    let tlDragLastTouchAt = 0;
+    // var: renderTimeline 등 초기 실행 중에도 안전하게 읽히도록(호이스팅)
+    var tlDragState = null;
+    var tlDragLastTouchAt = 0;
 
     // 이벤트 대상에서 드래그 가능한 행을 찾는다 (🔗 예약 카드 손잡이는 제외)
     function tlEditHandleOf(target) {
