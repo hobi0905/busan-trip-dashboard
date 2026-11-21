@@ -505,6 +505,63 @@ setTimeout(async () => {
     ok("예약 완료 건수·진행률 갱신", /\d+\/\d+건/.test(doneTxt) && /%$/.test(w.document.getElementById("resv-bar-fill").style.width || ""),
       `${doneTxt} / bar=${w.document.getElementById("resv-bar-fill").style.width}`);
 
+    /* ================= 2026-11-21 (≡ 터치 드래그 · 들림 효과) ================= */
+
+    // 34) 🖐️ iOS Safari 터치 대응 — 손잡이 CSS·이벤트 경로
+    ok("손잡이 터치 제스처 차단 CSS", /\.tl-edit-handle, \.tl-drag-handle \{[^}]*touch-action: none;/.test(html)
+      && /\.tl-edit-handle, \.tl-drag-handle \{[^}]*user-select: none;/.test(html)
+      && /\.tl-edit-handle, \.tl-drag-handle \{[^}]*user-select: none;[^}]*-webkit-touch-callout: none;/.test(html), "");
+    ok("touchstart·touchmove·touchend + 마우스 경로 등록",
+      /addEventListener\("touchstart", tlEditTouchStart, \{ passive: false \}\)/.test(html)
+      && /addEventListener\("touchmove", tlEditTouchMove, \{ passive: false \}\)/.test(html)
+      && /addEventListener\("touchend", tlEditTouchEnd/.test(html)
+      && /addEventListener\("mousedown", tlEditMouseDown\)/.test(html)
+      && /addEventListener\("mousemove", tlEditMouseMove\)/.test(html)
+      && /addEventListener\("mouseup", tlEditMouseUp\)/.test(html), "");
+    ok("들림 효과 CSS (scale·그림자·흰 배경·z-index)", /\.tl-drag-ghost \{[^}]*z-index: 100;/.test(html)
+      && /\.tl-drag-ghost-in \{[^}]*background: #ffffff;/.test(html)
+      && /\.tl-drag-ghost-in \{[^}]*box-shadow: 0 14px 30px rgba\(15, 23, 42, 0\.18\)/.test(html)
+      && /\.tl-drag-ghost-in \{[^}]*transform: scale\(1\.03\)/.test(html)
+      && /\.tl-edit-row \{ transition: transform 0\.15s/.test(html), "");
+
+    // 35) 🖐️ 터치 드래그 실제 동작 — 들린 카드 생성 · 순서 변경 · 놓으면 저장
+    ev("state.meta = { title:'드래그 테스트', destination:'부산', startDate:'2027-01-31', endDate:'2027-02-02', travelers:2 }; state.days = [{day:1,date:'2027-01-31',label:'1일차 (일)', items:[{id:'d1',time:'09:00',place:'가'},{id:'d2',time:'10:00',place:'나'},{id:'d3',time:'11:00',place:'다'},{id:'d4',time:'12:00',place:'라'}]}]; state.bookings = []; state.expenses = []; currentDay = 1; saveState();");
+    w.toggleEditMode();
+    const dragList = w.document.getElementById("timeline-list");
+    let dragRows = [...dragList.querySelectorAll(".tl-edit-row[data-item-id]")];
+    // jsdom 은 레이아웃이 없으므로 행 상자를 70px 간격으로 가짜 지정
+    dragRows.forEach((r, i) => {
+      r.getBoundingClientRect = () => ({ top: i * 70, bottom: i * 70 + 60, height: 60, left: 8, right: 382, width: 374, x: 8, y: i * 70 });
+    });
+    const touchEvent = (type, target, y) => {
+      const e = new w.Event(type, { bubbles: true, cancelable: true });
+      const t = { identifier: 7, target, clientX: 360, clientY: y, pageX: 360, pageY: y };
+      e.touches = type === "touchend" ? [] : [t];
+      e.changedTouches = [t];
+      e.targetTouches = e.touches;
+      return e;
+    };
+    const handle0 = dragRows[0].querySelector(".tl-edit-handle");
+    const started = !handle0.dispatchEvent(touchEvent("touchstart", handle0, 30));   // preventDefault 되었는가
+    const ghost = w.document.querySelector(".tl-drag-ghost");
+    ok("터치 시작 → 즉시 들린 카드(고스트)", started && !!ghost && !!ghost.querySelector(".tl-drag-ghost-in")
+      && /가/.test(ghost.textContent), ghost ? ghost.textContent.trim() : "고스트 없음");
+    ok("드래그 중 원래 행은 빈 자리로", dragRows[0].classList.contains("tl-drag-slot") && w.document.body.classList.contains("tl-dragging"), "");
+    w.document.dispatchEvent(touchEvent("touchmove", w.document, 190));
+    const ghostAfter = w.document.querySelector(".tl-drag-ghost");
+    ok("손가락을 따라 이동(translateY)", ghostAfter && /translate3d\(8px, 160px/.test(ghostAfter.style.transform), ghostAfter && ghostAfter.style.transform);
+    const orderDuring = [...dragList.querySelectorAll(".tl-edit-row[data-item-id]")].map(r => r.getAttribute("data-item-id"));
+    ok("지나간 자리로 순서가 바뀜", orderDuring.join(",") !== "d1,d2,d3,d4", orderDuring.join(","));
+    const firstAfterMove = orderDuring[0];
+    w.document.dispatchEvent(touchEvent("touchend", w.document, 190));
+    const savedOrder = ev("state.days[0].items.map(i=>i.id)");
+    ok("손을 떼면 그 순서대로 저장", savedOrder.join(",") === orderDuring.join(",") && savedOrder[0] === firstAfterMove, savedOrder.join(","));
+    ok("놓은 뒤 시간표 재배정", ev("state.days[0].items.map(i=>i.time).join(',')") === "09:00,10:00,11:00,12:00", ev("state.days[0].items.map(i=>i.time).join(',')"));
+    await new Promise(r => setTimeout(r, 220));   // 떠 있던 카드는 0.13초 페이드아웃 뒤 제거된다
+    ok("놓은 뒤 고스트·드래그 상태 정리", !w.document.querySelector(".tl-drag-ghost") && !w.document.querySelector(".tl-drag-slot")
+      && !w.document.body.classList.contains("tl-dragging"), "");
+    w.toggleEditMode();
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }
