@@ -405,7 +405,7 @@ setTimeout(async () => {
     // 27) 📅 일반 일정 카드: 메모만 기본, 메뉴·가격은 펼치면
     const plainCard = w.document.querySelector("#timeline-list .card.tl-collapsible");
     ok("카드 기본 접힘", plainCard && !plainCard.classList.contains("tl-open") && !!plainCard.querySelector(".tl-extra") && /더 보기/.test(plainCard.textContent), "");
-    ok("접힘 CSS: 사진·체류·세부 숨김", /\.card\.tl-collapsible:not\(\.tl-open\) \.tl-stay/.test(html) && /\.card\.tl-collapsible:not\(\.tl-open\) \.ph-slot/.test(html) && /\.tl-extra \{ display: none; \}/.test(html), "");
+    ok("접힘 CSS: 체류·세부 숨김", /\.card\.tl-collapsible:not\(\.tl-open\) \.tl-stay/.test(html) && /\.tl-extra \{ display: none; \}/.test(html), "");
     plainCard.querySelector(".tl-place").click();
     ok("카드 탭 → 펼침", plainCard.classList.contains("tl-open") && /접기/.test(plainCard.textContent), "");
     plainCard.querySelector(".tl-place").click();
@@ -437,6 +437,73 @@ setTimeout(async () => {
     w.renderTimeline();
     ok("숙소 저장 후 권역 추천 숨김", w.document.getElementById("lodging-rec-box").textContent.trim() === "", "");
     ok("일정에 숙소 카드 반영", /명동 테스트 호텔/.test(w.document.getElementById("timeline-list").textContent), "");
+
+    /* ================= 2026-11-21 (요구 4건) ================= */
+
+    // 30) 🖼️ 일정 카드마다 대표 사진 딱 1장 (이동 카드는 목적지 사진)
+    ev("state.meta = { title:'사진 테스트', destination:'부산', startDate:'2027-01-31', endDate:'2027-02-02', travelers:2 }; state.days = [{day:1,date:'2027-01-31',label:'1일차 (일)', items:[{id:'p1',time:'08:11',place:'숭의역 → 광명역',fromPlace:'숭의역',toPlace:'광명역',moveMode:'수인분당선',moveMin:80,moveCost:4900,costTotal:4900},{id:'p2',time:'12:55',place:'본전돼지국밥'},{id:'p3',time:'15:40',place:'카페 차선책 (광안리)'}]}]; state.bookings = []; state.expenses = []; currentDay = 1; saveState();");
+    w.renderTimeline();
+    const photoCards = [...w.document.querySelectorAll("#timeline-list .card")];
+    ok("카드마다 사진 1장", photoCards.length === 3 && photoCards.every(c => c.querySelectorAll(".ph-slot").length === 1),
+      `${photoCards.length}장 카드 / 슬롯 ${photoCards.map(c => c.querySelectorAll(".ph-slot").length).join(",")}`);
+    ok("사진 칸이 비지 않음(폴백 SVG 데이터 URI)", photoCards.every(c => {
+      const img = c.querySelector(".ph-slot img.ph-thumb");
+      return img && /^data:image\/svg\+xml/.test(img.getAttribute("src") || "");
+    }), "");
+    ok("이동 카드 사진 = 도착지", w.photoSubjectOf({ place: "숭의역 → 광명역", fromPlace: "숭의역", toPlace: "광명역" }) === "광명역"
+      && w.photoSubjectOf({ place: "광명역 → 부산역 (KTX 25)" }) === "부산역"
+      && w.photoSubjectOf({ place: "🏨 호텔 아쿠아 펠리스 복귀" }) === "호텔 아쿠아 펠리스",
+      [w.photoSubjectOf({ place: "숭의역 → 광명역", toPlace: "광명역" }), w.photoSubjectOf({ place: "광명역 → 부산역 (KTX 25)" }), w.photoSubjectOf({ place: "🏨 호텔 아쿠아 펠리스 복귀" })].join(" / "));
+    ok("접힌 카드에서도 사진 표시", !/\.card\.tl-collapsible:not\(\.tl-open\) \.ph-slot \{ display: none; \}/.test(html)
+      && /\.card\.tl-collapsible:not\(\.tl-open\) \.ph-slot \.ph-thumb/.test(html)
+      && photoCards.filter(c => !c.classList.contains("tl-open")).every(c => c.querySelectorAll(".ph-slot img").length === 1), "");
+    const photoBtnCount = w.document.querySelectorAll("#timeline-list .ph-btn").length;
+    ok("빈 사진 버튼 대신 사진 타일", photoBtnCount === 0, `ph-btn ${photoBtnCount}`);
+
+    // 31) 🎨 방문시간 배지 카테고리 색상
+    const catCases = [["스타벅스 광안리점", "cafe"], ["어니언 성수", "cafe"], ["광장시장", "food"], ["하이라오", "food"],
+      ["서울역", "transit"], ["부산역", "transit"], ["KTX 25", "transit"], ["대중교통 2호선", "transit"],
+      ["경복궁", "sight"], ["남산타워", "sight"], ["롯데월드 전망대", "sight"], ["국립중앙박물관", "sight"],
+      ["미미라인", "shopping"], ["더현대 서울", "shopping"], ["쇼핑 아울렛", "shopping"], ["호텔 롯데", "stay"]];
+    const badCat = catCases.filter(([p, want]) => w.tlTimeCat({ place: p }) !== want).map(([p, want]) => `${p}→${w.tlTimeCat({ place: p })}(기대 ${want})`);
+    ok("카테고리 분류(스펙 예시 전부)", badCat.length === 0, badCat.join(", "));
+    ok("이동·교통 카드는 교통색", w.tlTimeCat({ place: "A → B", fromPlace: "A", toPlace: "B" }) === "transit"
+      && w.tlTimeCat({ place: "숭의역 → 광명역" }) === "transit", "");
+    const timeClasses = [...w.document.querySelectorAll("#timeline-list .tl-time")].map(e => e.className);
+    ok("방문시간 배지에 카테고리 클래스", timeClasses.length === 3 && timeClasses.every(c => /tt-(cafe|food|transit|sight|shopping|stay|etc)/.test(c)), timeClasses.join("|"));
+    ok("카테고리 색상 CSS 6종+기타", ["tt-cafe", "tt-food", "tt-transit", "tt-sight", "tt-shopping", "tt-stay", "tt-etc"]
+      .every(c => new RegExp("\\.tl-time\\." + c + " \\{").test(html)), "");
+    ok("펼친 카드에서도 색상 유지", w.document.querySelector("#timeline-list .tl-time.tt-food") !== null, "");
+
+    // 32) 🗂️ 내 여행 목록 모달 — 지도·바텀시트 위, 화면 정중앙
+    const backdropZ = Number((html.match(/\.modal-backdrop \{[^}]*z-index:\s*(\d+)/) || [])[1]);
+    ok("모달 z-index가 지도·시트보다 위", backdropZ >= 2000, `modal z-index=${backdropZ} (지도 pane 400~800, 홈시트 620)`);
+    ok("여행목록 모달 z-index 지정", /#trips-modal \{ z-index: 2400; \}/.test(html), "");
+    ok("모달 정중앙 정렬 CSS", /\.modal-backdrop\.center \{ align-items: center; \}/.test(html)
+      && /\.modal-backdrop\.center \.modal-sheet \{ margin: auto; \}/.test(html), "");
+    w.openTripsModal();
+    const tripsModal = w.document.getElementById("trips-modal");
+    ok("여행목록 모달 열림·body 직속", tripsModal.classList.contains("open") && tripsModal.parentElement === w.document.body, "");
+    w.closeTripsModal();
+    ok("여행목록 모달 닫힘", !tripsModal.classList.contains("open"), "");
+
+    // 33) 🧾 상단 고정 요약 제거 → 경비/체크 탭으로
+    const headerHtml = html.slice(html.indexOf("<header class=\"sticky-header\""), html.indexOf("</header>"));
+    ok("헤더에서 경비·예약 요약 제거", !/summary-strip/.test(headerHtml) && !/총 예상 경비/.test(headerHtml) && !/예약 완료/.test(headerHtml), "");
+    const expCard = w.document.querySelector("#tab-expenses #exp-sum-card");
+    ok("경비 탭에 총예상·1인당", expCard && expCard.querySelector("#sum-total") && expCard.querySelector("#sum-per") && /총 예상 경비/.test(expCard.textContent), "");
+    const chkCard = w.document.querySelector("#tab-checklist #chk-resv-card");
+    ok("체크 탭에 예약 완료 진행률", chkCard && chkCard.querySelector("#sum-done") && chkCard.querySelector("#resv-bar-fill"), "");
+    ok("PC 사이드바 요약에서 경비·예약 제거", !/pcs-sum-total|pcs-sum-per|pcs-sum-done/.test(html) && !/예약 완료<\/span>/.test(html), "");
+    ok("다른 탭엔 요약 없음", ["tab-home", "tab-timeline", "tab-recommend", "tab-weather-packing", "tab-mypage"].every(id => {
+      const el = w.document.getElementById(id);
+      return el && !el.querySelector(".summary-strip") && !el.querySelector("#sum-done") && !el.querySelector("#sum-total");
+    }), "");
+    ev("state.expenses = [{cat:'교통',name:'KTX',amount:104400,status:'완료'},{cat:'숙소',name:'호텔',amount:200000,status:'예정'}]; saveState();");
+    w.renderHeader();
+    const doneTxt = w.document.getElementById("sum-done").textContent;
+    ok("예약 완료 건수·진행률 갱신", /\d+\/\d+건/.test(doneTxt) && /%$/.test(w.document.getElementById("resv-bar-fill").style.width || ""),
+      `${doneTxt} / bar=${w.document.getElementById("resv-bar-fill").style.width}`);
 
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });

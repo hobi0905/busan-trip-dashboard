@@ -87,6 +87,8 @@
     .pill.sync-ok { background: var(--success-bg); color: var(--success); border-color: #a7f3d0; }
     .pill.sync-local { background: #f1f5f9; color: var(--muted); border-color: var(--border); }
 
+    .resv-bar { position: relative; height: 8px; border-radius: 999px; background: #e2e8f0; margin-top: 9px; overflow: hidden; }
+    .resv-bar span { position: absolute; inset: 0 auto 0 0; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #34d399, #059669); transition: width .25s ease; }
     .summary-strip {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
@@ -199,7 +201,16 @@
       padding: 3px 8px;
       border-radius: 8px;
       white-space: nowrap;
+      border: 1px solid transparent;
     }
+    /* 🎨 카테고리별 방문시간 배지 색상 */
+    .tl-time.tt-cafe { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+    .tl-time.tt-food { background: #ffe4e6; color: #be123c; border-color: #fda4af; }
+    .tl-time.tt-transit { background: #e0e7ff; color: #3730a3; border-color: #a5b4fc; }
+    .tl-time.tt-sight { background: #d1fae5; color: #047857; border-color: #6ee7b7; }
+    .tl-time.tt-shopping { background: #ede9fe; color: #6d28d9; border-color: #c4b5fd; }
+    .tl-time.tt-stay { background: #f5f5f4; color: #57534e; border-color: #d6d3d1; }
+    .tl-time.tt-etc { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
     .tl-place { font-size: 15.5px; font-weight: 800; flex: 1; }
     .tl-stay { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
     .tl-badges { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
@@ -564,11 +575,14 @@
     .sec-title { font-size: 14.5px; font-weight: 800; margin: 0 0 10px; }
 
     /* Modal / Sheet */
+    /* 모달은 지도(Leaflet pane 400~800)·바텀시트(620)·플로팅 바(600)·헤더(40)보다 위에 뜬다 */
     .modal-backdrop {
-      position: fixed; inset: 0; z-index: 100;
+      position: fixed; inset: 0; z-index: 2000;
       background: rgba(15, 23, 42, 0.45);
       display: none; align-items: flex-end; justify-content: center;
       padding: 16px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
     }
     .modal-backdrop.open { display: flex; }
     .modal-backdrop.center { align-items: center; }
@@ -576,7 +590,15 @@
       width: 100%; max-width: 440px;
       background: #fff; border-radius: 20px;
       padding: 18px; box-shadow: 0 12px 32px rgba(15,23,42,0.18);
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
+    /* 가운데 모달은 화면 높이보다 커져도 스크롤되며 정확히 중앙에 */
+    .modal-backdrop.center .modal-sheet { margin: auto; }
+    /* 🗂️ 내 여행 목록 모달은 어떤 화면에서도 화면 정중앙에 */
+    #trips-modal { z-index: 2400; }
+    #trips-modal .modal-sheet { max-height: min(84vh, 640px); }
     .share-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 12px; }
     .share-opt {
       display: flex; align-items: center; gap: 10px;
@@ -1395,7 +1417,6 @@
     body.view-pc.home-mode .container { max-width: 1680px; }
     body.view-pc:not(.home-mode) .main { padding: 18px 22px 30px; }
     body.view-pc .sticky-header { padding: 12px 22px 10px; }
-    body.view-pc .summary-strip { max-width: 560px; }
 
     /* ─────────────── 좌측 고정 사이드바 ─────────────── */
     body.view-pc .pc-sidebar {
@@ -1622,8 +1643,10 @@
     .tl-extra { display: none; }
     .card.tl-open .tl-extra { display: block; }
     /* 접힌 카드는 시간·장소·메모만 깔끔하게 */
-    .card.tl-collapsible:not(.tl-open) .tl-stay,
-    .card.tl-collapsible:not(.tl-open) .ph-slot { display: none; }
+    .card.tl-collapsible:not(.tl-open) .tl-stay { display: none; }
+    /* 접힌 카드에서도 대표 사진 1장은 보인다 (조금 작게) */
+    .card.tl-collapsible:not(.tl-open) .ph-slot .ph-thumb { width: 56px; height: 56px; border-radius: 12px; }
+    .tl-body .ph-slot .ph-thumb { cursor: zoom-in; }
     .card.tl-collapsible:not(.tl-open) { padding-top: 13px; padding-bottom: 13px; }
     .card.tl-collapsible:not(.tl-open) .tl-memo { margin-bottom: 0; }
     .tl-extra-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; padding-top: 8px; border-top: 1px solid #f1f5f9; }
@@ -1691,20 +1714,6 @@
         <span class="pill sync-local" id="hdr-sync">로컬 저장됨</span>
         <button class="pill" style="cursor:pointer;" onclick="openMyPageTab()" id="hdr-profile-btn" title="마이페이지">👤 마이페이지</button>
         <button class="pill" style="cursor:pointer;" onclick="openMembersModal()" id="hdr-members-btn">👥 동반인 <span id="hdr-req-badge" class="badge-dot" style="display:none;">0</span></button>
-      </div>
-      <div class="summary-strip">
-        <div class="sum-box">
-          <div class="sum-label">총 예상 경비</div>
-          <div class="sum-val" id="sum-total">₩0</div>
-        </div>
-        <div class="sum-box">
-          <div class="sum-label">1인당 (÷<span id="sum-n">2</span>)</div>
-          <div class="sum-val" id="sum-per">₩0</div>
-        </div>
-        <div class="sum-box">
-          <div class="sum-label">예약 완료</div>
-          <div class="sum-val" id="sum-done">0건</div>
-        </div>
       </div>
       <div id="overseas-banner" class="overseas-banner hidden" onclick="jumpToChecklist()">
         <span class="ob-ico" id="ob-ico">✈️</span>
@@ -1802,6 +1811,19 @@
 
       <!-- TAB 2: EXPENSES -->
       <section id="tab-expenses" class="tab-panel">
+        <!-- 💰 총 예상 경비 · 1인당 요약은 경비 탭에서만 -->
+        <div class="card" id="exp-sum-card" style="padding:12px 14px;">
+          <div class="summary-strip" style="margin-top:0;grid-template-columns:1fr 1fr;">
+            <div class="sum-box">
+              <div class="sum-label">총 예상 경비</div>
+              <div class="sum-val" id="sum-total">₩0</div>
+            </div>
+            <div class="sum-box">
+              <div class="sum-label">1인당 (÷<span id="sum-n">2</span>)</div>
+              <div class="sum-val" id="sum-per">₩0</div>
+            </div>
+          </div>
+        </div>
         <div class="card" id="fx-card-2" data-fx-idx="1"></div>
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -1883,6 +1905,15 @@
 
       <!-- TAB 4: CHECKLIST & ALERTS -->
       <section id="tab-checklist" class="tab-panel">
+        <!-- ✅ 예약 완료 진행률은 체크 탭에서만 -->
+        <div class="card" id="chk-resv-card" style="padding:12px 14px;">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">
+            <h3 class="sec-title" style="margin:0;font-size:13.5px;">✅ 예약 완료</h3>
+            <b id="sum-done" style="font-size:15px;font-weight:800;color:var(--ocean-dark);">0건</b>
+          </div>
+          <div class="resv-bar"><span id="resv-bar-fill" style="width:0%;"></span></div>
+          <div id="resv-note" style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.45;">일정·경비에 잡힌 예약 중 결제까지 끝난 항목이에요.</div>
+        </div>
         <div id="chk-overseas-box"></div>
         <div id="chk-phrasebook-box"></div>
         <div id="chk-weather-box"></div>
@@ -2607,7 +2638,7 @@
   </div>
 
   <!-- SHOW A MEMBER'S PROFILE CARD -->
-  <div id="user-profile-modal" class="modal-backdrop center" style="z-index:220;" onclick="if(event.target===this)closeUserProfileCard()">
+  <div id="user-profile-modal" class="modal-backdrop center" style="z-index:2600;" onclick="if(event.target===this)closeUserProfileCard()">
     <div class="modal-sheet" style="max-width:400px;text-align:center;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
         <div style="font-size:13px;font-weight:800;color:var(--muted);">👤 프로필</div>
@@ -2623,7 +2654,7 @@
   </div>
 
   <!-- PLACE PHOTO PREVIEW -->
-  <div id="place-photo-modal" class="modal-backdrop center" style="z-index:240;background:rgba(15,23,42,0.78);" onclick="if(event.target===this)closePlacePhoto()">
+  <div id="place-photo-modal" class="modal-backdrop center" style="z-index:2700;background:rgba(15,23,42,0.78);" onclick="if(event.target===this)closePlacePhoto()">
     <div class="modal-sheet" style="max-width:460px;padding:12px;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;">
         <div id="place-photo-title" style="font-size:14px;font-weight:800;line-height:1.35;"></div>
@@ -2907,7 +2938,7 @@
   </div>
 
   <!-- DANGER CONFIRM (삭제·나가기·탈퇴 마지막 확인) -->
-  <div id="danger-confirm-modal" class="modal-backdrop center" style="background:rgba(15,23,42,0.78);z-index:300;" onclick="if(event.target===this)closeDangerConfirm(false)">
+  <div id="danger-confirm-modal" class="modal-backdrop center" style="background:rgba(15,23,42,0.78);z-index:2800;" onclick="if(event.target===this)closeDangerConfirm(false)">
     <div class="modal-sheet" style="max-width:420px;border:1.5px solid #fecaca;">
       <div id="danger-confirm-title" style="font-size:17px;font-weight:800;color:var(--danger);line-height:1.35;">정말 진행할까요?</div>
       <div id="danger-confirm-desc" style="font-size:13px;font-weight:700;margin-top:8px;line-height:1.55;"></div>
@@ -2969,9 +3000,6 @@
       <button type="button" class="pcs-nav-btn" data-tab="mypage" onclick="pcGoTab('mypage')"><span class="pcs-ico">👤</span><span>마이</span></button>
     </nav>
     <div class="pcs-sum" aria-label="여행 요약">
-      <div class="pcs-sum-row"><span>총 예상 경비</span><b id="pcs-sum-total">₩0</b></div>
-      <div class="pcs-sum-row"><span>1인당</span><b id="pcs-sum-per">₩0</b></div>
-      <div class="pcs-sum-row"><span>예약 완료</span><b id="pcs-sum-done">0건</b></div>
       <div class="pcs-sum-row"><span>총 이동</span><b id="pcs-sum-move">0분</b></div>
     </div>
     <div class="pcs-foot">
@@ -4469,7 +4497,19 @@
       document.getElementById("sum-total").textContent = fmt(totalExp);
       document.getElementById("sum-n").textContent = n;
       document.getElementById("sum-per").textContent = fmt(totalExp / n);
-      document.getElementById("sum-done").textContent = `${doneCnt}/${synced.length}건`;
+      // ✅ 예약 완료 — 체크 탭 안에서만 보이는 진행률
+      const doneEl = document.getElementById("sum-done");
+      if (doneEl) doneEl.textContent = `${doneCnt}/${synced.length}건`;
+      const fill = document.getElementById("resv-bar-fill");
+      if (fill) fill.style.width = `${synced.length ? Math.round((doneCnt / synced.length) * 100) : 0}%`;
+      const resvNote = document.getElementById("resv-note");
+      if (resvNote) {
+        const remain = synced.length - doneCnt;
+        resvNote.textContent = !synced.length
+          ? "일정·경비에 잡힌 예약이 아직 없어요."
+          : remain > 0 ? `아직 ${remain}건이 결제 예정이에요. 현장 결제·예약 완료를 상태 탭으로 바꾸면 바로 반영돼요.`
+          : "모든 예약이 결제 완료됐어요! 🎉";
+      }
 
       const pBtn = document.getElementById("hdr-profile-btn");
       if (pBtn) {
@@ -4656,6 +4696,31 @@
       return true;
     }
 
+    /* =====================================================================
+       🖼️ 대표 사진 — 모든 일정 카드에 딱 1장
+       · 이동/교통 카드: 목적지(toPlace 또는 화살표 뒤 도착지명) 사진
+       · 사진을 못 찾았거나 주소가 깨져도 빈 칸·깨진 이미지 대신 SVG 타일(데이터 URI)
+       ===================================================================== */
+    const PHOTO_STOP_WORDS = /(?:체크인|체크아웃|물품보관함?|도착|출발|복귀|이동|탑승|환승|방문|숙박)\s*$/;
+
+    // 사진으로 찾을 장소 이름 — 이동 카드는 도착지 기준
+    function photoSubjectOf(item) {
+      if (!item) return "";
+      const raw = String(item.place != null ? item.place : "");
+      const to = String(item.toPlace != null ? item.toPlace : "").trim();
+      let name = to || "";
+      if (!name) {
+        const parts = raw.split(/\s*(?:→|↔|⇄|->|→)\s*/).map(s => s.trim()).filter(Boolean);
+        name = parts.length > 1 ? parts[parts.length - 1] : raw;
+      }
+      return String(name)
+        .replace(/^(?:🏨|🏠|🚉|✈️|🚌|🚇|🚕|🍽️|☕|📷|📍|🛍️|🛏️)\s*/u, "")
+        .replace(/\(([^)]*)\)/g, (m, inner) => /KTX|SRT|ITX|호선|버스|열차|스카이캡슐|해변열차/i.test(inner) ? " " : ` ${inner} `)
+        .replace(PHOTO_STOP_WORDS, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+    }
+
     function photoRegionOfDay(dayObj) {
       const d = dayObj || {};
       return String(d.cityLabel || d.area || state.meta?.destination || "").split(/[(\s·]/)[0] || "";
@@ -4793,9 +4858,51 @@
       return result;
     }
 
-    function photoSlotHtml(name, region, size) {
+    // 카테고리별 대표 사진 폴백 타일 (SVG 데이터 URI — 인터넷·캐시 없이도 100% 뜼다)
+    const PHOTO_FALLBACK_COLORS = {
+      cafe: ["#fef3c7", "#f59e0b", "#b45309"],
+      food: ["#ffe4e6", "#fb7185", "#be123c"],
+      transit: ["#e0e7ff", "#818cf8", "#3730a3"],
+      sight: ["#d1fae5", "#34d399", "#047857"],
+      shopping: ["#ede9fe", "#a78bfa", "#6d28d9"],
+      stay: ["#f5f5f4", "#a8a29e", "#57534e"],
+      etc: ["#e2e8f0", "#94a3b8", "#475569"]
+    };
+
+    function photoFallbackSvg(name, cat) {
+      const key = PHOTO_FALLBACK_COLORS[cat] ? cat : "etc";
+      const [bg, mid, fg] = PHOTO_FALLBACK_COLORS[key];
+      const label = escapeHtmlText(String(name || "").replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "").trim().slice(0, 12)) || "여행";
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" role="img">`
+        + `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${bg}"/><stop offset="1" stop-color="#ffffff"/></linearGradient></defs>`
+        + `<rect width="160" height="160" fill="url(#g)"/>`
+        + `<circle cx="118" cy="42" r="16" fill="${mid}" opacity="0.55"/>`
+        + `<path d="M0 122 L44 74 L74 108 L96 86 L160 148 L160 160 L0 160 Z" fill="${mid}" opacity="0.65"/>`
+        + `<path d="M0 138 L38 104 L70 132 L104 104 L160 156 L160 160 L0 160 Z" fill="${fg}" opacity="0.75"/>`
+        + `<text x="80" y="46" font-size="15" font-family="system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif" font-weight="700" text-anchor="middle" fill="${fg}">${label}</text>`
+        + `</svg>`;
+      return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    }
+
+    function photoFallbackElement(name, cat) {
+      const img = document.createElement("img");
+      img.className = "ph-thumb ph-fallback";
+      img.src = photoFallbackSvg(name, cat);
+      img.alt = name + " 대표 사진";
+      img.title = name + " 네이버 사진 검색";
+      img.addEventListener("click", (ev) => {
+        ev.preventDefault(); ev.stopPropagation();
+        window.open(naverPhotoUrl(name), "_blank", "noopener");
+      });
+      return img;
+    }
+
+    function photoSlotHtml(name, region, size, cat) {
       const safeName = escapeAttr(name);
-      return `<span class="ph-slot${size === "sm" ? " ph-sm" : ""}" data-ph="${safeName}" data-ph-region="${escapeAttr(region || "")}"></span>`;
+      // 빈 칸이 잠시라도 생기지 않게 폴백 타일을 바로 깔고, 진짜 사진을 찾으면 그것으로 바꾼다
+      return `<span class="ph-slot${size === "sm" ? " ph-sm" : ""}" data-ph="${safeName}" data-ph-region="${escapeAttr(region || "")}" data-ph-cat="${escapeAttr(cat || "etc")}">`
+        + `<img class="ph-thumb ph-fallback" src="${photoFallbackSvg(name, cat)}" alt="${safeName} 대표 사진" />`
+        + `</span>`;
     }
 
     function photoBtnElement(name) {
@@ -4823,15 +4930,16 @@
         openPlacePhotoPreview(name, res);
       });
       img.addEventListener("error", () => {
-        // 사진 주소가 깨졌으면 조용히 버튼으로 바꾼다
+        // 주소가 깨졌으면 깨진 이미지 대신 폴백 타일로 바꾼다 (빈 칸 금지)
         const slot = img.parentElement;
-        if (slot) { slot.innerHTML = ""; slot.appendChild(photoBtnElement(name)); }
+        const cat = (slot && slot.getAttribute("data-ph-cat")) || "etc";
+        if (slot) { slot.innerHTML = ""; slot.appendChild(photoFallbackElement(name, cat)); }
         PHOTO_MEM.delete((photoNorm(name) + "|").slice(0, 160));
       });
       return img;
     }
 
-    // 렌더된 카드 안의 빈 사진 자리를 순서대로 채운다 (캐시에 있으면 즉시)
+    // 렌더된 카드 안의 사진 자리를 순서대로 채운다 (폴백 타일은 이미 깔려 있음)
     async function hydratePlacePhotos(root) {
       const scope = root || document;
       const slots = Array.from(scope.querySelectorAll(".ph-slot[data-ph]:not([data-ph-done])"));
@@ -4839,13 +4947,18 @@
         slot.setAttribute("data-ph-done", "1");
         const name = slot.getAttribute("data-ph") || "";
         const region = slot.getAttribute("data-ph-region") || "";
+        const cat = slot.getAttribute("data-ph-cat") || "etc";
         if (!name) continue;
         let res = null;
         try { res = await fetchPlacePhotoUrl(name, region); } catch { res = null; }
         if (!slot.isConnected) continue;
-        slot.innerHTML = "";
-        if (res && res.url) slot.appendChild(photoThumbElement(name, res));
-        else slot.appendChild(photoBtnElement(name));
+        if (res && res.url) {
+          slot.innerHTML = "";
+          slot.appendChild(photoThumbElement(name, res));
+        } else if (!slot.querySelector("img.ph-thumb")) {
+          slot.innerHTML = "";
+          slot.appendChild(photoFallbackElement(name, cat));
+        }
       }
     }
 
@@ -5664,7 +5777,8 @@
             </div>`
           : "";
         const photoRegion = photoRegionOfDay(dayObj);
-        const photoSlot = shouldLookupPhoto(it) ? photoSlotHtml(it.place, photoRegion, "md") : "";
+        // 모든 카드에 대표 사진 1장 — 이동 카드는 목적지(toPlace) 사진
+        const photoSlot = photoSlotHtml(photoSubjectOf(it) || it.place || "", photoRegion, "md", tlTimeCat(it));
         const isOpen = virtual || expandedTimelineCards.has(String(it.id));
         const actions = virtual
           ? virtualActions
@@ -5678,7 +5792,7 @@
             <div class="tl-body">
             <div class="tl-main">
             <div class="tl-head">
-              <span class="tl-time">${it.time}</span>
+              <span class="tl-time tt-${tlTimeCat(it)}">${it.time}</span>
               <div class="tl-place">${it.place}</div>
               <span class="tl-stay">${it.stay || ""}</span>
               ${virtual ? "" : `<span class="tl-fold-cue">${isOpen ? "접기 ▴" : "더 보기 ▾"}</span>`}
@@ -5765,6 +5879,75 @@
         const cue = card.querySelector(".tl-fold-cue");
         if (cue) cue.textContent = open ? "접기 ▴" : "더 보기 ▾";
       }
+    }
+
+    /* =====================================================================
+       🎨 방문시간 배지 색상 분류 — 장소명·카테고리·태그로 6가지 묶음
+       ===================================================================== */
+    const TL_TIME_CAT_ORDER = ["transit", "sight", "shopping", "food", "cafe", "stay"];
+    const TL_TIME_CAT_RULES = {
+      transit: [
+        [/ktx|srt|itx|무궁화|새마을|기차|열차|공항|터미널|지하철|전철|버스|정류장|승강장|대중교통|환승|페리|선착장|스카이캡슐|해변열차|모노레일|케이블카/i, 3],
+        [/[가-힣]{2,}역(\s|$|\(|,|·|&)|역\s*(중앙|앞|뒤|출구|에서|까지)/, 2]
+      ],
+      sight: [
+        [/전망대|박물관|미술관|전시|천문대|수족관|아쿠아리움|광안대교|타워|경복궁|궁\b|사찰|성당|해수욕장|해변|공원|오름|야경|관광|명소|랜드마크|유람선|크루즈/, 3]
+      ],
+      shopping: [
+        [/쇼핑|아울렛|백화점|면세점|올리브영|다이소|마트|미미라인|더현대|상가|편의점|기념품/, 2]
+      ],
+      food: [
+        [/음식점|식당|맛집|국밥|피자|떡볶이|분식|고기|횟집|술집|포차|치킨|냉면|밀면|갈비|삼겹|스시|초밥|파스타|버거|국수|칼국수|돈까스|돈가스|반점|한식|양식|일식|중식|뷔페|시장|광장시장|하이라오|이재모|이가네|본전돼지/, 3]
+      ],
+      cafe: [
+        [/카페|커피|베이커리|브런치|스타벅스|어니언|이디야|투썸|메가커피|커피빈|폴바셋|블루보틀|테라스|찻집|디저트/, 3]
+      ],
+      stay: [
+        [/호텔|숙소|리조트|펜션|게스트하우스|모텔|한옥스테이|민박/, 4],
+        [/체크인|체크아웃/, 2]
+      ]
+    };
+
+    function tlTimeCat(item) {
+      const it = item || {};
+      // 1) 이동·교통 카드는 무조건 교통색 (출발지·도착지가 있거나 화살표 카드)
+      if (String(it.fromPlace || "").trim() || String(it.toPlace || "").trim() || /→|↔|⇄/.test(String(it.place || ""))) return "transit";
+      if (it.transitType) return "transit";
+
+      const badges = (it.badges || []).map(String).join(" ");
+      const place = String(it.place || "");
+      const memo = String(it.memo || "");
+      // 점수는 장소명으로만 매긴다(배지는 아래에서 '카테고리 태그'일 때만 사용)
+      const name = place;
+
+      // 2) 카테고리 태그를 사용자가 직접 불였다면 그걸 우선
+      const tagged = [
+        ["cafe", /☕|카페|커피/], ["food", /🍽️|음식점|식당|맛집|술집/],
+        ["transit", /🚉|🚌|🚇|✈️|교통|이동/], ["sight", /📷|관광|명소|전시|박물관|전망대/],
+        ["shopping", /🛍️|쇼핑/], ["stay", /🏨|숙소|숙박|호텔/]
+      ].find(([, re]) => re.test(badges));
+      if (tagged) return tagged[0];
+
+      // 3) 장소명 키워드 점수 — 높은 점수, 동점이면 TL_TIME_CAT_ORDER 순
+      const score = {};
+      TL_TIME_CAT_ORDER.forEach(k => {
+        (TL_TIME_CAT_RULES[k] || []).forEach(([re, w]) => { if (re.test(name)) score[k] = (score[k] || 0) + w; });
+      });
+      let best = "", bestScore = 0;
+      TL_TIME_CAT_ORDER.forEach(k => { if ((score[k] || 0) > bestScore) { best = k; bestScore = score[k]; } });
+      if (best) return best;
+
+      // 4) 메모만 보고 판단 (장소명이 「워킹홀리데이」처럼 장르를 안 알려 줄 때)
+      if (/카페|커피|베이커리|디저트/.test(memo)) return "cafe";
+      if (/국밥|식당|맛집|피자|떡볶이|레스토랑|분식|고기|술/.test(memo)) return "food";
+      if (/호텔|숙소|리조트|펜션|체크인/.test(memo)) return "stay";
+      if (/전망|관광|명소|박물관|전시|해변|해수욕/.test(memo)) return "sight";
+      return "etc";
+    }
+
+    function tlTimeBadgeHtml(item) {
+      const cat = tlTimeCat(item);
+      return `<span class="tl-time tt-${cat}">${escapeHtmlText(item && item.time != null ? item.time : "")}</span>`;
     }
 
     function tlItemCategory(it) {
@@ -12927,7 +13110,7 @@
             <div style="font-weight:800;font-size:14px;color:var(--ocean-dark);margin-bottom:6px;">📅 ${d.label} · ${d.date}</div>
             ${d.items.map(it => `
               <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed var(--border);font-size:12.5px;">
-                ${photoSlotHtml(it.place, photoRegionOfDay(d), "sm")}
+                ${photoSlotHtml(photoSubjectOf(it) || it.place, photoRegionOfDay(d), "sm", tlTimeCat(it))}
                 <div style="flex:1;min-width:0;">
                   <div style="display:flex;justify-content:space-between;align-items:center;">
                     <div><strong>${it.time}</strong> ${it.place}</div>
@@ -13263,7 +13446,7 @@
           <div style="font-weight:800;font-size:14px;color:var(--ocean-dark);margin-bottom:6px;">📅 ${d.label} · ${d.date}</div>
           ${d.items.map(it => `
             <div style="display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px dashed var(--border);font-size:12.5px;">
-              ${photoSlotHtml(it.place, photoRegionOfDay(d), "sm")}
+              ${photoSlotHtml(photoSubjectOf(it) || it.place, photoRegionOfDay(d), "sm", tlTimeCat(it))}
               <div style="flex:1;min-width:0;display:flex;justify-content:space-between;align-items:center;gap:6px;">
                 <div><strong>${it.time}</strong> ${it.place} <span style="color:var(--muted);font-size:11px;">(${it.stay})</span></div>
                 <div style="font-weight:700;color:var(--ocean-dark);">${it.costTotal ? fmt(it.costTotal) : "무료"}</div>
@@ -15291,9 +15474,6 @@
       const ed = String(m.endDate || "").replace(/-/g, ".");
       pcSetText("pcs-trip-sub", sd && ed ? `${sd} ~ ${ed}` : "");
       pcSetText("pcs-dday", document.getElementById("hdr-dday")?.textContent || "");
-      pcSetText("pcs-sum-total", document.getElementById("sum-total")?.textContent || "₩0");
-      pcSetText("pcs-sum-per", document.getElementById("sum-per")?.textContent || "₩0");
-      pcSetText("pcs-sum-done", document.getElementById("sum-done")?.textContent || "0건");
       const move = (document.getElementById("hdr-travel-time")?.textContent || "").replace(/^총 이동\s*/, "").trim();
       pcSetText("pcs-sum-move", move || "0분");
     }
