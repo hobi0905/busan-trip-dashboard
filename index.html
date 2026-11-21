@@ -2021,6 +2021,7 @@
               <select id="rec-day" class="input" style="width:115px;" onchange="updateRecommendAfterOptions()"></select>
               <select id="rec-after" class="input" style="flex:1;"></select>
             </div>
+            <div class="rec-weather-chips rec-wide" style="margin-bottom:10px;"></div>
             <button class="btn btn-primary rec-wide" style="width:100%;" onclick="runPlaceRecommend()">✨ 장소 5곳 추천 받기</button>
           </div>
           <div id="rec-results"></div>
@@ -2050,6 +2051,7 @@
               <input id="route-end" type="date" class="input" style="flex:1;" />
             </div>
             <div id="route-style-chips" class="style-chips rec-wide"></div>
+            <div class="rec-weather-chips rec-wide" style="margin-bottom:10px;"></div>
             <button class="btn btn-primary rec-wide" style="width:100%;" onclick="generateNewRoute()">🗺️ AI 추천 루트 생성하기</button>
           </div>
           <div id="route-results"></div>
@@ -12045,6 +12047,78 @@
     ];
 
     // 도시별 추천 풀 — 부산 고정 풀이 다른 도시(서울 등)에 섞이지 않게 한다
+    /* =====================================================================
+       🌡️ 폭염·한파 대비 — 추천 코스를 실내 위주로
+       · 카페·실내 식당·박물관·전시관·복합쇼핑몰·아쿠아리움·실내 전망대 = 실내
+       · 한강공원·해수욕장·야외 공원·노천 산책로 = 야외 → 실내 모드에서 후보 제외
+       ===================================================================== */
+    let recWeatherMode = "none";   // none | heat | cold
+    const REC_WEATHER_OPTS = [
+      { key: "none", label: "🌡️ 기본" },
+      { key: "heat", label: "☀️ 폭염 실내위주" },
+      { key: "cold", label: "❄️ 한파 실내위주" }
+    ];
+    // 폭염·한파에 그대로 노출되는 야외 장소
+    const OUTDOOR_SPOT_RE = /한강|공원|해수욕|해변|비치|바닷가|바다|산책|둘레길|올레길|야경|오름|계곡|숲|정원|해안|절벽|항구|부두|캠핑|피크닉|스카이캡슐|루프탑|야외|노천|해맞이|일출|노을|등산|산행|골목|거리|수변|물길/;
+    // 냉·난방이 되는 실내 장소
+    const INDOOR_SPOT_RE = /카페|커피|베이커리|브런치|디저트|박물관|미술관|전시|갤러리|아쿠아리움|수족관|쇼핑몰|백화점|아울렛|코엑스|더현대|신세계|롯데월드몰|센텀|타워|전망대|영화관|시네마|서점|도서관|찜질|사우나|스파|온천|실내|공연장|아트홀|식당|국밥|맛집|노포|레스토랑|분식|떡볶이|피자|치킨|술집|이자카야|와인|브루어리|시장|노래방|만화카페|볼링|마트/;
+
+    function spotIndoorInfo(spot) {
+      const s = spot || {};
+      const text = `${s.name || ""} ${s.desc || ""} ${s.cat || ""} ${s.purpose || ""}`;
+      const cat = String(s.cat || s.purpose || "");
+      if (s.indoor === true) return { indoor: true, outdoor: false };
+      if (s.indoor === false) return { indoor: false, outdoor: true };
+      if (OUTDOOR_SPOT_RE.test(text)) return { indoor: false, outdoor: true };
+      if (INDOOR_SPOT_RE.test(text)) return { indoor: true, outdoor: false };
+      if (/음식점|카페|술집/.test(cat)) return { indoor: true, outdoor: false };
+      return { indoor: false, outdoor: false };
+    }
+
+    function spotIsOutdoor(spot) { return spotIndoorInfo(spot).outdoor; }
+    function recWeatherOn() { return recWeatherMode === "heat" || recWeatherMode === "cold"; }
+    function recWeatherLabel() {
+      return recWeatherMode === "heat" ? "☀️ 폭염" : recWeatherMode === "cold" ? "❄️ 한파" : "";
+    }
+
+    // 실내 모드일 때 후보를 걸러 내고(야외 제외), 실내 장소를 울리고 들어간다
+    function recWeatherFilterSpots(list) {
+      const rows = (list || []).filter(Boolean);
+      if (!recWeatherOn()) return rows;
+      return rows.filter(s => !spotIsOutdoor(s));
+    }
+    function recWeatherSortSpots(list) {
+      const rows = (list || []).slice();
+      if (!recWeatherOn()) return rows;
+      return rows
+        .map((s, i) => ({ s, i, indoor: spotIndoorInfo(s).indoor ? 0 : 1 }))
+        .sort((a, b) => a.indoor - b.indoor || a.i - b.i)
+        .map(x => x.s);
+    }
+
+    // 두 추천 모드의 "날씨 맞춤" 칩을 그린다
+    function renderRecWeatherChips() {
+      const boxes = [...document.querySelectorAll(".rec-weather-chips")];
+      if (!boxes.length) return;
+      const note = recWeatherMode === "heat"
+        ? "☀️ 폭염 대비 — 카페·실내 식당·박물관·쇼핑몰처럼 냉방되는 곳만 골라요 (한강공원·해수욕장·야외 산책로 제외)"
+        : recWeatherMode === "cold"
+          ? "❄️ 한파 대비 — 실내·난방 장소만 골라요 (야외 공원·노천 산책로 제외)"
+          : "기본은 날씨 제한 없이 추천해요 · 폭염·한파에는 실내 위주로 바뀌어요";
+      boxes.forEach(box => {
+        box.innerHTML = `<div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin-bottom:4px;">🌡️ 날씨 맞춤 (폭염·한파)</div>`
+          + `<div class="style-chips" style="margin-bottom:4px;">`
+          + REC_WEATHER_OPTS.map(o => `<button class="style-chip ${o.key === recWeatherMode ? "active" : ""}" onclick="pickRecWeatherMode('${o.key}')">${o.label}</button>`).join("")
+          + `</div>`
+          + `<div style="font-size:10.5px;color:var(--muted);line-height:1.5;">${note}</div>`;
+      });
+    }
+
+    function pickRecWeatherMode(key) {
+      recWeatherMode = (key === "heat" || key === "cold") ? key : "none";
+      renderRecWeatherChips();
+    }
+
     function curatedSpotsForCity(cityKey) {
       if (cityKey === "부산") return CURATED_BUSAN_SPOTS;
       if (cityKey === "서울") return CURATED_SEOUL_SPOTS;
@@ -12079,6 +12153,7 @@
       if (prevDay && state.days.some(d => String(d.day) === prevDay)) daySel.value = prevDay;
       else daySel.value = String(currentDay);
       updateRecommendAfterOptions();
+      try { renderRecWeatherChips(); } catch (e) { console.warn(e); }
     }
 
     // 추천 탭 목적지 칸이 여행지와 다르게 남아 있으면 현재 여행지로 맞춘다 (사용자가 직접 고친 값은 유지)
@@ -12157,7 +12232,9 @@
         "술집": '["amenity"~"pub|bar|izakaya"]',
         "데이트": '["tourism"~"viewpoint|attraction|gallery"]'
       };
-      const filter = tagMap[purpose] || '["amenity"="cafe"]';
+      const filter = recWeatherOn() && (purpose === "산책" || purpose === "데이트")
+        ? '["tourism"~"museum|gallery|aquarium"]'
+        : (tagMap[purpose] || '["amenity"="cafe"]');
       let osmSpots = [];
       try {
         const q = `[out:json][timeout:6];(node${filter}["name"](around:1800,${aLat},${aLng});way${filter}["name"](around:1800,${aLat},${aLng}););out center 15;`;
@@ -12171,14 +12248,21 @@
           lat: el.lat ?? el.center?.lat,
           lng: el.lon ?? el.center?.lon,
           desc: `${purpose} · 주변 실측 장소`,
+          indoor: recWeatherOn() ? true : undefined,
           source: "지도"
         })).filter(x => x.name && x.lat && x.lng);
       } catch { /* fallback to curated */ }
 
-      const curatedPool = curatedSpotsForCity(recCity);
-      const curated = curatedPool
+      // 🌡️ 실내 모드에서는 야외 후보(한강공원·해수욕장·야외 산책로)를 풀에서 미리 뺀다
+      const curatedPool = recWeatherFilterSpots(curatedSpotsForCity(recCity));
+      let curated = curatedPool
         .filter(s => s.purpose === purpose || (purpose === "데이트" && (s.purpose === "산책" || s.purpose === "카페")))
         .map(s => ({ ...s, source: "추천", timeMatch: s.times.includes(timeSlot) ? 0 : 1 }));
+      // 산책처럼 야외에만 있는 목적은 실내 장소 전체로 대체한다
+      if (recWeatherOn() && !curated.length) {
+        curated = curatedPool.map(s => ({ ...s, source: "추천", timeMatch: 1 }));
+      }
+      if (recWeatherOn()) osmSpots = osmSpots.filter(s => !spotIsOutdoor(s));
 
       const merged = [];
       const seen = new Set();
@@ -12200,7 +12284,12 @@
           merged.push(f);
         }
       }
-      merged.sort((a, b) => ((a.timeMatch || 0) - (b.timeMatch || 0)) || (a.distKm - b.distKm));
+      if (recWeatherOn()) {
+        merged.sort((a, b) => (spotIndoorInfo(a).indoor ? 0 : 1) - (spotIndoorInfo(b).indoor ? 0 : 1)
+          || ((a.timeMatch || 0) - (b.timeMatch || 0)) || (a.distKm - b.distKm));
+      } else {
+        merged.sort((a, b) => ((a.timeMatch || 0) - (b.timeMatch || 0)) || (a.distKm - b.distKm));
+      }
       const top5 = merged.slice(0, 5);
 
       window._lastRecSpots = top5;
@@ -12212,7 +12301,10 @@
         return;
       }
       const recRegion = photoRegionOfDay({ cityLabel: dayObj.cityLabel, area: dayObj.area });
-      resEl.innerHTML = top5.map((s, i) => {
+      const weatherNote = recWeatherOn()
+        ? `<div class="card" style="font-size:12px;font-weight:700;color:var(--ocean-dark);background:var(--ocean-soft);line-height:1.55;">${recWeatherLabel()} 대비 실내·냉방 위주로 골랐어요 — 한강공원·해수욕장·야외 산책로 같은 바깥 코스는 추천에서 뺐어요.</div>`
+        : "";
+      resEl.innerHTML = weatherNote + top5.map((s, i) => {
         const walkMin = Math.max(1, Math.round(s.distKm * 15));
         const taxiMin = Math.max(2, Math.round(s.distKm * 2.5));
         const distTxt = s.distKm < 1 ? `${Math.round(s.distKm * 1000)}m` : `${s.distKm.toFixed(1)}km`;
@@ -12223,7 +12315,7 @@
               <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;flex:1;min-width:0;">
                 ${readOnly ? "" : `<input type="checkbox" id="rec-cb-${i}" class="rec-pick" value="${i}" style="margin-top:3px;width:16px;height:16px;" onchange="updateRecommendCount()" />`}
                 <div style="min-width:0;">
-                  <div style="font-size:14.5px;font-weight:800;">${i + 1}. ${s.name}</div>
+                  <div style="font-size:14.5px;font-weight:800;">${i + 1}. ${s.name}${recWeatherOn() && spotIndoorInfo(s).indoor ? ` <span class="tag blue" style="font-size:10px;vertical-align:middle;">🏠 실내</span>` : ""}</div>
                   <div style="font-size:12px;color:var(--muted);margin-top:2px;">${s.desc}</div>
                 </div>
               </label>
@@ -13571,7 +13663,12 @@
       }
 
       if (!pool.length) {
-        pool = [
+        pool = recWeatherOn() ? [
+          { name: `${destRaw} 대표 실내 미술관·전시관`, cat: "관광", cost: 15000, stay: "체류 80분", desc: "냉·난방되는 실내 전시 관람" },
+          { name: `${destRaw} 시내 맛집 점심`, cat: "음식점", cost: 24000, stay: "체류 60분", desc: "현지 인기 맛집에서 식사" },
+          { name: `${destRaw} 복합쇼핑몰 & 카페`, cat: "카페", cost: 14000, stay: "체류 80분", desc: "실내 쇼핑·카페에서 더위와 추위 피하기" },
+          { name: `${destRaw} 실내 아쿠아리움·전망대`, cat: "관광", cost: 20000, stay: "체류 90분", desc: "실내 위주 대표 명소" }
+        ] : [
           { name: `${destRaw} 시내 도착 & 대표 맛집`, cat: "음식점", cost: 24000, stay: "체류 60분", desc: "현지 인기 맛집 점심" },
           { name: `${destRaw} 감성 카페`, cat: "카페", cost: 14000, stay: "체류 60분", desc: "여유로운 오후 티타임" },
           { name: `${destRaw} 핵심 랜드마크 산책`, cat: "관광", cost: 10000, stay: "체류 80분", desc: "대표 명소 둘러보기" },
@@ -13587,6 +13684,26 @@
         poolSeen.add(k);
         return true;
       });
+
+      // 🌡️ 실내 모드: 야외 장소(한강공원·해수욕장·야외 산책로 등)는 풀에서 빠지고,
+      // 후보가 모자라면 같은 도시의 실내 추천(카페·식당·박물관·쇼핑몰)으로 채운다
+      if (recWeatherOn()) {
+        pool = recWeatherFilterSpots(pool);
+        if (pool.length < 6 && cityKey) {
+          curatedSpotsForCity(cityKey).forEach(s => {
+            if (spotIsOutdoor(s)) return;
+            if (pool.some(p => normPlaceQuery(p.name) === normPlaceQuery(s.name))) return;
+            pool.push({
+              name: s.name,
+              cat: s.purpose === "카페" ? "카페" : s.purpose === "음식점" ? "음식점" : "관광",
+              lat: s.lat, lng: s.lng,
+              cost: s.purpose === "카페" ? 14000 : s.purpose === "음식점" ? 26000 : 0,
+              stay: "체류 60분",
+              desc: s.desc || "실내 추천 장소"
+            });
+          });
+        }
+      }
 
       const styleKey = routeStyleKey || "balanced";
       const styleRank = {
@@ -13624,6 +13741,13 @@
           .sort((a, b) => (styleRank[a.p.cat] ?? 3) - (styleRank[b.p.cat] ?? 3) || a.i - b.i)
           .map((x) => x.p);
       }
+      // 실내 모드에서는 스타일을 고른 뒤에도 실내 장소를 먼저 배치한다
+      if (recWeatherOn()) {
+        pool = pool
+          .map((p, i) => ({ p, i, indoor: spotIndoorInfo(p).indoor ? 0 : 1 }))
+          .sort((a, b) => a.indoor - b.indoor || a.i - b.i)
+          .map((x) => x.p);
+      }
       const styleSlots = {
         balanced: ["10:30", "12:30", "14:30", "18:00"],
         ocean: ["10:30", "13:00", "16:30", "19:30"],
@@ -13659,12 +13783,14 @@
           let spot = takeNextSpot();
           if (!spot) {
             // 풀이 모자라면 같은 도시의 다른 동네·명소로 채우고, 그래도 없으면 이름이 겹치지 않는 여유 일정으로
-            const spare = KR_PLACES.find(p => p.c === cityKey && !usedNames.has(normPlaceQuery(p.n)) && /attraction|nature|area/.test(p.k));
+            const spare = KR_PLACES.find(p => p.c === cityKey && !usedNames.has(normPlaceQuery(p.n)) && (/attraction|nature|area/.test(p.k) && (!recWeatherOn() || (p.k === "attraction" && !spotIsOutdoor({ name: p.n, desc: p.s, cat: "관광" })))));
             if (spare) {
               usedNames.add(normPlaceQuery(spare.n));
               spot = { name: spare.n, cat: spare.k === "area" ? "산책" : "관광", lat: spare.lat, lng: spare.lng, cost: 0, stay: "체류 60분", desc: spare.s || "" };
             } else {
-              spot = { name: `${destRaw} ${d.day}일차 여유 산책`, cat: "산책", cost: 0, stay: "체류 45분", desc: "주변 골목을 천천히 둘러보는 여유 시간" };
+              spot = recWeatherOn()
+                ? { name: `${destRaw} ${d.day}일차 실내 카페에서 쉬어 가기`, cat: "카페", cost: 12000, stay: "체류 50분", desc: "더위·추위를 피해 실내에서 쉬는 시간", indoor: true }
+                : { name: `${destRaw} ${d.day}일차 여유 산책`, cat: "산책", cost: 0, stay: "체류 45분", desc: "주변 골목을 천천히 둘러보는 여유 시간" };
             }
           }
           d.items.push({
@@ -13676,7 +13802,7 @@
             moveMin: i === 0 ? 0 : 15,
             moveCost: 0,
             costTotal: spot.cost || 0,
-            badges: [spot.cat || "추천", "AI 루트"],
+            badges: [spot.cat || "추천", "AI 루트"].concat(recWeatherOn() && spotIndoorInfo(spot).indoor ? ["🏠 실내"] : []),
             lat: spot.lat,
             lng: spot.lng,
             mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(spot.name)}`,
@@ -13685,8 +13811,11 @@
         }
       });
 
-      window._generatedRoutePlan = { dest: destRaw, startDate: startStr, endDate: endStr, days };
-      resBox.innerHTML = days.map(d => `
+      window._generatedRoutePlan = { dest: destRaw, startDate: startStr, endDate: endStr, days, weather: recWeatherMode };
+      const routeWeatherNote = recWeatherOn()
+        ? `<div class="card" style="font-size:12px;font-weight:700;color:var(--ocean-dark);background:var(--ocean-soft);line-height:1.55;">${recWeatherLabel()} 대비 실내·냉난방 위주로 짰어요 — 한강공원·해수욕장·야외 산책로는 뺐어요.</div>`
+        : "";
+      resBox.innerHTML = routeWeatherNote + days.map(d => `
         <div class="card">
           <div style="font-weight:800;font-size:14px;color:var(--ocean-dark);margin-bottom:6px;">📅 ${d.label} · ${d.date}</div>
           ${d.items.map(it => `

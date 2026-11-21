@@ -619,6 +619,57 @@ setTimeout(async () => {
       return /🛣️|좌표가 없어|이동 시간/.test(extra.textContent) && !!extra.querySelector(".tl-meta .tl-cost");
     })(), "");
 
+    /* ================= 2026-11-21 (폭염·한파 실내 위주 코스) ================= */
+
+    // 38) 🌡️ 야외/실내 분류 + 두 추천 모드 칩
+    ok("실내·야외 분류", w.spotIndoorInfo({ name: "여의도 한강공원" }).outdoor && w.spotIndoorInfo({ name: "광안리 해수욕장 & 해변산책" }).outdoor
+      && w.spotIndoorInfo({ name: "남산 둘레길 (백범광장)" }).outdoor && !w.spotIndoorInfo({ name: "여의도 한강공원" }).indoor
+      && w.spotIndoorInfo({ name: "더현대 서울" }).indoor && w.spotIndoorInfo({ name: "국립중앙박물관" }).indoor
+      && w.spotIndoorInfo({ name: "코엑스 아쿠아리움" }).indoor && w.spotIndoorInfo({ name: "부산역 & 본전돼지국밥" }).indoor, "");
+    const wChips = [...w.document.querySelectorAll(".rec-weather-chips")];
+    ok("동선 맞춤·신규 루트 양쪽에 날씨 칩", wChips.length === 2 && wChips.every(b => b.querySelectorAll(".style-chip").length === 3),
+      `${wChips.length}박스 / ${wChips.map(b => b.querySelectorAll(".style-chip").length).join(",")}`);
+    w.pickRecWeatherMode("heat");
+    ok("폭염 모드 선택·칩 활성", ev("recWeatherMode") === "heat"
+      && w.document.querySelectorAll(".rec-weather-chips .style-chip.active").length === 2
+      && /폭염/.test(w.document.querySelector(".rec-weather-chips .style-chip.active").textContent), "");
+
+    // 39) 📍 1. 동선 맞춤 — 실내 모드에서 산책(야외) 대신 실내 장소가 나온다
+    ev("state.meta = { title:'실내 추천 테스트', destination:'서울', startDate:'2027-03-06', endDate:'2027-03-08', travelers:2 }; state.days = [{day:1,date:'2027-03-06',label:'1일차 (토)', items:[{id:'w1',time:'10:00',place:'경복궁',lat:37.5796,lng:126.9770}]},{day:2,date:'2027-03-07',label:'2일차 (일)', items:[]},{day:3,date:'2027-03-08',label:'3일차 (월)', items:[]}]; state.bookings = []; state.expenses = []; currentDay = 1; saveState();");
+    w.setRecommendMode("spot");
+    w.document.getElementById("rec-day").value = "1";
+    w.updateRecommendAfterOptions();
+    w.document.getElementById("rec-purpose").value = "산책";
+    await w.runPlaceRecommend();
+    const heatPicks = ev("window._lastRecSpots").map(s => s.name);
+    ok("동선 맞춤(폭염): 5곳 나옴", heatPicks.length === 5, heatPicks.join(", "));
+    ok("동선 맞춤(폭염): 한강공원·해변·산책로 없음", heatPicks.every(n => !/한강|공원|해수욕|해변|산책|둘레길|숲|골목|거리|야경/.test(n)), heatPicks.join(", "));
+    ok("동선 맞춤(폭염): 실내 우선 정렬", ev("window._lastRecSpots.slice(0,3).every(s => spotIndoorInfo(s).indoor)"), heatPicks.slice(0, 3).join(", "));
+    ok("동선 맞춤(폭염): 안내 문구·실내 배지", /폭염 대비 실내/.test(w.document.getElementById("rec-results").textContent)
+      && /🏠 실내/.test(w.document.getElementById("rec-results").textContent), "");
+
+    // 40) 🗺️ 2. 신규 루트 — 실내 모드에서 야외 명소가 빠진다
+    w.setRecommendMode("route");
+    w.pickRecWeatherMode("heat");
+    w.document.getElementById("route-dest").value = "서울";
+    w.document.getElementById("route-start").value = "2027-03-06";
+    w.document.getElementById("route-end").value = "2027-03-08";
+    await w.generateNewRoute();
+    const heatPlan = ev("window._generatedRoutePlan");
+    const heatNames = heatPlan.days.flatMap(d => d.items.map(i => i.place));
+    ok("신규 루트(폭염): 야외 장소 없음", heatNames.length >= 6 && heatNames.every(n => !/한강|공원|해수욕|해변|산책|둘레길|숲|골목|거리|야경/.test(n)), heatNames.join(", "));
+    ok("신규 루트(폭염): 일차 중복 없음", new Set(heatNames).size === heatNames.length, `${new Set(heatNames).size}/${heatNames.length}`);
+    ok("신규 루트(폭염): 결과 안내 문구", /폭염 대비 실내/.test(w.document.getElementById("route-results").textContent), "");
+
+    // 41) 🌡️ 기본으로 되돌리면 다시 야외 장소도 후보에 들어온다
+    w.pickRecWeatherMode("none");
+    ok("기본 모드 복귀", ev("recWeatherMode") === "none" && w.document.querySelectorAll(".rec-weather-chips .style-chip.active").length === 2
+      && /기본/.test(w.document.querySelector(".rec-weather-chips .style-chip.active").textContent)
+      && ev("recWeatherFilterSpots([{name:'여의도 한강공원'}]).length") === 1, "");
+    w.pickRecWeatherMode("cold");
+    ok("한파 모드도 필터 동작", ev("recWeatherMode") === "cold" && ev("recWeatherFilterSpots([{name:'여의도 한강공원'},{name:'더현대 서울'}]).length") === 1, "");
+    w.pickRecWeatherMode("none");
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }
