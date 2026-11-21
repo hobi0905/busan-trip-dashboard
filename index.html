@@ -13411,16 +13411,22 @@
         });
         bestBucket.spots.push({
           ...spot,
+          must: true,
           holidayNote: spot.closed ? `${spot.closed} 휴무 회피 배치` : ""
         });
       });
 
-      // Pass 3: Nearest-Neighbor TSP ordering within each day + enrich with nearby curated filler spots if a day has < 2 spots
+      // Pass 3: 필수 장소를 최근접 이웃 순서로 정렬하고, 하루 골격(점심·식후 카페·저녁)에 맞춰 끼워 넣는다
       const cityKey = Object.keys(CITY_ROUTE_SPOTS).find(k => destRaw.includes(k));
-      const cityPool = cityKey ? CITY_ROUTE_SPOTS[cityKey] : [];
-      const timeSlots = ["10:30", "12:30", "14:40", "17:30", "19:30"];
+      const cityPool = (cityKey ? CITY_ROUTE_SPOTS[cityKey] : [])
+        .filter(p => !isCafeSpot(p) && !isFoodSpot(p))
+        .filter(p => !recWeatherOn() || !spotIsOutdoor(p));
+      const mealPools = routeMealSpotPools(destRaw, cityKey);
+      const registry = makeRouteNameRegistry();
+      const takeMeal = makeRouteMealPicker(mealPools, destRaw, recWeatherOn(), registry);
+      const mustStyleKey = "balanced";
 
-      dayBuckets.forEach(b => {
+      dayBuckets.forEach((b, bi) => {
         // Nearest neighbor order starting from first spot with coords
         const ordered = [];
         const rem = [...b.spots];
@@ -13437,13 +13443,15 @@
           }
         }
 
-        // If fewer than 3 items on a day and we have cityPool, add closest non-duplicate spot (respecting closed days)
-        while (ordered.length < 3 && cityPool.length) {
+        // 필수 장소가 적은 날은 주변 명소로 채워 '점심·카페·저녁' 사이가 비지 않게 한다 (휴무일·중복 회피)
+        const want = Math.max(routeSightSlotsFor(bi, days.length, mustStyleKey), Math.min(3, ordered.length));
+        while (ordered.length < want) {
           const usedNames = new Set(dayBuckets.flatMap(x => x.spots.map(s => s.name)).concat(ordered.map(s => s.name)));
           const usedArr = [...usedNames];
           const anchor = ordered[ordered.length - 1];
           const avail = cityPool.filter(p => {
             if (usedNames.has(p.name)) return false;
+            if (registry.has(p.name)) return false;
             if (nameClashes(p.name, usedArr)) return false;
             const kk = Object.keys(KNOWN_SPOT_META).find(k => p.name.includes(k));
             if (kk && KNOWN_SPOT_META[kk].closed === b.weekday) return false;
@@ -13460,42 +13468,15 @@
           b.spots.push(filler);
         }
 
-        b.dayObj.items = ordered.map((sp, idx) => {
-          const prev = idx > 0 ? ordered[idx - 1] : null;
-          let moveTxt = idx === 0 ? "일정 시작" : "도보·대중교통";
-          let moveMin = idx === 0 ? 0 : 12;
-          if (prev && prev.lat && sp.lat) {
-            const km = haversineKm(prev.lat, prev.lng, sp.lat, sp.lng);
-            if (km <= 1.0) {
-              moveMin = Math.max(2, Math.round(km * 15));
-              moveTxt = `도보 ${moveMin}분`;
-            } else {
-              moveMin = Math.max(5, Math.round(km * 3));
-              moveTxt = `대중교통/택시 약 ${moveMin}분 (${km.toFixed(1)}km)`;
-            }
-          }
-          const badges = [sp.cat || "필수"];
-          if (sp.holidayNote) badges.push(sp.holidayNote);
-          return {
-            id: `must-${Date.now()}-${b.dayObj.day}-${idx}`,
-            time: timeSlots[idx] || "20:30",
-            place: sp.name,
-            stay: sp.stay || "체류 60분",
-            moveMode: moveTxt,
-            moveMin,
-            moveCost: 0,
-            costTotal: sp.cost || 0,
-            badges,
-            lat: sp.lat,
-            lng: sp.lng,
-            mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(sp.name)}`,
-            memo: sp.desc || ""
-          };
+        ordered.forEach(s => registry.add(s.name));
+        b.dayObj.items = buildPacedDayItems({
+          day: b.dayObj, dayIndex: bi, totalDays: days.length, styleKey: mustStyleKey,
+          sights: ordered, takeMeal, weatherOn: recWeatherOn(), sourceBadge: "최적 동선"
         });
       });
 
       window._generatedRoutePlan = { dest: destRaw, startDate: startStr, endDate: endStr, days };
-      resBox.innerHTML = (warnings.length ? `<div class="card" style="background:var(--warn-bg);border-color:#fde68a;font-size:12px;">${warnings.join("<br>")}</div>` : "") +
+      resBox.innerHTML = routePaceNoteHtml() + (warnings.length ? `<div class="card" style="background:var(--warn-bg);border-color:#fde68a;font-size:12px;">${warnings.join("<br>")}</div>` : "") +
         days.map(d => `
           <div class="card">
             <div style="font-weight:800;font-size:14px;color:var(--ocean-dark);margin-bottom:6px;">📅 ${d.label} · ${d.date}</div>
@@ -13508,7 +13489,7 @@
                     <div style="font-weight:700;color:var(--ocean-dark);">${it.costTotal ? fmt(it.costTotal) : ""}</div>
                   </div>
                   <div style="font-size:11px;color:var(--muted);margin-top:2px;">
-                    ${it.moveMode} · ${(it.badges || []).join(" · ")}
+                    ${it.stay} · ${it.moveMode} · ${(it.badges || []).join(" · ")}
                   </div>
                 </div>
               </div>
@@ -13667,6 +13648,375 @@
       ]
     };
 
+    /* =====================================================================
+       🍽️ 2026-11-21 · 여유 있는 하루 골격
+       · 10:00~10:30 사이 시작, 첫날은 이동 고려 12:00 점심부터, 귀가일은 16~17시 마무리
+       · 순서 고정: 점심(12시대) → ☕ 식후 카페(13:30 전후) → 관광 → 저녁(18시대)
+       · 체류: 관광·전시·쇼핑 90~120분 / 식사 70~90분 / 카페 60~90분 (+이동 여유 20~30분)
+       · 어떤 스타일이든 밥과 카페를 빼먹고 강행군하지 않는다
+       ===================================================================== */
+    const CITY_MEAL_SPOTS = {
+      "서울": {
+        food: [
+          { name: "명동교자 본점", lat: 37.5637, lng: 126.9850, cost: 24000, desc: "칼국수·만두로 유명한 명동 노포" },
+          { name: "토속촌 삼계탕", lat: 37.5770, lng: 126.9710, cost: 26000, desc: "서촌 삼계탕 — 웨이팅 있는 인기집" },
+          { name: "우래옥", lat: 37.5678, lng: 126.9985, cost: 32000, desc: "을지로 평양냉면·불고기 노포" },
+          { name: "진옥화할매원조닭한마리", lat: 37.5705, lng: 127.0093, cost: 30000, desc: "동대문 닭한마리 골목 원조" },
+          { name: "하동관 본점", lat: 37.5645, lng: 126.9828, cost: 22000, desc: "명동 곰탕 노포 · 재료 소진 시 조기 마감" },
+          { name: "을지면옥", lat: 37.5662, lng: 126.9913, cost: 28000, desc: "을지로 평양냉면 노포" },
+          { name: "광장시장 순희네빈대떡", lat: 37.5701, lng: 126.9996, cost: 18000, desc: "광장시장 녹두빈대떡·육회" }
+        ],
+        cafe: [
+          { name: "어니언 안국", lat: 37.5762, lng: 126.9858, cost: 14000, desc: "한옥 리모델링 베이커리 카페" },
+          { name: "대림창고", lat: 37.5427, lng: 127.0558, cost: 15000, desc: "성수 창고형 대형 카페·갤러리" },
+          { name: "커피한약방", lat: 37.5661, lng: 126.9884, cost: 13000, desc: "을지로 한옥 카페" },
+          { name: "블루보틀 성수", lat: 37.5446, lng: 127.0557, cost: 13000, desc: "성수동 로스터리 카페" },
+          { name: "레이어드 연남", lat: 37.5602, lng: 126.9250, cost: 15000, desc: "연남동 스콘·케이크 카페" },
+          { name: "앤트러사이트 한남", lat: 37.5340, lng: 127.0010, cost: 13000, desc: "한남동 스페셜티 커피" }
+        ]
+      },
+      "부산": {
+        food: [
+          { name: "수변최고돼지국밥 민락본점", lat: 35.1558, lng: 129.1304, cost: 22000, desc: "항정국밥이 유명한 광안리 인기 국밥집" },
+          { name: "고옥 (남천동 히츠마부시)", lat: 35.1456, lng: 129.1121, cost: 30000, desc: "정갈한 장어덮밥 맛집" },
+          { name: "해목 해운대점", lat: 35.1616, lng: 129.1628, cost: 28000, desc: "카이센동·장어덮밥 데이트 맛집" },
+          { name: "금수복국 해운대본점", lat: 35.1631, lng: 129.1633, cost: 24000, desc: "복국·복지리로 유명한 해운대 노포" },
+          { name: "톤쇼우 광안점", lat: 35.1519, lng: 129.1157, cost: 26000, desc: "광안리 프리미엄 돈카츠" },
+          { name: "남포수제비", lat: 35.0992, lng: 129.0295, cost: 14000, desc: "자갈치 인근 가성비 노포 분식" },
+          { name: "다리집 (남천동 떡볶이)", lat: 35.1436, lng: 129.1103, cost: 18000, desc: "부산 대표 가래떡 떡볶이·오징어튀김" }
+        ],
+        cafe: [
+          { name: "랑데자뷰 광안리점", lat: 35.1539, lng: 129.1202, cost: 14000, desc: "통창 오션뷰 감성 카페" },
+          { name: "오프오 (OFO) 광안리", lat: 35.1544, lng: 129.1213, cost: 14000, desc: "광안대교 정면 뷰 카페" },
+          { name: "모모스커피 마린시티", lat: 35.1574, lng: 129.1449, cost: 13000, desc: "부산 대표 스페셜티 커피" },
+          { name: "블랙업커피 서면본점", lat: 35.1554, lng: 129.0589, cost: 12000, desc: "해수염커피로 유명한 로스터리" }
+        ]
+      },
+      "제주": {
+        food: [
+          { name: "자매국수", lat: 33.4985, lng: 126.5269, cost: 20000, desc: "공항 근처 제주 대표 고기국수" },
+          { name: "돈사돈", lat: 33.4850, lng: 126.4690, cost: 32000, desc: "노형동 흑돼지 구이" },
+          { name: "해녀의집", lat: 33.4586, lng: 126.9360, cost: 26000, desc: "성산 해녀 물회·전복돌솥밥" },
+          { name: "동문시장 먹자골목", lat: 33.5122, lng: 126.5284, cost: 24000, desc: "딱새우회·흑돼지 꼬치" }
+        ],
+        cafe: [
+          { name: "봄날 애월", lat: 33.4628, lng: 126.3095, cost: 15000, desc: "애월 바다 오션뷰 카페" },
+          { name: "카페 델문도 함덕", lat: 33.5431, lng: 126.6693, cost: 16000, desc: "함덕 해변 오션뷰 카페" },
+          { name: "우무", lat: 33.4895, lng: 126.4770, cost: 13000, desc: "제주 푸딩·디저트 카페" },
+          { name: "앤트러사이트 제주", lat: 33.4890, lng: 126.4900, cost: 13000, desc: "제주 스페셜티 로스터리" }
+        ]
+      },
+      "강릉": {
+        food: [
+          { name: "동화가든", lat: 37.7911, lng: 128.9144, cost: 24000, desc: "초당순두부마을 대표 짬뽕순두부" },
+          { name: "엄지네 포장마차", lat: 37.7608, lng: 128.8990, cost: 26000, desc: "강릉 꼬막비빔밥·포장마차" },
+          { name: "교동짬뽕", lat: 37.7540, lng: 128.8930, cost: 18000, desc: "강릉 교동 짬뽕 노포" },
+          { name: "강릉 중앙시장", lat: 37.7541, lng: 128.8986, cost: 22000, desc: "닭강정·오징어순대" },
+          { name: "주문진 수산시장 회센터", lat: 37.8935, lng: 128.8305, cost: 30000, desc: "동해 회 한 접시" }
+        ],
+        cafe: [
+          { name: "안목해변 커피거리", lat: 37.7723, lng: 128.9476, cost: 14000, desc: "동해 바다 바로 앞 카페거리" },
+          { name: "카페 보사노바", lat: 37.7728, lng: 128.9474, cost: 15000, desc: "안목 오션뷰 카페" },
+          { name: "테라로사 커피공장", lat: 37.7455, lng: 128.8600, cost: 13000, desc: "강릉 대표 로스터리 카페" },
+          { name: "스타벅스 안목해변점", lat: 37.7718, lng: 128.9478, cost: 12000, desc: "안목해변 2층 오션뷰" }
+        ]
+      },
+      "경주": {
+        food: [
+          { name: "황리단길 맛집 & 소품샵", lat: 35.8375, lng: 129.2097, cost: 26000, desc: "한옥 감성 거리 먹거리" },
+          { name: "맷돌손두부", lat: 35.8380, lng: 129.2100, cost: 18000, desc: "경주 손두부 전문점" },
+          { name: "함양집", lat: 35.8348, lng: 129.2098, cost: 16000, desc: "경주 국밥·수육 노포" },
+          { name: "경주 중앙시장", lat: 35.8370, lng: 129.2120, cost: 18000, desc: "중앙시장 먹거리" },
+          { name: "교리김밥", lat: 35.8420, lng: 129.2110, cost: 12000, desc: "경주 교동 김밥·라볶이" }
+        ],
+        cafe: [
+          { name: "황리단길 한옥 카페 (올리브)", lat: 35.8388, lng: 129.2102, cost: 14000, desc: "한옥 마당 감성 카페" },
+          { name: "스컹크웍스 경주", lat: 35.8380, lng: 129.2090, cost: 14000, desc: "한옥 브런치 카페" }
+        ]
+      },
+      "여수": {
+        food: [
+          { name: "좌수영바게트버거", lat: 34.7393, lng: 127.7359, cost: 16000, desc: "여수 대표 길거리 간식" },
+          { name: "서대회관", lat: 34.7403, lng: 127.7327, cost: 26000, desc: "여수 게장백반 노포" },
+          { name: "낭만포차거리", lat: 34.7366, lng: 127.7429, cost: 30000, desc: "돌산대교 야경 보며 해물삼합" },
+          { name: "여수 중앙시장", lat: 34.7390, lng: 127.7390, cost: 20000, desc: "여수 중앙시장 먹거리" }
+        ],
+        cafe: [
+          { name: "모이핀", lat: 34.7042, lng: 127.7681, cost: 16000, desc: "돌산읍 대형 오션뷰 카페" }
+        ]
+      },
+      "대구": {
+        food: [
+          { name: "서문시장 야시장", lat: 35.8685, lng: 128.5800, cost: 18000, desc: "납작만두·전참시 먹거리" },
+          { name: "동성로 납작만두", lat: 35.8695, lng: 128.5950, cost: 14000, desc: "대구 명물 납작만두" },
+          { name: "안지랑 곱창골목", lat: 35.8370, lng: 128.5700, cost: 26000, desc: "대구 곱창·막창 골목" }
+        ],
+        cafe: [
+          { name: "수성못 카페거리", lat: 35.8280, lng: 128.6170, cost: 15000, desc: "호수 산책과 카페" }
+        ]
+      }
+    };
+    // 식사·카페 후보가 모자랄 때 자연스럽게 보충하는 이름 (중복 금지 유지)
+    const ROUTE_GENERIC_FOOD = ["로컬 맛집", "시장 먹거리", "국밥·분식집", "소문난 식당"];
+    const ROUTE_GENERIC_CAFE = ["감성 카페", "로스터리 카페", "한옥 카페", "오션뷰 카페"];
+    const ROUTE_INDOOR_FOOD = ["실내 식당가", "쇼핑몰 맛집", "백화점 식당가", "실내 분식"];
+    const ROUTE_INDOOR_CAFE = ["실내 카페", "백화점 카페", "서점 카페", "쇼핑몰 카페"];
+
+    function routeTimeToMin(t) {
+      const m = String(t || "").match(/(\d{1,2}):(\d{2})/);
+      return m ? Number(m[1]) * 60 + Number(m[2]) : 0;
+    }
+    function routeMinToTime(min) {
+      const m = Math.max(0, Math.round(min));
+      return `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+    }
+
+    function isCafeSpot(p) {
+      const t = `${p?.cat || ""} ${p?.purpose || ""} ${p?.name || ""}`;
+      return /카페|커피|로스터리|베이커리|디저트|브런치|찻집/.test(t);
+    }
+    function isFoodSpot(p) {
+      if (isCafeSpot(p)) return false;
+      const t = `${p?.cat || ""} ${p?.purpose || ""} ${p?.name || ""}`;
+      return /음식점|식당|맛집|국밥|분식|떡볶이|피자|치킨|갈비|냉면|칼국수|만두|삼계탕|닭한마리|빈대떡|회|초밥|덮밥|카츠|밀면|짬뽕|순두부|곰탕|포차|이자카야|야시장|시장|복국|게장|곱창|순대|김밥/.test(t);
+    }
+
+    // 여행 전체에서 같은 곳이 두 번 나오지 않게 하는 이름 장부
+    function makeRouteNameRegistry() {
+      const keys = [];
+      const keyOf = (s) => normPlaceQuery(s);
+      return {
+        has(name) {
+          const k = keyOf(name);
+          if (!k) return true;
+          return keys.some(u => u.includes(k) || k.includes(u));
+        },
+        add(name) {
+          const k = keyOf(name);
+          if (k && !keys.includes(k)) keys.push(k);
+        }
+      };
+    }
+
+    // 도시별 맛집·카페 후보 (전용 풀 → 기존 추천 풀 순서, 이름 중복 제거)
+    function routeMealSpotPools(dest, cityKey) {
+      const foods = [], cafes = [];
+      const seen = (name) => {
+        const k = normPlaceQuery(name);
+        return !k || [...foods, ...cafes].some(x => {
+          const k2 = normPlaceQuery(x.name);
+          return k2.includes(k) || k.includes(k2);
+        });
+      };
+      const add = (arr, row, kind) => {
+        if (!row || !row.name || seen(row.name)) return;
+        arr.push({
+          name: row.name,
+          lat: row.lat, lng: row.lng,
+          cost: row.cost || (kind === "cafe" ? 14000 : 26000),
+          desc: row.desc || "",
+          cat: kind === "cafe" ? "카페" : "음식점",
+          kind,
+          indoor: kind === "cafe" ? true : row.indoor
+        });
+      };
+      const table = CITY_MEAL_SPOTS[cityKey] || null;
+      (table?.food || []).forEach(r => add(foods, r, "food"));
+      (table?.cafe || []).forEach(r => add(cafes, r, "cafe"));
+      const legacy = [...(CITY_ROUTE_SPOTS[cityKey] || []), ...(cityKey ? curatedSpotsForCity(cityKey) : [])];
+      legacy.forEach(p => {
+        const row = { name: p.name, lat: p.lat, lng: p.lng, cost: p.cost, desc: p.desc || "" };
+        if (isCafeSpot(p)) add(cafes, row, "cafe");
+        else if (isFoodSpot(p)) add(foods, row, "food");
+      });
+      return { foods, cafes };
+    }
+
+    // 점심·저녁(food)과 식후 카페(cafe)를 하루 한 번씩, 중복 없이 뽑는다
+    function makeRouteMealPicker(pools, dest, weatherOn, registry) {
+      const reg = registry || makeRouteNameRegistry();
+      const keep = (list) => (weatherOn ? list.filter(s => !spotIsOutdoor(s)) : list);
+      const foods = keep((pools && pools.foods) || []);
+      const cafes = keep((pools && pools.cafes) || []);
+      const distTo = (row, anchor) => (row.lat && row.lng && anchor && anchor.lat && anchor.lng)
+        ? haversineKm(anchor.lat, anchor.lng, row.lat, row.lng) : 999;
+      const pickFrom = (list, kind, anchor, dayNum) => {
+        // 앞 일정에서 가까운 곳을 먼저 고른다 (하루 동선이 도시를 가로지르지 않게)
+        let best = -1, bestD = Infinity;
+        list.forEach((row, idx) => {
+          if (reg.has(row.name)) return;
+          const d = distTo(row, anchor);
+          if (d < bestD - 1e-9) { bestD = d; best = idx; }
+        });
+        if (best >= 0) { const row = list[best]; reg.add(row.name); return row; }
+        const base = weatherOn
+          ? (kind === "cafe" ? ROUTE_INDOOR_CAFE : ROUTE_INDOOR_FOOD)
+          : (kind === "cafe" ? ROUTE_GENERIC_CAFE : ROUTE_GENERIC_FOOD);
+        for (let n = 1; n <= base.length * 6; n++) {
+          const label = base[(n - 1) % base.length];
+          const name = n <= base.length ? `${dest} ${label}` : `${dest} ${dayNum || n}일차 ${label}`;
+          if (!reg.has(name)) {
+            reg.add(name);
+            return {
+              name,
+              cat: kind === "cafe" ? "카페" : "음식점",
+              cost: kind === "cafe" ? 14000 : 26000,
+              desc: kind === "cafe" ? "식후 여유 한 잔 · 영업시간은 지도에서 확인" : "현지 인기 식당 · 영업시간은 지도에서 확인",
+              indoor: true
+            };
+          }
+        }
+        return null;
+      };
+      return (kind, anchor, dayNum) => pickFrom(kind === "cafe" ? cafes : foods, kind === "cafe" ? "cafe" : "food", anchor, dayNum);
+    }
+
+    // 하루의 슬롯 순서와 체류 시간 (스타일에 따라 강도만 조절)
+    function routeDayPlanShape(dayIndex, totalDays, styleKey) {
+      const relaxed = styleKey === "relaxed";
+      const first = totalDays > 1 && dayIndex === 0;
+      const last = totalDays > 1 && dayIndex === totalDays - 1;
+      let kinds;
+      if (totalDays === 1) kinds = ["sight", "lunch", "cafe", "sight", "dinner"];
+      else if (first) kinds = ["lunch", "cafe", "sight", "dinner"];
+      else if (last) kinds = ["sight", "lunch", "cafe", "dinner"];
+      else kinds = ["sight", "lunch", "cafe", "sight", "dinner"];
+      return {
+        kinds, first, last,
+        sightMin: relaxed ? 110 : 95,
+        lunchMin: relaxed ? 90 : 80,
+        cafeMin: relaxed ? 85 : 70,
+        dinnerMin: relaxed ? 85 : 80,
+        gap: relaxed ? 25 : 20
+      };
+    }
+
+    // 그날 관광 슬롯 수 — 첫날·귀가일은 1곳, 중간 날은 2곳(여유 코스는 1곳)
+    function routeSightSlotsFor(dayIndex, totalDays, styleKey) {
+      const relaxed = styleKey === "relaxed";
+      if (totalDays === 1) return relaxed ? 1 : 2;
+      if (dayIndex === 0) return totalDays === 2 && !relaxed ? 2 : 1;
+      if (dayIndex === totalDays - 1) return 1;
+      return relaxed ? 1 : 2;
+    }
+
+    // 시간표: 앞 일정의 체류+이동 여유로 다음 시각을 잡고, 식사·카페 시간대는 지킨다
+    function routeScheduleTimes(shape, sightCount) {
+      const kinds = shape.kinds.slice();
+      const base = kinds.filter(k => k === "sight").length;
+      const extra = Math.max(0, (sightCount || 0) - base);
+      if (extra) {
+        const at = kinds.lastIndexOf("dinner");
+        kinds.splice(at < 0 ? kinds.length : at, 0, ...Array(extra).fill("sight"));
+      }
+      const rows = [];
+      let clock = shape.first ? 11 * 60 + 40 : 10 * 60;
+      kinds.forEach(kind => {
+        if (kind === "lunch") clock = Math.max(clock, 12 * 60);
+        if (kind === "cafe") clock = Math.max(clock, 13 * 60 + 20);
+        if (kind === "dinner") {
+          if (shape.last) {
+            // 귀가일 저녁은 16~17시 마무리에 맞춰 이른 저녁으로 (이미 늦었으면 그대로)
+            if (clock <= 15 * 60 + 40) clock = Math.max(clock, 15 * 60);
+          } else {
+            clock = Math.max(clock, 18 * 60);
+          }
+        }
+        const min = kind === "lunch" ? shape.lunchMin
+          : kind === "cafe" ? shape.cafeMin
+            : kind === "dinner" ? (shape.last ? Math.min(shape.dinnerMin, 70) : shape.dinnerMin)
+              : shape.sightMin;
+        rows.push({ kind, time: routeMinToTime(clock), min });
+        clock += min + (kind === "lunch" ? 10 : kind === "dinner" ? 0 : shape.gap);
+      });
+      return rows;
+    }
+
+    // 하루 관광 순서: 먼저 고른 곳에서 가까운 순서로 (지그재그 이동 줄이기)
+    function orderSightsNearest(sights) {
+      const rows = (sights || []).filter(Boolean);
+      if (rows.length < 3) return rows;
+      const out = [rows.shift()];
+      while (rows.length) {
+        const last = out[out.length - 1];
+        let bi = 0, bd = Infinity;
+        rows.forEach((row, idx) => {
+          const d = (last.lat && row.lat) ? haversineKm(last.lat, last.lng, row.lat, row.lng) : 999;
+          if (d < bd) { bd = d; bi = idx; }
+        });
+        out.push(rows.splice(bi, 1)[0]);
+      }
+      return out;
+    }
+
+    function routeMoveBetween(prevRow, row) {
+      if (!prevRow) return { moveMode: "일정 시작", moveMin: 0 };
+      if (prevRow.lat && prevRow.lng && row.lat && row.lng) {
+        const km = haversineKm(prevRow.lat, prevRow.lng, row.lat, row.lng);
+        if (km <= 1.2) {
+          const w = Math.min(25, Math.max(7, Math.round(km * 15)));
+          return { moveMode: `도보 약 ${w}분`, moveMin: w };
+        }
+        const mins = Math.min(45, Math.max(15, Math.round(km * 2.2) + 8));
+        return { moveMode: `대중교통·택시 약 ${mins}분 (${km.toFixed(1)}km)`, moveMin: mins };
+      }
+      return { moveMode: "이동 약 15분", moveMin: 15 };
+    }
+
+    // 하루 일정 조립 — 관광/점심/식후 카페/저녁을 순서대로, 체류·이동 여유 포함
+    function buildPacedDayItems(opts) {
+      const { day, dayIndex, totalDays, styleKey, sights, takeMeal, weatherOn, sourceBadge } = opts;
+      const shape = routeDayPlanShape(dayIndex, totalDays, styleKey);
+      const queue = (sights || []).slice();
+      const slots = routeScheduleTimes(shape, queue.length);
+      const items = [];
+      let prevRow = null;
+      slots.forEach((slot, i) => {
+        let row = null, label = "", badges = [];
+        if (slot.kind === "lunch") {
+          row = takeMeal("food", prevRow, day.day); label = "🍽️ 점심";
+        } else if (slot.kind === "cafe") {
+          row = takeMeal("cafe", prevRow, day.day); label = "☕ 식후 카페";
+        } else if (slot.kind === "dinner") {
+          row = takeMeal("food", prevRow, day.day); label = shape.last ? "🍽️ 이른 저녁 (귀가 전)" : "🍽️ 저녁";
+        } else {
+          row = queue.shift();
+        }
+        if (!row) return;
+        const move = routeMoveBetween(prevRow, row);
+        if (slot.kind === "sight") {
+          badges = row.must ? (row.cat && row.cat !== "필수" ? ["📌 필수", row.cat] : ["📌 필수"]) : [row.cat || "관광"];
+          if (row.holidayNote) badges.push(row.holidayNote);
+        } else {
+          badges = [label];
+        }
+        if (weatherOn && spotIndoorInfo(row).indoor) badges.push("🏠 실내");
+        if (sourceBadge) badges.push(sourceBadge);
+        items.push({
+          id: `ai-${Date.now()}-${day.day}-${i}`,
+          time: slot.time,
+          place: row.name,
+          stay: `체류 ${slot.min}분`,
+          stayMin: slot.min,
+          moveMode: move.moveMode,
+          moveMin: move.moveMin,
+          moveCost: 0,
+          costTotal: row.cost || 0,
+          badges,
+          lat: row.lat,
+          lng: row.lng,
+          mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(row.name)}`,
+          memo: row.desc || ""
+        });
+        prevRow = row;
+      });
+      return items;
+    }
+
+    function routePaceNoteHtml() {
+      return `<div class="card" style="font-size:12px;font-weight:700;color:var(--ocean-dark);background:var(--ocean-soft);line-height:1.6;">🕙 하루는 <b>10:00~10:30</b>에 여유롭게 시작해 <b>점심(12시대) → ☕ 식후 카페 → 관광 → 저녁(18시대)</b> 흐름으로 짰어요. 관광 90~120분·식사 70~90분·카페 60~90분에 이동 여유까지 넣었고, 첫날은 도착 시간을 고려해 점심부터, 마지막 날은 <b>16~17시에 마무리</b>해요.</div>`;
+    }
+
     async function generateNewRoute() {
       const destRaw = document.getElementById("route-dest").value.trim() || "부산";
       const startStr = document.getElementById("route-start").value;
@@ -13804,85 +14154,59 @@
           .sort((a, b) => a.indoor - b.indoor || a.i - b.i)
           .map((x) => x.p);
       }
-      const styleSlots = {
-        balanced: ["10:30", "12:30", "14:30", "18:00"],
-        ocean: ["10:30", "13:00", "16:30", "19:30"],
-        food: ["11:00", "13:30", "18:00", "20:30"],
-        beach: ["10:00", "13:30", "16:00", "19:00"],
-        landmark: ["09:30", "12:30", "15:00", "18:00"],
-        citynight: ["11:00", "15:00", "18:30", "21:00"],
-        nature: ["09:00", "11:30", "15:30", "18:30"],
-        shopping: ["11:00", "14:00", "17:00", "20:00"]
-      };
-      const timeSlots = styleSlots[styleKey] || styleSlots.balanced;
+      // 🍽️ 관광 후보와 식사·카페 후보를 나눈다 (같은 곳을 식사 자리에 다시 넣지 않는다)
+      let sightPool = pool.filter(p => !isCafeSpot(p) && !isFoodSpot(p));
+      if (sightPool.length < 3) sightPool = pool.slice();
+      const mealPools = routeMealSpotPools(destRaw, cityKey);
+      const registry = makeRouteNameRegistry();
+      const takeMeal = makeRouteMealPicker(mealPools, destRaw, recWeatherOn(), registry);
 
       const days = buildDateRangeDays(startStr, endStr, destRaw);
-      // 🔁 전 일차에 걸쳐 이미 배정한 장소는 절대 다시 쓰지 않는다 (사용한 id·이름 모두 기억)
-      const usedIds = new Set();
-      const usedNames = new Set();
-      const usedNameList = [];
       let cursor = 0;
-      const isNameUsed = (name) => {
-        const k = normPlaceQuery(name);
-        if (!k) return true;
-        if (usedNames.has(k) || usedIds.has(k)) return true;
-        // '코엑스'와 '코엑스 & 별마당도서관'처럼 같은 곳을 두 번 넣지 않는다
-        return usedNameList.some(u => u.includes(k) || k.includes(u));
-      };
-      const takeNextSpot = () => {
-        while (cursor < pool.length) {
-          const cand = pool[cursor++];
-          const key = normPlaceQuery(cand.name);
-          if (isNameUsed(cand.name)) continue;
-          usedNames.add(key);
-          usedIds.add(key);
-          usedNameList.push(key);
+      const takeSight = (dayNum) => {
+        while (cursor < sightPool.length) {
+          const cand = sightPool[cursor++];
+          if (registry.has(cand.name)) continue;
+          registry.add(cand.name);
           return cand;
         }
-        return null;
+        // 풀이 모자라면 같은 도시의 명소로 채우고, 그래도 없으면 여유 일정으로
+        const spare = KR_PLACES.find(p => p.c === cityKey && !registry.has(p.n) && /attraction|nature|area/.test(p.k)
+          && (!recWeatherOn() || (p.k === "attraction" && !spotIsOutdoor({ name: p.n, desc: p.s, cat: "관광" }))));
+        if (spare) {
+          registry.add(spare.n);
+          return { name: spare.n, cat: spare.k === "area" ? "산책" : "관광", lat: spare.lat, lng: spare.lng, cost: 0, desc: spare.s || "" };
+        }
+        // 명소 후보가 없으면(해외·정보 부족) 그날의 여유 코스로 비워 두지 않는다
+        const genericName = recWeatherOn() ? `${destRaw} ${dayNum}일차 실내 전시·갤러리` : `${destRaw} ${dayNum}일차 여유 산책`;
+        if (registry.has(genericName)) return null;
+        registry.add(genericName);
+        return {
+          name: genericName,
+          cat: recWeatherOn() ? "관광" : "산책",
+          indoor: recWeatherOn() ? true : undefined,
+          cost: 0,
+          desc: recWeatherOn() ? "냉·난방되는 실내에서 쉬어 가는 시간" : "주변 골목을 천천히 둘러보는 여유 시간"
+        };
       };
       days.forEach((d, di) => {
-        const isLast = di === days.length - 1;
-        const count = isLast && days.length > 1 ? 3 : 4;
-        for (let i = 0; i < count; i++) {
-          let spot = takeNextSpot();
-          if (!spot) {
-            // 풀이 모자라면 같은 도시의 다른 동네·명소로 채우고, 그래도 없으면 이름이 겹치지 않는 여유 일정으로
-            const spare = KR_PLACES.find(p => p.c === cityKey && !isNameUsed(p.n) && (/attraction|nature|area/.test(p.k) && (!recWeatherOn() || (p.k === "attraction" && !spotIsOutdoor({ name: p.n, desc: p.s, cat: "관광" })))));
-            if (spare) {
-              usedNames.add(normPlaceQuery(spare.n));
-              usedNameList.push(normPlaceQuery(spare.n));
-              spot = { name: spare.n, cat: spare.k === "area" ? "산책" : "관광", lat: spare.lat, lng: spare.lng, cost: 0, stay: "체류 60분", desc: spare.s || "" };
-            } else {
-              const indoorRest = ["실내 카페에서 쉬어 가기", "복합쇼핑몰에서 쇼핑·구경", "북카페·서점에서 한숨 돌리기", "실내 전시·갤러리 둘러보기"];
-              spot = recWeatherOn()
-                ? { name: `${destRaw} ${d.day}일차 ${indoorRest[(i + di) % indoorRest.length]}`, cat: "카페", cost: 12000, stay: "체류 50분", desc: "더위·추위를 피해 실내에서 쉬는 시간", indoor: true }
-                : { name: `${destRaw} ${d.day}일차 여유 산책`, cat: "산책", cost: 0, stay: "체류 45분", desc: "주변 골목을 천천히 둘러보는 여유 시간" };
-            }
-          }
-          d.items.push({
-            id: `ai-${Date.now()}-${d.day}-${i}`,
-            time: timeSlots[i] || "15:00",
-            place: spot.name,
-            stay: spot.stay || "체류 60분",
-            moveMode: i === 0 ? "일정 시작" : "도보·대중교통",
-            moveMin: i === 0 ? 0 : 15,
-            moveCost: 0,
-            costTotal: spot.cost || 0,
-            badges: [spot.cat || "추천", "AI 루트"].concat(recWeatherOn() && spotIndoorInfo(spot).indoor ? ["🏠 실내"] : []),
-            lat: spot.lat,
-            lng: spot.lng,
-            mapUrl: `https://map.naver.com/p/search/${encodeURIComponent(spot.name)}`,
-            memo: spot.desc || ""
-          });
+        const want = routeSightSlotsFor(di, days.length, styleKey);
+        const sights = [];
+        for (let i = 0; i < want; i++) {
+          const s = takeSight(d.day);
+          if (s) sights.push(s);
         }
+        d.items = buildPacedDayItems({
+          day: d, dayIndex: di, totalDays: days.length, styleKey,
+          sights: orderSightsNearest(sights), takeMeal, weatherOn: recWeatherOn(), sourceBadge: "AI 루트"
+        });
       });
 
       window._generatedRoutePlan = { dest: destRaw, startDate: startStr, endDate: endStr, days, weather: recWeatherMode };
       const routeWeatherNote = recWeatherOn()
         ? `<div class="card" style="font-size:12px;font-weight:700;color:var(--ocean-dark);background:var(--ocean-soft);line-height:1.55;">${recWeatherLabel()} 대비 실내·냉난방 위주로 짰어요 — 한강공원·해수욕장·야외 산책로는 뺐어요.</div>`
         : "";
-      resBox.innerHTML = routeWeatherNote + days.map(d => `
+      resBox.innerHTML = routePaceNoteHtml() + routeWeatherNote + days.map(d => `
         <div class="card">
           <div style="font-weight:800;font-size:14px;color:var(--ocean-dark);margin-bottom:6px;">📅 ${d.label} · ${d.date}</div>
           ${d.items.map(it => `
@@ -15748,6 +16072,7 @@
       if (coastal) {
         return { type: "coastal", opts: [
           { key: "balanced", label: "✨ 균형 코스" },
+          { key: "relaxed", label: "🐢 여유 코스" },
           { key: "ocean", label: "🌊 오션뷰 위주" },
           { key: "beach", label: "🏖️ 해변·액티비티 위주" },
           { key: "nature", label: "🌿 산책·자연 위주" },
@@ -15757,6 +16082,7 @@
       if (inland) {
         return { type: "inland", opts: [
           { key: "balanced", label: "✨ 균형 코스" },
+          { key: "relaxed", label: "🐢 여유 코스" },
           { key: "landmark", label: "🏛️ 랜드마크·유적 위주" },
           { key: "citynight", label: "🏙️ 시티뷰·야경 위주" },
           { key: "nature", label: "🌿 공원·산책 위주" },
@@ -15766,6 +16092,7 @@
       }
       return { type: "any", opts: [
         { key: "balanced", label: "✨ 균형 코스" },
+        { key: "relaxed", label: "🐢 여유 코스" },
         { key: "landmark", label: "🏛️ 랜드마크·유적 위주" },
         { key: "citynight", label: "🏙️ 시티뷰·야경 위주" },
         { key: "nature", label: "🌿 공원·산책 위주" },

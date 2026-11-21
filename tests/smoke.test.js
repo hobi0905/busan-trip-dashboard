@@ -777,6 +777,107 @@ setTimeout(async () => {
       && ev("state.days[0].items.length") === 1
       && w.document.getElementById("route-dest").value === "서울", "");
 
+    /* ================= 2026-11-21 (여유 있는 하루 곡격 · 점심/식후 카페/저녁) ================= */
+
+    // 42) 🍽️ 신규 루트 2박 3일 — 매일 점심·식후 카페·저녁, 60분 이상 간격, 중복 없음
+    const t42mins = (t) => { const [h, m] = String(t).split(":").map(Number); return h * 60 + m; };
+    const t42stay = (it) => { const m = String(it.stay || "").match(/(\d+)\s*분/); return m ? Number(m[1]) : 0; };
+    const t42has = (it, re) => (it.badges || []).some(b => re.test(b));
+    const t42end = (it) => t42mins(it.time) + t42stay(it);
+    w.setRecommendMode("route");
+    w.pickRecWeatherMode("none");
+    ev("routeStyleKey = 'balanced'");
+    w.document.getElementById("route-dest").value = "서울";
+    w.markRecommendDestEdited("route-dest");
+    w.document.getElementById("route-start").value = "2027-03-06";
+    w.document.getElementById("route-end").value = "2027-03-08";
+    await w.generateNewRoute();
+    const plan42 = ev("window._generatedRoutePlan");
+    const d42 = plan42 ? plan42.days : [];
+    const all42 = d42.flatMap(d => d.items.map(i => i.place));
+    ok("여유 루트: 3일 모두 4~6곳", d42.length === 3 && d42.every(d => d.items.length >= 4 && d.items.length <= 6),
+      d42.map(d => d.items.length).join(","));
+    ok("여유 루트: 매일 점심 포함", d42.every(d => d.items.some(it => t42has(it, /점심/))), "");
+    ok("여유 루트: 매일 식후 카페 포함", d42.every(d => d.items.some(it => t42has(it, /카페/))), "");
+    ok("여유 루트: 매일 저녁 포함", d42.every(d => d.items.some(it => t42has(it, /저녁/))), "");
+    ok("여유 루트: 점심 12시대·카페 13:20~15:10",
+      d42.every(d => {
+        const l = d.items.find(it => t42has(it, /점심/));
+        const c = d.items.find(it => t42has(it, /카페/));
+        return l && c && t42mins(l.time) >= 12 * 60 && t42mins(l.time) <= 13 * 60 + 30
+          && t42mins(c.time) >= 13 * 60 + 20 && t42mins(c.time) <= 15 * 60 + 10;
+      }),
+      d42.map(d => (d.items.find(it => t42has(it, /카페/)) || {}).time).join(","));
+    ok("여유 루트: 저녁 18시대(귀가일은 16~17시 마무리)",
+      d42.every((d, di) => {
+        const dinner = d.items.find(it => t42has(it, /저녁/));
+        if (!dinner) return false;
+        if (di === d42.length - 1) return t42mins(dinner.time) <= 16 * 60 && t42end(dinner) >= 16 * 60 && t42end(dinner) <= 17 * 60;
+        return t42mins(dinner.time) >= 18 * 60 && t42mins(dinner.time) <= 19 * 60 + 30;
+      }),
+      d42.map(d => { const x = d.items.find(it => t42has(it, /저녁/)); return x ? x.time + "~" + Math.floor(t42end(x) / 60) + ":" + String(t42end(x) % 60).padStart(2, "0") : "없음"; }).join(" "));
+    ok("여유 루트: 둘째 날 10:00 시작·첫날은 점심부터",
+      t42mins(d42[1].items[0].time) >= 10 * 60 && t42mins(d42[1].items[0].time) <= 10 * 60 + 30
+      && t42mins(d42[0].items[0].time) >= 11 * 60,
+      `${d42[0].items[0].time} / ${d42[1].items[0].time} / ${d42[2].items[0].time}`);
+    ok("여유 루트: 일정 간격 60분 이상",
+      d42.every(d => d.items.slice(1).every((it, i) => t42mins(it.time) - t42mins(d.items[i].time) >= 60)),
+      d42.map(d => d.items.map(i => i.time).join(">")).join(" | "));
+    ok("여유 루트: 체류 60~120분",
+      d42.every(d => d.items.every(it => t42stay(it) >= 60 && t42stay(it) <= 120)),
+      d42.flatMap(d => d.items.map(i => t42stay(i))).join(","));
+    ok("여유 루트: 전 일차 중복 없음", new Set(all42).size === all42.length && all42.length >= 12, `${new Set(all42).size}/${all42.length}`);
+    const mealNames42 = d42.flatMap(d => d.items.filter(it => t42has(it, /점심|저녁|카페/)).map(i => i.place));
+    ok("여유 루트: 식사·카페가 실제 서울 장소", mealNames42.length === 9 && !mealNames42.some(n => /로컬 맛집|시장 먹거리|감성 카페|실내 카페/.test(n)),
+      mealNames42.join(", "));
+    ok("여유 루트: 결과 안내 문구", /점심\(12시대\)/.test(w.document.getElementById("route-results").textContent)
+      && /16~17시에 마무리/.test(w.document.getElementById("route-results").textContent), "");
+
+    // 43) 🐢 여유 코스 — 하루 관광 1곳, 체류는 더 길게
+    w.pickRouteStyle("relaxed");
+    ok("여유 코스 칩 추가", w.document.querySelectorAll("#route-style-chips .style-chip").length >= 6
+      && [...w.document.querySelectorAll("#route-style-chips .style-chip")].some(b => /여유 코스/.test(b.textContent)), "");
+    await w.generateNewRoute();
+    const plan43 = ev("window._generatedRoutePlan");
+    const sights43 = plan43.days.map(d => d.items.filter(it => (it.badges || []).some(b => /관광|산책/.test(b))).length);
+    ok("여유 코스: 하루 관광 1곳 이하", sights43.every(n => n <= 1), sights43.join(","));
+    ok("여유 코스: 점심·카페·저녁 유지", plan43.days.every(d => d.items.some(it => t42has(it, /점심/)) && d.items.some(it => t42has(it, /카페/)) && d.items.some(it => t42has(it, /저녁/))), "");
+    ok("여유 코스: 체류 70분 이상", plan43.days.every(d => d.items.every(it => t42stay(it) >= 70)), plan43.days.flatMap(d => d.items.map(i => t42stay(i))).join(","));
+    w.pickRouteStyle("balanced");
+
+    // 44) 📌 필수 장소 코스 — 필수 장소 사이에 점심·식후 카페·저녁이 끼워진다
+    ev("mustVisitSpots = [{name:'경복궁',closed:''},{name:'남산서울타워',closed:''},{name:'광장시장',closed:''}];");
+    w.document.getElementById("must-dest").value = "서울";
+    w.document.getElementById("must-start").value = "2027-03-06";
+    w.document.getElementById("must-end").value = "2027-03-08";
+    await w.optimizeMustVisitRoute();
+    const plan44 = ev("window._generatedRoutePlan");
+    const names44 = plan44.days.flatMap(d => d.items.map(i => i.place));
+    ok("필수 장소 코스: 필수 3곳 모두 포함", ["경복궁", "남산서울타워", "광장시장"].every(n => names44.some(x => x.includes(n))), names44.join(", "));
+    ok("필수 장소 코스: 매일 점심·카페·저녁", plan44.days.every(d => d.items.some(it => t42has(it, /점심/)) && d.items.some(it => t42has(it, /카페/)) && d.items.some(it => t42has(it, /저녁/))),
+      plan44.days.map(d => d.items.map(i => (i.badges || [])[0]).join("/")).join(" | "));
+    ok("필수 장소 코스: 필수 배지 표시", plan44.days.flatMap(d => d.items).some(it => (it.badges || []).includes("📌 필수")), "");
+    ok("필수 장소 코스: 간격 60분 이상·중복 없음",
+      plan44.days.every(d => d.items.slice(1).every((it, i) => t42mins(it.time) - t42mins(d.items[i].time) >= 60))
+      && new Set(names44).size === names44.length, `${new Set(names44).size}/${names44.length}`);
+    ok("필수 장소 코스: 안내 문구", /식후 카페/.test(w.document.getElementById("must-results").textContent), "");
+
+    // 45) ☀️ 폭염 실내위주 + 여유 곡격 — 실내 식사·카페를 지키면서 밥·카페를 빼먹지 않는다
+    w.setRecommendMode("route");
+    w.pickRecWeatherMode("heat");
+    w.document.getElementById("route-dest").value = "서울";
+    w.document.getElementById("route-start").value = "2027-03-06";
+    w.document.getElementById("route-end").value = "2027-03-08";
+    await w.generateNewRoute();
+    const plan45 = ev("window._generatedRoutePlan");
+    const outdoor45 = /한강|공원|해수욕|해변|산책|둘레길|숲|골목|거리|야경/;
+    ok("폭염 루트: 매일 점심·카페·저녁", plan45.days.every(d => d.items.some(it => t42has(it, /점심/)) && d.items.some(it => t42has(it, /카페/)) && d.items.some(it => t42has(it, /저녁/))),
+      plan45.days.map(d => d.items.map(i => (i.badges || [])[0]).join("/")).join(" | "));
+    ok("폭염 루트: 식사·카페도 실내", plan45.days.flatMap(d => d.items).filter(it => t42has(it, /점심|저녁|카페/)).every(it => !outdoor45.test(it.place)),
+      plan45.days.flatMap(d => d.items.filter(it => t42has(it, /점심|저녁|카페/)).map(i => i.place)).join(", "));
+    ok("폭염 루트: 실내 배지", plan45.days.flatMap(d => d.items).some(it => (it.badges || []).includes("🏠 실내")), "");
+    w.pickRecWeatherMode("none");
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }
