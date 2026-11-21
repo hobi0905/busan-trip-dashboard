@@ -5823,7 +5823,8 @@
                 const label = (it.badges || []).map(String).find(x => /점심|식후 카페|저녁/.test(x));
                 if (!label) return "";
                 const kind = /카페/.test(label) ? "cafe" : "food";
-                return `<span class="tl-meal ${kind}">${label}</span>`;
+                const text = label.replace(/^[^가-힣A-Za-z0-9]+/, "").trim() || label;
+                return `<span class="tl-meal ${kind}">${text}</span>`;
               })()}
               <span class="tl-stay">${it.stay || ""}</span>
               <span class="tl-fold-cue">${isOpen ? "접기 ▴" : "더 보기 ▾"}</span>
@@ -14223,7 +14224,7 @@
               ${photoSlotHtml(photoSubjectOf(it) || it.place, photoRegionOfDay(d), "sm", tlTimeCat(it))}
               <div style="flex:1;min-width:0;display:flex;justify-content:space-between;align-items:center;gap:6px;">
                 <div><strong>${it.time}</strong> ${it.place} ${(it.badges || []).some(b => /점심|식후 카페|저녁/.test(String(b)))
-                  ? `<span style="font-size:10px;font-weight:800;color:var(--ocean-dark);background:var(--ocean-soft);padding:1px 5px;border-radius:999px;">${(it.badges || []).map(String).find(b => /점심|식후 카페|저녁/.test(b))}</span>` : ""} <span style="color:var(--muted);font-size:11px;">(${it.stay})</span></div>
+                  ? `<span style="font-size:10px;font-weight:800;color:var(--ocean-dark);background:var(--ocean-soft);padding:1px 5px;border-radius:999px;">${String((it.badges || []).map(String).find(b => /점심|식후 카페|저녁/.test(b)) || "").replace(/^[^가-힣A-Za-z0-9]+/, "").trim()}</span>` : ""} <span style="color:var(--muted);font-size:11px;">(${it.stay})</span></div>
                 <div style="font-weight:700;color:var(--ocean-dark);">${it.costTotal ? fmt(it.costTotal) : "무료"}</div>
               </div>
             </div>
