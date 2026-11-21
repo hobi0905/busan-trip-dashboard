@@ -670,6 +670,113 @@ setTimeout(async () => {
     ok("한파 모드도 필터 동작", ev("recWeatherMode") === "cold" && ev("recWeatherFilterSpots([{name:'여의도 한강공원'},{name:'더현대 서울'}]).length") === 1, "");
     w.pickRecWeatherMode("none");
 
+    /* ================= 2026-11-21 (여행 전환 시 추천 상태 초기화) ================= */
+
+    // A 여행(서울 3일)과 B 여행(부산 2일)을 기기에 저장해 두고,
+    // A에서 추천(신규 루트·동선 맞춤·필수 장소)을 돌린 뒤 B로 전환한다.
+    ev(`(() => {
+      const mk = (title, dest, start, end) => ({
+        meta: { title, destination: dest, startDate: start, endDate: end, travelers: 2, hostId: myProfile.id },
+        days: buildDateRangeDays(start, end, dest),
+        expenses: [], weather: [], bookingAlerts: [], checklist: [], members: [], joinRequests: []
+      });
+      const A = mk('A 서울 여행', '서울', '2027-03-06', '2027-03-08');
+      A.days[0].items.push({ id: 'a1', time: '10:00', place: '경복궁', stay: '체류 60분', lat: 37.5796, lng: 126.9770, badges: ['관광'] });
+      const B = mk('B 부산 여행', '부산', '2027-04-10', '2027-04-11');
+      localStorage.setItem(STORAGE_KEY + '_qa-reca', JSON.stringify(A));
+      localStorage.setItem(STORAGE_KEY + '_qa-recb', JSON.stringify(B));
+      registerMyTrip('qa-reca', A.meta);
+      registerMyTrip('qa-recb', B.meta);
+    })()`);
+
+    await w.switchTrip("qa-reca");
+    ok("A 여행(서울) 전환", ev("state.meta.destination") === "서울" && ev("currentSyncId") === "qa-reca", ev("state.meta.destination"));
+
+    // A에서 추천 3종 모두 돌리기
+    w.setRecommendMode("route");
+    w.pickRouteStyle("landmark");
+    w.markRecommendDestEdited("route-dest");
+    w.document.getElementById("route-dest").value = "서울";
+    w.document.getElementById("route-start").value = "2027-03-06";
+    w.document.getElementById("route-end").value = "2027-03-08";
+    await w.generateNewRoute();
+    const aRouteNames = ev("(window._generatedRoutePlan && window._generatedRoutePlan.days || []).flatMap(d => d.items.map(i => i.place))");
+    ok("A 여행 신규 루트 미리보기 생성",
+      ev("window._generatedRoutePlan && window._generatedRoutePlan.dest") === "서울" && aRouteNames.length >= 6,
+      aRouteNames.join(", "));
+
+    w.setRecommendMode("spot");
+    w.document.getElementById("rec-day").value = "1";
+    w.updateRecommendAfterOptions();
+    w.document.getElementById("rec-purpose").value = "카페";
+    await w.runPlaceRecommend();
+    const aSpotNames = ev("(window._lastRecSpots || []).map(s => s.name)");
+    ok("A 여행 동선 맞춤 추천 생성", aSpotNames.length === 5, aSpotNames.join(", "));
+
+    w.setRecommendMode("must");
+    w.document.getElementById("must-dest").value = "서울";
+    w.document.getElementById("must-spot-input").value = "경복궁";
+    w.addMustSpot();
+    ok("A 여행 필수 장소 입력", ev("mustVisitSpots.length") === 1 && /경복궁/.test(w.document.getElementById("must-spots-list").textContent), ev("mustVisitSpots.length"));
+
+    // ── B 여행으로 전환 ──
+    await w.switchTrip("qa-recb");
+    const bText = ["rec-results", "route-results", "must-results"]
+      .map(id => w.document.getElementById(id).textContent.trim()).join("|");
+    ok("B 여행 전환 후 이전 추천 결과·미리보기 비움",
+      bText === "||" && ev("window._generatedRoutePlan") === null && ev("window._lastRecSpots") === null && ev("window._lastRecTarget") === null,
+      JSON.stringify(bText.slice(0, 80)));
+    ok("B 여행 전환 후 이전 추천 장소 재등장 없음", !/경복궁|광장시장|북촌|남산골/.test(bText), bText.slice(0, 80));
+    ok("B 여행 목적지·날짜로 다시 세팅",
+      w.document.getElementById("route-dest").value === "부산"
+      && w.document.getElementById("must-dest").value === "부산"
+      && w.document.getElementById("route-start").value === "2027-04-10"
+      && w.document.getElementById("route-end").value === "2027-04-11"
+      && w.document.getElementById("must-start").value === "2027-04-10"
+      && w.document.getElementById("must-end").value === "2027-04-11",
+      ["route-dest", "must-dest", "route-start", "route-end", "must-start", "must-end"]
+        .map(id => id + "=" + w.document.getElementById(id).value).join(" "));
+    ok("B 여행 전환 후 필수 장소·스타일 초기화",
+      ev("mustVisitSpots.length") === 0 && ev("routeStyleKey") === "balanced"
+      && !/경복궁/.test(w.document.getElementById("must-spots-list").textContent)
+      && w.document.querySelectorAll("#route-style-chips .style-chip").length >= 5
+      && w.document.querySelectorAll("#route-style-chips .style-chip.active").length === 1
+      && /균형/.test(w.document.querySelector("#route-style-chips .style-chip.active").textContent),
+      ev("mustVisitSpots.length") + " / " + ev("routeStyleKey"));
+    ok("B 여행 전환 후 동선 맞춤 일차 선택 정상",
+      w.document.getElementById("rec-day").options.length === 2
+      && w.document.getElementById("rec-day").value === "1"
+      && w.document.getElementById("rec-after").options.length >= 1,
+      `${w.document.getElementById("rec-day").options.length}일 / value=${w.document.getElementById("rec-day").value}`);
+    ok("B 여행 전환 후 추천 탭 기본 모드",
+      w.document.getElementById("rec-spot-panel").style.display === ""
+      && w.document.getElementById("rec-route-panel").style.display === "none"
+      && w.document.getElementById("rec-must-panel").style.display === "none"
+      && w.document.getElementById("rec-mode-spot").className.includes("btn-primary"), "");
+
+    // 사라진 미리보기로 B 일정을 덮어쓰지 않는다
+    const bDaysBefore = ev("JSON.stringify(state.days)");
+    w.applyGeneratedRoute();
+    ok("이전 여행 미리보기로 B 일정 덮어쓰지 않음",
+      ev("JSON.stringify(state.days)") === bDaysBefore && ev("state.meta.destination") === "부산", "");
+
+    // B에서 새로 추천을 돌리면 B 목적지 기준으로 나온다
+    w.setRecommendMode("route");
+    await w.generateNewRoute();
+    const bRouteNames = ev("(window._generatedRoutePlan && window._generatedRoutePlan.days || []).flatMap(d => d.items.map(i => i.place))");
+    ok("B 여행 신규 루트는 부산 기준",
+      ev("window._generatedRoutePlan && window._generatedRoutePlan.dest") === "부산" && bRouteNames.length >= 6
+      && !/경복궁/.test(bRouteNames.join(",")), bRouteNames.slice(0, 6).join(", "));
+
+    // A로 되돌아가도 추천 화면은 미리보기 없이 깨끗하다 (A 일정 자체는 그대로)
+    await w.switchTrip("qa-reca");
+    ok("A 여행 복귀: 추천 상태 다시 초기화·일정 보존",
+      w.document.getElementById("route-results").textContent.trim() === ""
+      && ev("window._generatedRoutePlan") === null
+      && ev("state.meta.destination") === "서울"
+      && ev("state.days[0].items.length") === 1
+      && w.document.getElementById("route-dest").value === "서울", "");
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }

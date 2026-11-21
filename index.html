@@ -11218,6 +11218,7 @@
       };
       currentSyncId = newId;
       currentDay = 1;
+      resetRecommendState(); // 새 여행: 이전 여행의 추천 결과·미리보기 초기화
       const outAlert = addTransportBookingAlert(startDate, outMode, "가는 날");
       const inAlert = addTransportBookingAlert(endDate, inMode, "오는 날");
       localStorage.setItem(getLocalKey(), JSON.stringify(state));
@@ -11280,6 +11281,7 @@
         checklist: []
       };
       if (passHash) sessionStorage.setItem("unlocked_" + currentSyncId, passHash);
+      resetRecommendState(); // 새 여행: 이전 여행의 추천 결과·미리보기 초기화
       registerMyTrip(currentSyncId, state.meta);
       history.replaceState(null, "", getShareUrl());
       closeNewTripModal();
@@ -11726,6 +11728,7 @@
       document.getElementById("trips-modal")?.classList.remove("open");
       currentSyncId = syncId;
       state = loadState();
+      resetRecommendState(); // 이전 여행의 추천 결과·미리보기·입력값이 따라오지 않게
       markTripOpened(syncId);
       history.replaceState(null, "", getShareUrl());
       renderAll();
@@ -12173,6 +12176,56 @@
       if (el) el.dataset.userDest = "1";
     }
 
+    /* 🧹 여행이 바뀔 때(전환·새 여행 만들기) 추천 탭의 임시 상태를 통째로 비운다.
+       이전 여행의 추천 결과·미리보기·입력값이 남으면 다른 도시 루트가 그대로 따라오고,
+       '이 루트로 내 일정 채우기'가 새 여행 일정을 엉뚱한 루트로 덮어쓸 수 있다. */
+    function resetRecommendState() {
+      // 1) 결과 미리보기·저장 대상 (전역 임시 값)
+      window._lastRecSpots = null;
+      window._lastRecTarget = null;
+      window._generatedRoutePlan = null;
+      mustVisitSpots = [];
+      routeStyleKey = "balanced";
+
+      // 2) 결과·미리보기 DOM 비우기
+      ["rec-results", "route-results", "must-results"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = "";
+      });
+
+      // 3) 일차가 줄어든 여행으로 넘어와도 선택 일차가 깨지지 않게
+      const days = Array.isArray(state.days) ? state.days : [];
+      if (days.length && !days.some(d => d.day === currentDay)) currentDay = days[0].day;
+
+      // 4) 목적지·날짜 입력값은 새 여행 기준으로
+      const dest = String(state.meta?.destination || "").split(/[(\s]/)[0];
+      const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v == null ? "" : String(v); };
+      ["route-dest", "must-dest"].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        delete el.dataset.userDest; // 이전 여행에서 직접 고친 목적지 표시도 해제
+        el.value = dest;
+      });
+      setVal("route-start", state.meta?.startDate || "");
+      setVal("route-end", state.meta?.endDate || "");
+      setVal("must-start", state.meta?.startDate || "");
+      setVal("must-end", state.meta?.endDate || "");
+      setVal("must-spot-input", "");
+      setVal("rec-time", "점심");
+      setVal("rec-purpose", "카페");
+
+      // 5) 일차 선택은 새 여행의 현재 일차로 다시 세팅되게 비워 둔다
+      const daySel = document.getElementById("rec-day");
+      if (daySel) { daySel.innerHTML = ""; daySel.value = ""; }
+      const afterSel = document.getElementById("rec-after");
+      if (afterSel) { afterSel.innerHTML = ""; afterSel.value = ""; }
+
+      // 6) 기본 모드(1. 동선 맞춤)로 되돌리고 칩·필수 장소 목록 다시 그리기
+      setRecommendMode("spot");
+      try { renderRouteStyleChips(); } catch (e) { console.warn(e); }
+      try { renderMustSpotsList(); } catch (e) { console.warn(e); }
+    }
+
     function updateRecommendAfterOptions() {
       const dayNum = Number(document.getElementById("rec-day")?.value) || currentDay;
       const dayObj = state.days.find(d => d.day === dayNum);
@@ -12541,6 +12594,7 @@
       currentSyncId = newId;
       state = newTrip;
       currentDay = 1;
+      resetRecommendState(); // 새 여행: 이전 여행의 추천 결과·미리보기 초기화
       // 가는 날·오는 날 교통수단에 맞춰 예매 오픈일 알림 자동 생성 (자차·기타 제외)
       const outAlert = addTransportBookingAlert(startDate, outMode, "가는 날");
       const inAlert = addTransportBookingAlert(endDate, inMode, "오는 날");

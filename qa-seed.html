@@ -1,0 +1,54 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>QA seed (임시 · 커밋하지 않음)</title>
+<script>
+/* QA 검증용 임시 페이지: qa- 로 시작하는 여행 두 개를 이 기기에만 심고 대시보드로 넘어간다.
+   실제 클라우드(busan-2027-gayeon)는 건드리지 않는다. */
+(function () {
+  var PROF_KEY = "busan_trip_my_profile_v1";
+  if (!localStorage.getItem(PROF_KEY)) {
+    localStorage.setItem(PROF_KEY, JSON.stringify({ id: "u_qa_seed", nickname: "QA검증", avatar: "" }));
+  }
+  var prof = JSON.parse(localStorage.getItem(PROF_KEY));
+  var wd = ["일", "월", "화", "수", "목", "금", "토"];
+
+  function iso(d) {
+    var p = function (n) { return String(n).padStart(2, "0"); };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+  }
+  function days(startStr, endStr, dest) {
+    var s = new Date(startStr + "T00:00:00"), e = new Date(endStr + "T00:00:00");
+    var n = Math.max(1, Math.min(14, Math.round((e - s) / 86400000) + 1));
+    var out = [];
+    for (var i = 0; i < n; i++) {
+      var d = new Date(s.getFullYear(), s.getMonth(), s.getDate() + i);
+      out.push({
+        day: i + 1, date: iso(d), label: (i + 1) + "일차 (" + wd[d.getDay()] + ")",
+        subtitle: dest + " " + (i + 1) + "일차", city: dest, cityLabel: dest, area: dest,
+        planBTitle: "우천·날씨 변동 시 실내 코스", planBDesc: "카페·실내 전시·맛집 위주로 이동해 보세요.", items: []
+      });
+    }
+    return out;
+  }
+  function trip(title, dest, start, end) {
+    return {
+      meta: { title: title, destination: dest, startDate: start, endDate: end, travelers: 2, hostId: prof.id, themeColor: "#0284c7" },
+      days: days(start, end, dest), expenses: [], weather: [], bookingAlerts: [], checklist: [], members: [], joinRequests: []
+    };
+  }
+
+  var A = trip("QA · 서울 여행", "서울", "2027-03-06", "2027-03-08");
+  A.days[0].items = [{ id: "a1", time: "10:00", place: "경복궁", stay: "체류 60분", moveMode: "일정 시작", moveMin: 0, moveCost: 0, costTotal: 0, badges: ["관광"], lat: 37.5796, lng: 126.977, mapUrl: "https://map.naver.com/p/search/" + encodeURIComponent("경복궁") }];
+  var B = trip("QA · 부산 여행", "부산", "2027-04-10", "2027-04-11");
+
+  localStorage.setItem("busan_trip_dashboard_v1_qa-browser-a", JSON.stringify(A));
+  localStorage.setItem("busan_trip_dashboard_v1_qa-browser-b", JSON.stringify(B));
+  localStorage.setItem("busan_trip_my_trips_v1_" + prof.id, JSON.stringify([
+    { syncId: "qa-browser-a", title: A.meta.title, startDate: A.meta.startDate, endDate: A.meta.endDate, locked: false, hostId: prof.id, updatedAt: new Date().toISOString(), lastOpenedAt: "" },
+    { syncId: "qa-browser-b", title: B.meta.title, startDate: B.meta.startDate, endDate: B.meta.endDate, locked: false, hostId: prof.id, updatedAt: new Date().toISOString(), lastOpenedAt: "" }
+  ]));
+
+  var to = new URLSearchParams(location.search).get("to") || "qa-browser-a";
+  location.replace("index.html?trip=" + encodeURIComponent(to));
+})();
+</script>
