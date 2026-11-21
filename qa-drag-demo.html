@@ -28,6 +28,7 @@
     D.querySelector('.nav-btn[data-tab="timeline"]').click();
     await sleep(600);
 
+    await sleep(4000);   // 날씨 자동 갱신이 끝난 뒤에 시작한다
     var eb = D.getElementById("edit-mode-btn");
     if (eb && /일정 편집/.test(eb.textContent)) { eb.click(); await sleep(500); }
 

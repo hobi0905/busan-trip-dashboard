@@ -562,6 +562,34 @@ setTimeout(async () => {
       && !w.document.body.classList.contains("tl-dragging"), "");
     w.toggleEditMode();
 
+    // 36) 🌀 드래그 중에 목록이 다시 그려지는 경우(날씨·동기화)에도 순서가 깨지지 않는다
+    ev("state.meta = { title:'드래그 재렌더', destination:'부산', startDate:'2027-01-31', endDate:'2027-02-02', travelers:2 }; state.days = [{day:1,date:'2027-01-31',label:'1일차 (일)', items:[{id:'r1',time:'09:00',place:'가'},{id:'r2',time:'10:00',place:'나'},{id:'r3',time:'11:00',place:'다'},{id:'r4',time:'12:00',place:'라'}]}]; state.bookings = []; currentDay = 1; saveState();");
+    w.toggleEditMode();
+    const rList = w.document.getElementById("timeline-list");
+    let rRows = [...rList.querySelectorAll(".tl-edit-row[data-item-id]")];
+    rRows.forEach((r, i) => {
+      r.getBoundingClientRect = () => ({ top: i * 70, bottom: i * 70 + 60, height: 60, left: 8, right: 382, width: 374, x: 8, y: i * 70 });
+    });
+    const rEvt = (type, y) => {
+      const e = new w.Event(type, { bubbles: true, cancelable: true });
+      const t = { identifier: 9, target: rRows[0], clientX: 360, clientY: y };
+      e.touches = type === "touchend" ? [] : [t];
+      e.changedTouches = [t];
+      e.targetTouches = e.touches;
+      return e;
+    };
+    rRows[0].querySelector(".tl-edit-handle").dispatchEvent(rEvt("touchstart", 30));
+    w.document.dispatchEvent(rEvt("touchmove", 190));
+    w.renderTimeline();   // 날씨 갱신 등으로 드래그 도중 목록이 다시 그려지는 상황
+    await new Promise(r => setTimeout(r, 250));
+    ok("드래그 중 재렌더: 행 중복 없음", w.document.querySelectorAll("#timeline-list .tl-edit-row[data-item-id]").length === 4
+      && !w.document.querySelector(".tl-drag-ghost") && !w.document.querySelector(".tl-drag-slot"),
+      `rows=${w.document.querySelectorAll("#timeline-list .tl-edit-row[data-item-id]").length}`);
+    ok("드래그 중 재렌더: 순서 유지", ev("state.days[0].items.map(i=>i.id).join(',')") === "r2,r3,r1,r4",
+      ev("state.days[0].items.map(i=>i.id).join(',')"));
+    w.document.dispatchEvent(rEvt("touchend", 190));
+    w.toggleEditMode();
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }
