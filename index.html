@@ -11479,10 +11479,10 @@
       box.innerHTML = list.map(p => {
         const k = placeKindMeta(p.kind);
         const nm = cleanPlaceName(p.label) || p.label || k.label;
-        const addrText = String(p.roadAddress || "").trim()
-          || (String(p.address || p.label || "").trim() !== nm ? String(p.address || "").trim() : "");
+        const rawAddr = String(p.address || "").trim();
+        const addrText = String(p.roadAddress || "").trim() || (rawAddr !== nm ? rawAddr : "");
         const hasCoord = typeof p.lat === "number" && typeof p.lng === "number";
-        const line2 = addrText || (hasCoord ? "📍 위치 확인됨" : "주소 미입력");
+        const line2 = addrText || (hasCoord ? "📍 위치 확인됨" : (rawAddr ? "" : "주소 미입력"));
         const tag = p.auto ? `<span class="tag blue" style="font-size:10px;padding:1px 5px;margin-left:4px;">예약 연동</span>` : "";
         return `<div class="place-row">
           <div style="flex:1;min-width:0;">
