@@ -5471,10 +5471,12 @@
       if (!q || !kakaoMapsApi()) return null;
       const variants = [];
       const add = (v) => { const t = String(v || "").trim(); if (t && !variants.includes(t)) variants.push(t); };
-      add(q);
       const stripped = q.replace(/^(호텔|Hotel|HOTEL)\s*/i, "").replace(/\s*(호텔|Hotel)$/i, "").trim();
+      // 여행지가 있으면 '호텔명 + 여행지'를 먼저 본다 — 다른 동네 동명 숙소를 피한다
+      const cityHint = String(opts.cityHint || "").trim();
+      if (cityHint && !q.includes(cityHint)) { add(`${q} ${cityHint}`); if (stripped) add(`${stripped} ${cityHint}`); }
+      add(q);
       if (stripped && stripped !== q) add(stripped);
-      if (opts.cityHint && !q.includes(opts.cityHint)) { add(`${q} ${opts.cityHint}`); if (stripped) add(`${stripped} ${opts.cityHint}`); }
       const nq = normPlaceQuery(q);
       const core = normPlaceQuery(stripped || q);
       for (const v of variants.slice(0, 4)) {
@@ -7332,12 +7334,13 @@
     }
 
     // 지도 배율 변환 — 카카오 level(1=가장 가까움) ↔ Leaflet zoom
+    // 실측: level 1 ≈ zoom 18.9 … level 14 ≈ zoom 5.9 이므로 zoom = 20 - level 로 맞춘다
     function mapZoomToLevel(zoom) {
       const z = Number(zoom);
       if (!isFinite(z)) return 8;
-      return Math.max(1, Math.min(14, Math.round(19 - z)));
+      return Math.max(1, Math.min(14, Math.round(20 - z)));
     }
-    function mapLevelToZoom(level) { return Math.max(0, 19 - Number(level || 8)); }
+    function mapLevelToZoom(level) { return Math.max(0, 20 - Number(level || 8)); }
 
     function llToKakao(ll) {
       const kakao = kakaoMapsApi();
