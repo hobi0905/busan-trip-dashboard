@@ -1302,7 +1302,7 @@
     .sheet-body { display: flex; flex-direction: column; }
 
     .home-row {
-      display: grid; grid-template-columns: 22px 36px minmax(0, 1fr) 46px auto 9px;
+      display: grid; grid-template-columns: 22px minmax(0, 1fr) 46px auto 9px;
       gap: 6px; align-items: center;
       padding: 6px 8px; margin-bottom: 6px;
       background: #fff; border: 1px solid #eaf1f9; border-radius: 14px;
@@ -1317,7 +1317,6 @@
       font-size: 11.5px; font-weight: 800;
     }
     .hr-num.no-pin { background: #94a3b8; }
-    .hr-time { font-size: 11px; font-weight: 800; color: var(--ocean-dark); white-space: nowrap; }
     .hr-main { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
     .hr-place {
       font-size: 13.5px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em;
@@ -1531,11 +1530,10 @@
     body.view-pc .home-scrim { display: none !important; }
     body.view-pc .home-sheet .sheet-head { padding: 0 2px 12px; }
     body.view-pc .home-row {
-      grid-template-columns: 24px 44px minmax(0, 1fr) 52px auto 12px;
+      grid-template-columns: 24px minmax(0, 1fr) 52px auto 12px;
       gap: 8px; padding: 8px 10px; margin-bottom: 7px;
     }
     body.view-pc .hr-place { font-size: 14px; }
-    body.view-pc .hr-time { font-size: 11.5px; }
 
     /* ─────────────── 📅 일정: 좌 지도(스티키) / 우 타임라인 ─────────────── */
     body.view-pc #tab-timeline.active {
@@ -8334,7 +8332,6 @@
         const rowClick = memo ? `openTimelineFromHome(${dayObj?.day || currentDay})` : `homeFocusPin(${num})`;
         return `<div class="home-row${memo ? " home-row-memo" : ""}" data-num="${memo ? "memo" : num}" role="button" tabindex="0" onclick="${rowClick}">
           <span class="hr-num${hasPin ? "" : " no-pin"}">${memo ? "📝" : num}</span>
-          ${it.time ? `<span class="hr-time">${escapeAttr(it.time)}</span>` : ""}
           <span class="hr-main">
             <span class="hr-place">${escapeAttr(memo ? (memoTitleOf(it) || "메모") : (it.place || "이름 없음"))}</span>
             <span class="hr-memo">${escapeAttr(homeMemoLine(it))}</span>

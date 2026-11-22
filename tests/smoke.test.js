@@ -1193,6 +1193,33 @@ setTimeout(async () => {
         && !/체류|14:30/.test(keptCard.textContent), keptCard ? keptCard.textContent.replace(/\s+/g, " ").slice(0, 70) : "");
     }
 
+    // 52) 🏠 홈 탭 '일차 일정 요약' 시트에도 시간 없이 1·2·3 번호만
+    {
+      ev(`currentDay = 1; editMode = false;
+        state.meta = { title:'홈 시트 테스트', destination:'부산', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2 };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [
+          { id:'hs-a', time:'09:00', place:'부산역', lat:35.1157, lng:129.0403, badges:[], costTotal:0 },
+          { id:'hs-b', time:'12:30', place:'본전돼지국밥', lat:35.1165, lng:129.0411, badges:[], costTotal:0 },
+          { id:'hs-memo', kind:'memo', time:'', place:'메모', memoTitle:'체크인 준비', memo:'우산 챙기기', badges:['📝 메모'] },
+          { id:'hs-c', time:'18:00', place:'광안리 해변', lat:35.1532, lng:129.1187, badges:[], costTotal:0 }
+        ] }, { day:2, label:'2일차', date:'2027-03-07', items: [] }];
+        state.bookings = []; saveState();`);
+      w.renderHome();
+      const sheetEl = w.document.getElementById("home-sheet-body");
+      const homeRows = [...sheetEl.querySelectorAll(".home-row")];
+      const rowText = (r) => r.textContent.replace(/\s+/g, " ").trim();
+      ok("홈 요약 시트: 방문 시간이 안 적힌다", homeRows.length === 4 && !/\b\d{1,2}:\d{2}\b/.test(rowText(sheetEl)),
+        rowText(sheetEl).slice(0, 120));
+      ok("홈 요약 시트: 1·2·3 순번은 그대로", homeRows.filter(r => r.dataset.num !== "memo")
+        .map(r => r.querySelector(".hr-num").textContent.trim()).join(",") === "1,2,3",
+        homeRows.map(r => r.querySelector(".hr-num").textContent.trim()).join(","));
+      ok("홈 요약 시트: 일정 순서 = 배열 순서", homeRows.map(r => (r.querySelector(".hr-place") || {}).textContent)
+        .filter(Boolean).join(" > ") === "부산역 > 본전돼지국밥 > 체크인 준비 > 광안리 해변",
+        homeRows.map(r => (r.querySelector(".hr-place") || {}).textContent).join(" > "));
+      ok("홈 요약 시트: 메모는 📝 그대로", homeRows.some(r => r.dataset.num === "memo" && /📝/.test(rowText(r)) && /우산 챙기기/.test(rowText(r))), "");
+      ok("홈 요약 시트: 시간 칸(.hr-time) 제거", sheetEl.querySelectorAll(".hr-time").length === 0 && !/\.hr-time/.test(html), "");
+    }
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }
