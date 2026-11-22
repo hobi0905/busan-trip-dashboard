@@ -1392,7 +1392,72 @@ setTimeout(async () => {
       ev("state.bookings = []; state.savedPlaces = []; state.days[0].items = []; saveState();");
     }
 
-    // ===== 📍 위치 표기: 좌표 숫자 · '좌표' 문구 없이 도로명 주소로 =====
+    // 56) ⚡ 새 일정 추가 — 저장해 둔 집·호텔 칩을 누르면 위치까지 바로 채워지고, 다시 검색할 필요가 없다
+    {
+      ev(`currentDay = 1; editMode = false;
+        state.meta = { title:'거점 즉시 입력', destination:'부산', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2, tripType:'domestic' };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }, { day:2, label:'2일차', date:'2027-03-07', items: [] }];
+        state.bookings = [];
+        state.savedPlaces = [
+          { id:'pl-home-1', kind:'home', label:'집', address:'인천 미추홀구 인하로 100', roadAddress:'인천 미추홀구 인하로 100', lat:37.4586, lng:126.6425 },
+          { id:'pl-hotel-1', kind:'hotel', label:'호텔 아쿠아 펠리스', address:'호텔 아쿠아 펠리스', roadAddress:'부산 수영구 광안해변로 225', lat:35.1532, lng:129.1180 }
+        ];
+        saveState();`);
+      // 지도 검색이 실제로 돌았는지 감시
+      const realSearch = w.smartPlaceSearch;
+      let searchCalls = 0;
+      w.smartPlaceSearch = (...a) => { searchCalls++; return realSearch(...a); };
+
+      w.openPlaceModal(null);
+      const chip = [...w.document.getElementById("pm-saved-single").querySelectorAll(".sp-chip")].find(b => /호텔 아쿠아 펠리스/.test(b.textContent));
+      ok("저장 거점 칩이 새 일정 모달에 보인다", !!chip, w.document.getElementById("pm-saved-single").textContent.replace(/\s+/g, " ").slice(0, 60));
+      chip.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      const hint = w.document.getElementById("pm-pick-hint");
+      ok("칩 클릭 → 위치가 바로 확정됐다고 알려 준다", hint.style.display !== "none" && /등록된 위치 바로 사용됨/.test(hint.textContent), hint.textContent);
+      ok("칩 클릭 → 도로명 주소까지 보인다", /부산 수영구 광안해변로 225/.test(hint.textContent), hint.textContent);
+      ok("칩 클릭 → 좌표 즉시 세팅", ev("pickedLat") === 35.1532 && ev("pickedLng") === 129.1180, `${ev("pickedLat")},${ev("pickedLng")}`);
+      ok("칩 클릭 → 좌표 숫자는 화면에 안 보인다", !/-?\d{2,3}\.\d{3,}\s*,\s*-?\d{1,3}\.\d{3,}/.test(w.document.getElementById("place-modal").textContent), "");
+      ok("칩 클릭 → 검색은 돌지 않는다", searchCalls === 0, String(searchCalls));
+      ok("칩 클릭 → 검색 결과 칸은 비어 있다", w.document.getElementById("pm-search-results").innerHTML.trim() === "", "");
+
+      // 메모·금액만 적고 바로 저장 → 검색 없이 좌표·주소까지 저장된다
+      w.document.getElementById("pm-memo").value = "오션뷰 요청";
+      w.document.getElementById("pm-cost").value = "211411";
+      await w.savePlaceEdit();
+      const saved = JSON.parse(ev("JSON.stringify(state.days[0].items[0] || null)"));
+      ok("검색 없이 바로 저장 — 장소명·좌표·주소", !!saved && saved.place === "호텔 아쿠아 펠리스" && saved.lat === 35.1532 && saved.lng === 129.1180 && saved.addr === "부산 수영구 광안해변로 225",
+        JSON.stringify(saved && { place: saved.place, lat: saved.lat, lng: saved.lng, addr: saved.addr }));
+      ok("검색 없이 바로 저장 — 모달 닫힘·검색 0회", !w.document.getElementById("place-modal").classList.contains("open") && searchCalls === 0, String(searchCalls));
+
+      // 집 칩도 같은 방식으로 바로 채워진다
+      w.openPlaceModal(null);
+      const homeChip = [...w.document.getElementById("pm-saved-single").querySelectorAll(".sp-chip")].find(b => /🏠 집/.test(b.textContent));
+      homeChip.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      const homeHint = w.document.getElementById("pm-pick-hint").textContent;
+      ok("집 칩도 바로 좌표·주소", ev("pickedLat") === 37.4586 && /인천 미추홀구 인하로 100/.test(homeHint), `${ev("pickedLat")} / ${homeHint}`);
+
+      // 좌표가 없는 거점(새로 넣은 예약 등) → 뒤에서 조용히 찾아 채우고, 예전 좌표가 남지 않는다
+      ev(`state.savedPlaces.push({ id:'pl-new-hotel', kind:'hotel', label:'신라스테이 해운대', address:'신라스테이 해운대' }); saveState();`);
+      const realGeo = w.geocodeByName;
+      const geoAsked = [];
+      w.geocodeByName = async (q) => { geoAsked.push(q); return { lat: 35.1595, lng: 129.1626, address: "부산 해운대구 해운대로 570" }; };
+      w.openPlaceModal(null);
+      const newChip = [...w.document.getElementById("pm-saved-single").querySelectorAll(".sp-chip")].find(b => /신라스테이 해운대/.test(b.textContent));
+      newChip.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      ok("좌표 없는 거점 → 찾는 중 안내", /찾는 중/.test(w.document.getElementById("pm-pick-hint").textContent), w.document.getElementById("pm-pick-hint").textContent);
+      ok("좌표 없는 거점 → 예전 좌표가 남지 않는다", ev("pickedLat") === null, String(ev("pickedLat")));
+      await ev("pickedCoordPromise");
+      const autoHint = w.document.getElementById("pm-pick-hint").textContent;
+      ok("좌표 없는 거점 → 자동으로 위치·주소 채움", ev("pickedLat") === 35.1595 && ev("pickedLng") === 129.1626 && /위치 확인됨/.test(autoHint) && /부산 해운대구 해운대로 570/.test(autoHint), `${ev("pickedLat")} / ${autoHint}`);
+      ok("자동 찾기도 검색 버튼 없이 조용히", geoAsked.length >= 1 && searchCalls === 0, `${geoAsked.join("|")} / 검색 ${searchCalls}`);
+      await w.savePlaceEdit();
+      const autoSaved = JSON.parse(ev("JSON.stringify(state.days[0].items.find(i => i.place === '신라스테이 해운대') || null)"));
+      ok("자동 찾은 위치로 바로 저장", !!autoSaved && autoSaved.lat === 35.1595 && autoSaved.lng === 129.1626, JSON.stringify(autoSaved && { lat: autoSaved.lat, lng: autoSaved.lng }));
+
+      w.geocodeByName = realGeo;
+      w.smartPlaceSearch = realSearch;
+      ev("state.bookings = []; state.savedPlaces = []; state.days[0].items = []; saveState();");
+    }
     {
       const rawCoordRe = /-?\d{2,3}\.\d{3,}\s*,\s*-?\d{1,3}\.\d{3,}/;
       ok("도로명 주소 우선 표기", ev("placeAddressText({lat:37.5,lng:127, roadAddress:'서울 마포구 마포대로 109', sub:'다른주소'})") === "서울 마포구 마포대로 109",
