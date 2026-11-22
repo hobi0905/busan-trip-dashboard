@@ -1235,7 +1235,7 @@ setTimeout(async () => {
         && !/체류|14:30/.test(keptCard.textContent), keptCard ? keptCard.textContent.replace(/\s+/g, " ").slice(0, 70) : "");
     }
 
-    // 52) 🏠 홈 탭 '일차 일정 요약' 시트에도 시간 없이 1·2·3 번호만
+    // 52) 🏠 홈 탭 '일차 일정 요약' 시트 — 시간 없이 1·2·3 번호만, 📝 메모는 빠진다
     {
       ev(`currentDay = 1; editMode = false;
         state.meta = { title:'홈 시트 테스트', destination:'부산', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2 };
@@ -1250,15 +1250,19 @@ setTimeout(async () => {
       const sheetEl = w.document.getElementById("home-sheet-body");
       const homeRows = [...sheetEl.querySelectorAll(".home-row")];
       const rowText = (r) => r.textContent.replace(/\s+/g, " ").trim();
-      ok("홈 요약 시트: 방문 시간이 안 적힌다", homeRows.length === 4 && !/\b\d{1,2}:\d{2}\b/.test(rowText(sheetEl)),
+      ok("홈 요약 시트: 방문 시간이 안 적힌다", homeRows.length === 3 && !/\b\d{1,2}:\d{2}\b/.test(rowText(sheetEl)),
         rowText(sheetEl).slice(0, 120));
-      ok("홈 요약 시트: 1·2·3 순번은 그대로", homeRows.filter(r => r.dataset.num !== "memo")
+      ok("홈 요약 시트: 1·2·3 순번은 그대로", homeRows
         .map(r => r.querySelector(".hr-num").textContent.trim()).join(",") === "1,2,3",
         homeRows.map(r => r.querySelector(".hr-num").textContent.trim()).join(","));
-      ok("홈 요약 시트: 일정 순서 = 배열 순서", homeRows.map(r => (r.querySelector(".hr-place") || {}).textContent)
-        .filter(Boolean).join(" > ") === "부산역 > 본전돼지국밥 > 체크인 준비 > 광안리 해변",
+      ok("홈 요약 시트: 일정 순서 = 배열 순서(메모 자리는 비고 번호는 이어짐)", homeRows.map(r => (r.querySelector(".hr-place") || {}).textContent)
+        .filter(Boolean).join(" > ") === "부산역 > 본전돼지국밥 > 광안리 해변",
         homeRows.map(r => (r.querySelector(".hr-place") || {}).textContent).join(" > "));
-      ok("홈 요약 시트: 메모는 📝 그대로", homeRows.some(r => r.dataset.num === "memo" && /📝/.test(rowText(r)) && /우산 챙기기/.test(rowText(r))), "");
+      ok("홈 요약 시트: 📝 메모는 안 나온다", !/📝|체크인 준비|우산 챙기기|메모/.test(sheetEl.textContent)
+        && !sheetEl.querySelector('.home-row[data-num="memo"]') && homeRows.every(r => r.dataset.num !== "memo"),
+        rowText(sheetEl).slice(0, 120));
+      ok("홈 요약 시트: 개수는 장소만(메모 개수 없음)", (w.document.getElementById("home-sheet-count").textContent || "").trim() === "· 3곳",
+        w.document.getElementById("home-sheet-count").textContent);
       ok("홈 요약 시트: 시간 칸(.hr-time) 제거", sheetEl.querySelectorAll(".hr-time").length === 0 && !/\.hr-time/.test(html), "");
     }
 
@@ -3019,6 +3023,58 @@ setTimeout(async () => {
         $("#menu-modal-list .menu-name-input").value);
       w.closeMenuModal();
       ev(`state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }]; state.expenses = []; saveState();`);
+    }
+
+    // 70) 🏠 홈 탭 일정 요약에서 📝 메모 제외 — 일정 탭·지도·데이터는 그대로
+    {
+      ev(`currentDay = 1; editMode = false;
+        state.meta = { title:'홈 메모 제외', destination:'부산', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2 };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [
+          { id:'mx-memo-1', kind:'memo', time:'', place:'메모', memoTitle:'체크인 준비', memo:'우산 챙기기', badges:['📝 메모'] },
+          { id:'mx-a', time:'09:00', place:'부산역', lat:35.1157, lng:129.0403, badges:[], costTotal:0 },
+          { id:'mx-memo-2', kind:'memo', time:'', place:'메모', memoTitle:'', memo:'보조배터리 충전', badges:['📝 메모'] },
+          { id:'mx-b', time:'13:00', place:'감천문화마을', lat:35.0975, lng:129.0106, badges:[], costTotal:0 },
+          { id:'mx-c', time:'18:00', place:'광안리 해변', lat:35.1532, lng:129.1187, badges:[], costTotal:0 }
+        ] }, { day:2, label:'2일차', date:'2027-03-07', items: [
+          { id:'mx-memo-3', kind:'memo', time:'', place:'메모', memo:'짐 정리', badges:['📝 메모'] }
+        ] }]; state.bookings = []; saveState();`);
+      w.renderTimeline();
+      w.renderHome();
+      const sheet = w.document.getElementById("home-sheet-body");
+      const rows = [...sheet.querySelectorAll(".home-row")];
+      const sheetTxt = sheet.textContent.replace(/\s+/g, " ").trim();
+      ok("홈 메모 제외: 요약에는 일반 일정만", rows.length === 3
+        && rows.map(r => (r.querySelector(".hr-place") || {}).textContent).join(" > ") === "부산역 > 감천문화마을 > 광안리 해변",
+        rows.map(r => (r.querySelector(".hr-place") || {}).textContent).join(" > "));
+      ok("홈 메모 제외: 메모 글씨·📝 아이콘이 없다", !/📝|체크인 준비|우산 챙기기|보조배터리|짐 정리|메모/.test(sheetTxt)
+        && rows.every(r => r.dataset.num !== "memo"), sheetTxt.slice(0, 140));
+      ok("홈 메모 제외: 순번은 메모를 건너뛰고 1·2·3", rows.map(r => r.querySelector(".hr-num").textContent.trim()).join(",") === "1,2,3",
+        rows.map(r => r.querySelector(".hr-num").textContent.trim()).join(","));
+      ok("홈 메모 제외: 개수는 장소만", (w.document.getElementById("home-sheet-count").textContent || "").trim() === "· 3곳",
+        w.document.getElementById("home-sheet-count").textContent);
+      ok("홈 메모 제외: 홈 지도 핀도 장소만", ev("JSON.stringify(homeGeoPts().map(p=>p.it.place))") === '["부산역","감천문화마을","광안리 해변"]',
+        ev("homeGeoPts().map(p=>p.it.place).join(',')"));
+
+      // 일정 탭은 그대로 — 메모 카드 두 장이 순서 자리에 보인다
+      const tlCards = [...w.document.querySelectorAll("#timeline-list [data-card-id]")];
+      const tlMemos = [...w.document.querySelectorAll("#timeline-list .tl-memo-card")];
+      ok("홈 메모 제외: 일정 탭 메모 카드는 그대로", tlCards.length === 5 && tlMemos.length === 2
+        && /체크인 준비/.test(tlMemos[0].textContent) && /보조배터리 충전/.test(tlMemos[1].textContent),
+        `카드 ${tlCards.length} / 메모 ${tlMemos.length}`);
+      ok("홈 메모 제외: 메모 데이터는 삭제되지 않는다", ev("state.days[0].items.length") === 5
+        && ev("state.days[0].items.map(i=>i.kind||'').join(',')") === "memo,,memo,,"
+        && ev("isMemoItem(state.days[0].items[0])") === true,
+        `items ${ev("state.days[0].items.length")}`);
+
+      // 메모만 있는 일차 — 요약은 비고 0곳
+      w.setHomeDay(2);
+      const emptySheet = w.document.getElementById("home-sheet-body");
+      ok("홈 메모 제외: 메모만 있는 일차는 빈 요약", emptySheet.querySelectorAll(".home-row").length === 0
+        && !/📝/.test(emptySheet.textContent)
+        && (w.document.getElementById("home-sheet-count").textContent || "").trim() === "· 0곳",
+        `${emptySheet.textContent.replace(/\s+/g, " ").trim()} / ${w.document.getElementById("home-sheet-count").textContent}`);
+      w.setHomeDay(1);
+      ok("홈 메모 제외: 일차를 돌아와도 3곳", w.document.querySelectorAll("#home-sheet-body .home-row").length === 3, "");
     }
 
   } catch (e) {
