@@ -315,6 +315,31 @@
       border-bottom: 1px solid var(--border);
     }
     .expense-item:last-child { border-bottom: none; }
+    /* 👥 사람별 경비 — 나·동반인별 결제액·몫·정산 */
+    #exp-people-card .exp-person-row { padding: 8px 0; border-bottom: 1px solid var(--border); }
+    #exp-people-card .exp-person-row:last-of-type { border-bottom: none; }
+    #exp-people-card .exp-person-top { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    #exp-people-card .exp-person-name { font-size: 13.5px; font-weight: 800; }
+    #exp-people-card .exp-person-name.me {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--ocean-soft); color: var(--ocean-dark);
+      border: 1px solid var(--ocean-border); border-radius: 999px; padding: 3px 10px;
+    }
+    #exp-people-card .exp-person-input { flex: 1 1 auto; height: 32px; padding: 4px 9px; font-size: 13px; font-weight: 700; border-radius: 9px; }
+    #exp-people-card .exp-person-nums { display: flex; flex-wrap: wrap; gap: 3px 10px; margin-top: 4px; font-size: 11.5px; color: var(--muted); font-weight: 600; }
+    #exp-people-card .exp-person-nums b { color: var(--text); font-weight: 800; }
+    #exp-people-card .exp-settle-line {
+      margin-top: 8px; padding: 7px 10px; border-radius: 10px;
+      background: var(--ocean-soft); border: 1px solid var(--ocean-border);
+      font-size: 12px; font-weight: 800; color: var(--ocean-dark); line-height: 1.45; word-break: keep-all;
+    }
+    #exp-people-card .exp-settle-line.quiet { background: #f8fafc; border-color: var(--border); color: var(--muted); font-weight: 700; }
+    .exp-edit-btn { flex: 0 0 auto; }
+    /* ✏️ 정산 수정 모달 */
+    .exp-payer-row { display: flex; align-items: center; gap: 6px; padding: 5px 0; }
+    .exp-payer-row .exp-payer-name { flex: 0 0 62px; font-size: 12.5px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .exp-payer-row .exp-payer-input { flex: 1 1 auto; height: 34px; padding: 4px 9px; font-size: 13px; font-weight: 700; text-align: right; }
+    .exp-payer-row .btn { flex: 0 0 auto; }
     /* ===== 🍽️ 메뉴 모달 — 메뉴명·가격 인라인 수정 ===== */
     .menu-edit-hint { font-size: 11px; line-height: 1.5; color: var(--muted); margin: 0 0 4px; }
     .menu-edit-hint b { color: var(--ocean-dark); }
@@ -1998,6 +2023,8 @@
             </div>
           </div>
         </div>
+        <!-- 👥 나·동반인별 결제액·몫·정산 — 동반인 추가/이름 수정도 여기서 -->
+        <div class="card" id="exp-people-card"></div>
         <div class="card" id="fx-card-2" data-fx-idx="1"></div>
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -2501,6 +2528,32 @@
         <span id="menu-modal-total" style="color:var(--ocean-dark);">₩0</span>
       </div>
       <button class="btn btn-primary" style="width:100%;" onclick="saveMenuSelection()">메뉴·경비 저장하기</button>
+    </div>
+  </div>
+
+  <!-- ✏️ 정산 내역 수정 모달 — 경비 포함 여부 · 누가 얼마 결제하는지 -->
+  <div id="exp-edit-modal" class="modal-backdrop center" onclick="if(event.target===this)closeExpenseEditModal()">
+    <div class="modal-sheet">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;">
+        <div id="exp-edit-title" style="font-size:16px;font-weight:800;min-width:0;overflow-wrap:anywhere;">✏️ 정산 수정</div>
+        <button class="btn btn-sm" style="flex:0 0 auto;background:#f1f5f9;" onclick="closeExpenseEditModal()">닫기</button>
+      </div>
+      <div id="exp-edit-summary" style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:10px;"></div>
+      <label style="display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:800;margin-bottom:12px;cursor:pointer;">
+        <input type="checkbox" id="exp-edit-include" onchange="toggleExpenseIncludeFromModal(this.checked)" style="width:18px;height:18px;flex:0 0 auto;" />
+        <span>경비에 포함</span>
+        <span id="exp-edit-include-hint" style="font-size:11.5px;font-weight:600;color:var(--muted);"></span>
+      </label>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 4px;">
+        <span style="font-size:12.5px;font-weight:800;color:var(--ocean-dark);">누가 얼마 결제하나요?</span>
+        <button class="btn btn-soft btn-sm" style="flex:0 0 auto;" onclick="splitExpenseEvenly()">N빵</button>
+      </div>
+      <div id="exp-edit-payers"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;font-size:12px;font-weight:700;color:var(--muted);">
+        <span id="exp-edit-sum-hint"></span>
+        <span id="exp-edit-sum-val" style="color:var(--ocean-dark);font-weight:800;">₩0</span>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="saveExpenseEdit()">저장</button>
     </div>
   </div>
 
@@ -10563,6 +10616,299 @@
       else if (e.key === "Escape") closeBigMap();
     });
 
+    /* =====================================================================
+       👥 사람별 경비 — '나' + 동반인 명단 · 항목별 결제 금액 · 정산
+       ===================================================================== */
+    const EXP_ME = "나";
+
+    function nextCompanionName(list) {
+      let i = 1;
+      while (list.includes(`동반인 ${i}`)) i++;
+      return `동반인 ${i}`;
+    }
+
+    // 여행 인원(state.meta.travelers)에 맞춘 참가자 명단 — 항상 '나'가 첫 번째
+    function participantNames() {
+      const n = Math.max(1, Math.min(20, Number(state.meta && state.meta.travelers) || 2));
+      let list = (Array.isArray(state.companions) ? state.companions : [])
+        .map(x => String(x == null ? "" : x).trim()).filter(Boolean);
+      if (!list.length) list = [EXP_ME];
+      if (list[0] !== EXP_ME) list = [EXP_ME, ...list.filter(x => x !== EXP_ME)];
+      const out = list.slice(0, n);
+      while (out.length < n) out.push(nextCompanionName(out));
+      // 같은 이름이 둘이면 누가 낸 돈인지 알 수 없으니 뒤에 번호를 붙여 구분한다
+      const uniq = [];
+      out.forEach(nm => { let k = nm, i = 2; while (uniq.includes(k)) k = `${nm} ${i++}`; uniq.push(k); });
+      return uniq;
+    }
+
+    // 명단을 state에도 확정해 둔다 (인원수 변경·동반인 추가처럼 사용자가 직접 고친 경우)
+    function ensureCompanions() {
+      const list = participantNames();
+      state.companions = list;
+      return list;
+    }
+
+    // 항목 하나를 사람별 결제 금액으로 나눈다 — 지정이 없으면 1/N
+    function expenseAllocation(e, people) {
+      const names = people || participantNames();
+      const amount = Number(e && e.amount) || 0;
+      const out = {};
+      names.forEach(nm => { out[nm] = 0; });
+      const map = (state.expensePayers || {})[e && e.id];
+      if (map && typeof map === "object") {
+        let sum = 0;
+        names.forEach(nm => { const v = Math.max(0, Number(map[nm]) || 0); out[nm] = v; sum += v; });
+        // 명단에서 빠진 사람 몫·비워 둔 금액은 '나'가 결제한 것으로 본다
+        const rest = amount - sum;
+        if (Math.abs(rest) >= 1 && names.length) out[names[0]] = Math.max(0, out[names[0]] + rest);
+        return { amounts: out, custom: true };
+      }
+      const n = Math.max(1, names.length);
+      const base = Math.floor(amount / n);
+      const rem = Math.round(amount - base * n);
+      names.forEach((nm, i) => { out[nm] = base + (i < rem ? 1 : 0); });
+      return { amounts: out, custom: false };
+    }
+
+    // 사람별 결제액·부담 몫·차액 (몫은 포함된 경비 총액의 1/N)
+    function expensePeopleSummary() {
+      const people = participantNames();
+      const included = getSyncedExpenses().filter(e => e.included);
+      const total = included.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+      const paid = {};
+      people.forEach(nm => { paid[nm] = 0; });
+      included.forEach(e => {
+        const amounts = expenseAllocation(e, people).amounts;
+        people.forEach(nm => { paid[nm] += amounts[nm] || 0; });
+      });
+      const n = Math.max(1, people.length);
+      const share = total / n;
+      const net = {};
+      people.forEach(nm => { net[nm] = paid[nm] - share; });
+      return { people, included, total, n, share, paid, net };
+    }
+
+    // 차액을 누가 누구에게 보내면 되는지 (적은 사람 → 많은 사람)
+    function expenseTransfers(net) {
+      const debtors = Object.entries(net).filter(([, v]) => v < -0.5).map(([name, v]) => ({ name, amt: -v })).sort((a, b) => b.amt - a.amt);
+      const creditors = Object.entries(net).filter(([, v]) => v > 0.5).map(([name, v]) => ({ name, amt: v })).sort((a, b) => b.amt - a.amt);
+      const out = [];
+      let i = 0, j = 0;
+      while (i < debtors.length && j < creditors.length) {
+        const pay = Math.min(debtors[i].amt, creditors[j].amt);
+        if (pay >= 1) out.push({ from: debtors[i].name, to: creditors[j].name, amt: Math.round(pay) });
+        debtors[i].amt -= pay;
+        creditors[j].amt -= pay;
+        if (debtors[i].amt < 1) i++;
+        if (creditors[j].amt < 1) j++;
+      }
+      return out;
+    }
+
+    function addCompanion() {
+      const list = participantNames();
+      if (list.length >= 20) return alert("동반인은 20명까지 추가할 수 있어요.");
+      state.meta.travelers = list.length + 1;
+      state.companions = [...list, nextCompanionName(list)];
+      saveState();
+    }
+
+    function removeCompanion(idx) {
+      const list = participantNames();
+      const name = list[idx];
+      if (!name || name === EXP_ME) return;
+      const next = list.filter((_, i) => i !== idx);
+      state.companions = next;
+      state.meta.travelers = Math.max(1, next.length);
+      // 없는 사람 앞으로 남은 결제 금액은 지운다 (합계는 다시 '나' 기준으로 맞춰진다)
+      Object.keys(state.expensePayers || {}).forEach(eid => {
+        const m = state.expensePayers[eid];
+        if (m && typeof m === "object") delete m[name];
+      });
+      saveState();
+    }
+
+    function renameCompanion(idx, value) {
+      const list = participantNames();
+      const oldName = list[idx];
+      const raw = String(value == null ? "" : value).trim();
+      if (!oldName || oldName === EXP_ME) { renderExpenses(); return; }
+      if (!raw) { renderExpenses(); return; }   // 빈 이름은 그대로 둔다
+      let newName = raw === EXP_ME ? `${EXP_ME} 2` : raw;
+      let dup = 2;
+      while (list.includes(newName) && newName !== oldName) newName = `${raw} ${dup++}`;
+      if (newName === oldName) { renderExpenses(); return; }
+      list[idx] = newName;
+      state.companions = list;
+      // 이 사람 이름으로 저장해 둔 결제 금액도 새 이름으로 옮긴다
+      Object.keys(state.expensePayers || {}).forEach(eid => {
+        const m = state.expensePayers[eid];
+        if (m && typeof m === "object" && Object.prototype.hasOwnProperty.call(m, oldName)) {
+          m[newName] = m[oldName];
+          delete m[oldName];
+        }
+      });
+      saveState();
+    }
+
+    function renderExpensePeople() {
+      const host = document.getElementById("exp-people-card");
+      if (!host) return;
+      const s = expensePeopleSummary();
+      const rows = s.people.map((nm, i) => {
+        const isMe = i === 0;
+        const paid = Math.round(s.paid[nm] || 0);
+        const net = s.net[nm] || 0;
+        const quiet = Math.abs(net) < 1;
+        const diff = quiet ? "차액 없음" : net > 0 ? `받을 ₩${Math.round(net).toLocaleString("ko-KR")}` : `낼 ₩${Math.round(-net).toLocaleString("ko-KR")}`;
+        const diffColor = quiet ? "var(--muted)" : net > 0 ? "var(--success)" : "var(--danger)";
+        return `
+          <div class="exp-person-row" data-person="${escapeAttr(nm)}">
+            <div class="exp-person-top">
+              ${isMe
+                ? `<span class="exp-person-name me">👤 나</span>`
+                : `<input class="input exp-person-input" data-companion-idx="${i}" value="${escapeAttr(nm)}" aria-label="동반인 이름" onchange="renameCompanion(${i}, this.value)" />
+                   <button class="menu-ic-btn del" title="동반인 삭제" aria-label="동반인 삭제" onclick="removeCompanion(${i})">✕</button>`}
+            </div>
+            <div class="exp-person-nums">
+              <span>결제 <b>${fmt(paid)}</b></span>
+              <span>몫 <b>${fmt(s.share)}</b></span>
+              <span style="color:${diffColor};font-weight:800;">${diff}</span>
+            </div>
+          </div>`;
+      }).join("");
+      const transfers = expenseTransfers(s.net);
+      host.innerHTML = `
+        <h3 class="sec-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;">
+          <span>👥 사람별 경비</span>
+          <span style="font-size:11.5px;font-weight:700;color:var(--muted);">총 ${fmt(s.total)} ÷ ${s.n}명</span>
+        </h3>
+        ${rows}
+        ${transfers.length
+          ? `<div class="exp-settle-line" id="exp-settle-line">💸 정산: ${transfers.map(t => `${escapeHtmlText(t.from)} → ${escapeHtmlText(t.to)} ${fmt(t.amt)}`).join(" · ")}</div>`
+          : `<div class="exp-settle-line quiet" id="exp-settle-line">정산할 금액이 없어요 — 각자 ${fmt(s.share)}씩</div>`}
+        <button class="btn btn-soft btn-sm" style="margin-top:10px;" onclick="addCompanion()">＋ 동반인 추가</button>
+      `;
+    }
+
+    /* ✏️ 정산 항목 수정 모달 */
+    let expenseEditId = null;
+
+    function openExpenseEditModal(id) {
+      const e = getSyncedExpenses().find(x => x.id === id);
+      if (!e) return;
+      expenseEditId = id;
+      const people = participantNames();
+      const alloc = expenseAllocation(e, people);
+      const amount = Number(e.amount) || 0;
+      const title = document.getElementById("exp-edit-title");
+      if (title) title.textContent = `✏️ ${e.name}`;
+      const sum = document.getElementById("exp-edit-summary");
+      if (sum) sum.innerHTML = `${escapeHtmlText(e.category || "기타")} · <b style="color:var(--text);">${fmt(amount)}</b> · ${people.length}명 · 1인 ${fmt(amount / Math.max(1, people.length))}${e.transit ? " · 🎫 대중교통" : ""}`;
+      const inc = document.getElementById("exp-edit-include");
+      if (inc) inc.checked = !!e.included;
+      const incHint = document.getElementById("exp-edit-include-hint");
+      if (incHint) incHint.textContent = e.included ? "총 경비에 들어가요" : "총 경비에서 빠져 있어요";
+      const box = document.getElementById("exp-edit-payers");
+      if (box) box.innerHTML = people.map((nm, i) => `
+        <div class="exp-payer-row" data-payer-idx="${i}">
+          <span class="exp-payer-name" title="${escapeAttr(nm)}">${escapeHtmlText(nm)}</span>
+          <input type="number" class="input exp-payer-input" data-payer-idx="${i}" min="0" step="1000" inputmode="numeric"
+            value="${Math.round(alloc.amounts[nm] || 0)}" aria-label="${escapeAttr(nm)} 결제 금액" oninput="updateExpenseEditSum()" />
+          <button class="btn btn-soft btn-sm" onclick="fillExpensePayerFull(${i})">전액</button>
+        </div>`).join("");
+      updateExpenseEditSum();
+      const modal = document.getElementById("exp-edit-modal");
+      if (modal) modal.classList.add("open");
+    }
+
+    function closeExpenseEditModal() {
+      const modal = document.getElementById("exp-edit-modal");
+      if (modal) modal.classList.remove("open");
+      expenseEditId = null;
+    }
+
+    function expenseEditInputs() {
+      return [...document.querySelectorAll("#exp-edit-payers .exp-payer-input")];
+    }
+
+    function updateExpenseEditSum() {
+      const inputs = expenseEditInputs();
+      const paid = inputs.reduce((s, i) => s + Math.max(0, Number(i.value) || 0), 0);
+      const e = getSyncedExpenses().find(x => x.id === expenseEditId);
+      const amount = e ? (Number(e.amount) || 0) : 0;
+      const val = document.getElementById("exp-edit-sum-val");
+      if (val) val.textContent = fmt(paid);
+      const hint = document.getElementById("exp-edit-sum-hint");
+      if (hint) {
+        if (paid > amount + 0.5) hint.textContent = `총액 ${fmt(amount)}보다 많아요`;
+        else if (paid > 0 && amount - paid >= 1) hint.textContent = `남은 ${fmt(amount - paid)}은 나 결제로`;
+        else hint.textContent = `항목 금액 ${fmt(amount)}`;
+      }
+    }
+
+    function fillExpensePayerFull(idx) {
+      const e = getSyncedExpenses().find(x => x.id === expenseEditId);
+      const amount = e ? (Number(e.amount) || 0) : 0;
+      expenseEditInputs().forEach((inp, i) => { inp.value = i === idx ? String(Math.round(amount)) : "0"; });
+      updateExpenseEditSum();
+    }
+
+    function splitExpenseEvenly() {
+      const inputs = expenseEditInputs();
+      const e = getSyncedExpenses().find(x => x.id === expenseEditId);
+      const amount = e ? (Number(e.amount) || 0) : 0;
+      const n = Math.max(1, inputs.length);
+      const base = Math.floor(amount / n);
+      const rem = Math.round(amount - base * n);
+      inputs.forEach((inp, i) => { inp.value = String(base + (i < rem ? 1 : 0)); });
+      updateExpenseEditSum();
+    }
+
+    function toggleExpenseIncludeFromModal(checked) {
+      if (!expenseEditId) return;
+      if (!state.expenseIncludeMap) state.expenseIncludeMap = {};
+      state.expenseIncludeMap[expenseEditId] = !!checked;
+      saveState();
+      const incHint = document.getElementById("exp-edit-include-hint");
+      if (incHint) incHint.textContent = checked ? "총 경비에 들어가요" : "총 경비에서 빠져 있어요";
+    }
+
+    function saveExpenseEdit() {
+      const e = getSyncedExpenses().find(x => x.id === expenseEditId);
+      if (!e) return closeExpenseEditModal();
+      const people = participantNames();
+      const amount = Number(e.amount) || 0;
+      const map = {};
+      let sum = 0;
+      expenseEditInputs().forEach((inp, i) => {
+        const nm = people[i];
+        if (!nm) return;
+        const v = Math.max(0, Math.round(Number(inp.value) || 0));
+        map[nm] = v;
+        sum += v;
+      });
+      if (sum > amount + 0.5) {
+        return alert(`결제 금액 합계(${fmt(sum)})가 항목 금액(${fmt(amount)})보다 많아요. 금액을 다시 확인해 주세요.`);
+      }
+      if (!state.expensePayers) state.expensePayers = {};
+      if (sum <= 0) {
+        delete state.expensePayers[e.id];   // 아무도 지정하지 않으면 1/N로 똑같이
+      } else {
+        if (amount - sum >= 1) map[people[0]] = (map[people[0]] || 0) + (amount - sum);   // 비워 둔 금액은 '나' 결제로
+        state.expensePayers[e.id] = map;
+      }
+      closeExpenseEditModal();
+      saveState();
+    }
+
+    document.addEventListener("keydown", (ev) => {
+      const el = document.getElementById("exp-edit-modal");
+      if (!el || !el.classList.contains("open")) return;
+      if (ev.key === "Escape") closeExpenseEditModal();
+    });
+
     function renderExpenses() {
       document.getElementById("travelers-input").value = state.meta.travelers;
       const synced = getSyncedExpenses();
@@ -10602,27 +10948,33 @@
       `).join("");
 
       const n = Math.max(1, Number(state.meta.travelers) || 2);
+      const people = participantNames();
       const heldBack = synced.filter(e => !e.included).reduce((s, e) => s + (Number(e.amount) || 0), 0);
-      // 🎫 대중교통 요금은 교통카드 충전분으로 탈 수 있어 기본은 경비에서 빼 둔다
+      // 🎫 대중교통 요금은 교통카드 충전분으로 탈 수 있어 기본은 경비에서 빼 둔다 (경비 탭에서 바로 바꿀 수 있다)
       const noteEl = document.getElementById("exp-transit-note");
       if (noteEl) {
         const hasTransit = synced.some(e => e.transit);
         noteEl.innerHTML = hasTransit
-          ? `🎫 <b>대중교통 요금</b>은 교통카드에 충전돼 있으면 따로 결제하지 않으니 <b>기본으로 경비에서 빼 두었어요</b>${heldBack > 0 ? ` (지금 빠진 금액 ${fmt(heldBack)})` : ""}. 항목의 <b>경비에 포함</b>을 누르면 총액·1인당·카테고리 합계에 바로 들어갑니다.`
+          ? `🎫 <b>대중교통 요금</b>은 기본으로 경비에서 빼 두었어요${heldBack > 0 ? ` (지금 빠진 금액 ${fmt(heldBack)})` : ""}. 항목의 <b>✏️</b>에서 경비 포함을 바로 바꿀 수 있어요.`
           : "";
         noteEl.style.display = hasTransit ? "block" : "none";
       }
+      renderExpensePeople();
       document.getElementById("expense-list").innerHTML = synced.map(e => {
         const stCls = e.status === "완료" ? "st-done" : e.status === "예정" ? "st-plan" : "st-site";
         const stLabel = e.status === "완료" ? "예약 완료" : e.status === "예정" ? "결제 예정" : "현장 결제";
-        const off = e.transit && !e.included;
+        const off = !e.included;
+        const alloc = expenseAllocation(e, people);
+        const payerText = alloc.custom
+          ? people.filter(nm => (alloc.amounts[nm] || 0) > 0).map(nm => `${nm} ${fmt(alloc.amounts[nm])}`).join(" · ")
+          : "";
         return `
-          <div class="expense-item"${off ? ' style="opacity:.68;"' : ""}>
-            <div style="flex:1;">
+          <div class="expense-item"${off ? ' style="opacity:.68;"' : ""} data-expense-id="${escapeAttr(e.id)}">
+            <div style="flex:1;min-width:0;">
               <div style="font-size:13.5px;font-weight:700;">[${e.category}] ${e.name} ${e.fromTimeline ? '<span class="tag blue" style="font-size:10px;padding:1px 5px;">일정 연동</span>' : ""}${e.fromBooking ? '<span class="tag blue" style="font-size:10px;padding:1px 5px;">예약 연동</span>' : ""}${off ? '<span class="tag" style="font-size:10px;padding:1px 5px;">🎫 경비 제외</span>' : ""}</div>
-              <div style="font-size:12px;color:var(--muted);">${fmt(e.amount)} · 1인 ${fmt(e.amount / n)}${off ? " · 교통카드로 타면 따로 결제 없음" : ""}</div>
+              <div style="font-size:12px;color:var(--muted);">${fmt(e.amount)} · 1인 ${fmt(e.amount / n)}${payerText ? ` · ${payerText}` : ""}</div>
             </div>
-            ${e.transit ? `<button class="btn btn-sm exp-toggle" data-exp-id="${escapeAttr(e.id)}" style="flex:0 0 auto;white-space:nowrap;background:${off ? "#fff" : "var(--ocean-soft)"};border:1px solid var(--ocean-border);color:var(--ocean-dark);" onclick="toggleExpenseInclude('${e.id}')">${off ? "경비에 포함" : "제외 (교통카드)"}</button>` : ""}
+            <button class="menu-ic-btn exp-edit-btn" data-exp-edit="${escapeAttr(e.id)}" title="정산 수정" aria-label="정산 수정" onclick="openExpenseEditModal('${e.id}')">✏️</button>
             <button class="status-btn ${stCls}" onclick="cycleStatus('${e.id}')">${stLabel}</button>
             ${(e.fromTimeline || e.fromBooking) ? "" : `<button class="btn btn-danger btn-sm" onclick="delExpense('${e.id}')">삭제</button>`}
           </div>
@@ -10643,6 +10995,7 @@
 
     document.getElementById("travelers-input").addEventListener("change", (ev) => {
       state.meta.travelers = Math.max(1, Number(ev.target.value) || 2);
+      ensureCompanions();   // 👤 동반인 명단도 인원수에 맞게 늘리고 줄인다
       saveState();
     });
 

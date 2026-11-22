@@ -2078,11 +2078,6 @@ setTimeout(async () => {
       const per = () => w.document.getElementById("sum-per").textContent;
       const legend = () => w.document.getElementById("donut-legend").textContent.replace(/\s+/g, " ");
       const listEl = () => w.document.getElementById("expense-list");
-      const clickToggle = (id) => {
-        const b = listEl().querySelector(`[data-exp-id="${id}"]`);
-        if (b) b.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
-        return b;
-      };
 
       // (1) 기본값 — 버스·지하철 요금만 빠지고, KTX·택시·숙소·예약·직접 추가는 그대로 포함
       ok("경비: 버스·지하철 요금은 기본 제외", byId("tl_t-bus").transit === true && byId("tl_t-bus").included === false,
@@ -2100,37 +2095,138 @@ setTimeout(async () => {
       ok("경비: 결제 진행률은 실제 결제 항목만", w.document.getElementById("sum-done").textContent === "1/5건",
         w.document.getElementById("sum-done").textContent);
 
-      // (2) 경비 탭에서 토글 — 포함하면 바로 합계에 들어간다
-      const busBtn = listEl().querySelector('[data-exp-id="tl_t-bus"]');
-      ok("경비 탭: 대중교통 항목에 '경비에 포함' 버튼", !!busBtn && busBtn.textContent.trim() === "경비에 포함", busBtn && busBtn.textContent);
+      // (2) ✏️ 아이콘 — 모든 항목에 있고, 누르면 정산 수정 모달이 열린다
+      const modal = w.document.getElementById("exp-edit-modal");
+      const editBtn = (id) => listEl().querySelector(`[data-exp-edit="${id}"]`);
+      const items = [...listEl().querySelectorAll(".expense-item")];
+      ok("경비 탭: 모든 정산 항목에 ✏️ 수정 버튼", items.length > 0 && items.every(r => !!r.querySelector("[data-exp-edit]")),
+        `${items.filter(r => r.querySelector("[data-exp-edit]")).length}/${items.length}`);
+      ok("경비 탭: 길게 붙던 '경비에 포함/제외 (교통카드)' 버튼은 ✏️ 안으로", !listEl().querySelector("[data-exp-id]")
+        && !/제외 \(교통카드\)/.test(listEl().textContent), "");
+      ok("경비 탭: '교통카드로 타면 따로 결제 없음' 멘트가 없다", !/교통카드로 타면 따로 결제 없음/.test(w.document.body.textContent), "");
       ok("경비 탭: 제외된 항목 표시", /🎫 경비 제외/.test(listEl().textContent), "");
-      ok("경비 탭: KTX·예약 항목에는 토글이 없다", !listEl().querySelector('[data-exp-id="bk_bk1"]'), "");
       const note = w.document.getElementById("exp-transit-note");
       ok("경비 탭: 기본 제외 안내", note.style.display !== "none" && /기본으로 경비에서 빼 두었어요/.test(note.textContent) && /₩4,650/.test(note.textContent),
         note.textContent.replace(/\s+/g, " "));
 
-      busBtn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
-      ok("경비: 포함을 켜면 상태에 저장", ev("state.expenseIncludeMap['tl_t-bus']") === true, ev("JSON.stringify(state.expenseIncludeMap)"));
+      const openEdit = (id) => {
+        const b = editBtn(id);
+        if (b) b.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+        return b;
+      };
+      const modalInc = () => w.document.getElementById("exp-edit-include");
+      const setInc = (on) => {
+        const c = modalInc();
+        c.checked = on;
+        c.dispatchEvent(new w.Event("change", { bubbles: true }));
+      };
+
+      openEdit("tl_t-bus");
+      ok("경비: ✏️ 누르면 정산 수정 모달이 열린다", modal.classList.contains("open")
+        && /해운대/.test(w.document.getElementById("exp-edit-title").textContent), w.document.getElementById("exp-edit-title").textContent);
+      ok("경비: 모달에 경비 포함 체크·결제자 칸", modalInc().checked === false
+        && modal.querySelectorAll(".exp-payer-row").length === 2, modal.querySelectorAll(".exp-payer-row").length + "명");
+
+      // (3) 모달에서 포함을 켜면 바로 총액에 들어간다
+      setInc(true);
+      ok("경비: 모달에서 포함을 켜면 상태에 저장", ev("state.expenseIncludeMap['tl_t-bus']") === true, ev("JSON.stringify(state.expenseIncludeMap)"));
       ok("경비: 포함을 켜면 총액에 바로 더해진다", total() === "₩361,911", total());
       ok("경비: 1인당·카테고리 합계도 같이 오른다", per() === "₩180,956" && /₩145,500/.test(legend()), `${per()} / ${legend()}`);
-      ok("경비: 포함된 항목의 버튼은 '제외 (교통카드)'", (listEl().querySelector('[data-exp-id="tl_t-bus"]') || {}).textContent === "제외 (교통카드)",
-        (listEl().querySelector('[data-exp-id="tl_t-bus"]') || {}).textContent);
+      ok("경비: 모달 체크도 켜진 상태로 남는다", modalInc().checked === true, String(modalInc().checked));
 
-      // (3) 다시 끄면 합계에서 빠진다 + 저장도 남는다
-      clickToggle("tl_t-bus");
+      setInc(false);
+      w.closeExpenseEditModal();
+      ok("경비: 모달을 닫으면 닫힌다", !modal.classList.contains("open"), "");
       ok("경비: 다시 끄면 총액에서 빠진다", total() === "₩358,811", total());
       ok("경비: 끈 상태가 저장된다", ev("state.expenseIncludeMap['tl_t-bus']") === false, ev("JSON.stringify(state.expenseIncludeMap)"));
       ok("경비: 포함 여부가 로컬 저장에도 남는다", ev("JSON.parse(localStorage.getItem(getLocalKey())).expenseIncludeMap['tl_t-bus']") === false,
         ev("JSON.stringify(JSON.parse(localStorage.getItem(getLocalKey())).expenseIncludeMap || null)"));
 
       // (4) '일정 내 대중교통 합계' 줄도 같은 방식으로 켤 수 있다
-      ok("경비 탭: 대중교통 합계 줄에도 토글", !!listEl().querySelector('[data-exp-id="tl_transit_local"]'), "");
-      clickToggle("tl_transit_local");
+      ok("경비 탭: 대중교통 합계 줄에도 ✏️", !!editBtn("tl_transit_local"), "");
+      openEdit("tl_transit_local");
+      setInc(true);
       ok("경비: 합계 줄을 켜면 1,550원이 더해진다", total() === "₩360,361", total());
-      clickToggle("tl_transit_local");
+      setInc(false);
+      w.closeExpenseEditModal();
       ok("경비: 다시 끄면 원래대로", total() === "₩358,811", total());
 
       ev("state.bookings = []; state.expenses = []; state.days[0].items = []; state.expenseIncludeMap = {}; saveState();");
+    }
+
+    // 62) ✏️ 정산 수정 — 전액·N빵·동반인별 금액·정산 차액
+    {
+      ev(`currentDay = 1; editMode = false;
+        state.meta = { title:'정산 테스트', destination:'부산', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }];
+        state.bookings = [];
+        state.expenses = [
+          { id:'m-hotel', category:'숙소', name:'호텔', amount:200000, status:'현장', manual:true },
+          { id:'m-food', category:'식비', name:'저녁', amount:60000, status:'현장', manual:true }
+        ];
+        state.companions = []; state.expensePayers = {}; state.expenseIncludeMap = {}; state.expenseStatusMap = {};
+        saveState();`);
+
+      const card = w.document.getElementById("exp-people-card");
+      const cardTxt = () => card.textContent.replace(/\s+/g, " ");
+      const personRow = (name) => [...card.querySelectorAll(".exp-person-row")].find(r => r.getAttribute("data-person") === name) || null;
+      const rowTxt = (name) => (personRow(name) || { textContent: "" }).textContent.replace(/\s+/g, " ");
+      const list2 = () => w.document.getElementById("expense-list");
+      const modal2 = w.document.getElementById("exp-edit-modal");
+      const openEdit2 = (id) => list2().querySelector(`[data-exp-edit="${id}"]`).dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      const payerInputs = () => [...modal2.querySelectorAll(".exp-payer-input")];
+
+      // (1) 결제자를 따로 정하지 않은 기본 — 총액 ÷ 인원수로 각자 같은 금액
+      ok("사람별 경비: 나·동반인 이름과 결제액·몫이 각각 보인다", !!personRow("나") && !!personRow("동반인 1")
+        && /결제 ₩130,000/.test(rowTxt("나")) && /몫 ₩130,000/.test(rowTxt("동반인 1"))
+        && /총 ₩260,000 ÷ 2명/.test(card.textContent),
+        `${rowTxt("나")} / ${rowTxt("동반인 1")}`);
+      ok("사람별 경비: 기본 상태는 정산할 금액이 없다", /정산할 금액이 없어요/.test(cardTxt()), cardTxt().slice(0, 200));
+
+      // (2) ✏️ → '나' 옆 전액 → 저장
+      openEdit2("m-hotel");
+      ok("전액: 모달에 사람별 입력칸과 전액 버튼", payerInputs().length === 2
+        && [...modal2.querySelectorAll(".exp-payer-row")].every(r => /전액/.test(r.textContent)), payerInputs().map(i => i.value).join("/"));
+      const fullBtn = [...modal2.querySelectorAll(".exp-payer-row")][0].querySelector("button");
+      fullBtn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      ok("전액: '나' 칸에 항목 총 금액이 자동 입력되고 나머지는 0", payerInputs().map(i => i.value).join("/") === "200000/0",
+        payerInputs().map(i => i.value).join("/"));
+      w.saveExpenseEdit();
+      ok("전액: 저장하면 state.expensePayers에 남는다", ev("state.expensePayers['m-hotel']['나']") === 200000
+        && ev("state.expensePayers['m-hotel']['동반인 1']") === 0, ev("JSON.stringify(state.expensePayers)"));
+      ok("전액: 결제액이 로컬 저장에도 남는다", ev("JSON.parse(localStorage.getItem(getLocalKey())).expensePayers['m-hotel']['나']") === 200000, "");
+
+      // (3) 나 / 동반인별 결제액과 정산 차액
+      ok("전액: 나·동반인 결제액이 각각 바뀐다", /결제 ₩230,000/.test(rowTxt("나")) && /결제 ₩30,000/.test(rowTxt("동반인 1")),
+        `${rowTxt("나")} / ${rowTxt("동반인 1")}`);
+      ok("전액: 정산 차액이 '동반인 1 → 나'로 계산된다", /동반인 1 → 나 ₩100,000/.test(cardTxt()),
+        (w.document.getElementById("exp-settle-line") || {}).textContent);
+      ok("전액: 항목 줄에도 누가 얼마 냈는지 보인다", /나 ₩200,000/.test(list2().textContent.replace(/\s+/g, " ")),
+        list2().textContent.replace(/\s+/g, " ").slice(0, 240));
+
+      // (4) 동반인 추가·이름 변경 → 사람별 금액에 각각 표시
+      w.addCompanion();
+      ok("동반인 추가: 인원수와 명단이 함께 늘어난다", ev("state.meta.travelers") === 3 && ev("state.companions.length") === 3,
+        ev("JSON.stringify(state.companions)"));
+      ok("동반인 추가: 요약에 나·동반인 2가 각각 표시된다", !!personRow("동반인 2") && /총 ₩260,000 ÷ 3명/.test(card.textContent)
+        && /결제 ₩220,000/.test(rowTxt("나")) && /결제 ₩20,000/.test(rowTxt("동반인 2")),
+        `${rowTxt("나")} / ${rowTxt("동반인 2")}`);
+
+      w.renameCompanion(1, "지훈");
+      ok("동반인 이름 변경: 요약에 새 이름으로 표시", !!personRow("지훈") && !personRow("동반인 1") && /결제 ₩20,000/.test(rowTxt("지훈")),
+        rowTxt("지훈"));
+      ok("동반인 이름 변경: 저장된 결제 금액도 새 이름으로 옮겨진다", ev("state.expensePayers['m-hotel']['지훈']") === 0
+        && ev("typeof state.expensePayers['m-hotel']['동반인 1']") === "undefined", ev("JSON.stringify(state.expensePayers)"));
+
+      // (5) N빵 — 3명이면 나머지 1원은 '나'에게 붙어 합계가 총액과 맞는다
+      openEdit2("m-hotel");
+      modal2.querySelector("button[onclick='splitExpenseEvenly()']").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      const evenVals = payerInputs().map(i => Number(i.value));
+      ok("N빵: 3명이 똑같이 나누고 합계는 총액 그대로", evenVals.join("/") === "66667/66667/66666"
+        && evenVals.reduce((s, v) => s + v, 0) === 200000, evenVals.join("/"));
+      w.closeExpenseEditModal();
+
+      ev("state.bookings = []; state.expenses = []; state.days[0].items = []; state.companions = []; state.expensePayers = {}; state.expenseIncludeMap = {}; state.meta.travelers = 2; saveState();");
     }
 
     // 57) 📍 지도 위 같은 장소·호텔은 핀 하나로 — 세 지도 모두, 동선 순서는 그대로
