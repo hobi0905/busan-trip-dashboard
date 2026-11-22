@@ -1567,6 +1567,7 @@ setTimeout(async () => {
         state.bookings = []; state.days[0].items = [];
         state.savedPlaces = [
           { id:'pl-tr-home', kind:'home', label:'집', address:'인천 미추홀구 인하로 100', roadAddress:'인천 미추홀구 인하로 100', lat:37.4586, lng:126.6425 },
+          { id:'pl-tr-station', kind:'station', label:'서울역', address:'서울역', roadAddress:'서울 용산구 한강대로 405', lat:37.5547, lng:126.9707 },
           { id:'pl-tr-hotel', kind:'hotel', label:'롯데호텔 서울', address:'롯데호텔 서울', roadAddress:'서울 중구 을지로 30', lat:37.5651, lng:126.9816 }
         ];
         PM_TRANSIT_CACHE.clear(); saveState();`);
@@ -1644,6 +1645,15 @@ setTimeout(async () => {
       w.setRouteEndpointCoord("to", { lat: 37.5651, lng: 126.9816, name: "롯데호텔 서울" });
       await wait(400);
       ok("같은 출발·도착은 캐시로 재호출 없음", transitCalls.length === before && cards().length === 3, `${transitCalls.length - before}회 / 카드 ${cards().length}`);
+
+      // (6-2) 칩을 안 누르고 이름만 쳐도, 저장 거점이면 위치를 찾아 조회한다
+      const beforeTyped = transitCalls.length;
+      w.document.getElementById("pm-from").value = "집";
+      w.document.getElementById("pm-from").dispatchEvent(new w.Event("input", { bubbles: true }));
+      w.document.getElementById("pm-to").value = "서울역";
+      w.document.getElementById("pm-to").dispatchEvent(new w.Event("input", { bubbles: true }));
+      await wait(420);
+      ok("이름만 쳐도 저장 거점이면 자동 조회", transitCalls.length === beforeTyped + 1 && cards().length === 3 && ev("pmCoordOf(pmFromCoord).lat") === 37.4586, `${transitCalls.length - beforeTyped}회 / 카드 ${cards().length}`);
 
       // (7) 찾는 중 안내
       let release = null;

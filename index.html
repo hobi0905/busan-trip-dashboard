@@ -7581,8 +7581,12 @@
     }
 
     // 이름을 직접 고쳐 쳤거나 지웠을 때 — 그 쪽 좌표는 버리고 다시 맞춘다
+    // (저장 거점·일정 장소에 있는 이름이면 검색 없이 그 위치를 그대로 쓴다)
     function onRouteEndpointEdited(side) {
       if (side === "from") pmFromCoord = null; else pmToCoord = null;
+      const el = document.getElementById(side === "from" ? "pm-from" : "pm-to");
+      const local = el ? pmLocalEndpointCoords(el.value) : null;
+      if (local) { if (side === "from") pmFromCoord = local; else pmToCoord = local; }
       scheduleRouteRecommend();
     }
 
