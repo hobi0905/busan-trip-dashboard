@@ -1333,6 +1333,65 @@ setTimeout(async () => {
         && !panel.querySelector(".tl-pc-left"), "");
     }
 
+    // 55) 🏨 새 일정 추가 — 예약한 호텔 이름을 눌러도 '룸타입·인원'은 장소명·지도 검색어에 안 들어간다
+    {
+      // (1) 꼬리표 떼기 규칙
+      const clean = (s) => ev(`cleanPlaceName(${JSON.stringify(s)})`);
+      ok("' · 디럭스 더블 · 2명' 꼬리표 제거", clean("롯데호텔 부산 · 디럭스 더블 · 2명") === "롯데호텔 부산", clean("롯데호텔 부산 · 디럭스 더블 · 2명"));
+      ok("괄호 안 객실·인원 제거", clean("파라다이스 호텔 부산 (스탠다드 트윈 / 2인)") === "파라다이스 호텔 부산", clean("파라다이스 호텔 부산 (스탠다드 트윈 / 2인)"));
+      ok("구분자 없이 붙은 인원 제거", clean("시그니엘 부산 2명") === "시그니엘 부산", clean("시그니엘 부산 2명"));
+      ok("지점·주소 괄호는 그대로", clean("호텔 더 메 (부산역점)") === "호텔 더 메 (부산역점)" && clean("인천 미추홀구 학익동") === "인천 미추홀구 학익동", clean("호텔 더 메 (부산역점)"));
+
+      // (2) 예약 → 거점 자동 연동: 주소에 객실·인원이 섞이지 않는다
+      ev(`currentDay = 1; editMode = false;
+        state.meta = { title:'호텔 칩 테스트', destination:'부산', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2, tripType:'domestic' };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }, { day:2, label:'2일차', date:'2027-03-07', items: [] }];
+        state.savedPlaces = [];
+        state.bookings = [{ id:'bk-h1', type:'hotel', name:'롯데호텔 부산', room:'디럭스 더블 · 2명',
+          inDate:'2027-03-06', outDate:'2027-03-07', inTime:'15:00', outTime:'11:00',
+          price:0, payStatus:'planned', schedule:{ on:false }, lat:35.1532, lng:129.0564 }];
+        ensureSavedPlaces();`);
+      const hotelRec = ev("JSON.stringify(state.savedPlaces.find(p => p.kind === 'hotel') || null)");
+      const hr = JSON.parse(hotelRec);
+      ok("예약 호텔 거점은 이름만 저장", !!hr && hr.label === "롯데호텔 부산" && hr.address === "롯데호텔 부산"
+        && hr.room === "디럭스 더블 · 2명" && hr.lat === 35.1532, hotelRec);
+
+      // 예전에 객실·인원이 섞여 저장된 거점도 동기화 때 고쳐진다
+      ev(`state.savedPlaces = [{ id:'pl-auto-old', auto:true, key:'hotel|롯데호텔 부산', kind:'hotel', label:'롯데호텔 부산', address:'롯데호텔 부산 (디럭스 더블 · 2명)' }];
+        ensureSavedPlaces();`);
+      ok("예전에 섞인 거점 주소도 자동 복구", ev("state.savedPlaces.find(p => p.kind === 'hotel').address") === "롯데호텔 부산",
+        ev("state.savedPlaces.find(p => p.kind === 'hotel').address"));
+
+      // (3) 장소 모달에서 호텔 칩 클릭 → 장소명·검색칸·좌표가 깨끗하게
+      w.openPlaceModal(null);
+      const chipBox = w.document.getElementById("pm-saved-single");
+      const hotelChip = [...chipBox.querySelectorAll(".sp-chip")].find(b => /롯데호텔 부산/.test(b.textContent));
+      ok("호텔 칩이 깨끗한 이름으로 보인다", !!hotelChip && !/2명|디럭스/.test(hotelChip.textContent),
+        chipBox.textContent.replace(/\s+/g, " ").slice(0, 80));
+      ok("객실·인원은 칩 툴팁에만 남는다", !!hotelChip && /디럭스 더블/.test(hotelChip.getAttribute("title") || ""), hotelChip && hotelChip.getAttribute("title"));
+      hotelChip.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      const placeVal = w.document.getElementById("pm-place").value;
+      const searchVal = w.document.getElementById("pm-search-q").value;
+      ok("호텔 클릭 → 장소명에 호텔 이름만", placeVal === "롯데호텔 부산", placeVal);
+      ok("호텔 클릭 → 지도 검색어도 호텔 이름만", searchVal === "롯데호텔 부산", searchVal);
+      ok("호텔 클릭 → 예약 좌표 그대로 사용", ev("pickedLat") === 35.1532 && ev("pickedLng") === 129.0564,
+        `${ev("pickedLat")},${ev("pickedLng")}`);
+
+      // (4) 저장한 일정·지도 링크에도 객실·인원이 남지 않는다
+      w.savePlaceEdit();
+      const savedItem = JSON.parse(ev("JSON.stringify(state.days[0].items[0] || null)"));
+      ok("일정 저장도 깨끗한 장소명", !!savedItem && savedItem.place === "롯데호텔 부산", savedItem && savedItem.place);
+      const mapUrl = savedItem ? String(savedItem.mapUrl || "") : "";
+      ok("지도 링크에 룸타입·인원 없음", !!mapUrl && !/2%EB%AA%85|2%EC%9D%B8/.test(mapUrl) && !/디럭스|%EB%94%94%EB%9F%AD%EC%8A%A4/.test(mapUrl), mapUrl);
+      ok("지도 링크는 예약 좌표를 사용", /35\.1532/.test(mapUrl) && /129\.0564/.test(mapUrl), mapUrl);
+
+      // (5) 예약 카드 · 숙소 복귀 카드 이름에도 객실·인원이 붙지 않는다
+      ev("state.days[0].items = []; ensureSavedPlaces();");
+      const hotelChip2 = [...w.document.getElementById("pm-saved-single").querySelectorAll(".sp-chip")].find(b => /롯데호텔 부산/.test(b.textContent));
+      ok("칩 다시 그려도 이름 깨끗", !!hotelChip2 && hotelChip2.textContent.trim() === "🏨 롯데호텔 부산", hotelChip2 && hotelChip2.textContent.trim());
+      ev("state.bookings = []; state.savedPlaces = []; state.days[0].items = []; saveState();");
+    }
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }
