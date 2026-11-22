@@ -1821,6 +1821,272 @@ setTimeout(async () => {
       ev("state.bookings = []; state.savedPlaces = []; state.days[0].items = []; PM_TRANSIT_CACHE.clear(); saveState();");
     }
 
+    // 59) 💳 대중교통 추천 루트를 고르면 교통비(요금)가 금액 칸에 자동 반영된다
+    {
+      const TRANSIT_STUB = {
+        status: "OK",
+        properties: { total: 3 },
+        routes: [
+          { properties: { type: "SUBWAY", totalTime: 1108, totalDistance: 5885, transfers: 0, fare: { value: 1550 } },
+            steps: [{ properties: { type: "SUBWAY", guidance: "2호선 (홍대입구 > 을지로입구)", time: 720 } }] },
+          { properties: { type: "BUS", totalTime: 2301, totalDistance: 7484, transfers: 0, fare: { min: 0, max: 2500 } },
+            steps: [{ properties: { type: "BUS", guidance: "간선 271외 3대 (홍대입구역(중) > 종로1가.종각역)", time: 1524 } }] },
+          { properties: { type: "BUS_AND_SUBWAY", totalTime: 2298, totalDistance: 6864, transfers: 1, fare: { value: 1500 } },
+            steps: [
+              { properties: { type: "BUS", guidance: "간선 271외 8대 (홍대입구역(중) > 충정로역(중))", time: 972 } },
+              { properties: { type: "WALKING", guidance: "충정로역까지 도보로 이동", time: 300 } },
+              { properties: { type: "BUS", guidance: "간선 721외 4대 (충정로역(중) > 종로1가.종각역)", time: 552 } }
+            ] }
+        ]
+      };
+      const NO_FARE_STUB = {
+        status: "OK",
+        properties: { total: 1 },
+        routes: [
+          { properties: { type: "SUBWAY", totalTime: 1200, totalDistance: 5000, transfers: 0 },
+            steps: [{ properties: { type: "SUBWAY", guidance: "2호선 (홍대입구 > 시청)", time: 900 } }] }
+        ]
+      };
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      const cards = () => [...w.document.querySelectorAll("#pm-transit-box .pm-tr-card")];
+      const clickCard = (i) => cards()[i].dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      const costEl = () => w.document.getElementById("pm-cost");
+      const hintEl = () => w.document.getElementById("pm-cost-hint");
+
+      ev(`currentDay = 1; editMode = false;
+        state.meta = { title:'교통비 반영', destination:'서울', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }];
+        state.bookings = []; state.expenses = []; state.expenseStatusMap = {}; state.savedPlaces = []; PM_TRANSIT_CACHE.clear(); saveState();`);
+
+      const realFetch = w.fetch;
+      let stubPayload = TRANSIT_STUB;
+      let transitCalls = 0;
+      w.fetch = (url, opt) => {
+        if (String(url).includes("kakao-transit")) {
+          transitCalls++;
+          return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(JSON.parse(JSON.stringify(stubPayload))) });
+        }
+        return Promise.reject(new Error("offline-test"));
+      };
+
+      // (1) 새 일정 · 이동 모드에서 추천을 띄운다 — 금액 칸은 비어 있다
+      w.openPlaceModal(null);
+      w.setPlaceMode("route");
+      w.document.getElementById("pm-from").value = "홍대입구역";
+      w.document.getElementById("pm-to").value = "롯데호텔 서울";
+      w.setRouteEndpointCoord("from", { lat: 37.5572, lng: 126.9236, name: "홍대입구역" });
+      w.setRouteEndpointCoord("to", { lat: 37.5651, lng: 126.9816, name: "롯데호텔 서울" });
+      await wait(420);
+      ok("교통비: 추천 카드 3개", cards().length === 3, String(cards().length));
+      ok("교통비: 누르기 전엔 금액 칸이 비어 있다", costEl().value === "" && hintEl().style.display === "none", `${costEl().value} / ${hintEl().textContent}`);
+      ok("교통비: 카드에 1인 기준 요금 표시", /1인 1,550원/.test(cards()[0].textContent), cards()[0].textContent.replace(/\s+/g, " "));
+
+      // (2) 카드를 누르면 1인 요금 × 인원수(2명)가 금액 칸에 들어간다
+      clickCard(0);
+      ok("교통비: 카드 클릭 → 금액 칸 자동 입력 (1,550 × 2 = 3,100)", costEl().value === "3100", costEl().value);
+      ok("교통비: 1인 요금·인원·총액 안내", hintEl().style.display !== "none" && /1인 1,550원 × 2명 = 3,100원/.test(hintEl().textContent), hintEl().textContent);
+
+      // (3) 다른 카드를 누르면 새 루트 요금으로 갱신된다 (범위 요금은 max)
+      clickCard(1);
+      ok("교통비: 다른 루트 → 새 요금으로 갱신 (최대 2,500 × 2 = 5,000)", costEl().value === "5000", costEl().value);
+      ok("교통비: 범위 요금도 대표 금액으로 안내", /최대 2,500원 × 2명 = 5,000원/.test(hintEl().textContent), hintEl().textContent);
+      clickCard(2);
+      ok("교통비: 세 번째 루트 요금 (1,500 × 2 = 3,000)", costEl().value === "3000", costEl().value);
+      clickCard(0);
+      ok("교통비: 다시 첫 루트 → 3,100으로 되돌아온다", costEl().value === "3100", costEl().value);
+
+      // (4) 직접 고쳐 적은 금액은 루트를 눌러도 덮어쓰지 않는다
+      costEl().value = "4000";
+      clickCard(1);
+      ok("교통비: 직접 적은 금액은 그대로", costEl().value === "4000" && /직접 적은 금액/.test(hintEl().textContent), `${costEl().value} / ${hintEl().textContent}`);
+      // 금액 없이(0원) 저장돼 있던 카드도 루트 요금으로 채운다
+      costEl().value = "0";
+      clickCard(2);
+      ok("교통비: 0원이던 값도 루트 요금으로 채운다", costEl().value === "3000", costEl().value);
+      // 비우고 다시 누르면 그 루트 요금으로 바뀐다
+      costEl().value = "";
+      clickCard(1);
+      ok("교통비: 비우고 다시 누르면 루트 요금", costEl().value === "5000", costEl().value);
+
+      // (5) 저장 → 일정 카드·경비에 한 번만, 빠짐없이 반영된다
+      w.document.getElementById("pm-memo").value = "2번 출구";
+      await w.savePlaceEdit();
+      const savedRoute = JSON.parse(ev("JSON.stringify(state.days[0].items[0] || null)"));
+      ok("교통비: 저장된 이동 일정 금액", !!savedRoute && savedRoute.costTotal === 5000 && savedRoute.moveCost === 5000,
+        JSON.stringify(savedRoute && { place: savedRoute.place, costTotal: savedRoute.costTotal, moveCost: savedRoute.moveCost }));
+      w.renderTimeline();
+      const tlTxt = w.document.getElementById("timeline-list").textContent;
+      ok("교통비: 일정 카드에 금액이 보인다", /₩5,000/.test(tlTxt), tlTxt.replace(/\s+/g, " ").slice(0, 120));
+      const savedExp = JSON.parse(ev("JSON.stringify(getSyncedExpenses())"));
+      const fareEntries = savedExp.filter(e => Number(e.amount) === 5000);
+      ok("교통비: 경비에 한 번만 (중복 없음)", fareEntries.length === 1 && fareEntries[0].category === "교통" && fareEntries[0].transit === true && fareEntries[0].included === false,
+        JSON.stringify(savedExp.map(e => ({ id: e.id, cat: e.category, amt: e.amount, inc: e.included }))));
+      ok("교통비: 대중교통 합계로 또 더하지 않는다", !savedExp.some(e => e.id === "tl_transit_local"),
+        JSON.stringify(savedExp.map(e => e.id)));
+      ok("교통비: 대중교통이라 기본은 총액에서 빠진다 (경비 목록에는 보인다)", fareEntries.length === 1 && fareEntries[0].amount === 5000
+        && ev("getSyncedExpenses().filter(e => e.included).reduce((s,e)=>s+(Number(e.amount)||0),0)") === 0,
+        String(ev("getSyncedExpenses().filter(e => e.included).reduce((s,e)=>s+(Number(e.amount)||0),0)")));
+
+      // (6) 1명 여행이면 1인 요금 그대로
+      ev("state.meta.travelers = 1; saveState();");
+      w.openPlaceModal(null);
+      w.setPlaceMode("route");
+      await wait(60);
+      w.document.getElementById("pm-from").value = "홍대입구역";
+      w.document.getElementById("pm-to").value = "롯데호텔 서울";
+      w.setRouteEndpointCoord("from", { lat: 37.5572, lng: 126.9236, name: "홍대입구역" });
+      w.setRouteEndpointCoord("to", { lat: 37.5651, lng: 126.9816, name: "롯데호텔 서울" });
+      await wait(420);
+      clickCard(0);
+      ok("교통비: 1명이면 1,550원 그대로", costEl().value === "1550", costEl().value);
+      ok("교통비: 1명일 땐 인원 표기 없음", !/×/.test(hintEl().textContent) && /1,550원/.test(hintEl().textContent), hintEl().textContent);
+
+      // (7) 출발·도착이 바뀌면 앞서 넣은 루트 요금은 지운다
+      ev("state.meta.travelers = 2; saveState();");
+      const beforeSeg = transitCalls;
+      w.document.getElementById("pm-to").value = "서울역";
+      w.setRouteEndpointCoord("to", { lat: 37.5547, lng: 126.9707, name: "서울역" });
+      await wait(420);
+      ok("교통비: 구간이 바뀌면 금액·안내를 지운다", transitCalls > beforeSeg && costEl().value === "" && hintEl().style.display === "none",
+        `${costEl().value} / ${hintEl().textContent} / 조회 ${transitCalls - beforeSeg}`);
+
+      // (8) 요금이 없는 루트 — 금액은 비워 두고 직접 적도록 안내
+      stubPayload = NO_FARE_STUB;
+      ev("PM_TRANSIT_CACHE.clear()");
+      w.document.getElementById("pm-from").value = "신촌역";
+      w.setRouteEndpointCoord("from", { lat: 37.5551, lng: 126.9368, name: "신촌역" });
+      await wait(420);
+      ok("교통비: 요금 없는 루트도 카드로 뜬다", cards().length === 1, String(cards().length));
+      clickCard(0);
+      ok("교통비: 요금 없으면 비워 두고 안내", costEl().value === "" && /요금 정보가 없어요/.test(hintEl().textContent), `${costEl().value} / ${hintEl().textContent}`);
+      ok("교통비: 이동수단은 그대로 입력", /2호선 \(홍대입구 > 시청\)/.test(w.document.getElementById("pm-move").value), w.document.getElementById("pm-move").value);
+      w.closePlaceModal();
+
+      // (9) 저장된 이동 일정을 열면 금액이 보이고, 비우고 저장하면 교통비도 지워진다
+      const rid = ev("state.days[0].items[0].id");
+      stubPayload = TRANSIT_STUB;
+      w.openPlaceModal(rid);
+      ok("교통비: 다시 열면 저장된 금액", costEl().value === "5000", costEl().value);
+      costEl().value = "";
+      await w.savePlaceEdit();
+      const cleared = JSON.parse(ev("JSON.stringify(state.days[0].items[0] || null)"));
+      ok("교통비: 금액을 비우고 저장하면 0원", !!cleared && cleared.costTotal === 0 && cleared.moveCost === 0,
+        JSON.stringify(cleared && { costTotal: cleared.costTotal, moveCost: cleared.moveCost }));
+      ok("교통비: 지운 금액은 경비에서도 빠진다", ev("getSyncedExpenses().reduce((s,e)=>s+(Number(e.amount)||0),0)") === 0,
+        String(ev("getSyncedExpenses().reduce((s,e)=>s+(Number(e.amount)||0),0)")));
+
+      w.fetch = realFetch;
+      w.closePlaceModal();
+      ev(`editMode = false; state.meta = { title:'', destination:'', startDate:'', endDate:'', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.bookings = []; state.savedPlaces = []; state.days[0].items = []; state.expenses = []; PM_TRANSIT_CACHE.clear(); saveState();`);
+    }
+
+    // 60) 🌅 일정 탭에서 일출·일몰 줄을 없앤다 (날씨 탭에는 그대로)
+    {
+      ev(`currentDay = 1; editMode = false;
+        state.meta = { title:'일출일몰', destination:'부산', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [
+          { id:'sun-1', time:'09:00', place:'해운대 해수욕장', stay:'체류 60분', moveMode:'호텔 도보 5분', moveMin:5, moveCost:0, costTotal:0, badges:['일출 07:12'], lat:35.1586, lng:129.1604 },
+          { id:'sun-2', time:'18:30', place:'광안리 해변', stay:'체류 50분', moveMode:'41번 버스', moveMin:20, moveCost:3100, costTotal:3100, badges:['일몰 18:04'], lat:35.1533, lng:129.1186 }
+        ]}];
+        state.bookings = []; state.expenses = [];
+        state.weather = [{ dayNum:1, day:'1일차', cityLabel:'부산', area:'해운대', condition:'맑음', minTemp:2, maxTemp:9, sunrise:'07:12', sunset:'18:04' }];
+        saveState();`);
+      w.renderTimeline();
+      const tl = w.document.getElementById("timeline-list");
+      ok("일출일몰: 일정 탭에 구분 줄이 없다", tl.querySelectorAll(".tl-sun-row").length === 0, String(tl.querySelectorAll(".tl-sun-row").length));
+      ok("일출일몰: 일정 탭 텍스트에 일출·일몰이 없다", !/일출|일몰/.test(tl.textContent), tl.textContent.replace(/\s+/g, " ").slice(0, 160));
+      ok("일출일몰: 일정 카드는 그대로 그려진다", tl.querySelectorAll(".card").length === 2, String(tl.querySelectorAll(".card").length));
+      ok("일출일몰: 카드 배지 데이터는 남아 있다", JSON.stringify(JSON.parse(ev("JSON.stringify(state.days[0].items.map(i => i.badges))"))) === JSON.stringify([["일출 07:12"], ["일몰 18:04"]]),
+        ev("JSON.stringify(state.days[0].items.map(i => i.badges))"));
+      ok("일출일몰: 렌더 함수 자체가 사라졌다", typeof w.daySunTimeRows === "undefined", typeof w.daySunTimeRows);
+      ev("editMode = true");
+      w.renderTimeline();
+      ok("일출일몰: 편집 모드에도 없다", !/일출|일몰/.test(tl.textContent), tl.textContent.replace(/\s+/g, " ").slice(0, 160));
+      ev("editMode = false");
+      w.renderWeather();
+      const wx = w.document.getElementById("weather-list").textContent;
+      ok("일출일몰: 날씨 탭에는 그대로", /🌅 일출 07:12/.test(wx) && /🌇 일몰 18:04/.test(wx), wx.replace(/\s+/g, " ").slice(0, 160));
+      ev("state.weather = []; state.days[0].items = []; saveState();");
+    }
+
+    // 61) 🎫 대중교통 경비는 기본 제외 — 경비 탭에서 포함/제외를 직접 고른다
+    {
+      ev(`currentDay = 1; editMode = false;
+        state.meta = { title:'경비 포함 토글', destination:'부산', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [
+          { id:'t-bus', time:'09:00', place:'숙소 → 해운대', fromPlace:'숙소', toPlace:'해운대', moveMode:'41번 버스', moveMin:44, moveCost:3100, costTotal:3100 },
+          { id:'t-ktx', time:'10:00', place:'부산역 → 광명역 (KTX)', fromPlace:'부산역', toPlace:'광명역', moveMode:'KTX 일반실', moveMin:149, moveCost:104400, costTotal:104400, badges:['예매 필수'] },
+          { id:'t-taxi', time:'12:00', place:'광안리 → 부산역', fromPlace:'광안리', toPlace:'부산역', moveMode:'택시 25분', moveMin:25, moveCost:18000, costTotal:18000 },
+          { id:'t-hotel', time:'15:00', place:'호텔 아쿠아 펠리스 체크인', moveMode:'도보 3분', moveMin:3, moveCost:0, costTotal:211411 },
+          { id:'t-bus2', time:'18:00', place:'광안리 → 남포동', fromPlace:'광안리', toPlace:'남포동', moveMode:'2호선', moveMin:30, moveCost:1550, costTotal:20000 }
+        ]}];
+        state.bookings = [{ id:'bk1', type:'train', name:'KTX 25 부산행', price:104400, payStatus:'paid', inDate:'2027-03-06' }];
+        state.expenses = [{ id:'e-manual-1', category:'기타', name:'간식', amount:5000, status:'현장', manual:true }];
+        state.savedPlaces = []; state.weather = []; state.expenseIncludeMap = {};
+        saveState();`);
+
+      const list = () => JSON.parse(ev("JSON.stringify(getSyncedExpenses())"));
+      const byId = (id) => list().find(e => e.id === id) || {};
+      const total = () => w.document.getElementById("sum-total").textContent;
+      const per = () => w.document.getElementById("sum-per").textContent;
+      const legend = () => w.document.getElementById("donut-legend").textContent.replace(/\s+/g, " ");
+      const listEl = () => w.document.getElementById("expense-list");
+      const clickToggle = (id) => {
+        const b = listEl().querySelector(`[data-exp-id="${id}"]`);
+        if (b) b.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+        return b;
+      };
+
+      // (1) 기본값 — 버스·지하철 요금만 빠지고, KTX·택시·숙소·예약·직접 추가는 그대로 포함
+      ok("경비: 버스·지하철 요금은 기본 제외", byId("tl_t-bus").transit === true && byId("tl_t-bus").included === false,
+        JSON.stringify(byId("tl_t-bus")));
+      ok("경비: KTX·택시·숙소·예약·직접 추가는 그대로 포함", byId("bk_bk1").included === true && byId("tl_t-taxi").included === true
+        && byId("tl_t-hotel").included === true && byId("e-manual-1").included === true,
+        JSON.stringify({ ktx: byId("bk_bk1").included, taxi: byId("tl_t-taxi").included, hotel: byId("tl_t-hotel").included, manual: byId("e-manual-1").included }));
+      ok("경비: 대중교통 합계 줄도 기본 제외", byId("tl_transit_local").amount === 1550 && byId("tl_transit_local").included === false,
+        JSON.stringify(byId("tl_transit_local")));
+      ok("경비: 숙소·식비가 섞인 이동 카드는 교통 요금으로 빼지 않는다", byId("tl_t-bus2").transit === false && byId("tl_t-bus2").included === true,
+        JSON.stringify(byId("tl_t-bus2")));
+      ok("경비: 총 예상 경비에 대중교통 요금은 빠진다", total() === "₩358,811", total());
+      ok("경비: 1인당도 포함된 금액 기준", per() === "₩179,406", per());
+      ok("경비: 카테고리 합계도 제외 금액 뺀 값", /₩142,400/.test(legend()), legend());
+      ok("경비: 결제 진행률은 실제 결제 항목만", w.document.getElementById("sum-done").textContent === "1/5건",
+        w.document.getElementById("sum-done").textContent);
+
+      // (2) 경비 탭에서 토글 — 포함하면 바로 합계에 들어간다
+      const busBtn = listEl().querySelector('[data-exp-id="tl_t-bus"]');
+      ok("경비 탭: 대중교통 항목에 '경비에 포함' 버튼", !!busBtn && busBtn.textContent.trim() === "경비에 포함", busBtn && busBtn.textContent);
+      ok("경비 탭: 제외된 항목 표시", /🎫 경비 제외/.test(listEl().textContent), "");
+      ok("경비 탭: KTX·예약 항목에는 토글이 없다", !listEl().querySelector('[data-exp-id="bk_bk1"]'), "");
+      const note = w.document.getElementById("exp-transit-note");
+      ok("경비 탭: 기본 제외 안내", note.style.display !== "none" && /기본으로 경비에서 빼 두었어요/.test(note.textContent) && /₩4,650/.test(note.textContent),
+        note.textContent.replace(/\s+/g, " "));
+
+      busBtn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      ok("경비: 포함을 켜면 상태에 저장", ev("state.expenseIncludeMap['tl_t-bus']") === true, ev("JSON.stringify(state.expenseIncludeMap)"));
+      ok("경비: 포함을 켜면 총액에 바로 더해진다", total() === "₩361,911", total());
+      ok("경비: 1인당·카테고리 합계도 같이 오른다", per() === "₩180,956" && /₩145,500/.test(legend()), `${per()} / ${legend()}`);
+      ok("경비: 포함된 항목의 버튼은 '제외 (교통카드)'", (listEl().querySelector('[data-exp-id="tl_t-bus"]') || {}).textContent === "제외 (교통카드)",
+        (listEl().querySelector('[data-exp-id="tl_t-bus"]') || {}).textContent);
+
+      // (3) 다시 끄면 합계에서 빠진다 + 저장도 남는다
+      clickToggle("tl_t-bus");
+      ok("경비: 다시 끄면 총액에서 빠진다", total() === "₩358,811", total());
+      ok("경비: 끈 상태가 저장된다", ev("state.expenseIncludeMap['tl_t-bus']") === false, ev("JSON.stringify(state.expenseIncludeMap)"));
+      ok("경비: 포함 여부가 로컬 저장에도 남는다", ev("JSON.parse(localStorage.getItem(getLocalKey())).expenseIncludeMap['tl_t-bus']") === false,
+        ev("JSON.stringify(JSON.parse(localStorage.getItem(getLocalKey())).expenseIncludeMap || null)"));
+
+      // (4) '일정 내 대중교통 합계' 줄도 같은 방식으로 켤 수 있다
+      ok("경비 탭: 대중교통 합계 줄에도 토글", !!listEl().querySelector('[data-exp-id="tl_transit_local"]'), "");
+      clickToggle("tl_transit_local");
+      ok("경비: 합계 줄을 켜면 1,550원이 더해진다", total() === "₩360,361", total());
+      clickToggle("tl_transit_local");
+      ok("경비: 다시 끄면 원래대로", total() === "₩358,811", total());
+
+      ev("state.bookings = []; state.expenses = []; state.days[0].items = []; state.expenseIncludeMap = {}; saveState();");
+    }
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }
