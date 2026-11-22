@@ -954,14 +954,30 @@ setTimeout(async () => {
       const memoCard = () => w.document.querySelector("#timeline-list .tl-memo-card");
       ok("메모 카드가 맨 위에 따뜻한 메모 스타일로", !!memoCard()
         && listHtml().indexOf("tl-memo-card") < listHtml().indexOf('data-card-id="mm-a"')
-        && /📝 메모/.test(memoCard().textContent) && /체크인 준비/.test(memoCard().textContent)
-        && /우산 챙기기/.test(memoCard().textContent),
+        && /📝/.test(memoCard().querySelector(".tl-memo-ico").textContent)
+        && /체크인 준비/.test(memoCard().textContent) && /우산 챙기기/.test(memoCard().textContent),
         memoCard() ? memoCard().textContent.trim().slice(0, 40) : "카드 없음");
-      ok("메모 카드 조작 버튼(위로·아래로·수정·삭제)", !!memoCard()
-        && !!memoCard().querySelector('button[onclick*="moveMemo"]')
-        && !!memoCard().querySelector('button[onclick*="openMemoModal"]')
-        && !!memoCard().querySelector('button[onclick*="deleteItem"]'),
-        "");
+      // 보기 모드 — 위로·아래로·수정·삭제 같은 조작 버튼은 싹 빠진다 (편집 모드에서만)
+      ok("보기 모드 메모 카드: 조작 버튼·구분선 없음", !!memoCard()
+        && !memoCard().querySelector(".tl-memo-actions")
+        && memoCard().querySelectorAll("button, a").length === 0
+        && !/위로|아래로|수정|삭제/.test(memoCard().textContent)
+        && !/tl-memo-actions|tl-memo-badge|tl-memo-head/.test(html),
+        memoCard() ? memoCard().innerHTML.slice(0, 120) : "카드 없음");
+      // 📝 아이콘 바로 옆(같은 줄)에서 메모 글씨가 시작된다 — 아이콘 다음이 곧 글씨
+      {
+        const bodyEl = memoCard() && memoCard().querySelector(".tl-memo-body");
+        const ico = bodyEl && bodyEl.querySelector(".tl-memo-ico");
+        const copy = ico && ico.nextElementSibling;
+        ok("📝 아이콘 바로 옆에 메모 글씨", !!bodyEl && !!ico && !!copy
+          && copy.classList.contains("tl-memo-copy")
+          && copy.firstElementChild && copy.firstElementChild.classList.contains("tl-memo-title")
+          && /^체크인 준비/.test(copy.textContent.trim())
+          && /\.tl-memo-body \{[^}]*display: flex/.test(html)
+          && /\.tl-memo-body \{[^}]*align-items: baseline/.test(html)
+          && /\.tl-memo-ico \{[^}]*flex: 0 0 auto/.test(html),
+          bodyEl ? bodyEl.innerHTML.replace(/\s+/g, " ").slice(0, 110) : "본문 없음");
+      }
 
       // 비간섭 — 지도 핀·큰 지도 스텝·총 이동 시간·경비
       ok("메모는 지도 핀·동선에 안 잡힘", ev("homeGeoPts().length") === pinsBefore
@@ -995,20 +1011,37 @@ setTimeout(async () => {
       ok("메모 수정(위치·개수 유지)", ev("state.days[0].items.length") === 3 && ev("state.days[0].items[0].id") === memo.id
         && ev("state.days[0].items[0].memoTitle") === "" && /보조배터리/.test(ev("state.days[0].items[0].memo")),
         "");
-      ok("제목 없는 메모는 내용만 보인다", !!memoCard() && /보조배터리/.test(memoCard().textContent)
-        && !memoCard().querySelector(".tl-memo-title"), "");
+      ok("제목 없는 메모는 📝 바로 옆에 내용만", !!memoCard() && /보조배터리/.test(memoCard().textContent)
+        && !memoCard().querySelector(".tl-memo-title")
+        && (function () {
+          const ico = memoCard().querySelector(".tl-memo-ico");
+          const copy = ico && ico.nextElementSibling;
+          return !!copy && /^15시 체크인/.test(copy.textContent.trim())
+            && copy.firstElementChild && copy.firstElementChild.classList.contains("tl-memo-text");
+        })(), "");
 
       // 편집 모드 — 메모 행에서도 드래그 손잡이·수정·삭제가 그대로 동작
       w.toggleEditMode();
       const memoRow = w.document.querySelector(`#timeline-list .tl-edit-row[data-item-id="${memo.id}"]`);
-      ok("편집 모드 메모 행 + ≡ 손잡이", !!memoRow && /📝 메모/.test(memoRow.textContent)
+      ok("편집 모드 메모 행: 📝 바로 옆에 메모 글씨 + ≡·−", !!memoRow
+        && !memoRow.querySelector(".tl-edit-cat")
+        && (function () {
+          const ico = memoRow.querySelector(".tl-edit-memo-line .tl-memo-ico");
+          const txt = ico && ico.nextElementSibling;
+          return !!txt && txt.classList.contains("tl-edit-place") && /보조배터리/.test(txt.textContent);
+        })()
         && !!memoRow.querySelector('[data-drag-handle="1"]')
-        && !!memoRow.querySelector(".tl-edit-del"), "");
+        && !!memoRow.querySelector(".tl-edit-del"),
+        memoRow ? memoRow.textContent.replace(/\s+/g, " ").trim().slice(0, 60) : "행 없음");
       if (memoRow) memoRow.querySelector(".tl-edit-card").click();
       ok("편집 행 클릭 → 메모 편집기", w.document.getElementById("memo-modal").classList.contains("open")
         && /수정/.test(w.document.getElementById("memo-modal-title").textContent), "");
       w.closeMemoModal();
       w.toggleEditMode();
+      ok("편집 끝나면 다시 조용한 메모 카드(버튼 없음)", !!memoCard()
+        && memoCard().querySelectorAll("button").length === 0
+        && !memoCard().querySelector(".tl-memo-actions")
+        && !/위로|아래로|수정|삭제/.test(memoCard().textContent), "");
 
       // 삭제
       w.deleteItem(memo.id);
@@ -1139,7 +1172,9 @@ setTimeout(async () => {
         && !/18:00|09:00|12:00/.test(w.document.getElementById("timeline-list").textContent.replace(/\s+/g, " ").split("메모")[0]),
         "");
       const memoTl = w.document.querySelector("#timeline-list .tl-memo-card");
-      ok("메모는 번호 대신 📝 메모", !!memoTl && !memoTl.querySelector(".tl-stop-num") && /📝 메모/.test(memoTl.textContent), "");
+      ok("메모는 번호 대신 📝 아이콘", !!memoTl && !memoTl.querySelector(".tl-stop-num")
+        && /📝/.test((memoTl.querySelector(".tl-memo-ico") || {}).textContent || "")
+        && /체크인 준비/.test(memoTl.textContent), "");
       ok("번호는 메모를 건너뛰고 1·2·3", ev("JSON.stringify([...dayItemNumbers(state.days[0]).entries()])") === '[["sq-late",1],["sq-early",2],["sq-mid",3]]',
         ev("JSON.stringify([...dayItemNumbers(state.days[0]).entries()])"));
       ok("홈 지도·요약 번호도 일정 탭과 같다", ev("JSON.stringify(homeGeoPts().map(p=>[p.it.place,p.num]))") === '[["광안리 해변",1],["부산역",2],["본전돼지국밥",3]]'
