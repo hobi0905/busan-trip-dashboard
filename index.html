@@ -2441,7 +2441,7 @@
       <details style="margin-top:8px;background:var(--ocean-soft);padding:8px 10px;border-radius:10px;border:1px solid #bae6fd;">
         <summary style="font-size:12.5px;font-weight:800;color:var(--ocean-dark);cursor:pointer;">📥 메뉴판 한 번에 불러오기 (텍스트 / 사진)</summary>
         <div style="margin-top:8px;">
-          <textarea id="menu-bulk-text" rows="3" class="input" placeholder="메뉴판 텍스트 붙여넣기 (예: 아메리카노 5,500원)&#10;또는 캡처 이미지를 여기에 Ctrl+V 붙여넣기!"></textarea>
+          <textarea id="menu-bulk-text" rows="3" class="input" placeholder="메뉴판 텍스트 붙여넣기 (예: 아메리카노 5,500원 / 가격 변동)&#10;또는 캡처 이미지를 여기에 Ctrl+V 붙여넣기!"></textarea>
           <div class="row" style="margin-top:6px;margin-bottom:4px;">
             <button class="btn btn-primary btn-sm" style="flex:1;" onclick="applyBulkMenuText()">텍스트로 일괄 추가</button>
             <label class="btn btn-soft btn-sm" style="flex:1;cursor:pointer;">
@@ -2454,7 +2454,7 @@
       </details>
       <div class="row" style="margin-top:8px;">
         <input id="menu-custom-name" class="input" placeholder="직접 추가 메뉴명" />
-        <input id="menu-custom-price" type="number" class="input" placeholder="가격" style="width:95px;" />
+        <input id="menu-custom-price" type="text" inputmode="decimal" class="input" placeholder="가격 (변동은 -)" style="width:110px;" />
         <button class="btn btn-soft btn-sm" onclick="addCustomMenuItem()">추가</button>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin:10px 0 8px;font-weight:800;font-size:14px;">
@@ -6661,7 +6661,7 @@
             ${moveEtaHtml(it)}
             <div class="tl-extra">
             <div class="tl-badges">${badges}${hasMenus ? `<span class="tag blue">🍽️ 메뉴 선택</span>` : ""}</div>
-            ${pickedText ? `<div style="font-size:12.5px;font-weight:700;color:var(--ocean-dark);background:var(--ocean-soft);padding:6px 9px;border-radius:8px;margin-bottom:6px;">🍴 ${pickedText} (${fmt(it.costTotal)})</div>` : ""}
+            ${pickedText ? `<div style="font-size:12.5px;font-weight:700;color:var(--ocean-dark);background:var(--ocean-soft);padding:6px 9px;border-radius:8px;margin-bottom:6px;">🍴 ${pickedText} (${Number(it.costTotal) > 0 ? fmt(it.costTotal) : (picked.some(m => m.variablePrice || m.price == null) ? "가격 변동" : fmt(0))})</div>` : ""}
             ${!virtual && it.scheduled && it.routeSummary ? `<div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:2px;">🛣️ ${it.routeSummary}</div>` : ""}
             <div class="tl-meta">
               <div class="tl-move">${moveIconOf(it.moveMode)} ${it.moveMode || ""} ${virtual
@@ -8603,32 +8603,354 @@
       saveState();
     }
 
-    function parseMenuTextToItems(text) {
-      const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-      const found = [];
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const mInline = line.match(/^(.+?)\s+([0-9][0-9,]{2,})\s*원?$/);
-        if (mInline) {
-          const price = Number(mInline[2].replace(/,/g, ""));
-          if (price >= 500) found.push({ name: mInline[1].trim(), price, qty: 0 });
-          continue;
+    /* ── 🍽️ 메뉴판 OCR 전처리 ─────────────────────────────────────────
+       모바일 메뉴 스크린샷은 왼쪽 2/3에 '메뉴명 · 설명 · 가격', 오른쪽 1/3에 음식 사진이 온다.
+       원본을 그대로 OCR에 넣으면 상태바·탭바·사진 속 잡음까지 글자로 읽혀서
+       엉뚱한 줄이 메뉴명으로 잡힌다. 그래서 캔버스로 잘라내고(세로형 스크린샷만)
+       그레이스케일 + 대비 강화 + 업스케일한 그림을 OCR에 넘긴다. */
+    const MENU_OCR_MIN_WIDTH = 1200;      // 작은 캡처도 글자 높이가 살아나게 최소 폭을 확보
+    const MENU_OCR_MAX_WIDTH = 1700;
+    const MENU_OCR_MAX_PIXELS = 6.5e6;    // 너무 큰 캔버스는 브라우저가 버티지 못한다
+
+    // 세로형 스크린샷에서 잘라낼 영역 — 가로 사진(일반 메뉴판)이면 자르지 않는다
+    function menuOcrCropPlan(w, h, opts) {
+      const plan = { x: 0, y: 0, w: Math.max(1, Math.round(w)), h: Math.max(1, Math.round(h)) };
+      if (!(h > w * 1.35)) return plan;              // 가로·정사각 사진은 그대로
+      // 헤더 끝(탭바 아래 구분선)까지 — 못 찾으면 16%
+      const rawBottom = Number(opts && opts.headerBottom);
+      const bottom = isFinite(rawBottom) && rawBottom > 0 ? Math.min(0.24, Math.max(0.13, rawBottom)) : 0.16;
+      plan.y = Math.round(h * bottom);               // 상태바(9:09) + 매장명 + 탭바
+      plan.h = Math.max(1, h - plan.y);
+      // 오른쪽 사진 칸은 '정말 사진일 때'만 — 글자가 전체 폭에 걸친 판넬 사진을 지키려고
+      if (opts && opts.rightPhotoLike) plan.w = Math.max(1, Math.round(w * 0.66));
+      return plan;
+    }
+
+    // 상단 머리말이 끝나는 줄(탭바 아래 얇은 구분선)을 찾는다 — 구분선은 흰 배경(255)도, 본문도 아닌
+    // 연한 회색(195~250) 한 줄이라 픽셀 분포로 구분된다. 못 찾으면 16%. 반환값은 높이 비율.
+    function menuOcrHeaderBottom(data, w, h) {
+      const fallback = 0.16;
+      if (!data || !w || !h) return fallback;
+      const yStart = Math.floor(h * 0.08), yEnd = Math.floor(h * 0.26);
+      const stepX = Math.max(1, Math.floor(w / 200));
+      const lineRatio = (y) => {
+        let hit = 0, total = 0;
+        for (let x = 0; x < w; x += stepX) {
+          const i = (y * w + x) * 4;
+          const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+          total++;
+          if (lum >= 195 && lum <= 250) hit++;
         }
-        if (i + 1 < lines.length) {
-          const mNext = lines[i + 1].match(/^([0-9][0-9,]{2,})\s*원?$/);
-          if (mNext && !/^[0-9,]+원?$/.test(line)) {
-            const price = Number(mNext[1].replace(/,/g, ""));
-            if (price >= 500) { found.push({ name: line, price, qty: 0 }); i++; }
-          }
+        return total ? hit / total : 0;
+      };
+      let found = 0;
+      for (let y = yStart; y < yEnd; y++) {
+        if (lineRatio(y) < 0.9) continue;
+        // 얇은 선인지 — 위·아래 몇 줄은 배경(흰색/본문)이어야 한다
+        const above = lineRatio(Math.max(0, y - 3)), below = lineRatio(Math.min(h - 1, y + 3));
+        if (above > 0.6 || below > 0.6) continue;
+        found = y;
+      }
+      if (!found) return fallback;
+      return Math.min(0.24, Math.max(0.13, (found + 1) / h));
+    }
+
+    // OCR에 넘길 캔버스 크기 — 최소 폭까지 키우고, 픽셀 상한을 넘으면 줄인다
+    function menuOcrTargetSize(w, h) {
+      const sw = Math.max(1, Number(w) || 1), sh = Math.max(1, Number(h) || 1);
+      let scale = Math.min(MENU_OCR_MAX_WIDTH / sw, Math.max(1, MENU_OCR_MIN_WIDTH / sw));
+      let tw = Math.max(1, Math.round(sw * scale)), th = Math.max(1, Math.round(sh * scale));
+      const px = tw * th;
+      if (px > MENU_OCR_MAX_PIXELS) {
+        const k = Math.sqrt(MENU_OCR_MAX_PIXELS / px);
+        tw = Math.max(1, Math.round(tw * k));
+        th = Math.max(1, Math.round(th * k));
+      }
+      return { width: tw, height: th };
+    }
+
+    // 오른쪽 1/3이 음식 사진 칸인지 표본 픽셀로 판정한다
+    // · 사진은 어둡거나 색이 짙고, 글자 영역은 흰 배경에 검은 글자라 밝기 분포가 다르다
+    function menuOcrRightBandPhotoLike(data, w, h) {
+      if (!data || !w || !h) return false;
+      const x0 = Math.floor(w * 0.68), y0 = Math.floor(h * 0.2);
+      const stepX = Math.max(1, Math.floor((w - x0) / 60));
+      const stepY = Math.max(1, Math.floor((h - y0) / 120));
+      let photo = 0, total = 0;
+      for (let y = y0; y < h; y += stepY) {
+        for (let x = x0; x < w; x += stepX) {
+          const i = (y * w + x) * 4;
+          const r = data[i], g = data[i + 1], b = data[i + 2];
+          total++;
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+          const sat = Math.max(r, g, b) - Math.min(r, g, b);
+          if (lum < 200 || sat > 36) photo++;      // 흰 배경이 아닌 픽셀 = 사진·글자
         }
       }
+      if (!total || photo / total <= 0.35) return false;
+      // 왼쪽 글자 칸이 흰 배경이어야 스크린샷 — 배경이 꽉 찬 메뉴판 사진이면 자르지 않는다
+      let light = 0, lightTotal = 0;
+      const lx1 = Math.floor(w * 0.55);
+      const lStepX = Math.max(1, Math.floor(lx1 / 40)), lStepY = Math.max(1, Math.floor((h - y0) / 80));
+      for (let y = y0; y < h; y += lStepY) {
+        for (let x = 0; x < lx1; x += lStepX) {
+          const i = (y * w + x) * 4;
+          lightTotal++;
+          const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+          if (lum > 190) light++;
+        }
+      }
+      return !lightTotal || light / lightTotal > 0.55;
+    }
+
+    // 그레이스케일 + 대비 강화 — 흰 배경은 더 희게, 글자는 더 진하게
+    function menuOcrGrayContrast(data, contrast) {
+      if (!data) return data;
+      const c = Number(contrast) > 0 ? Number(contrast) : 1.5;
+      for (let i = 0; i < data.length; i += 4) {
+        const g = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        let v = (g - 128) * c + 128;
+        v = v < 0 ? 0 : v > 255 ? 255 : v;
+        data[i] = data[i + 1] = data[i + 2] = v;
+        data[i + 3] = 255;
+      }
+      return data;
+    }
+
+    function loadMenuOcrImage(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        let url = "";
+        try { url = URL.createObjectURL(file); } catch (e) { return reject(e); }
+        img.onload = () => { try { URL.revokeObjectURL(url); } catch (e) {} resolve(img); };
+        img.onerror = (e) => { try { URL.revokeObjectURL(url); } catch (err) {} reject(e); };
+        img.src = url;
+      });
+    }
+
+    // OCR 전 원본 사진 다듬기 — 실패하면 원본 파일을 그대로 돌려준다(인식은 계속된다)
+    async function preprocessMenuImageForOcr(file) {
+      if (!file || typeof document === "undefined" || typeof Blob === "undefined") return file;
+      if (!(file instanceof Blob)) return file;          // 이미 캔버스·URL 등 다른 입력
+      try {
+        const img = await loadMenuOcrImage(file);
+        const iw = Number(img.width || img.naturalWidth) || 0;
+        const ih = Number(img.height || img.naturalHeight) || 0;
+        if (!iw || !ih) return file;
+        // 1) 작게 그려서 오른쪽 칸이 사진인지 본다
+        const probeW = Math.min(480, iw);
+        const probeH = Math.max(1, Math.round(ih * (probeW / iw)));
+        const probe = document.createElement("canvas");
+        probe.width = probeW; probe.height = probeH;
+        const pctx = probe.getContext("2d", { willReadFrequently: true });
+        if (!pctx) return file;
+        pctx.drawImage(img, 0, 0, probeW, probeH);
+        let rightPhotoLike = false;
+        let headerBottom = 0;
+        try {
+          const probeData = pctx.getImageData(0, 0, probeW, probeH).data;
+          rightPhotoLike = menuOcrRightBandPhotoLike(probeData, probeW, probeH);
+          if (ih > iw * 1.35) headerBottom = menuOcrHeaderBottom(probeData, probeW, probeH);
+        } catch (e) {}
+        // 2) 자를 곳과 넘길 크기
+        const plan = menuOcrCropPlan(iw, ih, { rightPhotoLike, headerBottom });
+        const size = menuOcrTargetSize(plan.w, plan.h);
+        const canvas = document.createElement("canvas");
+        canvas.width = size.width; canvas.height = size.height;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) return file;
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);   // 투명 PNG도 흰 배경으로
+        ctx.imageSmoothingEnabled = true;
+        try { ctx.imageSmoothingQuality = "high"; } catch (e) {}
+        ctx.drawImage(img, plan.x, plan.y, plan.w, plan.h, 0, 0, canvas.width, canvas.height);
+        // 3) 그레이스케일 + 대비 강화
+        try {
+          const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          menuOcrGrayContrast(pixels.data, 1.55);
+          ctx.putImageData(pixels, 0, 0);
+        } catch (e) {}
+        // 4) OCR이 읽을 파일로 — toBlob이 없으면 캔버스를 그대로 넘긴다(Tesseract가 읽는다)
+        const blob = await new Promise((resolve) => {
+          try { canvas.toBlob((b) => resolve(b || null), "image/png"); } catch (e) { resolve(null); }
+        });
+        if (!blob) return canvas;
+        const name = String(file.name || "menu").replace(/\.[^.]+$/, "") + "-ocr.png";
+        try { return new File([blob], name, { type: "image/png" }); } catch (e) { return blob; }
+      } catch (e) {
+        return file;                                      // 캔버스 없는 환경(jsdom 등)
+      }
+    }
+
+    /* ── 🍽️ 메뉴 텍스트 파싱 ─────────────────────────────────────────
+       메뉴 블록은 보통 [대표 메뉴명] → [설명 1~2줄] → [가격] 순서다.
+       가격 줄을 만났을 때 바로 윗줄을 쓰면 설명이 메뉴명이 되므로,
+       직전 가격 이후 쌓인 후보 줄 중 '첫 번째 짧은 제목 줄'을 대표 메뉴명으로 고른다. */
+    const MENU_TAB_NOISE = new Set(["홈", "소식", "메뉴", "예약", "리뷰", "사진", "주변", "저장", "공유",
+      "길찾기", "전화", "홈페이지", "더보기", "닫기", "뒤로", "별점", "영업중", "영업시간", "가격표", "전체보기", "지도"]);
+
+    // 상단 탭바·상태바 줄 (매장명은 이 줄들 위에 있다 → 만나면 앞의 후보를 버린다)
+    function isMenuHeaderLine(line) {
+      const s = String(line || "").replace(/\s+/g, " ").trim();
+      if (!s) return false;
+      if (MENU_TAB_NOISE.has(s)) return true;
+      const tokens = s.split(/\s+/);
+      if (tokens.length >= 2 && tokens.every(t => MENU_TAB_NOISE.has(t))) return true;   // '홈 소식 메뉴 예약 리뷰…'
+      return /^\d{1,2}\s*:\s*\d{2}$/.test(s);                                         // 9:09
+    }
+
+    // 상단 탭바·상태바·쓰레기 줄은 후보에서도 뺀다
+    function isMenuNoiseLine(line) {
+      const s = String(line || "").replace(/\s+/g, " ").trim();
+      if (!s) return true;
+      if (isMenuHeaderLine(s)) return true;
+      if (/^\d{1,2}\s*:\s*\d{2}$/.test(s)) return true;          // 9:09 같은 상태바 시계
+      if (/^\d{1,2}\s*:\s*\d{2}$/.test(s)) return true;          // 9:09 같은 상태바 시계
+      if (/^[\d%:.,\s\-+]+$/.test(s)) return true;               // 숫자·기호만 (배터리 %, 신호 세기)
+      if (!/[0-9A-Za-z가-힣]/.test(s)) return true;               // 글자가 하나도 없다
+      if (s.replace(/\s/g, "").length < 2) return true;          // 한 글자 노이즈
+      if (/^[ㄱ-ㅎㅏ-ㅣ]+$/.test(s)) return true;                  // 자모만
+      if (/^(영업\s*중|영업\s*시간|와이파이|wifi|주차|반려동물|포장\s*가능|배달\s*가능|단체\s*석)$/i.test(s)) return true;
+      return false;
+    }
+
+    // 가격만 있는 줄 → { price } 또는 { variable: true }
+    function parseMenuPriceToken(line) {
+      const s = String(line || "").replace(/\s+/g, " ").trim();
+      if (!s || s.length > 24) return null;
+      // 가격 변동 / 가격변동 / 변동 (오탈자 조금 섞여도)
+      if (/^(가격\s*)?변\s*[동등]/.test(s) && s.replace(/\s/g, "").length <= 8) return { variable: true };
+      // 6,500원 · 6.500원 · 6,500 원 · ₩6,500 · 6500
+      const m = s.match(/^[₩￦]?\s*([0-9][0-9.,]*)\s*(원|₩|￦)?$/);
+      if (!m) return null;
+      const digits = m[1].replace(/[.,]/g, "");
+      if (!/^\d+$/.test(digits)) return null;
+      const withWon = Boolean(m[2]);
+      if (!withWon && !/^\d{4,5}$/.test(digits)) return null;    // '원' 없는 맨 숫자는 연도·번호일 수 있다
+      if (!/^\d{3,6}$/.test(digits)) return null;
+      const price = Number(digits);
+      return price >= 500 && price <= 500000 ? { price } : null;
+    }
+
+    // 메뉴명으로 쓸 만한 줄인가 — 설명 문장과 제목 줄을 길이·어미로 가른다
+    const MENU_DESC_HINT = /(습니다|입니다|해요|예요|이며|하고|있는|함께|위에|보다|만든|즐길|어울|조합|풍미|생크림|디저트|식빵|크림)/;
+    function menuNameCandidate(line) {
+      const s = String(line || "").replace(/\s+/g, " ").trim();
+      if (!s || isMenuNoiseLine(s)) return null;
+      if (/^(가격\s*)?변\s*[동등]/.test(s)) return null;
+      const plain = s.replace(/\s/g, "");
+      if (plain.length < 2) return null;
+      if (s.length > 24) return null;                              // 설명 문장은 대개 25자 이상
+      if (/[.…]$/.test(s)) return null;                            // 잘린 설명('...')
+      if (s.length > 8 && /(다|요|음|함|죠|네요|습니다|입니다)$/.test(s)) return null;
+      if (s.length > 12 && MENU_DESC_HINT.test(s)) return null;
+      return s;
+    }
+
+    // 쌓인 후보 줄에서 대표 메뉴명 고르기 — 마지막 묶음의 첫 짧은 제목 줄 우선
+    function pickMenuName(pending) {
+      if (!Array.isArray(pending) || !pending.length) return null;
+      // 한 묶음(빈 줄 사이)에 몇 줄이 있는지 — 메뉴명은 보통 한 줄짜리 묶음으로 따로 선다
+      const blockCount = new Map();
+      pending.forEach(p => blockCount.set(p.block, (blockCount.get(p.block) || 0) + 1));
+      const cands = pending.map(p => ({ line: p.line, block: p.block, name: menuNameCandidate(p.line) })).filter(x => x.name);
+      if (cands.length) {
+        // 1) 혼자 선 줄 = 대표 메뉴명 (설명은 두 줄 이상으로 붙어 오고, 가끔 설명 첫 줄이 분리되기도 한다)
+        const solo = cands.filter(c => blockCount.get(c.block) === 1);
+        if (solo.length) return solo[solo.length - 1].name;
+        // 2) 설명 문장은 길다 — 짧은 제목 줄
+        const short = cands.find(c => c.name.replace(/\s/g, "").length <= 14);
+        if (short) return short.name;
+        return cands[0].name;
+      }
+      // 제목처럼 보이는 줄이 없으면 첫 줄을 이름으로 (아주 길면 줄인다)
+      const fallback = String(pending[0].line || "").replace(/\s+/g, " ").trim();
+      return fallback ? fallback.slice(0, 30) : null;
+    }
+
+    // 한 줄에 '메뉴명 + 가격/변동'이 같이 온 경우
+    function splitInlineMenuLine(line) {
+      const s = String(line || "").replace(/\s+/g, " ").trim();
+      if (!s || s.length > 60) return null;
+      const mPrice = s.match(/^(.{1,40}?)\s*[₩￦]?\s*([0-9][0-9.,]*)\s*(원|₩|￦)?$/);
+      if (mPrice) {
+        const name = mPrice[1].replace(/[\s,]+$/, "").trim();
+        const digits = mPrice[2].replace(/[.,]/g, "");
+        const withWon = Boolean(mPrice[3]);
+        if (name && /[가-힣A-Za-z]/.test(name) && /^\d{3,6}$/.test(digits) && (withWon || digits.length >= 4)) {
+          const price = Number(digits);
+          if (price >= 500 && price <= 500000) return { name, price };
+        }
+      }
+      const mVar = s.match(/^(.{1,40}?)\s*(?:가격\s*)?변\s*[동등]$/) || s.match(/^(.{1,40}?)\s*[-–—]$/);
+      if (mVar) {
+        const name = mVar[1].replace(/[\s,]+$/, "").trim();
+        if (name && /[가-힣A-Za-z]/.test(name)) return { name, variable: true };
+      }
+      return null;
+    }
+
+    // 메뉴판 텍스트(OCR 결과·붙여넣기) → [{ name, price, variablePrice?, qty }]
+    function parseBulkMenus(text) {
+      const raw = String(text || "").replace(/\r\n?/g, "\n").split("\n");
+      const found = [];
+      const pushItem = (name, parsed) => {
+        const clean = String(name || "").replace(/\s+/g, " ").trim();
+        if (!clean) return;
+        if (found.some(x => x.name === clean)) return;
+        const item = { name: clean, price: parsed.variable ? null : parsed.price, qty: 0 };
+        if (parsed.variable) item.variablePrice = true;
+        found.push(item);
+      };
+      let pending = [];
+      let block = 0;
+      for (const rawLine of raw) {
+        const line = String(rawLine || "").replace(/\s+/g, " ").trim();
+        if (!line) { block++; continue; }                            // 빈 줄 = 메뉴·안내 문단 경계
+        const priceToken = parseMenuPriceToken(line);
+        if (priceToken) {
+          const name = pickMenuName(pending);
+          if (name) pushItem(name, priceToken);
+          pending = [];                                              // 설명이 다음 메뉴로 새지 않게
+          continue;
+        }
+        if (isMenuNoiseLine(line)) {
+          if (isMenuHeaderLine(line)) pending = [];                  // 탭바 위 매장명은 메뉴명이 아니다
+          block++;
+          continue;
+        }
+        const inline = splitInlineMenuLine(line);
+        if (inline) { pushItem(inline.name, inline); pending = []; continue; }
+        pending.push({ line, block });
+        if (pending.length > 8) pending.shift();
+      }
       return found;
+    }
+
+    // 예전 이름 그대로도 쓴다 (다른 곳에서 부르는 곳이 있다)
+    function parseMenuTextToItems(text) { return parseBulkMenus(text); }
+
+    // 목록에 보여 줄 가격 — '가격 변동' 메뉴는 0원이 아니라 '-'
+    function menuPriceLabel(m) {
+      if (!m) return "-";
+      const price = Number(m.price);
+      if (m.variablePrice || m.price === null || m.price === undefined || !isFinite(price) || price <= 0) return "-";
+      return fmt(price);
+    }
+
+    // 직접 추가 가격 입력 — '가격 변동' / '-' / 빈칸은 변동 메뉴로
+    function parseManualMenuPrice(value) {
+      const s = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
+      if (!s || s === "-" || s === "–" || /^(가격\s*)?변\s*[동등]$/.test(s)) return { variable: true };
+      const digits = s.replace(/[^\d]/g, "");
+      if (!digits) return null;
+      return { price: Number(digits) };
     }
 
     function applyBulkMenuText() {
       const txt = document.getElementById("menu-bulk-text").value;
       const parsed = parseMenuTextToItems(txt);
-      if (!parsed.length) return alert("인식된 메뉴가 없습니다. '메뉴명 12,000원' 형태로 입력해 주세요.");
+      if (!parsed.length) return alert("인식된 메뉴가 없습니다. '메뉴명 12,000원' 또는 '메뉴명 가격 변동' 형태로 입력해 주세요.");
       parsed.forEach(p => {
         if (!draftMenus.some(m => m.name === p.name)) draftMenus.push(p);
       });
@@ -8651,7 +8973,9 @@
         const tag = list.length > 1 ? `${i + 1}/${list.length}장 ` : "";
         stEl.textContent = `📷 ${tag}사진에서 메뉴 글자를 읽는 중...`;
         try {
-          const res = await window.Tesseract.recognize(file, "kor+eng", {
+          // 원본 대신 다듬은 그림(헤더·사진 칸 크롭 + 그레이스케일·대비·업스케일)으로 읽는다
+          const ocrInput = await preprocessMenuImageForOcr(file);
+          const res = await window.Tesseract.recognize(ocrInput, "kor+eng", {
             logger: m => {
               if (m.status === "recognizing text") stEl.textContent = `📷 ${tag}메뉴판 분석 중... ${Math.round((m.progress || 0) * 100)}%`;
             }
@@ -8726,7 +9050,7 @@
         <div class="expense-item" style="padding:8px 0;">
           <div style="flex:1;">
             <div style="font-size:13.5px;font-weight:700;">${m.name}</div>
-            <div style="font-size:12px;color:var(--muted);">${fmt(m.price)}</div>
+            <div style="font-size:12px;color:var(--muted);">${menuPriceLabel(m)}</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <button class="btn btn-soft btn-sm" onclick="chgMenuQty(${i}, -1)">-</button>
@@ -8735,7 +9059,7 @@
           </div>
         </div>
       `).join("");
-      const sum = draftMenus.reduce((s, m) => s + m.price * m.qty, 0);
+      const sum = draftMenus.reduce((s, m) => s + (Number(m.price) || 0) * (Number(m.qty) || 0), 0);
       document.getElementById("menu-modal-total").textContent = fmt(sum);
     }
 
@@ -8746,9 +9070,13 @@
 
     function addCustomMenuItem() {
       const n = document.getElementById("menu-custom-name").value.trim();
-      const p = Number(document.getElementById("menu-custom-price").value);
-      if (!n || !p) return alert("메뉴명과 가격을 입력해 주세요.");
-      draftMenus.push({ name: n, price: p, qty: 1 });
+      const parsed = parseManualMenuPrice(document.getElementById("menu-custom-price").value);
+      if (!n) return alert("메뉴명을 입력해 주세요.");
+      if (!parsed) return alert("가격을 숫자로 입력하거나, 가격 변동 메뉴는 '-'로 비워 두세요.");
+      const item = parsed.variable
+        ? { name: n, price: null, variablePrice: true, qty: 1 }
+        : { name: n, price: parsed.price, qty: 1 };
+      draftMenus.push(item);
       document.getElementById("menu-custom-name").value = "";
       document.getElementById("menu-custom-price").value = "";
       renderMenuDraft();
@@ -8759,7 +9087,8 @@
       const item = dayObj?.items.find(x => x.id === editingMenuItemId);
       if (!item) return;
       item.menus = draftMenus;
-      item.costTotal = draftMenus.reduce((s, m) => s + m.price * m.qty, 0);
+      // '가격 변동'(-) 메뉴는 합계에서 0원으로 더한다 (오류 없이)
+      item.costTotal = draftMenus.reduce((s, m) => s + (Number(m.price) || 0) * (Number(m.qty) || 0), 0);
 
       // 해당 일차 식비 경비 항목도 자동 동기화
       const foodSum = dayObj.items.filter(x => Array.isArray(x.menus)).reduce((s, x) => s + (x.costTotal || 0), 0);
