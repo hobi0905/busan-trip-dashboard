@@ -2657,6 +2657,177 @@ setTimeout(async () => {
       ev(`state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }]; state.bookings = []; state.expenses = []; saveState();`);
     }
 
+    // 68) 📸 메뉴판 OCR — 전처리(헤더·사진 칸 크롭·업스케일) · 대표 메뉴명 추출 · '가격 변동'은 '-'
+    {
+      // 실제 첨부 스크린샷(보통공원 망원)과 같은 OCR 결과
+      const OCR_SAMPLE = [
+        "9:09",
+        "보통공원 망원",
+        "홈", "소식", "메뉴", "예약", "리뷰", "사진", "주변",
+        "팥말차롤",
+        "제주 말차와 고급진맛의 팥 생크림이 함께",
+        "있는 롤케이크",
+        "6,500원",
+        "행운초코컵",
+        "발로나 초코의 꾸덕한 머핀과 가나슈 초콜",
+        "릿위에 행운가득 클로버가 얹혀진 초코 ...",
+        "6.500원",                 // OCR이 마침표로 읽은 가격
+        "라떼(ICE)",
+        "5,300 원",
+        "황매실 에이드",
+        "청매실보다 더 깊은 풍미와 단맛의 황매실",
+        "청으로 만든 에이드",
+        "6,200원",
+        "오늘의 산도",
+        "가격 변동",
+        "후르츠 산도",
+        "폭신하고 쫀득한 식빵 그리고 동물성 생크림과",
+        "계절과일이 담긴 디저트",
+        "가격변동",
+        "쌀음료",
+        "쌀튀밥과 함께 고소 달달하게 즐길수 있는",
+        "쌀음료",
+        "6,700원",
+        "아메리카노(ICE)",
+        "4,800원"
+      ].join("\n");
+      const parsed = JSON.parse(ev(`JSON.stringify(parseBulkMenus(${JSON.stringify(OCR_SAMPLE)}))`));
+      const names = parsed.map(m => m.name);
+      const priceOf = (n) => (parsed.find(m => m.name === n) || {}).price;
+
+      ok("메뉴판 파싱: 대표 메뉴명을 설명 문장 대신 뽑는다",
+        ["팥말차롤", "행운초코컵", "라떼(ICE)", "황매실 에이드", "오늘의 산도", "후르츠 산도", "쌀음료", "아메리카노(ICE)"].every(n => names.includes(n)),
+        names.join(" / "));
+      ok("메뉴판 파싱: 메뉴 수가 정확하다(8개)", parsed.length === 8, `${parsed.length}개 — ${names.join(",")}`);
+      ok("메뉴판 파싱: 설명 문장이 메뉴명으로 새지 않는다",
+        !names.some(n => /(롤케이크|머핀|에이드|디저트|식빵|존재)/.test(n) && n.length > 12), names.join(" / "));
+      ok("메뉴판 파싱: 상단 탭·상태바·매장명 노이즈 제거",
+        !names.some(n => /^(홈|소식|메뉴|예약|리뷰|사진|주변|9:09|보통공원 망원)$/.test(n)), names.join(" / "));
+      ok("메뉴판 파싱: 6,500원 / 6.500원 / 5,300 원 모두 숫자로", priceOf("팥말차롤") === 6500 && priceOf("행운초코컵") === 6500 && priceOf("라떼(ICE)") === 5300,
+        `${priceOf("팥말차롤")} / ${priceOf("행운초코컵")} / ${priceOf("라떼(ICE)")}`);
+      const varNames = parsed.filter(m => m.variablePrice === true && m.price === null).map(m => m.name);
+      ok("메뉴판 파싱: '가격 변동'·'가격변동'은 변동 메뉴로", varNames.length === 2 && varNames.includes("오늘의 산도") && varNames.includes("후르츠 산도"), varNames.join(","));
+
+      // 실제 Tesseract가 빈 줄을 넣어 내놓는 모양 — 메뉴명은 한 줄짜리 묶음으로 따로 선다
+      const OCR_TESSERACT = [
+        "팔말차롤", "", "제주 말차와 고급진맛의 팔 생크림이 함께", "있는 롤케이크", "", "6,500원", "",
+        "행운초코컵", "", "발로나 초코의 꾸덕한 머핀과 가나슈 초콜", "릿위에 행운가득 클로버가 없혀진 초코 ……", "6,500원", "",
+        "라떼((06)", "", "5,300원", "",
+        "황매실 에이드", "", "청매실보다 더 깊은 풍미와 단맛의 황매실", "doz 만든 에이드", "", "6,200원", "",
+        "황매실차", "", "청매실보다 더 깊은 풍미와 단맛의 황매실", "HE 사용한 매실음료", "", "5,700원"
+      ].join("\n");
+      const tess = JSON.parse(ev(`JSON.stringify(parseBulkMenus(${JSON.stringify(OCR_TESSERACT)}))`));
+      const tessNames = tess.map(m => m.name);
+      ok("메뉴판 파싱: OCR이 빈 줄로 나눈 출력에서도 메뉴명을 잡는다",
+        tessNames.length === 5 && tessNames[0] === "팔말차롤" && tessNames.includes("행운초코컵") && tessNames.includes("황매실 에이드") && tessNames.includes("황매실차"),
+        tessNames.join(" / "));
+      ok("메뉴판 파싱: 설명 꼬리줄이 메뉴명으로 잡히지 않는다",
+        !tessNames.some(n => /^(있는 롤케이크|doz 만든 에이드|HE 사용한 매실음료)/.test(n)) && tess.map(m => m.price).join(",") === "6500,6500,5300,6200,5700",
+        tess.map(m => `${m.name}:${m.price}`).join(", "));
+
+      // 한 줄에 이름·가격이 붙은 입력, '가격 변동'/' - ' 표기
+      const inline = JSON.parse(ev(`JSON.stringify(parseBulkMenus('오늘의 산도 가격 변동\\n아메리카노 5,500원\\n치즈케이크 -\\n라떼 6.500원'))`));
+      ok("메뉴판 파싱: '오늘의 산도 가격 변동' 한 줄 입력도 변동 메뉴",
+        inline.length === 4 && inline[0].name === "오늘의 산도" && inline[0].variablePrice === true && inline[1].name === "아메리카노" && inline[1].price === 5500
+        && inline[2].variablePrice === true && inline[3].price === 6500, JSON.stringify(inline));
+
+      // '-' 표시
+      ok("가격 표시: 변동 메뉴는 0원이 아니라 '-'", ev("menuPriceLabel({name:'오늘의 산도', price:null, variablePrice:true})") === "-"
+        && ev("menuPriceLabel({name:'라떼', price:5300})") === "₩5,300", ev("menuPriceLabel({name:'오늘의 산도', price:null, variablePrice:true})"));
+
+      // 모달 목록·합계 — 변동 메뉴가 섞여도 오류 없이 0으로 더한다
+      ev(`state.meta = { title:'메뉴', destination:'부산', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [{ id:'vr-1', place:'보통공원 망원', badges:[], menus:[
+          { name:'오늘의 산도', price:null, variablePrice:true, qty:1 },
+          { name:'라떼(ICE)', price:5300, qty:2 }
+        ] }] }];
+        currentDay = 1; editMode = false; renderTimeline(); openMenuModal('vr-1');`);
+      const menuListTxt = w.document.getElementById("menu-modal-list").textContent.replace(/\s+/g, " ");
+      const menuTotalTxt = w.document.getElementById("menu-modal-total").textContent;
+      ok("메뉴 모달: 변동 메뉴는 '-'로 보인다", /오늘의 산도/.test(menuListTxt) && menuListTxt.includes(" -") && !/₩0(?!\d)/.test(menuListTxt), menuListTxt);
+      ok("메뉴 모달: 변동 메뉴는 합계에서 0원으로 계산", menuTotalTxt === "₩10,600", menuTotalTxt);
+
+      // 직접 추가 — '-' / '가격 변동'
+      const nameIn2 = w.document.getElementById("menu-custom-name");
+      const priceIn2 = w.document.getElementById("menu-custom-price");
+      nameIn2.value = "황매실차";
+      priceIn2.value = "가격 변동";
+      ev("addCustomMenuItem()");
+      const last1 = JSON.parse(ev("JSON.stringify(draftMenus[draftMenus.length-1])"));
+      nameIn2.value = "쌀음료";
+      priceIn2.value = "-";
+      ev("addCustomMenuItem()");
+      const last2 = JSON.parse(ev("JSON.stringify(draftMenus[draftMenus.length-1])"));
+      nameIn2.value = "아메리카노(ICE)";
+      priceIn2.value = "4,800원";
+      ev("addCustomMenuItem()");
+      const last3 = JSON.parse(ev("JSON.stringify(draftMenus[draftMenus.length-1])"));
+      ok("메뉴 직접 추가: '가격 변동'·'-'은 변동 메뉴로", last1.name === "황매실차" && last1.variablePrice === true && last1.price === null
+        && last2.name === "쌀음료" && last2.variablePrice === true, `${JSON.stringify(last1)} / ${JSON.stringify(last2)}`);
+      ok("메뉴 직접 추가: '4,800원' 같은 표기도 4800으로", last3.price === 4800, JSON.stringify(last3));
+
+      ev("saveMenuSelection()");
+      const savedItem = JSON.parse(ev("JSON.stringify(state.days[0].items[0])"));
+      ok("메뉴 저장: 변동 메뉴가 섞여도 합계가 깨지지 않는다", savedItem.costTotal === 15400 && savedItem.menus.length === 5,
+        `${savedItem.costTotal} / ${savedItem.menus.map(m => m.name + ":" + m.price).join(", ")}`);
+      // 변동 메뉴만 고른 카드 — 0원이 아니라 '가격 변동'으로 보여 준다
+      ev(`state.days[0].items[0].menus = [{ name:'오늘의 산도', price:null, variablePrice:true, qty:2 }];
+        state.days[0].items[0].costTotal = 0; renderTimeline();`);
+      const tlTxt = w.document.getElementById("timeline-list").textContent.replace(/\s+/g, " ");
+      ok("메뉴 저장: 일정 카드의 변동 메뉴는 '가격 변동'으로", /🍴 오늘의 산도×2 \(가격 변동\)/.test(tlTxt) && !/오늘의 산도×2 \(₩0\)/.test(tlTxt), tlTxt.slice(0, 120));
+
+      // OCR 전처리 — 세로형 스크린샷만 헤더·사진 칸을 자른다
+      const portrait = JSON.parse(ev("JSON.stringify(menuOcrCropPlan(945, 2048, { rightPhotoLike: true, headerBottom: 0.1817 }))"));
+      const portraitNoPhoto = JSON.parse(ev("JSON.stringify(menuOcrCropPlan(945, 2048, { rightPhotoLike: false, headerBottom: 0.1817 }))"));
+      const landscape = JSON.parse(ev("JSON.stringify(menuOcrCropPlan(2048, 945, { rightPhotoLike: true, headerBottom: 0.2 }))"));
+      ok("OCR 전처리: 세로 스크린샷은 상단 헤더를 자른다", portrait.y > 300 && portrait.y < 400 && portrait.h === 2048 - portrait.y, JSON.stringify(portrait));
+      ok("OCR 전처리: 사진 칸이 있으면 오른쪽 33%도 자른다", portrait.w === Math.round(945 * 0.66) && portraitNoPhoto.w === 945, `${portrait.w} / ${portraitNoPhoto.w}`);
+      ok("OCR 전처리: 가로 메뉴판 사진은 자르지 않는다", landscape.x === 0 && landscape.y === 0 && landscape.w === 2048 && landscape.h === 945, JSON.stringify(landscape));
+      const big = JSON.parse(ev("JSON.stringify(menuOcrTargetSize(624, 1676))"));
+      ok("OCR 전처리: 작은 캡처는 최소 폭 1200px로 키운다", big.width >= 1200 && big.width <= 1700 && big.height > big.width, JSON.stringify(big));
+
+      // 헤더 끝(탭바 아래 구분선) 찾기 — 흰 줄·본문 줄은 구분선으로 오인하지 않는다
+      const mkPixels = (pw, ph, dividerY, darkRight) => {
+        const arr = new Array(pw * ph * 4).fill(255);
+        for (let x = 0; x < pw; x++) { const i = (dividerY * pw + x) * 4; arr[i] = arr[i + 1] = arr[i + 2] = 230; }
+        for (let y = dividerY + 4; y < ph; y += 8) for (let x = 2; x < Math.floor(pw * 0.55); x += 5) { const i = (y * pw + x) * 4; arr[i] = arr[i + 1] = arr[i + 2] = 20; }
+        if (darkRight) for (let y = dividerY + 30; y < ph; y++) for (let x = Math.floor(pw * 0.7); x < pw; x++) { const i = (y * pw + x) * 4; arr[i] = 90; arr[i + 1] = 60; arr[i + 2] = 40; }
+        return arr;
+      };
+      const W1 = 100, H1 = 200, DIV = 36;
+      w.__px = mkPixels(W1, H1, DIV, true);
+      const headerRatio = w.eval("menuOcrHeaderBottom(__px, 100, 200)");
+      ok("OCR 전처리: 탭바 아래 구분선 y를 찾는다", Math.abs(headerRatio - (DIV + 1) / H1) < 0.02, String(headerRatio));
+      const rightPhoto = w.eval("menuOcrRightBandPhotoLike(__px, 100, 200)");
+      w.__px2 = mkPixels(W1, H1, DIV, false);
+      const rightText = w.eval("menuOcrRightBandPhotoLike(__px2, 100, 200)");
+      ok("OCR 전처리: 오른쪽 사진 칸 판정", rightPhoto === true && rightText === false, `${rightPhoto} / ${rightText}`);
+      delete w.__px;
+      delete w.__px2;
+
+      // 캔버스가 없는 환경(jsdom)에서는 원본을 그대로 — OCR 흐름이 멈추지 않는다
+      w.__fakeFile = { name: "raw.png" };
+      const passthrough = await ev("preprocessMenuImageForOcr(__fakeFile)");
+      ok("OCR 전처리: 캔버스 없으면 원본 그대로 넘긴다", passthrough === w.__fakeFile, String(passthrough && passthrough.name));
+      delete w.__fakeFile;
+
+      // OCR → 파싱 → 목록까지 한 번에
+      ev(`state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [{ id:'ocr-1', place:'보통공원 망원', badges:[], menus: [] }] }];
+        currentDay = 1; editMode = false; openMenuModal('ocr-1');`);
+      const realTess = w.Tesseract;
+      w.Tesseract = { recognize: () => Promise.resolve({ data: { text: OCR_SAMPLE } }) };
+      await w.handleMenuImageFiles([{ name: "menu-shot.png" }]);
+      const ocrDraft = JSON.parse(ev("JSON.stringify(draftMenus)"));
+      const ocrTxt = w.document.getElementById("menu-modal-list").textContent.replace(/\s+/g, " ");
+      ok("메뉴판 사진: OCR 결과가 대표 메뉴명으로 목록에 들어간다",
+        ocrDraft.length === 8 && ocrDraft.some(m => m.name === "팥말차롤" && m.price === 6500) && ocrDraft.some(m => m.name === "오늘의 산도" && m.variablePrice === true),
+        ocrDraft.map(m => `${m.name}:${m.price}`).join(", "));
+      ok("메뉴판 사진: 목록에서 '가격 변동'이 '-'로 보인다", /오늘의 산도/.test(ocrTxt) && ocrTxt.includes(" -") && !/₩0(?!\d)/.test(ocrTxt), ocrTxt.slice(0, 160));
+      w.Tesseract = realTess;
+      w.closeMenuModal();
+      ev(`state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }]; state.bookings = []; state.expenses = []; saveState();`);
+    }
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }
