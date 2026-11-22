@@ -7590,8 +7590,10 @@
           try { map.setBounds(bounds, top, right, bottom, left); }
           catch (e) { try { map.setBounds(bounds); } catch (e2) {} }
           if (pad.maxZoom != null) {
+            // Leaflet maxZoom(가까운 한계) → 카카오는 레벨이 작을수록 가깝다.
+            // 맞춘 레벨이 한계보다 더 가까우면(=작으면) 한계 레벨로 물러난다.
             const maxLevel = mapZoomToLevel(pad.maxZoom);
-            if (map.getLevel() > maxLevel) map.setLevel(maxLevel);
+            if (map.getLevel() < maxLevel) map.setLevel(maxLevel);
           }
         },
         containerPoint(ll) {
@@ -8132,6 +8134,8 @@
       if (!mapEl) return;
       ensureMapEngine();
       if (!mapEngineUsable()) return;
+      // 숨은 탭에서는 지도를 만들지 않는다 (크기 0으로 만들면 배율·핀이 어긋난다) — 탭을 열 때 다시 그린다
+      if (!mapEl.offsetWidth || !mapEl.offsetHeight) return;
       const backend = pickMapBackend();
       if (!leafletMap || leafletMap.backend !== backend || !leafletMap.alive) {
         try { if (leafletMap) leafletMap.destroy(); } catch (e) {}
@@ -8301,6 +8305,8 @@
       const titleEl = document.getElementById("big-map-title");
       if (titleEl) titleEl.textContent = `🗺️ ${dayObj?.label || currentDay + "일차"} 동선 · ${bigMapPts.length}곳`;
       document.getElementById("big-map-modal").classList.add("open");
+      // 모달이 화면에 붙은 직후 크기를 먼저 확정한다 (0 크기로 지도를 만들면 배율이 틀어진다)
+      void document.getElementById("big-map-canvas").offsetHeight;
       const backend = pickMapBackend();
       if (!bigMap || bigMap.backend !== backend || !bigMap.alive) {
         try { if (bigMap) bigMap.destroy(); } catch (e) {}
