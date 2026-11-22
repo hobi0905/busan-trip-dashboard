@@ -9100,6 +9100,7 @@
     function renderMenuDraft() {
       const listEl = document.getElementById("menu-modal-list");
       const hintEl = document.getElementById("menu-edit-hint");
+      const keepScroll = listEl.scrollTop;          // 다시 그려도 목록이 맨 위로 튀지 않게
       if (hintEl) hintEl.style.display = draftMenus.length ? "" : "none";
       if (editingMenuRowIdx >= draftMenus.length || editingMenuRowIdx < 0) editingMenuRowIdx = -1;
       if (!draftMenus.length) {
@@ -9107,6 +9108,7 @@
       } else {
         listEl.innerHTML = draftMenus.map((m, i) => menuRowHtml(m, i)).join("");
       }
+      listEl.scrollTop = keepScroll;
       updateMenuTotal();
     }
 
@@ -9161,6 +9163,7 @@
       const el = document.querySelector(`#menu-modal-list ${sel}`);
       if (!el || typeof el.focus !== "function") return;
       try { el.focus({ preventScroll: true }); } catch { try { el.focus(); } catch {} }
+      try { el.scrollIntoView({ block: "nearest" }); } catch {}
       // 바로 다시 칠 수 있게 전체 선택 (OCR 오인식을 고치는 게 가장 흔한 일)
       if (typeof el.select === "function") { try { el.select(); } catch {} }
     }
