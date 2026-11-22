@@ -7649,7 +7649,9 @@
       const key = `${from.lat.toFixed(5)},${from.lng.toFixed(5)}>${to.lat.toFixed(5)},${to.lng.toFixed(5)}`;
       const cached = PM_TRANSIT_CACHE.get(key);
       if (cached) {
-        pmTransitKey = key; pmTransitRoutes = cached.slice(); pmTransitPick = -1;
+        const sameList = key === pmTransitKey && cached.length === pmTransitRoutes.length;
+        pmTransitKey = key; pmTransitRoutes = cached.slice();
+        if (!sameList) pmTransitPick = -1;   // 같은 구간을 다시 띄울 땐 고른 카드를 그대로 둔다
         if (cached.length) renderRouteRecommendations();
         else pmTransitNotice("이 출발·도착으로는 대중교통 경로를 찾지 못했어요. 가까운 역·정류장 이름으로 바꿔 보세요.", "", { retry: true });
         return;
