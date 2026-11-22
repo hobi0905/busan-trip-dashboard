@@ -212,6 +212,10 @@
     .tl-time.tt-shopping { background: #ede9fe; color: #6d28d9; border-color: #c4b5fd; }
     .tl-time.tt-stay { background: #f5f5f4; color: #57534e; border-color: #d6d3d1; }
     .tl-time.tt-etc { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+    /* 🔢 방문 순서 배지 — 지도 핀 번호와 같은 1·2·3·4 (시간 대신 순서로 보여 준다) */
+    .tl-time.tl-stop-num { min-width: 28px; height: 28px; padding: 0 7px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 13.5px; font-weight: 800; letter-spacing: 0; }
+    .tl-time.tl-stop-num.tl-no-pin { background: #f8fafc; color: #94a3b8; border-color: #e2e8f0; }
+    .tl-time.tl-stop-num.tl-bk-num { background: #e0f2fe; color: #0369a1; border-color: #bae6fd; font-size: 13px; }
     .tl-place { font-size: 15.5px; font-weight: 800; flex: 1; }
     .tl-meal { font-size: 10.5px; font-weight: 800; padding: 2px 7px; border-radius: 999px; white-space: nowrap; flex: none; }
     .tl-meal.food { background: #fff1e6; color: #b45309; }
@@ -1671,6 +1675,28 @@
     }
     /* 드래그 중 페이지 전체에서 글자 선택·롱프레스 메뉴를 막는다 */
     body.tl-dragging, body.tl-dragging * { -webkit-user-select: none !important; user-select: none !important; -webkit-touch-callout: none !important; }
+    /* 📋 일정 복사 버튼 — [−] [카드] [📋] [≡] 순서로 컴팩트하게 */
+    .tl-edit-copy { width: 30px; height: 30px; flex: 0 0 30px; border-radius: 50%; border: none; background: #e0f2fe; color: #0369a1; font-size: 15px; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; font-family: inherit; -webkit-tap-highlight-color: transparent; }
+    .tl-edit-copy:active { transform: scale(0.94); background: #bae6fd; }
+    /* 좁은 아이폰(375~390px)에서도 [−][카드][📋][≡] 가 잘리지 않게 여백·버튼을 줄인다 */
+    @media (max-width: 390px) {
+      .tl-edit-row { gap: 6px; }
+      .tl-edit-del, .tl-edit-copy { width: 28px; height: 28px; flex-basis: 28px; }
+      .tl-edit-del { font-size: 17px; }
+      .tl-edit-copy { font-size: 14px; }
+      .tl-edit-handle, .tl-drag-handle { width: 30px; flex-basis: 30px; font-size: 18px; }
+      .tl-edit-card { padding: 10px 11px; }
+    }
+    /* 📋 복사 직후 그 행을 잠깐 강조 */
+    .tl-just-copied { animation: tlJustCopied 1.6s ease; border-radius: 16px; }
+    @keyframes tlJustCopied {
+      0% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.55); }
+      35% { box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.28); }
+      100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0); }
+    }
+    /* 짧은 안내 문구 — 화면 아래에서 떠 있다가 사라진다 */
+    #app-toast { position: fixed; left: 50%; bottom: 96px; transform: translate(-50%, 14px); max-width: min(520px, calc(100vw - 32px)); background: rgba(15, 23, 42, 0.94); color: #fff; font-size: 13px; font-weight: 700; line-height: 1.5; padding: 11px 16px; border-radius: 14px; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.3); text-align: center; opacity: 0; pointer-events: none; transition: opacity 0.18s ease, transform 0.18s ease; z-index: 2600; }
+    #app-toast.show { opacity: 1; transform: translate(-50%, 0); }
     .tl-edit-row.tl-edit-virtual { opacity: 0.95; }
     .tl-edit-row.tl-edit-virtual .tl-edit-card { background: #e0f2fe; }
     .tl-edit-hint { font-size: 11px; color: var(--muted); margin: 0 0 10px; text-align: center; }
@@ -2306,9 +2332,12 @@
       </div>
       <div id="pm-search-results" style="max-height:130px;overflow-y:auto;margin-bottom:8px;"></div>
       <div class="row">
-        <input id="pm-time" class="input" placeholder="시간 (예: 13:00)" style="width:95px;" />
-        <input id="pm-move" class="input" placeholder="이동수단 (예: 도보 5분)" />
-        <input id="pm-stay" class="input" placeholder="체류" style="width:90px;" />
+        <input id="pm-move" class="input" placeholder="이동수단 (선택 · 예: 도보 5분)" />
+      </div>
+      <!-- 🕒 방문시간·체류는 물어보지 않는다 — 이미 적혀 있던 값은 숨겨 둔 채 그대로 보존한다 -->
+      <div style="display:none;" aria-hidden="true">
+        <input id="pm-time" class="input" tabindex="-1" />
+        <input id="pm-stay" class="input" tabindex="-1" />
       </div>
       <div style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);margin:2px 0 3px;">메모 <span style="font-weight:500;color:var(--muted);">(설명·주의사항·예약 정보 등 넉넉히)</span></div>
       <textarea id="pm-memo" class="input pm-memo" rows="3" placeholder="예: 11:30 웨이팅 등록 · 창가 자리 요청 · 일요일 휴무 확인"></textarea>
@@ -6030,9 +6059,9 @@
       if (!areas.length || pts.length < 2) return [];
       const mornings = [], nights = [];
       (state.days || []).forEach(d => {
-        const list = (d.items || []).map(it => ({ it, c: coordsOfItem(it) })).filter(x => x.c);
+        const list = (d.items || []).filter(it => !isMemoItem(it)).map(it => ({ it, c: coordsOfItem(it) })).filter(x => x.c);
         if (!list.length) return;
-        list.sort((a, b) => String(a.it.time || "99:99").localeCompare(String(b.it.time || "99:99")));
+        // 배열 순서 = 동선 순서 (첫 일정 = 아침, 마지막 일정 = 밤)
         mornings.push(list[0].c);
         nights.push(list[list.length - 1].c);
       });
@@ -6100,21 +6129,68 @@
       setTimeout(() => { try { searchBookingHotelCoords(); } catch (e) {} }, 120);
     }
 
-    // 📝 메모처럼 시간이 없는 카드는 배열 위치를 지켜 그 자리에 그린다 (시간순으로 다시 정렬되면 맨 끝으로 밀려난다)
+    // 하루 일정의 화면 순서 = 저장된 배열 순서 그대로 (1·2·3·4 번호·지도 핀 순서와 같아진다)
+    // 📝 메모도 자기 자리에 그대로 그린다 — 시간이 없어도 자리를 지킨다.
     function dayFeedOrder(items) {
       const list = (items || []).map((it, idx) => ({ it, idx, virtual: false }));
-      const out = list.filter(x => !isMemoItem(x.it))
-        .sort((a, b) => String(a.it.time || "99:99").localeCompare(String(b.it.time || "99:99")));
-      list.filter(x => isMemoItem(x.it)).forEach(m => {
-        out.splice(Math.min(Math.max(0, m.idx), out.length), 0, m);
-      });
-      // 일출·일몰 줄은 바로 뒤 일정의 시간을 기준으로 끼운다 (메모는 시간이 없으므로)
-      out.forEach((row, i) => {
-        if (!isMemoItem(row.it)) return;
-        const next = out.slice(i + 1).find(x => !isMemoItem(x.it));
+      list.forEach(row => {
+        if (!isMemoItem(row.it)) { row.sortTime = row.it.time || "99:99"; return; }
+        // 일출·일몰 줄을 끼울 기준 시각만 뒤 일정에서 빌려 온다
+        const next = list.slice(row.idx + 1).find(x => !isMemoItem(x.it));
         row.sortTime = next ? (next.it.time || "99:99") : "00:00";
       });
-      return out;
+      return list;
+    }
+
+    // 🔢 방문 번호 — 일정 배열 순서대로 1·2·3·4 (📝 메모는 번호를 받지 않아 지도 핀 번호가 밀리지 않는다)
+    function dayItemNumbers(dayObj) {
+      const nums = new Map();
+      let n = 0;
+      ((dayObj && dayObj.items) || []).forEach(it => {
+        if (!it || isMemoItem(it)) return;
+        n += 1;
+        nums.set(String(it.id), n);
+      });
+      return nums;
+    }
+
+    // 카드 왼쪽 배지 — 방문 시간 대신 지도 핀과 같은 번호를 보여 준다
+    function stopBadgeHtml(it, virtual, nums) {
+      if (virtual) {
+        const icon = it && (it.autoCard || it.pin || /🏨/.test(String(it.place || ""))) ? "🏨" : "🚆";
+        return `<span class="tl-time tl-stop-num tl-bk-num" title="예약으로 자동으로 들어온 카드">${icon}</span>`;
+      }
+      const num = nums ? nums.get(String(it && it.id)) : null;
+      if (!num) return `<span class="tl-time tl-stop-num tl-no-pin" title="순서 번호 없음">•</span>`;
+      const hasPin = Boolean(coordsOfItem(it));
+      return `<span class="tl-time tt-${tlTimeCat(it)} tl-stop-num${hasPin ? "" : " tl-no-pin"}" title="${hasPin ? `지도 ${num}번 핀` : `${num}번째 일정 · 지도 좌표 없음`}">${num}</span>`;
+    }
+
+    // 보기 모드 카드 순서 — 일정은 배열 순서 그대로, 🏨🚆 예약 카드는 제자리에 끼운다
+    function viewDayFeed(dayObj, bkVirtuals) {
+      const feed = dayFeedOrder(dayObj && dayObj.items);
+      const virtuals = bkVirtuals || bookingTimelineItems(dayObj);
+      // 🏨 숙소 자동 카드: 복귀는 그날 맨 마지막, 출발은 그날 맨 처음
+      virtuals.filter(v => v.scheduled && v.pin === "first").slice().reverse().forEach(v => {
+        feed.unshift({ it: v, idx: -1, virtual: true });
+      });
+      virtuals.filter(v => v.scheduled && v.pin === "last").forEach(v => {
+        feed.push({ it: v, idx: -1, virtual: true });
+      });
+      virtuals.filter(v => v.scheduled && v.pin !== "first" && v.pin !== "last").forEach(v => {
+        let pos = 0;
+        if (v.anchorId && v.anchorId !== "__first") {
+          const i = feed.findIndex(x => String(x.it.id) === String(v.anchorId));
+          pos = i >= 0 ? i + 1 : feed.length;
+        }
+        feed.splice(pos, 0, { it: v, idx: -1, virtual: true });
+      });
+      virtuals.filter(v => !v.scheduled).forEach(v => {
+        let pos = feed.findIndex(x => String(x.it.time || "99:99").localeCompare(String(v.time || "99:99")) > 0);
+        if (pos < 0) pos = feed.length;
+        feed.splice(pos, 0, { it: v, idx: -1, virtual: true });
+      });
+      return feed;
     }
 
     function tlMemoCardHtml(it) {
@@ -6173,33 +6249,13 @@
       // · 숙소 예약은 '일정에도 등록하기'를 켜고 고른 순서(앵커) 자리에 끼우고,
       // · 교통편 예약은 기존처럼 출발 시각 순서대로 합친다.
       const editModeOn = Boolean(editMode);
-      // ✏️ 편집 모드에서는 사용자가 정한 배열 순서를 그대로, 평소에는 시간순으로 보여 준다
+      const bkVirtuals = bookingTimelineItems(dayObj);
+      // 1·2·3·4 — 시간이 아니라 사용자가 정한 배열 순서가 화면 순서다 (편집 모드·보기 모드 모두)
       const feed = editModeOn
         ? dayObj.items.map((it, idx) => ({ it, idx, virtual: false }))
-        : dayFeedOrder(dayObj.items);
-      const bkVirtuals = bookingTimelineItems(dayObj);
-      if (!editModeOn) {
-        // 🏨 숙소 자동 카드: 복귀는 그날 맨 마지막, 출발은 그날 맨 처음
-        bkVirtuals.filter(v => v.scheduled && v.pin === "first").slice().reverse().forEach(v => {
-          feed.unshift({ it: v, idx: -1, virtual: true });
-        });
-        bkVirtuals.filter(v => v.scheduled && v.pin === "last").forEach(v => {
-          feed.push({ it: v, idx: -1, virtual: true });
-        });
-        bkVirtuals.filter(v => v.scheduled && v.pin !== "first" && v.pin !== "last").forEach(v => {
-          let pos = 0;
-          if (v.anchorId && v.anchorId !== "__first") {
-            const i = feed.findIndex(x => String(x.it.id) === String(v.anchorId));
-            pos = i >= 0 ? i + 1 : feed.length;
-          }
-          feed.splice(pos, 0, { it: v, idx: -1, virtual: true });
-        });
-        bkVirtuals.filter(v => !v.scheduled).forEach(v => {
-          let pos = feed.findIndex(x => String(x.it.time || "99:99").localeCompare(String(v.time || "99:99")) > 0);
-          if (pos < 0) pos = feed.length;
-          feed.splice(pos, 0, { it: v, idx: -1, virtual: true });
-        });
-      }
+        : viewDayFeed(dayObj, bkVirtuals);
+      // 🔢 방문 순서 = 지도 핀 번호. 메모·예약 카드는 번호를 받지 않는다 (핀 번호가 밀리지 않게)
+      const stopNums = dayItemNumbers(dayObj);
       const cardBlocks = feed.map(({ it, idx, virtual }) => {
         if (editModeOn) return virtual ? tlEditVirtualRowHtml(it) : tlEditRowHtml(it);
         if (isMemoItem(it)) return tlMemoCardHtml(it);
@@ -6235,7 +6291,7 @@
             <div class="tl-body">
             <div class="tl-main">
             <div class="tl-head">
-              <span class="tl-time tt-${tlTimeCat(it)}">${it.time}</span>
+              ${stopBadgeHtml(it, virtual, stopNums)}
               <div class="tl-place">${it.place}</div>
               ${(function () {
                 const label = (it.badges || []).map(String).find(x => /점심|식후 카페|저녁/.test(x));
@@ -6244,7 +6300,7 @@
                 const text = label.replace(/^[^가-힣A-Za-z0-9]+/, "").trim() || label;
                 return `<span class="tl-meal ${kind}">${text}</span>`;
               })()}
-              <span class="tl-stay">${it.stay || ""}</span>
+              ${virtual && it.stay ? `<span class="tl-stay">${it.stay}</span>` : ""}
               <span class="tl-fold-cue">${isOpen ? "접기 ▴" : "더 보기 ▾"}</span>
             </div>
             <div class="tl-memo">${it.memo || ""}</div>
@@ -6275,7 +6331,7 @@
       // 🌅 일출 · 🌇 일몰은 카드가 아니라 시간 순서에 맞춰 얇은 한 줄로 끼워 넣는다 (편집 모드에서는 숨김)
       const sunRows = editModeOn ? [] : daySunTimeRows(dayObj);
       const blocks = [];
-      if (editModeOn) blocks.push(`<div class="tl-edit-hint">≡ 손잡이를 드래그해 순서를 바꾸고, − 로 지울 수 있어요. 카드를 누르면 장소 수정으로 들어가요.</div>`);
+      if (editModeOn) blocks.push(`<div class="tl-edit-hint">≡ 를 드래그해 순서(1·2·3…)를 바꾸고, 📋 로 같은 일정을 복사하고, − 로 지울 수 있어요. 카드를 누르면 수정으로 들어가요.</div>`);
       let sunIdx = 0;
       feed.forEach(({ it, sortTime }, i) => {
         const sortKey = sortTime || it.time || "99:99";
@@ -6403,7 +6459,7 @@
 
     function tlItemCategory(it) {
       if (!it) return "일정";
-      if (it.fromPlace || it.toPlace) return `이동 · ${it.time || ""}`.trim();
+      if (it.fromPlace || it.toPlace) return it.transitType ? `이동 · ${it.transitType}` : "이동";
       const b = (it.badges || []).map(String);
       const known = b.find(x => /음식점|카페|관광|명소|술집|쇼핑|숙소|교통|산책|자연|전시|휴양/.test(x));
       if (known) return known.replace(/^🔗\s*/, "");
@@ -6414,7 +6470,7 @@
       if (/호텔|숙소|리조트|펜션|체크인/.test(txt)) return "숙소";
       if (/역|공항|터미널|KTX|SRT|버스|지하철/.test(txt)) return "교통";
       if (/해변|해수욕|공원|숲|산책|전망|관광|명소/.test(txt)) return "관광·명소";
-      return it.time || "일정";
+      return "일정";
     }
 
     function tlEditRowHtml(it) {
@@ -6425,17 +6481,19 @@
           <div class="tl-edit-cat">📝 메모</div>
           <div class="tl-edit-place">${escapeHtmlText(memoRowLabel(it))}</div>
         </div>
+        <button type="button" class="tl-edit-copy" aria-label="메모 복사" title="이 메모를 바로 아래에 복사" onclick="event.stopPropagation();duplicateTimelineItem('${escapeAttr(it.id)}')">📋</button>
         <div class="tl-edit-handle tl-drag-handle" data-drag-handle="1" title="드래그해서 순서 바꾸기" aria-label="드래그해서 순서 바꾸기">≡</div>
       </div>`;
       }
       const cat = tlItemCategory(it);
       const name = escapeHtmlText(it.place || "이름 없음");
       return `<div class="tl-edit-row" data-item-id="${escapeAttr(it.id)}">
-        <button type="button" class="tl-edit-del" aria-label="삭제" onclick="event.stopPropagation();deleteItem('${it.id}')">−</button>
-        <div class="tl-edit-card" onclick="event.stopPropagation();openPlaceModal('${it.id}')">
+        <button type="button" class="tl-edit-del" aria-label="삭제" onclick="event.stopPropagation();deleteItem('${escapeAttr(it.id)}')">−</button>
+        <div class="tl-edit-card" onclick="event.stopPropagation();openPlaceModal('${escapeAttr(it.id)}')">
           <div class="tl-edit-cat">${escapeHtmlText(cat)}</div>
           <div class="tl-edit-place">${name}</div>
         </div>
+        <button type="button" class="tl-edit-copy" aria-label="일정 복사" title="같은 곳을 한 번 더 들를 때 — 바로 아래에 복사" onclick="event.stopPropagation();duplicateTimelineItem('${escapeAttr(it.id)}')">📋</button>
         <div class="tl-edit-handle tl-drag-handle" data-drag-handle="1" title="드래그해서 순서 바꾸기" aria-label="드래그해서 순서 바꾸기">≡</div>
       </div>`;
     }
@@ -6444,7 +6502,7 @@
       return `<div class="tl-edit-row tl-edit-virtual">
         <div style="width:30px;flex:0 0 30px;"></div>
         <div class="tl-edit-card" onclick="event.stopPropagation();openBookingModal('${it.bookingId}')">
-          <div class="tl-edit-cat">🔗 예약 · ${escapeHtmlText(it.time || "")}</div>
+          <div class="tl-edit-cat">🔗 예약</div>
           <div class="tl-edit-place">${escapeHtmlText(it.place || "예약")}</div>
         </div>
         <div class="tl-edit-handle" style="cursor:default;color:#7dd3fc;">🔗</div>
@@ -6731,11 +6789,7 @@
       if (ordered.length !== dayObj.items.length) return;
       const sameOrder = ordered.every((it, i) => it === dayObj.items[i]);
       if (sameOrder) return;
-      const times = ordered.map(it => it.time).filter(t => /^\d{1,2}:\d{2}$/.test(String(t || ""))).sort();
-      let k = 0;
-      ordered.forEach(it => {
-        if (/^\d{1,2}:\d{2}$/.test(String(it.time || "")) && times[k]) it.time = times[k++];
-      });
+      // 1·2·3·4 순서가 곧 일정 순서 — 각 일정의 시간 값은 그대로 두고 배얄 순서만 저장한다
       dayObj.items = ordered;
       saveState();
     }
@@ -7055,6 +7109,81 @@
     }
 
     /* =====================================================================
+       📋 일정 복사 — 같은 곳을 하루에 두 번 들를 때 (예: 아침에 들고 저녁에 또)
+       · 원본 바로 아래에 새 id 로 똑같이 복제하고, 편집 모드를 연 채로 그 자리를 보여 준다
+       · 순서(1·2·3…)는 배열 순서라 복사본은 자연스럽게 원본 다음 번호가 된다
+       ===================================================================== */
+    function showAppToast(message) {
+      let el = document.getElementById("app-toast");
+      if (!el) {
+        el = document.createElement("div");
+        el.id = "app-toast";
+        el.setAttribute("role", "status");
+        document.body.appendChild(el);
+      }
+      el.textContent = message;
+      el.classList.add("show");
+      clearTimeout(showAppToast._t);
+      showAppToast._t = setTimeout(() => { el.classList.remove("show"); }, 3400);
+    }
+
+    // 다른 날·다른 일정과 겹치지 않는 새 id
+    function nextTimelineItemId(prefix) {
+      const taken = new Set();
+      (state.days || []).forEach(d => (d.items || []).forEach(it => taken.add(String(it && it.id))));
+      let id;
+      do {
+        id = `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+      } while (taken.has(id));
+      return id;
+    }
+
+    // 깊은 복사 — badges·menus·좌표·체류·경비·메모까지 그대로, id 만 새로
+    function cloneTimelineItem(src) {
+      let copy;
+      try { copy = JSON.parse(JSON.stringify(src || {})); }
+      catch (e) { copy = Object.assign({}, src); }
+      copy.id = nextTimelineItemId(isMemoItem(src) ? "memo" : "d" + currentDay);
+      return copy;
+    }
+
+    function duplicateTimelineItem(itemId) {
+      if (!canEdit()) return alert("읽기 전용 권한이라 일정을 복사할 수 없어요.");
+      const dayObj = state.days.find(d => d.day === currentDay);
+      if (!dayObj || !Array.isArray(dayObj.items)) return;
+      if (tlDragState) { try { tlEditEnd(); } catch (e) { console.warn("drag end before duplicate", e); } }
+      const idx = dayObj.items.findIndex(x => String(x.id) === String(itemId));
+      if (idx < 0) return;
+      const src = dayObj.items[idx];
+      const copy = cloneTimelineItem(src);
+      dayObj.items.splice(idx + 1, 0, copy);   // 원본 바로 아래
+      editMode = true;                          // 복사한 자리에서 바로 ≡ 로 순서를 만질 수 있게
+      saveState();
+      if (isMemoItem(src)) {
+        showAppToast("📋 메모를 바로 아래에 복사했어요 — 내용을 고쳐 쓰세요!");
+      } else {
+        const label = String(src.place || "").trim() || "일정";
+        showAppToast(`📋 '${label}' 일정을 바로 아래에 복사했어요 — ≡ 로 순서를 바꾸거나 눌러서 고쳐 주세요!`);
+      }
+      highlightTimelineItem(copy.id);
+      return copy;
+    }
+
+    // 복사한 행을 잠깐 빛나게 하고 화면 가운데로 데려온다
+    function highlightTimelineItem(itemId) {
+      setTimeout(() => {
+        try {
+          const rows = [...document.querySelectorAll("#timeline-list [data-item-id], #timeline-list [data-card-id]")];
+          const el = rows.find(r => (r.getAttribute("data-item-id") || r.getAttribute("data-card-id")) === String(itemId));
+          if (!el) return;
+          el.classList.add("tl-just-copied");
+          try { el.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (e) { try { el.scrollIntoView(); } catch (e2) {} }
+          setTimeout(() => { try { el.classList.remove("tl-just-copied"); } catch (e) {} }, 1700);
+        } catch (e) { console.warn("highlight copied row", e); }
+      }, 90);
+    }
+
+    /* =====================================================================
        📝 메모 — 시간(time) 없이 내용만 적는 카드
        · 추가하면 그날 items 맨 앞(unshift)에 생기고, 사용자가 ↑↓ · 드래그로 위치를 정한다
        · 지도 핀 · 이동 시간 · 경비 합계에는 잡히지 않는다 (kind: "memo") 
@@ -7207,9 +7336,9 @@
         document.getElementById("pm-place").value = it ? it.place : "";
       }
       document.getElementById("pm-search-results").innerHTML = "";
-      document.getElementById("pm-time").value = it ? it.time : "12:00";
+      document.getElementById("pm-time").value = it ? (it.time || "") : "";
       document.getElementById("pm-move").value = it ? (it.moveMode || "") : "";
-      document.getElementById("pm-stay").value = it ? (it.stay || "") : "체류 60분";
+      document.getElementById("pm-stay").value = it ? (it.stay || "") : "";
       document.getElementById("pm-memo").value = it ? (it.memo || "") : "";
       document.getElementById("pm-cost").value = it ? (it.costTotal ?? it.moveCost ?? 0) : "";
       document.getElementById("pm-has-menus").checked = it ? Array.isArray(it.menus) : false;
@@ -7269,7 +7398,8 @@
     function savePlaceEdit() {
       const dayObj = state.days.find(d => d.day === currentDay);
       if (!dayObj) return;
-      const time = document.getElementById("pm-time").value.trim() || "12:00";
+      const time = document.getElementById("pm-time").value.trim();
+      const timeOk = /^\d{1,2}:\d{2}$/.test(time) ? time : "";   // 비워 두면 시간 없이 순서로만
       let place = "", fromPlace = "", toPlace = "";
       if (placeEditMode === "route") {
         fromPlace = document.getElementById("pm-from").value.trim();
@@ -7291,7 +7421,7 @@
       if (editingPlaceId) {
         const it = dayObj.items.find(x => x.id === editingPlaceId);
         if (it) {
-          it.time = time; it.place = place; it.moveMode = moveMode; it.stay = stay; it.memo = memo; it.mapUrl = mapUrl;
+          it.time = timeOk; it.place = place; it.moveMode = moveMode; it.stay = stay; it.memo = memo; it.mapUrl = mapUrl;
           if (costNum !== null) {
             it.costTotal = costNum;
             if (placeEditMode === "route") it.moveCost = costNum;
@@ -7308,7 +7438,7 @@
         const c = costNum ?? 0;
         const newItem = {
           id: "d" + currentDay + "-" + Date.now(),
-          time, place, stay, moveMode, moveMin: 10, moveCost: placeEditMode === "route" ? c : 0, costTotal: c,
+          time: timeOk, place, stay, moveMode, moveMin: 10, moveCost: placeEditMode === "route" ? c : 0, costTotal: c,
           badges: ["직접 추가"], mapUrl, memo
         };
         if (placeEditMode === "route") { newItem.fromPlace = fromPlace; newItem.toPlace = toPlace; }
@@ -8077,10 +8207,11 @@
     // 지도에 올릴 순서 = 요약 시트 번호와 같은 번호를 쓴다
     function homeGeoPts() {
       const dayObj = (state.days || []).find(d => d.day === currentDay) || (state.days || [])[0];
-      return (dayObj?.items || []).map((it, idx) => {
+      const stopNums = dayItemNumbers(dayObj);
+      return (dayObj?.items || []).map((it) => {
         if (isMemoItem(it)) return null;   // 📝 메모는 홈 지도 핀·동선에 넣지 않는다
         const ll = (typeof it.lat === "number" && typeof it.lng === "number") ? [it.lat, it.lng] : (COORD_BY_ID[it.id] || null);
-        return ll ? { it, num: idx + 1, ll } : null;
+        return ll ? { it, num: stopNums.get(String(it.id)), ll } : null;
       }).filter(Boolean);
     }
 
@@ -8169,7 +8300,7 @@
       homeMarkers = {};
       const shown = spreadPinPoints(homeMap, homePts.map(p => p.ll), 17);
       homePts.forEach((p, i) => {
-        const sub = [p.it.time, p.it.moveMode].filter(Boolean).join(" · ");
+        const sub = [p.it.stay, p.it.moveMode].filter(Boolean).join(" · ");
         const popup = `<strong>${p.num}. ${escapeAttr(p.it.place || "")}</strong>${sub ? `<br>${escapeAttr(sub)}` : ""}`;
         homeMarkers[p.num] = homeMap.addMarker({
           ll: shown[i], num: p.num, homePin: true, size: 26, popup
@@ -8189,9 +8320,11 @@
       if (!bodyEl) return;
       const items = dayObj?.items || [];
       const region = photoRegionOfDay(dayObj);
-      bodyEl.innerHTML = items.map((it, idx) => {
-        const num = idx + 1;
+      // 번호는 일정 탭·지도 핀과 같은 1·2·3·4 (메모는 번호 없이 📝)
+      const stopNums = dayItemNumbers(dayObj);
+      bodyEl.innerHTML = items.map((it) => {
         const memo = isMemoItem(it);
+        const num = memo ? null : stopNums.get(String(it.id));
         const hasPin = !memo && homePts.some(p => p.num === num);
         const photo = memo
           ? `<span class="hr-emo">📝</span>`
@@ -8199,9 +8332,9 @@
             ? `<span class="ph-slot ph-sm" data-ph="${escapeAttr(it.place)}" data-ph-region="${escapeAttr(region)}" data-emo="${homePlaceEmoji(it)}"></span>`
             : `<span class="hr-emo">${homePlaceEmoji(it)}</span>`);
         const rowClick = memo ? `openTimelineFromHome(${dayObj?.day || currentDay})` : `homeFocusPin(${num})`;
-        return `<div class="home-row${memo ? " home-row-memo" : ""}" data-num="${num}" role="button" tabindex="0" onclick="${rowClick}">
+        return `<div class="home-row${memo ? " home-row-memo" : ""}" data-num="${memo ? "memo" : num}" role="button" tabindex="0" onclick="${rowClick}">
           <span class="hr-num${hasPin ? "" : " no-pin"}">${memo ? "📝" : num}</span>
-          <span class="hr-time">${escapeAttr(it.time || "—")}</span>
+          ${it.time ? `<span class="hr-time">${escapeAttr(it.time)}</span>` : ""}
           <span class="hr-main">
             <span class="hr-place">${escapeAttr(memo ? (memoTitleOf(it) || "메모") : (it.place || "이름 없음"))}</span>
             <span class="hr-memo">${escapeAttr(homeMemoLine(it))}</span>
@@ -8377,10 +8510,12 @@
         });
       }
       const dayObj = state.days.find(d => d.day === currentDay) || state.days[0];
+      // 1·2·3·4 핀 번호 = 일정 카드의 방문 번호와 같은 번호
+      const stopNums = dayItemNumbers(dayObj);
       const itemPts = (dayObj.items || []).map(it => {
         if (isMemoItem(it)) return null;   // 📝 메모는 지도 핀·폴리라인에서 제외
         const ll = (typeof it.lat === "number" && typeof it.lng === "number") ? [it.lat, it.lng] : (COORD_BY_ID[it.id] || null);
-        return ll ? { it, ll } : null;
+        return ll ? { it, ll, num: stopNums.get(String(it.id)) } : null;
       }).filter(Boolean);
       // 🏨 숙소 자동 카드와 같은 순서로 지도 핀도 이어 준다 (아침엔 숙소에서 출발, 밤엔 숙소로 복귀)
       const startPts = [], endPts = [];
@@ -8395,11 +8530,11 @@
           if (!inStay) return;
           if (!bookingAutoOn(b)) {
             // 자동 동선을 꺼 둠 — 숙소 위치 핀 하나만 조용히 보여 준다
-            endPts.push({ it: { place: nm, time: "", moveMode: "", hotelPin: true }, ll: [c.lat, c.lng] });
+            endPts.push({ it: { place: nm, time: "", moveMode: "", hotelPin: true }, ll: [c.lat, c.lng], num: "🏨" });
             return;
           }
-          if (s.mornings.includes(dayObj.date)) startPts.push({ it: { place: `${nm} 출발`, time: "", moveMode: "" }, ll: [c.lat, c.lng] });
-          if (s.nights.includes(dayObj.date)) endPts.push({ it: { place: `${nm} 복귀`, time: "", moveMode: "" }, ll: [c.lat, c.lng] });
+          if (s.mornings.includes(dayObj.date)) startPts.push({ it: { place: `${nm} 출발`, time: "", moveMode: "" }, ll: [c.lat, c.lng], num: "🏨" });
+          if (s.nights.includes(dayObj.date)) endPts.push({ it: { place: `${nm} 복귀`, time: "", moveMode: "" }, ll: [c.lat, c.lng], num: "🏨" });
         });
       }
       dayMapPts = [...startPts, ...itemPts, ...endPts];
@@ -8421,10 +8556,12 @@
       leafletMap.clearShapes();
       const shown = spreadPinPoints(leafletMap, pts.map(p => p.ll), 16);
       pts.forEach((p, idx) => {
-        const detail = [p.it.time, p.it.moveMode].filter(Boolean).join(" · ");
+        // 방문 시간 대신 타임라인과 같은 번호 + 체류·이동수단
+        const num = p.num != null ? p.num : idx + 1;
+        const detail = [p.it.stay, p.it.moveMode].filter(Boolean).join(" · ");
         leafletMap.addMarker({
-          ll: shown[idx], num: idx + 1, size: 22,
-          popup: `<strong>${idx + 1}. ${escapeAttr(p.it.place || "")}</strong>${detail ? `<br>${escapeAttr(detail)}` : ""}`
+          ll: shown[idx], num, size: 22,
+          popup: `<strong>${escapeAttr(num)}. ${escapeAttr(p.it.place || "")}</strong>${detail ? `<br>${escapeAttr(detail)}` : ""}`
         });
       });
       if (shown.length > 1) {
@@ -8446,10 +8583,11 @@
 
     function activeDayGeoPts() {
       const dayObj = state.days.find(d => d.day === currentDay) || state.days[0];
+      const stopNums = dayItemNumbers(dayObj);
       return (dayObj?.items || []).map(it => {
         if (isMemoItem(it)) return null;   // 📝 메모는 큰 지도 스텝에서도 제외
         const ll = (typeof it.lat === "number" && typeof it.lng === "number") ? [it.lat, it.lng] : (COORD_BY_ID[it.id] || null);
-        return ll ? { it, ll } : null;
+        return ll ? { it, ll, num: stopNums.get(String(it.id)) } : null;
       }).filter(Boolean);
     }
 
@@ -8461,12 +8599,14 @@
       if (it.memo) doParts.push(it.memo);
       if (menuTxt) doParts.push(`🍴 ${menuTxt}`);
       if (it.moveMode) doParts.push(`🚶 ${it.moveMode}${it.moveMin ? ` (${it.moveMin}분)` : ""}`);
+      // 방문 시간은 적지 않는다 — 타임라인·핀과 같은 1·2·3·4 번호와 체류만
+      const sub = [it.stay, it.costTotal ? fmt(it.costTotal) : ""].filter(Boolean).join(" · ");
       return `
         <div class="bm-top">
-          <span class="bm-step">${idx + 1} / ${total}</span>
+          <span class="bm-step">${p.num != null ? p.num : idx + 1} / ${total}</span>
           <span class="bm-place">${escapeAttr(it.place || "")}</span>
         </div>
-        <div class="bm-sub">🕒 ${escapeAttr(it.time || "")}${it.stay ? ` · ${escapeAttr(it.stay)}` : ""}${it.costTotal ? ` · ${fmt(it.costTotal)}` : ""}</div>
+        ${sub ? `<div class="bm-sub">${escapeAttr(sub)}</div>` : ""}
         <div class="bm-do">${escapeAttr(doParts.join(" · ") || "메모 없음")}</div>`;
     }
 
@@ -8476,9 +8616,10 @@
       bigMap.clearShapes();
       bigMapMarkers = bigMapPts.map((p, idx) => {
         const active = idx === bigMapIdx;
-        const popup = `<strong>${idx + 1}. ${escapeAttr(p.it.place || "")}</strong><br>${escapeAttr(p.it.time || "")}${p.it.stay ? ` · ${escapeAttr(p.it.stay)}` : ""}`;
+        const num = p.num != null ? p.num : idx + 1;
+        const popup = `<strong>${escapeAttr(num)}. ${escapeAttr(p.it.place || "")}</strong>${p.it.stay ? `<br>${escapeAttr(p.it.stay)}` : ""}`;
         return bigMap.addMarker({
-          ll: p.ll, num: idx + 1, size: active ? 28 : 22, active, popup,
+          ll: p.ll, num, size: active ? 28 : 22, active, popup,
           zIndexOffset: active ? 1000 : 0
         });
       });
@@ -10945,7 +11086,7 @@
           if (!isNight && !isMorning) return;
           const hotel = b.name || "숙소";
           const coord = hotelCoordsForBooking(b);
-          const items = (dayObj.items || []).slice().sort((a, c) => bkTimeCmp(a.time, c.time));
+          const items = (dayObj.items || []).filter(it => !isMemoItem(it));   // 배열 순서 = 동선 순서 (첫·마지막 일정 기준)
           const nightsTxt = stay.nightsCount ? `${stay.nightsCount}박` : "";
           const primaryDate = stay.nights[0] || stay.mornings[0] || "";
 
@@ -14674,16 +14815,16 @@
         days.map(d => `
           <div class="card">
             <div style="font-weight:800;font-size:14px;color:var(--ocean-dark);margin-bottom:6px;">📅 ${d.label} · ${d.date}</div>
-            ${d.items.map(it => `
+            ${d.items.map((it, idx) => `
               <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed var(--border);font-size:12.5px;">
                 ${photoSlotHtml(photoSubjectOf(it) || it.place, photoRegionOfDay(d), "sm", tlTimeCat(it))}
                 <div style="flex:1;min-width:0;">
-                  <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <div><strong>${it.time}</strong> ${it.place}</div>
-                    <div style="font-weight:700;color:var(--ocean-dark);">${it.costTotal ? fmt(it.costTotal) : ""}</div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+                    <div style="display:flex;align-items:center;gap:5px;min-width:0;"><span class="tl-time tt-${tlTimeCat(it)} tl-stop-num" style="flex:0 0 auto;">${idx + 1}</span> <span style="min-width:0;">${escapeHtmlText(it.place || "")}</span></div>
+                    <div style="font-weight:700;color:var(--ocean-dark);flex:0 0 auto;">${it.costTotal ? fmt(it.costTotal) : ""}</div>
                   </div>
                   <div style="font-size:11px;color:var(--muted);margin-top:2px;">
-                    ${it.stay} · ${it.moveMode} · ${(it.badges || []).join(" · ")}
+                    ${[it.moveMode, (it.badges || []).join(" · ")].filter(Boolean).join(" · ") || "&nbsp;"}
                   </div>
                 </div>
               </div>
@@ -15783,7 +15924,7 @@
     }
 
     function routePaceNoteHtml() {
-      return `<div class="card" style="font-size:12px;font-weight:700;color:var(--ocean-dark);background:var(--ocean-soft);line-height:1.6;">🕙 하루는 <b>10:00~10:30</b>에 여유롭게 시작해 <b>점심(12시대) → ☕ 식후 카페 → 관광 → 저녁(18시대)</b> 흐름으로 짰어요. 관광 90~120분·식사 70~90분·카페 60~90분에 이동 여유까지 넣었고, 첫날은 도착 시간을 고려해 점심부터, 마지막 날은 <b>16~17시에 마무리</b>해요.</div>`;
+      return `<div class="card" style="font-size:12px;font-weight:700;color:var(--ocean-dark);background:var(--ocean-soft);line-height:1.6;">🗓️ 하루는 <b>점심 → ☕ 식후 카페 → 관광 → 저녁</b> 흐름으로 짰어요. 순서(1·2·3…)만 보고 그때그때 움직이면 돼요 — 체류 시간은 정해 두지 않았어요. 첫날은 도착 시간을 고려해 점심부터, 마지막 날은 저녁 전에 마무리해요.</div>`;
     }
 
     async function generateNewRoute() {
@@ -15994,13 +16135,13 @@
       resBox.innerHTML = routePaceNoteHtml() + routeWeatherNote + sourceNote + warnNote + days.map(d => `
         <div class="card">
           <div style="font-weight:800;font-size:14px;color:var(--ocean-dark);margin-bottom:6px;">📅 ${d.label} · ${d.date}</div>
-          ${d.items.map(it => `
+          ${d.items.map((it, idx) => `
             <div style="display:flex;gap:8px;align-items:center;padding:5px 0;border-bottom:1px dashed var(--border);font-size:12.5px;">
               ${photoSlotHtml(photoSubjectOf(it) || it.place, photoRegionOfDay(d), "sm", tlTimeCat(it))}
               <div style="flex:1;min-width:0;display:flex;justify-content:space-between;align-items:center;gap:6px;">
-                <div><strong>${it.time}</strong> ${it.place} ${(it.badges || []).some(b => /점심|식후 카페|저녁/.test(String(b)))
-                  ? `<span style="font-size:10px;font-weight:800;color:var(--ocean-dark);background:var(--ocean-soft);padding:1px 5px;border-radius:999px;">${String((it.badges || []).map(String).find(b => /점심|식후 카페|저녁/.test(b)) || "").replace(/^[^가-힣A-Za-z0-9]+/, "").trim()}</span>` : ""} <span style="color:var(--muted);font-size:11px;">(${it.stay})</span></div>
-                <div style="font-weight:700;color:var(--ocean-dark);">${it.costTotal ? fmt(it.costTotal) : "무료"}</div>
+                <div style="display:flex;align-items:center;gap:5px;min-width:0;"><span class="tl-time tt-${tlTimeCat(it)} tl-stop-num" style="flex:0 0 auto;">${idx + 1}</span> <span style="min-width:0;">${escapeHtmlText(it.place || "")}</span> ${(it.badges || []).some(b => /점심|식후 카페|저녁/.test(String(b)))
+                  ? `<span style="font-size:10px;font-weight:800;color:var(--ocean-dark);background:var(--ocean-soft);padding:1px 5px;border-radius:999px;flex:0 0 auto;">${String((it.badges || []).map(String).find(b => /점심|식후 카페|저녁/.test(b)) || "").replace(/^[^가-힣A-Za-z0-9]+/, "").trim()}</span>` : ""}</div>
+                <div style="font-weight:700;color:var(--ocean-dark);flex:0 0 auto;">${it.costTotal ? fmt(it.costTotal) : "무료"}</div>
               </div>
             </div>
           `).join("")}
