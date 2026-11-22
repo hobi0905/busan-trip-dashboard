@@ -7534,11 +7534,18 @@
         if (!place) return alert("장소명을 입력해 주세요.");
       }
       const moveMode = document.getElementById("pm-move").value.trim();
-      const stay = document.getElementById("pm-stay").value.trim();
-      const memo = document.getElementById("pm-memo").value.trim();
+      const stay = document.getElementById("pm-stay").value.trim();      const memo = document.getElementById("pm-memo").value.trim();
       const costVal = document.getElementById("pm-cost").value.trim();
       const costNum = costVal === "" ? null : Math.max(0, Number(costVal) || 0);
       const hasMenus = document.getElementById("pm-has-menus").checked;
+      // 칩을 안 누르고 이름만 직접 쳐도, 이미 저장해 둔 집·호텔이면 그 위치를 그대로 쓴다
+      if (placeEditMode !== "route" && typeof pickedLat !== "number") {
+        const sp = findSavedPlaceByName(place);
+        if (sp && typeof sp.lat === "number" && typeof sp.lng === "number") {
+          pickedLat = sp.lat; pickedLng = sp.lng;
+          if (!pickedAddress) pickedAddress = savedPlaceAddressText(sp);
+        }
+      }
       const mapUrl = mapSearchUrl(toPlace || place,
         typeof pickedLat === "number" ? pickedLat : undefined,
         typeof pickedLng === "number" ? pickedLng : undefined);
@@ -11565,6 +11572,22 @@
         if (seq === pickedCoordSeq) showPlacePickHint("🔎 위치를 자동으로 찾지 못했어요. 그대로 저장해도 되고, 다른 곳이면 위에서 검색해 골라 주세요.", "warn");
         return null;
       });
+    }
+
+    // 저장한 거점 이름을 직접 타자로 쳐도 위치를 찾아 준다 ('호텔 OO 체크인' 같은 꼬리말 허용)
+    function findSavedPlaceByName(name) {
+      const key = normalizePlaceKey(name);
+      if (!key) return null;
+      const list = ensureSavedPlaces();
+      const exact = list.find(p => p && normalizePlaceKey(cleanPlaceName(p.label) || p.label) === key);
+      if (exact) return exact;
+      return list.find(p => {
+        if (!p) return false;
+        const pk = normalizePlaceKey(cleanPlaceName(p.label) || p.label);
+        if (!pk || pk.length < 2 || !key.startsWith(pk)) return false;
+        const tail = key.slice(pk.length).trim();
+        return tail.length <= 8;
+      }) || null;
     }
 
     function applySavedPlace(pid, target) {
