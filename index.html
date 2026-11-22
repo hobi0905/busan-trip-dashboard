@@ -9772,9 +9772,11 @@
     // 호텔 좌표 주변 지하철역 목록 (카카오 지하철역 카테고리 · 거리순)
     // — 카카오를 못 쓸 때만 Overpass·위키백과로 넘어가고, 결과는 세션 내 재사용
     const OVERPASS_ENDPOINTS = [
-      "https://overpass.openstreetmap.fr/api/interpreter",
       "https://overpass-api.de/api/interpreter",
-      "https://overpass.kumi.systems/api/interpreter"
+      "https://overpass.kumi.systems/api/interpreter",
+      "https://overpass.private.coffee/api/interpreter",
+      "https://overpass.osm.ch/api/interpreter",
+      "https://overpass.openstreetmap.fr/api/interpreter"
     ];
     const stationCache = new Map();   // 'lat,lng,radius' → 역 목록
 
@@ -13153,42 +13155,7 @@
       if (btn) btn.textContent = cnt ? `💾 선택한 ${cnt}곳 일정에 바로 저장` : "저장할 장소를 선택해 주세요";
     }
 
-    // 🗺️ 카카오맵 주변 장소 — 목적(산책·카페·음식점…)에 맞는 실제 장소를 거리순으로 가져온다
-    async function kakaoNearbySpots(lat, lng, purpose, radius = 1800) {
-      if (!kakaoMapsApi()) return [];
-      const loc = { lat, lng };
-      const plan = {
-        "산책": [{ q: "공원" }, { code: "AT4" }],
-        "음식점": [{ q: "맛집" }, { code: "FD6" }],
-        "카페": [{ code: "CE7" }],
-        "바": [{ q: "술집" }, { q: "바" }],
-        "술집": [{ q: "술집" }, { q: "이자카야" }],
-        "데이트": [{ code: "AT4" }, { code: "CT1" }]
-      }[purpose] || [{ q: "카페" }];
-      const out = [];
-      const seen = new Set();
-      for (const step of plan) {
-        const docs = step.code
-          ? await kakaoCategorySearch(step.code, { location: loc, radius, sort: "distance", limit: 12 })
-          : await kakaoKeywordSearch(step.q, { location: loc, radius, sort: "distance", limit: 12 });
-        docs.map(d => kakaoDocToPlace(d, step.q || purpose)).filter(Boolean).forEach(p => {
-          const key = p.name.replace(/\s+/g, "");
-          if (seen.has(key)) return;
-          seen.add(key);
-          out.push({
-            name: p.name,
-            lat: p.lat,
-            lng: p.lng,
-            desc: `${purpose} · 카카오맵 주변`,
-            indoor: recWeatherOn() ? true : undefined,
-            source: "카카오",
-            placeUrl: p.placeUrl || ""
-          });
-        });
-        if (out.length >= 10) break;
-      }
-      return out;
-    }
+    // (옛 kakaoNearbySpots 는 fetchRoutePlaces('food'|'cafe'|'walk'|'sight') 로 통합됐다 — 국내는 카카오, 해외는 OSM)
 
     async function runPlaceRecommend() {
       const timeSlot = document.getElementById("rec-time").value;
@@ -13213,44 +13180,28 @@
       }
       const aLat = anchor.lat, aLng = anchor.lng;
 
-      resEl.innerHTML = `<div class="card" style="text-align:center;color:var(--muted);font-size:13px;">🔍 ${anchor.place || "선택 위치"} 주변 '${purpose}' 5곳 찾는 중...</div>`;
+      resEl.innerHTML = `<div class="card" style="text-align:center;color:var(--muted);font-size:13px;">🔍 ${anchor.place || "선택 위치"} 주변 실제 '${purpose}' 장소를 찾고 있어요...</div>`;
 
-      const tagMap = {
-        "산책": '["leisure"~"park|garden|beach_resort|promenade"]',
-        "음식점": '["amenity"~"restaurant|fast_food"]',
-        "카페": '["amenity"="cafe"]',
-        "바": '["amenity"~"bar|cocktail"]',
-        "술집": '["amenity"~"pub|bar|izakaya"]',
-        "데이트": '["tourism"~"viewpoint|attraction|gallery"]'
-      };
-      const filter = recWeatherOn() && (purpose === "산책" || purpose === "데이트")
-        ? '["tourism"~"museum|gallery|aquarium"]'
-        : (tagMap[purpose] || '["amenity"="cafe"]');
+      const domestic = isDomesticTripSafe();
+      const purposeKind = { "산책": "walk", "음식점": "food", "카페": "cafe", "바": "bar", "술집": "bar", "데이트": "sight" }[purpose] || "cafe";
+      const indoorWanted = recWeatherOn() && (purpose === "산책" || purpose === "데이트");
+      const destHint = anchor.place || recCity || "";
       let osmSpots = [];
-      // 🗺️ 국내는 카카오맵 주변 검색이 기준 (실제 상호·거리순)
-      if (kakaoMapsApi() && isDomesticTripSafe()) {
-        try { osmSpots = await kakaoNearbySpots(aLat, aLng, purpose); } catch { osmSpots = []; }
+      try {
+        osmSpots = await fetchRoutePlaces(indoorWanted ? "indoorSight" : purposeKind, aLat, aLng, {
+          domestic, radius: 1800, limit: 14, destName: destHint, indoorOnly: indoorWanted
+        });
+      } catch (e) { osmSpots = []; }
+      // 요청 목적의 실제 장소가 적으면 보조 목적까지 함께 찾는다 (데이트 → 카페, 산책 → 명소)
+      if (osmSpots.length < 5) {
+        const secondary = purpose === "산책" ? "sight" : purpose === "데이트" ? "cafe" : "";
+        if (secondary) {
+          try {
+            const extra = await fetchRoutePlaces(secondary, aLat, aLng, { domestic, radius: 1500, limit: 10, destName: destHint, indoorOnly: indoorWanted });
+            osmSpots = dedupeRoutePlaces([...osmSpots, ...extra]);
+          } catch (e) { /* 보조 조회 실패 */ }
+        }
       }
-      // 카카오를 못 쓸 때만 OSM Overpass 보조 검색
-      if (!osmSpots.length) {
-        try {
-          const q = `[out:json][timeout:6];(node${filter}["name"](around:1800,${aLat},${aLng});way${filter}["name"](around:1800,${aLat},${aLng}););out center 15;`;
-          const ctrl = new AbortController();
-          const tid = setTimeout(() => ctrl.abort(), 3500);
-          const r = await fetch("https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(q), { signal: ctrl.signal });
-          clearTimeout(tid);
-          const data = await r.json();
-          osmSpots = (data.elements || []).map(el => ({
-            name: el.tags?.name,
-            lat: el.lat ?? el.center?.lat,
-            lng: el.lon ?? el.center?.lon,
-            desc: `${purpose} · 주변 실측 장소`,
-            indoor: recWeatherOn() ? true : undefined,
-            source: "지도"
-          })).filter(x => x.name && x.lat && x.lng);
-        } catch { /* fallback to curated */ }
-      }
-
       // 🌡️ 실내 모드에서는 야외 후보(한강공원·해수욕장·야외 산책로)를 풀에서 미리 뺀다
       const curatedPool = recWeatherFilterSpots(curatedSpotsForCity(recCity));
       let curated = curatedPool
@@ -13270,6 +13221,21 @@
         seen.add(key);
         const distKm = calcDistKm(aLat, aLng, s.lat, s.lng);
         merged.push({ ...s, distKm });
+      }
+      // 실제 후보가 5곳보다 적으면 조금 넓은 반경에서 한 번 더 받아 온다 (같은 목적·실제 상호)
+      if (merged.length < 5) {
+        try {
+          const wider = await fetchRoutePlaces(indoorWanted ? "indoorSight" : purposeKind, aLat, aLng, {
+            domestic, radius: 3500, limit: 14, destName: destHint, indoorOnly: indoorWanted
+          });
+          wideLoop: for (const s of wider) {
+            const key = String(s.name || "").replace(/\s+/g, "");
+            if (!key || seen.has(key)) continue;
+            seen.add(key);
+            merged.push({ ...s, distKm: calcDistKm(aLat, aLng, s.lat, s.lng) });
+            if (merged.length >= 8) break wideLoop;
+          }
+        } catch (e) { /* 넓은 반경 조회 실패 → 큐레이션으로 */ }
       }
       // 요청한 목적의 후보가 5곳보다 적으면 가까운 다른 추천 후보로 5곳을 채운다
       if (merged.length < 5) {
@@ -13314,7 +13280,7 @@
                 ${readOnly ? "" : `<input type="checkbox" id="rec-cb-${i}" class="rec-pick" value="${i}" style="margin-top:3px;width:16px;height:16px;" onchange="updateRecommendCount()" />`}
                 <div style="min-width:0;">
                   <div style="font-size:14.5px;font-weight:800;">${i + 1}. ${s.name}${recWeatherOn() && spotIndoorInfo(s).indoor ? ` <span class="tag blue" style="font-size:10px;vertical-align:middle;">🏠 실내</span>` : ""}</div>
-                  <div style="font-size:12px;color:var(--muted);margin-top:2px;">${s.desc}</div>
+                  <div style="font-size:12px;color:var(--muted);margin-top:2px;">${s.desc}${s.openingHours ? ` · ${s.openingHours}` : ""}${s.source ? ` <span style="font-size:10px;color:var(--ocean-dark);">${s.source}</span>` : ""}</div>
                 </div>
               </label>
               <div class="ph-col">
@@ -14387,16 +14353,36 @@
       });
 
       // Pass 3: 필수 장소를 최근접 이웃 순서로 정렬하고, 하루 골격(점심·식후 카페·저녁)에 맞춰 끼워 넣는다
-      const cityKey = Object.keys(CITY_ROUTE_SPOTS).find(k => destRaw.includes(k));
-      const cityPool = (cityKey ? CITY_ROUTE_SPOTS[cityKey] : [])
-        .filter(p => !isCafeSpot(p) && !isFoodSpot(p))
-        .filter(p => !recWeatherOn() || !spotIsOutdoor(p));
-      const mealPools = routeMealSpotPools(destRaw, cityKey);
+      const cityKey = krCityKeyOf(destRaw);
+      const domestic = routeDestIsDomestic(destRaw);
+      const weatherOn = recWeatherOn();
+      const center = await destinationAnchorOf(destRaw, cityKey);
       const registry = makeRouteNameRegistry();
-      const takeMeal = makeRouteMealPicker(mealPools, destRaw, recWeatherOn(), registry);
       const mustStyleKey = "balanced";
+      let cityPool = cityKey ? [...(CITY_ROUTE_SPOTS[cityKey] || [])] : [];
+      if (cityKey) {
+        KR_PLACES.filter(p => p.c === cityKey && /attraction|nature|area/.test(p.k)).forEach(p => {
+          const nk = normPlaceQuery(p.n);
+          if (cityPool.some(x => normPlaceQuery(x.name) === nk)) return;
+          cityPool.push({ name: p.n, cat: p.k === "area" ? "산책" : "관광", lat: p.lat, lng: p.lng, cost: 0, desc: p.s || "", indoor: (p.k === "nature" || p.k === "area") ? false : undefined });
+        });
+      }
+      // 필수 장소 주변의 실제 명소도 후보에 더한다 (국내·해외 공통)
+      if (center) {
+        resBox.innerHTML = `<div class="card" style="text-align:center;color:var(--muted);padding:18px;font-size:13px;line-height:1.6;">🏛️ '${destRaw}'의 실제 명소·맛집·카페를 찾고 있어요...</div>`;
+        const live = await fetchRouteSights(destRaw, center, domestic, weatherOn);
+        live.forEach(row => {
+          const k = normPlaceQuery(row.name);
+          if (!k || cityPool.some(x => normPlaceQuery(x.name) === k)) return;
+          cityPool.push(row);
+        });
+      }
+      cityPool = cityPool
+        .filter(p => !isCafeSpot(p) && !isFoodSpot(p))
+        .filter(p => !weatherOn || !spotIsOutdoor(p));
 
-      dayBuckets.forEach((b, bi) => {
+      for (let bi = 0; bi < dayBuckets.length; bi++) {
+        const b = dayBuckets[bi];
         // Nearest neighbor order starting from first spot with coords
         const ordered = [];
         const rem = [...b.spots];
@@ -14413,13 +14399,14 @@
           }
         }
 
-        // 필수 장소가 적은 날은 주변 명소로 채워 '점심·카페·저녁' 사이가 비지 않게 한다 (휴무일·중복 회피)
+        // 필수 장소가 적은 날은 주변의 실제 명소로 채워 '점심·카페·저녁' 사이가 비지 않게 한다 (휴무일·중복 회피)
         const want = Math.max(routeSightSlotsFor(bi, days.length, mustStyleKey), Math.min(3, ordered.length));
-        while (ordered.length < want) {
+        let fillGuard = 0;
+        while (ordered.length < want && fillGuard++ < 3) {
           const usedNames = new Set(dayBuckets.flatMap(x => x.spots.map(s => s.name)).concat(ordered.map(s => s.name)));
           const usedArr = [...usedNames];
           const anchor = ordered[ordered.length - 1];
-          const avail = cityPool.filter(p => {
+          let avail = cityPool.filter(p => {
             if (usedNames.has(p.name)) return false;
             if (registry.has(p.name)) return false;
             if (nameClashes(p.name, usedArr)) return false;
@@ -14427,6 +14414,12 @@
             if (kk && KNOWN_SPOT_META[kk].closed === b.weekday) return false;
             return true;
           });
+          if (!avail.length && anchor && typeof anchor.lat === "number") {
+            const more = await fetchRoutePlaces(weatherOn ? "indoorSight" : "sight", anchor.lat, anchor.lng, {
+              domestic, radius: domestic ? 4000 : 2500, limit: 14, destName: destRaw, indoorOnly: weatherOn
+            });
+            avail = more.filter(p => !usedNames.has(p.name) && !registry.has(p.name) && !nameClashes(p.name, usedArr));
+          }
           if (!avail.length) break;
           avail.sort((a, c) => {
             if (!anchor || !anchor.lat) return 0;
@@ -14439,11 +14432,14 @@
         }
 
         ordered.forEach(s => registry.add(s.name));
+        resBox.innerHTML = `<div class="card" style="text-align:center;color:var(--muted);padding:18px;font-size:13px;line-height:1.6;">🍽️ '${destRaw}' 실제 맛집·카페를 찾고 있어요... (${bi + 1}/${dayBuckets.length}일차)</div>`;
+        const mealPools = await buildRouteMealPoolsForDay(destRaw, cityKey, ordered, domestic, weatherOn);
+        const takeMeal = makeRouteMealPicker(mealPools, destRaw, weatherOn, registry);
         b.dayObj.items = buildPacedDayItems({
           day: b.dayObj, dayIndex: bi, totalDays: days.length, styleKey: mustStyleKey,
-          sights: ordered, takeMeal, weatherOn: recWeatherOn(), sourceBadge: "최적 동선"
+          sights: ordered, takeMeal, weatherOn, sourceBadge: "최적 동선", mapDomestic: domestic
         });
-      });
+      }
 
       window._generatedRoutePlan = { dest: destRaw, startDate: startStr, endDate: endStr, days };
       resBox.innerHTML = routePaceNoteHtml() + (warnings.length ? `<div class="card" style="background:var(--warn-bg);border-color:#fde68a;font-size:12px;">${warnings.join("<br>")}</div>` : "") +
@@ -14726,11 +14722,8 @@
         ]
       }
     };
-    // 식사·카페 후보가 모자랄 때 자연스럽게 보충하는 이름 (중복 금지 유지)
-    const ROUTE_GENERIC_FOOD = ["로컬 맛집", "시장 먹거리", "국밥·분식집", "소문난 식당"];
-    const ROUTE_GENERIC_CAFE = ["감성 카페", "로스터리 카페", "한옥 카페", "오션뷰 카페"];
-    const ROUTE_INDOOR_FOOD = ["실내 식당가", "쇼핑몰 맛집", "백화점 식당가", "실내 분식"];
-    const ROUTE_INDOOR_CAFE = ["실내 카페", "백화점 카페", "서점 카페", "쇼핑몰 카페"];
+    // 🚫 '로컬 맛집'·'실내 식당가'·'백화점 카페' 같은 가짜 이름 생성기는 없앴다.
+    //    후보가 모자라면 실제 장소를 API에서 더 받아 오고, 그래도 없으면 그 자리를 비운다.
 
     function routeTimeToMin(t) {
       const m = String(t || "").match(/(\d{1,2}):(\d{2})/);
@@ -14803,6 +14796,8 @@
     }
 
     // 점심·저녁(food)과 식후 카페(cafe)를 하루 한 번씩, 중복 없이 뽑는다
+    // · 후보가 떨어지면 '경주 실내 식당가' 같은 가짜 이름을 만들지 않고 그 자리를 비운다.
+    //   그날 동선 주변의 실제 후보를 미리 받아 두므로(buildRouteMealPoolsForDay) 정상 상황에선 비지 않는다.
     function makeRouteMealPicker(pools, dest, weatherOn, registry) {
       const reg = registry || makeRouteNameRegistry();
       const keep = (list) => (weatherOn ? list.filter(s => !spotIsOutdoor(s)) : list);
@@ -14810,7 +14805,7 @@
       const cafes = keep((pools && pools.cafes) || []);
       const distTo = (row, anchor) => (row.lat && row.lng && anchor && anchor.lat && anchor.lng)
         ? haversineKm(anchor.lat, anchor.lng, row.lat, row.lng) : 999;
-      const pickFrom = (list, kind, anchor, dayNum) => {
+      const pickFrom = (list, anchor) => {
         // 앞 일정에서 가까운 곳을 먼저 고른다 (하루 동선이 도시를 가로지르지 않게)
         let best = -1, bestD = Infinity;
         list.forEach((row, idx) => {
@@ -14818,27 +14813,586 @@
           const d = distTo(row, anchor);
           if (d < bestD - 1e-9) { bestD = d; best = idx; }
         });
-        if (best >= 0) { const row = list[best]; reg.add(row.name); return row; }
-        const base = weatherOn
-          ? (kind === "cafe" ? ROUTE_INDOOR_CAFE : ROUTE_INDOOR_FOOD)
-          : (kind === "cafe" ? ROUTE_GENERIC_CAFE : ROUTE_GENERIC_FOOD);
-        for (let n = 1; n <= base.length * 6; n++) {
-          const label = base[(n - 1) % base.length];
-          const name = n <= base.length ? `${dest} ${label}` : `${dest} ${dayNum || n}일차 ${label}`;
-          if (!reg.has(name)) {
-            reg.add(name);
-            return {
-              name,
-              cat: kind === "cafe" ? "카페" : "음식점",
-              cost: kind === "cafe" ? 14000 : 26000,
-              desc: kind === "cafe" ? "식후 여유 한 잔 · 영업시간은 지도에서 확인" : "현지 인기 식당 · 영업시간은 지도에서 확인",
-              indoor: true
-            };
-          }
-        }
-        return null;
+        if (best < 0) return null;
+        const row = list[best];
+        reg.add(row.name);
+        return row;
       };
-      return (kind, anchor, dayNum) => pickFrom(kind === "cafe" ? cafes : foods, kind === "cafe" ? "cafe" : "food", anchor, dayNum);
+      return (kind, anchor) => pickFrom(kind === "cafe" ? cafes : foods, anchor);
+    }
+
+    /* =====================================================================
+       🌍 실제 장소 수집 — 국내는 카카오맵, 해외는 OSM(Overpass · Photon · Nominatim)
+       · 예전에는 후보가 모자랄 때 '경주 실내 식당가'·'경주 백화점 카페' 같은 가짜 이름을
+         만들어 넣었다. 이제는 실제 상호·좌표·주소가 있는 장소만 쓴다.
+       · 카카오맵은 국내 전용 — 해외 여행에서는 절대 부르지 않는다.
+       · 조회가 몇 초 걸려도 정확한 장소를 받아 온다 (같은 조회는 세션 내 재사용).
+       ===================================================================== */
+    const ROUTE_PLACE_CACHE = new Map();   // 조회 키 → 실제 장소 배열
+
+    // 목적지 이름만 보고 국내/해외를 가른다 (입력한 목적지가 여행 설정과 다를 수 있음)
+    function krCityKeyOf(destRaw) {
+      const d = String(destRaw || "").trim();
+      if (!d) return "";
+      const key = Object.keys(CITY_ROUTE_SPOTS).find(k => d.includes(k));
+      if (key) return key;
+      const city = KR_PLACES.find(p => p.k === "city" && (p.n === d || (p.a || []).some(a => a === d) || d.includes(p.n)));
+      return city ? city.c : "";
+    }
+
+    function routeDestIsDomestic(destRaw) {
+      const d = String(destRaw || "").trim();
+      if (d && krCityKeyOf(d)) return true;
+      const geoKey = d ? Object.keys(CITY_GEO).find(k => d.includes(k)) : "";
+      if (geoKey && !/^KR$/i.test(String(CITY_GEO[geoKey].country || "KR"))) return false;   // 도쿄·파리 등 해외 도시
+      return isDomesticTripSafe();
+    }
+
+    // 목적지 중심 좌표 — 내장 도시 좌표 → 내장 지명 → (없으면) 지오코딩
+    async function destinationAnchorOf(destRaw, cityKey) {
+      const d = String(destRaw || "").trim();
+      const geoKey = Object.keys(CITY_GEO).find(k => (cityKey && k === cityKey) || (d && d.includes(k)));
+      if (geoKey) return { lat: CITY_GEO[geoKey].lat, lng: CITY_GEO[geoKey].lon, label: geoKey };
+      const center = cityKey ? cityCenterOf(cityKey) : null;
+      if (center) return { ...center, label: cityKey };
+      const gz = d ? krGazetteerSearch(d, 1)[0] : null;
+      if (gz && typeof gz.lat === "number") return { lat: gz.lat, lng: gz.lng, label: gz.name };
+      try {
+        const g = await geocodeByName(d);
+        if (g && isFinite(g.lat) && isFinite(g.lng)) return { lat: g.lat, lng: g.lng, label: g.name || d };
+      } catch (e) { /* 좌표를 못 찾음 */ }
+      return null;
+    }
+
+    // 종류별 조회 계획 — 국내(카카오)와 해외(OSM)를 함께 적어 둔다
+    const ROUTE_PLACE_KINDS = {
+      food: {
+        cat: "음식점", cost: 24000,
+        kakaoCats: ["FD6"], kakaoKw: ["맛집", "식당"],
+        osm: ['["amenity"~"^(restaurant|fast_food|food_court|bistro)$"]']
+      },
+      cafe: {
+        cat: "카페", cost: 14000,
+        kakaoCats: ["CE7"], kakaoKw: ["카페"],
+        osm: ['["amenity"~"^(cafe|ice_cream)$"]', '["shop"="bakery"]']
+      },
+      bar: {
+        cat: "술집", cost: 28000,
+        kakaoCats: [], kakaoKw: ["술집", "바"],
+        osm: ['["amenity"~"^(bar|pub|biergarten)$"]']
+      },
+      walk: {
+        cat: "산책", cost: 0,
+        kakaoCats: ["AT4"], kakaoKw: ["공원", "산책로"],
+        osm: ['["leisure"~"^(park|garden|nature_reserve|beach_resort)$"]', '["tourism"="viewpoint"]']
+      },
+      sight: {
+        cat: "관광", cost: 15000,
+        kakaoCats: ["AT4", "CT1"], kakaoKw: [],
+        osm: ['["tourism"~"^(attraction|museum|gallery|viewpoint|monument|zoo|aquarium|theme_park)$"]',
+              '["historic"~"^(monument|memorial|castle|ruins)$"]']
+      },
+      indoorSight: {
+        cat: "관광", cost: 15000,
+        kakaoCats: ["CT1"], kakaoKw: ["박물관", "미술관", "전시관"],
+        osm: ['["tourism"~"^(museum|gallery|aquarium)$"]', '["shop"~"^(mall|department_store)$"]']
+      }
+    };
+
+    function routePlaceDescShort(cat, extra) {
+      return [cat, extra].filter(Boolean).join(" · ");
+    }
+
+    function routePlaceIndoor(kind, name, shortCat) {
+      if (kind === "food" || kind === "cafe" || kind === "bar" || kind === "indoorSight") return true;
+      return INDOOR_SPOT_RE.test(`${name || ""} ${shortCat || ""}`) ? true : undefined;
+    }
+
+    function dedupeRoutePlaces(list) {
+      const seen = [];
+      return (list || []).filter(row => {
+        if (!row || !row.name) return false;
+        const k = normPlaceQuery(row.name);
+        if (!k) return false;
+        const dup = seen.some(x =>
+          x.key === k
+          || ((x.key.includes(k) || k.includes(x.key)) && Math.abs(x.lat - row.lat) < 0.002 && Math.abs(x.lng - row.lng) < 0.002)
+        );
+        if (dup) return false;
+        seen.push({ key: k, lat: row.lat, lng: row.lng });
+        return true;
+      });
+    }
+
+    // 🗺️ 카카오맵 주변 실제 장소 (국내 전용) — 카테고리·키워드를 거리순으로
+    async function kakaoRoutePlaces(kind, lat, lng, opts = {}) {
+      const meta = ROUTE_PLACE_KINDS[kind] || ROUTE_PLACE_KINDS.sight;
+      if (!kakaoMapsApi()) return [];
+      const radius = Math.max(200, Math.min(20000, Number(opts.radius) || 2000));
+      const limit = Math.max(1, Math.min(15, Number(opts.limit) || 12));
+      const loc = { lat, lng };
+      const out = [], seen = new Set();
+      const push = (doc, hint) => {
+        const p = kakaoDocToPlace(doc, hint);
+        if (!p || !p.name) return;
+        const key = normPlaceQuery(p.name);
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        const addr = String(doc.road_address_name || doc.address_name || p.sub || "").trim();
+        const shortCat = String(doc.category_name || "").split(">").pop().trim();
+        out.push({
+          name: p.name, lat: p.lat, lng: p.lng,
+          cat: meta.cat, kind,
+          cost: meta.cost,
+          desc: routePlaceDescShort(shortCat || meta.cat, addr),
+          address: addr,
+          indoor: routePlaceIndoor(kind, p.name, shortCat),
+          placeUrl: p.placeUrl || "",
+          distanceM: isFinite(Number(doc.distance)) ? Number(doc.distance) : Math.round(haversineKm(lat, lng, p.lat, p.lng) * 1000),
+          source: "카카오맵"
+        });
+      };
+      const runs = [];
+      (meta.kakaoCats || []).forEach(code => runs.push(["cat", code]));
+      (meta.kakaoKw || []).forEach(kw => runs.push(["kw", kw]));
+      for (const run of runs) {
+        if (out.length >= limit * 2) break;
+        const type = run[0], val = run[1];
+        const docs = type === "cat"
+          ? await kakaoCategorySearch(val, { location: loc, radius, sort: "distance", limit })
+          : await kakaoKeywordSearch(val, { location: loc, radius, sort: "distance", limit });
+        (docs || []).forEach(d => push(d, type === "kw" ? val : meta.cat));
+      }
+      return out.sort((a, b) => a.distanceM - b.distanceM).slice(0, limit);
+    }
+
+    /* 🌐 OSM 묶음 조회 — 한 번의 Overpass 요청으로 그 동네의 식당·카페·술집·명소·공원을 모두 받는다
+       · 예전엔 종류마다 따로 물어 하루에 6~10번 요청했고, 공용 미러가 막히면 식당이 통째로 비었다.
+       · 이제는 하루 동선당 1회(대개 2~4초)만 묻고, 결과를 종류별로 나눠 쓴다. */
+    const ROUTE_BUNDLE_CACHE = new Map();    // 'lat|lng|bucket' → 실제 장소
+    const ROUTE_BUNDLE_PENDING = new Map();  // 같은 조회가 동시에 두 번 나가지 않게
+
+    function bundleBucket(radius) {
+      const r = Number(radius) || 2000;
+      return r <= 2500 ? 2500 : r <= 6000 ? 6000 : 12000;
+    }
+
+    function overpassRequest(ep, body, timeoutMs) {
+      return new Promise((resolve, reject) => {
+        const ctrl = typeof AbortController === "function" ? new AbortController() : null;
+        const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null;
+        fetch(ep + "?data=" + encodeURIComponent(body), ctrl ? { signal: ctrl.signal } : undefined)
+          .then(r => {
+            if (!r || !r.ok) throw new Error("status " + (r && r.status));
+            return r.json();
+          })
+          .then(data => {
+            if (timer) clearTimeout(timer);
+            resolve((data && data.elements) || []);
+          })
+          .catch(e => { if (timer) clearTimeout(timer); reject(e); });
+      });
+    }
+
+    // 공용 미러는 수시로 429·5xx·타임아웃이 나고, 일부 미러(osm.ch 등)는 자기 지역 밖이면 '빈 결과'를 준다.
+    // → 큰 미러 두 곳을 먼저 동시에 묻고, 둘 다 막혔을 때만 나머지로 넘어간다.
+    //   '실제 결과가 있는 첫 응답'을 쓰고, 전부 비었을 때만 빈 배열로 끝낸다.
+    function overpassWave(eps, body, timeoutMs) {
+      return new Promise(resolve => {
+        if (!eps.length) return resolve([]);
+        let pending = eps.length, empty = null;
+        eps.forEach(ep => overpassRequest(ep, body, timeoutMs)
+          .then(list => {
+            if (Array.isArray(list) && list.length) return resolve(list);
+            if (!empty) empty = Array.isArray(list) ? list : [];
+            if (--pending === 0) resolve(empty || []);
+          })
+          .catch(() => { if (--pending === 0) resolve(empty || []); }));
+      });
+    }
+
+    async function overpassElements(body, timeoutMs = 12000) {
+      const eps = OVERPASS_ENDPOINTS.slice();
+      if (!eps.length) return [];
+      const first = await overpassWave(eps.slice(0, 2), body, timeoutMs);
+      if (first.length) return first;
+      const rest = eps.slice(2);
+      if (!rest.length) return first;
+      const second = await overpassWave(rest, body, Math.min(timeoutMs, 9000));
+      return second.length ? second : first;
+    }
+
+    const OSM_CAT_KO = {
+      restaurant: "음식점", fast_food: "패스트푸드", food_court: "푸드코트", bistro: "비스트로", cafe: "카페",
+      bakery: "베이커리", bar: "바", pub: "펍", biergarten: "비어가르텐", ice_cream: "아이스크림",
+      museum: "박물관", gallery: "갤러리", aquarium: "아쿠아리움", attraction: "명소", viewpoint: "전망대",
+      monument: "기념물", zoo: "동물원", theme_park: "테마파크", park: "공원", garden: "정원",
+      nature_reserve: "자연보호구역", mall: "쇼핑몰", department_store: "백화점", castle: "성", ruins: "유적",
+      memorial: "기념관"
+    };
+    function osmCatKo(raw) {
+      const key = String(raw || "").trim().toLowerCase();
+      return OSM_CAT_KO[key] || String(raw || "");
+    }
+
+    function osmElementName(tags) {
+      const t = tags || {};
+      return String(t["name:ko"] || t.name || t["name:en"] || "").trim();
+    }
+
+    // 묘지·다리·주차장처럼 여행 일정에 넣을 수 없는 OSM 잡음
+    const OSM_JUNK_RE = /墓地|墓所|墓碑|納骨|橋梁|歩道橋|駐車場|パーキング|コインパーキング|トイレ|便所|公衆便所|Cemetery|Grave|Tomb|Bridge|Parking|Toilet|Restroom|Bus Stop|バス停/i;
+
+    // OSM 태그 → 앱의 장소 종류. 한 장소가 여러 종류에 걸릴 수 있다 (박물관 = 관광 + 실내 관광)
+    function osmKindsOf(tags) {
+      const t = tags || {};
+      const kinds = [];
+      const amen = String(t.amenity || "");
+      const shop = String(t.shop || "");
+      const tour = String(t.tourism || "");
+      const hist = String(t.historic || "");
+      const leisure = String(t.leisure || "");
+      if (/^(restaurant|fast_food|food_court|bistro)$/.test(amen)) kinds.push("food");
+      if (/^(cafe|ice_cream)$/.test(amen) || shop === "bakery") kinds.push("cafe");
+      if (/^(bar|pub|biergarten)$/.test(amen)) kinds.push("bar");
+      if (/^(attraction|viewpoint|monument|zoo|aquarium|theme_park)$/.test(tour)) kinds.push("sight");
+      if (/^(museum|gallery)$/.test(tour)) kinds.push("sight", "indoorSight");
+      if (/^(mall|department_store)$/.test(shop)) kinds.push("indoorSight");
+      if (/^(park|garden|nature_reserve)$/.test(leisure) || tour === "viewpoint") kinds.push("walk");
+      if (/^(castle|ruins|monument|memorial)$/.test(hist)) kinds.push("sight");
+      return kinds;
+    }
+
+    function ensureOsmBundle(lat, lng, radius) {
+      const bucket = bundleBucket(radius);
+      const key = `${lat.toFixed(3)}|${lng.toFixed(3)}|${bucket}`;
+      if (ROUTE_BUNDLE_CACHE.has(key)) return Promise.resolve(ROUTE_BUNDLE_CACHE.get(key));
+      if (ROUTE_BUNDLE_PENDING.has(key)) return ROUTE_BUNDLE_PENDING.get(key);
+      const around = `(around:${bucket},${lat.toFixed(5)},${lng.toFixed(5)})`;
+      const amen = '["amenity"~"^(restaurant|fast_food|food_court|bistro|cafe|ice_cream|bar|pub|biergarten)$"]["name"]';
+      const shop = '["shop"~"^(bakery|mall|department_store)$"]["name"]';
+      const tour = '["tourism"~"^(attraction|museum|gallery|viewpoint|monument|zoo|aquarium|theme_park)$"]["name"]';
+      const hist = '["historic"~"^(castle|ruins|monument|memorial)$"]["name"]';
+      const leisure = '["leisure"~"^(park|garden|nature_reserve)$"]["name"]';
+      const body = `[out:json][timeout:22];`
+        + `(node${amen}${around};way${amen}${around};);out center 90;`
+        + `(node${shop}${around};way${shop}${around};);out center 30;`
+        + `(node${tour}${around};way${tour}${around};);out center 90;`
+        + `(node${hist}${around};way${hist}${around};);out center 30;`
+        + `(node${leisure}${around};way${leisure}${around};);out center 40;`;
+      const task = overpassElements(body, 15000).then(els => {
+        const rows = [], seen = new Set();
+        (els || []).forEach(el => {
+          const tags = el.tags || {};
+          const name = osmElementName(tags);
+          const kinds = osmKindsOf(tags);
+          const la = typeof el.lat === "number" ? el.lat : (el.center && el.center.lat);
+          const ln = typeof el.lon === "number" ? el.lon : (el.center && el.center.lon);
+          if (!name || !kinds.length || typeof la !== "number" || typeof ln !== "number") return;
+          if (OSM_JUNK_RE.test(name)) return;
+          const id = `${el.type || "n"}:${el.id || ""}`;
+          const key2 = el.id ? id : `${normPlaceQuery(name)}@${la.toFixed(4)},${ln.toFixed(4)}`;
+          if (seen.has(key2)) return;
+          seen.add(key2);
+          const street = [tags["addr:street"], tags["addr:housenumber"]].filter(Boolean).join(" ");
+          const area = [tags["addr:city"], tags["addr:suburb"], street].filter(Boolean).join(" ");
+          const rawCat = tags.cuisine
+            ? String(tags.cuisine).split(";")[0].replace(/_/g, " ")
+            : (tags.tourism || tags.amenity || tags.leisure || tags.shop || tags.historic || "");
+          rows.push({
+            name, lat: la, lng: ln, kinds,
+            area, rawCat: String(rawCat),
+            openingHours: String(tags.opening_hours || ""),
+            notable: Boolean(tags.wikidata || tags.wikipedia),
+            distanceM: Math.round(haversineKm(lat, lng, la, ln) * 1000)
+          });
+        });
+        // 같은 상호가 반경 안에 여러 번 = 프랜차이즈. 현지 독립 식당·카페를 먼저 보여 준다.
+        const nameCount = new Map();
+        rows.forEach(r => {
+          const k = normPlaceQuery(r.name);
+          if (k) nameCount.set(k, (nameCount.get(k) || 0) + 1);
+        });
+        rows.forEach(r => { r.chain = (nameCount.get(normPlaceQuery(r.name)) || 0) >= 2; });
+        ROUTE_BUNDLE_PENDING.delete(key);
+        if (rows.length) ROUTE_BUNDLE_CACHE.set(key, rows);
+        return rows;
+      }).catch(() => { ROUTE_BUNDLE_PENDING.delete(key); return []; });
+      ROUTE_BUNDLE_PENDING.set(key, task);
+      return task;
+    }
+
+    // 🌐 OSM 주변 실제 장소 (해외 경로 · 국내는 카카오 실패 시 보조)
+    async function osmRoutePlaces(kind, lat, lng, opts = {}) {
+      const meta = ROUTE_PLACE_KINDS[kind] || ROUTE_PLACE_KINDS.sight;
+      const radius = Math.max(300, Math.min(20000, Number(opts.radius) || 1500));
+      const limit = Math.max(1, Math.min(30, Number(opts.limit) || 14));
+      const bundle = await ensureOsmBundle(lat, lng, radius);
+      const cap = Math.max(radius * 1.2, radius + 400);
+      const rows = bundle
+        .filter(r => r.kinds.includes(kind) && r.distanceM <= cap)
+        .map(r => ({
+          name: r.name, lat: r.lat, lng: r.lng,
+          cat: meta.cat, kind, cost: meta.cost,
+          desc: routePlaceDescShort(osmCatKo(r.rawCat) || meta.cat, r.area),
+          address: r.area,
+          indoor: routePlaceIndoor(kind, r.name, r.rawCat),
+          openingHours: r.openingHours,
+          notable: r.notable,
+          chain: r.chain,
+          distanceM: r.distanceM,
+          source: "OpenStreetMap"
+        }));
+      // 명소는 위키데이터·위키백과가 있는 '알려진' 곳을 먼저 (묘지·다리 같은 잡음은 이미 걸러짐)
+      if (kind === "sight" || kind === "indoorSight" || kind === "walk") {
+        rows.sort((a, b) => (a.notable ? 0 : 1) - (b.notable ? 0 : 1) || a.distanceM - b.distanceM);
+      } else {
+        rows.sort((a, b) => (a.chain ? 1 : 0) - (b.chain ? 1 : 0) || a.distanceM - b.distanceM);
+      }
+      return rows.slice(0, limit);
+    }
+
+    // 🧭 Overpass가 모두 막혔을 때 — 위키백과 지리검색으로 실제 명소 이름을 찾는다
+    async function wikiSightFallback(lat, lng, radius, limit, domestic) {
+      const lang = domestic ? "ko" : "en";
+      try {
+        const url = `https://${lang}.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}%7C${lng}&gsradius=${Math.round(radius)}&gslimit=50&gsnamespace=0&format=json&origin=*`;
+        const r = await fetch(url);
+        if (!r || !r.ok) return [];
+        const d = await r.json();
+        const skip = /(역|Station|駅|University|College|School|Institute|Academy|대학교|고등학교|중학교|초등학교|학교|Company|Corporation|Bank|은행|Embassy|대사관|Hospital|병원|Clinic|Office|Agency|청$|District|Ward|County|Province|Prefecture|Airport|공항|Line|노선|Route|로$|길$|동$|구$|면$|읍$|Deaf|Blind)/i;
+        const rows = [];
+        (d?.query?.geosearch || []).forEach(g => {
+          const title = String(g.title || "").trim();
+          if (!title || skip.test(title)) return;
+          rows.push({
+            name: title, lat: g.lat, lng: g.lon,
+            cat: "관광", kind: "sight", cost: 15000,
+            desc: routePlaceDescShort("관광", lang === "ko" ? "위키백과 지리검색" : "Wikipedia"),
+            address: "", indoor: routePlaceIndoor("sight", title, ""),
+            distanceM: Math.round(Number(g.dist) || haversineKm(lat, lng, g.lat, g.lon) * 1000),
+            source: "위키백과"
+          });
+        });
+        return rows.sort((a, b) => a.distanceM - b.distanceM).slice(0, limit);
+      } catch (e) { return []; }
+    }
+
+    // 🧭 마지막 보조 — Nominatim의 'restaurants in 도시' 같은 문구 검색 (실제 상호가 나온다)
+    async function nominatimPoiFallback(kind, destName, lat, lng, limit, radius) {
+      const meta = ROUTE_PLACE_KINDS[kind] || ROUTE_PLACE_KINDS.sight;
+      const phrase = {
+        food: ["restaurants"], cafe: ["cafes", "bakeries"], bar: ["bars"],
+        walk: ["parks"], sight: ["attractions"], indoorSight: ["museums", "galleries"]
+      }[kind] || ["attractions"];
+      const allow = {
+        food: /restaurant|fast_food|food_court/,
+        cafe: /cafe|bakery|ice_cream/,
+        bar: /bar|pub|nightclub/,
+        walk: /park|garden|viewpoint|nature_reserve/,
+        sight: /attraction|museum|gallery|viewpoint|monument|zoo|aquarium|theme_park|castle/,
+        indoorSight: /museum|gallery|aquarium|mall|department_store/
+      }[kind] || /.*/;
+      const place = String(destName || "").trim();
+      if (!place) return [];
+      const rows = [], seen = new Set();
+      for (const ph of phrase) {
+        const queries = [`${ph} in ${place}`, `${ph} ${place}`];
+        for (const q of queries) {
+          if (rows.length >= (limit || 10)) break;
+          try {
+            const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&extratags=1&accept-language=ko&limit=${Math.min(20, (limit || 10) + 6)}&q=${encodeURIComponent(q)}`;
+            const r = await fetch(url);
+            if (!r || !r.ok) continue;
+            const arr = await r.json();
+            (Array.isArray(arr) ? arr : []).forEach(p => {
+              if (!allow.test(`${p.class || ""} ${p.type || ""}`)) return;
+              const la = parseFloat(p.lat), ln = parseFloat(p.lon);
+              const name = String(p.name || String(p.display_name || "").split(",")[0] || "").trim();
+              if (!name || isNaN(la) || isNaN(ln)) return;
+              const key = normPlaceQuery(name);
+              if (!key || seen.has(key)) return;
+              // 목적지에서 너무 먼 결과(다른 나라 동명 상호)는 버린다
+              const distM = Math.round(haversineKm(lat, lng, la, ln) * 1000);
+              const maxM = Math.max(15000, (Number(radius) || 1500) * 5);
+              if (distM > maxM) return;
+              seen.add(key);
+              const ad = p.address || {};
+              const area = [ad.city || ad.town || ad.village, ad.suburb || ad.borough, ad.road].filter(Boolean).join(" ");
+              rows.push({
+                name, lat: la, lng: ln,
+                cat: meta.cat, kind, cost: meta.cost,
+                desc: routePlaceDescShort(String(p.type || meta.cat), area),
+                address: area,
+                indoor: routePlaceIndoor(kind, name, String(p.type || "")),
+                openingHours: String(p.extratags?.opening_hours || ""),
+                distanceM: distM,
+                source: "Nominatim"
+              });
+            });
+          } catch (e) { /* 다음 문구 */ }
+        }
+      }
+      return rows.sort((a, b) => a.distanceM - b.distanceM).slice(0, limit || 10);
+    }
+
+    // 국내·해외 공통 진입점 — 국내는 카카오, 해외는 OSM. 결과는 실제 상호·좌표만.
+    async function fetchRoutePlaces(kind, lat, lng, opts = {}) {
+      if (typeof lat !== "number" || typeof lng !== "number" || !isFinite(lat) || !isFinite(lng)) return [];
+      const domestic = opts.domestic !== undefined ? opts.domestic : isDomesticTripSafe();
+      const radius = Math.round(Number(opts.radius) || (domestic ? 2500 : 1500));
+      const limit = Math.max(1, Math.min(30, Number(opts.limit) || 14));
+      const cacheKey = [domestic ? "kr" : "intl", kind, lat.toFixed(3), lng.toFixed(3), radius, limit].join("|");
+      if (ROUTE_PLACE_CACHE.has(cacheKey)) return ROUTE_PLACE_CACHE.get(cacheKey).slice();
+
+      let rows = [];
+      if (domestic && kakaoMapsApi()) {
+        try { rows = await kakaoRoutePlaces(kind, lat, lng, { radius, limit }); } catch (e) { rows = []; }
+      }
+      if (!rows.length) rows = await osmRoutePlaces(kind, lat, lng, { radius, limit });
+      if (!rows.length && (kind === "sight" || kind === "indoorSight" || kind === "walk")) {
+        rows = await wikiSightFallback(lat, lng, Math.max(1000, radius), limit, domestic);
+      }
+      if (!rows.length) rows = await nominatimPoiFallback(kind, opts.destName, lat, lng, limit, radius);
+      if (opts.indoorOnly) rows = rows.filter(r => spotIndoorInfo(r).indoor && !spotIndoorInfo(r).outdoor);
+      rows = dedupeRoutePlaces(rows).slice(0, limit);
+      if (rows.length) ROUTE_PLACE_CACHE.set(cacheKey, rows);
+      return rows.slice();
+    }
+
+    /* 🏛️ 위키백과 지리검색 — OSM만 쓰면 '동네 자료관'이 먼저 나온다.
+       문서가 있는(=알려진) 명소를 함께 받아 앞세우고, 한국어 문서 제목이 있으면 그 이름으로 보여 준다. */
+    const ROUTE_WIKI_CACHE = new Map();
+    const WIKI_JUNK_RE = /(역$|駅$|Station|School|学校|大學|大学|University|College|Institute|Academy|Company|株式会社|Bank|銀行|은행|Embassy|대사관|Hospital|病院|병원|Clinic|Line$|路線|노선|District|Airport|空港|공항|Office|회사|財団|Group$|Holdings)/i;
+
+    async function fetchWikiLandmarks(lat, lng, radius) {
+      if (typeof lat !== "number" || typeof lng !== "number") return [];
+      const key = `${lat.toFixed(3)}|${lng.toFixed(3)}|${Math.round(radius)}`;
+      if (ROUTE_WIKI_CACHE.has(key)) return ROUTE_WIKI_CACHE.get(key);
+      const raw = [];
+      for (const lang of ["ko", "en"]) {
+        try {
+          const url = `https://${lang}.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}%7C${lng}&gsradius=${Math.round(radius)}&gslimit=50&gsnamespace=0&format=json&origin=*`;
+          const r = await fetch(url);
+          if (!r || !r.ok) continue;
+          const d = await r.json();
+          (d?.query?.geosearch || []).forEach(g => {
+            const title = String(g.title || "").trim();
+            const la = Number(g.lat), ln = Number(g.lon);
+            if (!title || WIKI_JUNK_RE.test(title) || !isFinite(la) || !isFinite(ln)) return;
+            raw.push({ name: title, lat: la, lng: ln, distanceM: Math.round(Number(g.dist) || 0), lang });
+          });
+        } catch (e) { /* 위키백과가 막히면 OSM 결과만 쓴다 */ }
+        if (raw.filter(x => x.lang === "ko").length >= 12) break;   // 한국어 문서가 충분하면 영어 조회는 생략
+      }
+      // 같은 자리의 한국어·영어 문서는 하나만 (한국어 우선)
+      const rows = [];
+      raw.forEach(x => {
+        if (rows.some(y => haversineKm(y.lat, y.lng, x.lat, x.lng) < 0.15)) return;
+        rows.push(x);
+      });
+      const out = rows.map(x => ({ name: x.name, lat: x.lat, lng: x.lng, distanceM: x.distanceM }));
+      if (out.length) ROUTE_WIKI_CACHE.set(key, out);
+      return out;
+    }
+
+    // OSM 이름이 일본어·영어여도 한국어 위키 문서가 있으면 한국어 이름으로
+    function preferKoreanName(osmName, wikiName) {
+      const a = String(osmName || "").trim(), b = String(wikiName || "").trim();
+      if (!b) return a;
+      if (/[가-힣]/.test(a)) return a;
+      if (/[가-힣]/.test(b)) return b;
+      return a;
+    }
+
+    // OSM 명소 + 위키백과 명소를 합친다 (같은 곳은 하나로, 알려진 곳을 앞으로)
+    function mergeWikiLandmarks(osmRows, wikiRows) {
+      const used = new Set();
+      const out = (osmRows || []).map(r => {
+        const near = (wikiRows || []).find(w => haversineKm(r.lat, r.lng, w.lat, w.lng) <= 0.3);
+        if (!near) return r;
+        used.add(near);
+        return { ...r, name: preferKoreanName(r.name, near.name), famous: true, wikiTitle: near.name };
+      });
+      (wikiRows || []).forEach(w => {
+        if (used.has(w)) return;
+        out.push({
+          name: w.name, lat: w.lat, lng: w.lng,
+          cat: "관광", kind: "sight", cost: 15000,
+          desc: "위키백과 · 알려진 명소",
+          address: "",
+          indoor: routePlaceIndoor("sight", w.name, ""),
+          distanceM: Math.round(Number(w.distanceM) || 0),
+          source: "위키백과", famous: true
+        });
+      });
+      out.sort((a, b) => (b.famous ? 1 : 0) - (a.famous ? 1 : 0)
+        || (b.notable ? 1 : 0) - (a.notable ? 1 : 0)
+        || (a.distanceM || 0) - (b.distanceM || 0));
+      return dedupeRoutePlaces(out);
+    }
+
+    // 여행지 중심에서 관광 후보를 넉넉히 (실내 모드면 박물관·미술관·전시·쇼핑몰 위주)
+    async function fetchRouteSights(destRaw, center, domestic, weatherOn, opts = {}) {
+      if (!center || typeof center.lat !== "number") return [];
+      const radius = Math.round(Number(opts.radius) || (domestic ? 7000 : 3500));
+      const limit = Math.max(6, Number(opts.limit) || 18);
+      const kinds = weatherOn ? ["indoorSight"] : ["sight", "walk"];
+      const out = [];
+      for (const kind of kinds) {
+        const list = await fetchRoutePlaces(kind, center.lat, center.lng, {
+          domestic, radius, limit, destName: destRaw, indoorOnly: weatherOn
+        });
+        list.forEach(r => out.push(r));
+        if (out.length >= limit * 2) break;
+      }
+      if (weatherOn && out.length < 6) {
+        const more = await osmRoutePlaces("indoorSight", center.lat, center.lng, { radius: Math.round(radius * 1.6), limit });
+        more.forEach(r => out.push(r));
+      }
+      const merged = dedupeRoutePlaces(out);
+      if (weatherOn) return merged.filter(r => spotIndoorInfo(r).indoor);
+      // 🏛️ 해외는 위키백과에 문서가 있는 알려진 명소를 앞세운다 (실내 모드에서는 OSM의 박물관·전시 위주 유지)
+      if (!domestic) {
+        try {
+          const wiki = await fetchWikiLandmarks(center.lat, center.lng, Math.max(radius * 1.5, 4000));
+          if (wiki.length) return mergeWikiLandmarks(merged, wiki);
+        } catch (e) { /* 위키백과 실패 → OSM 결과만 */ }
+      }
+      return merged;
+    }
+
+    // 그날 동선(앵커) 주변의 실제 식당·카페 후보 — 내장 큐레이션 + 실제 API 결과
+    async function buildRouteMealPoolsForDay(destRaw, cityKey, anchors, domestic, weatherOn) {
+      const base = routeMealSpotPools(destRaw, cityKey);
+      const foods = base.foods.slice(), cafes = base.cafes.slice();
+      const seenNames = () => [...foods, ...cafes].map(x => normPlaceQuery(x.name)).filter(Boolean);
+      const addRow = (arr, row) => {
+        if (!row || !row.name) return;
+        const k = normPlaceQuery(row.name);
+        if (!k) return;
+        if (seenNames().some(n => n === k || n.includes(k) || k.includes(n))) return;
+        arr.push(row);
+      };
+      const centers = [];
+      (anchors || []).forEach(a => {
+        if (!a || typeof a.lat !== "number" || typeof a.lng !== "number") return;
+        if (centers.some(c => haversineKm(c.lat, c.lng, a.lat, a.lng) < 2.5)) return;   // 가까운 앵커는 한 번만 조회
+        centers.push({ lat: a.lat, lng: a.lng });
+      });
+      const list = centers.slice(0, 2);
+      if (!list.length) return { foods, cafes };
+      const radius = domestic ? 2200 : 1400;
+      const tasks = [];
+      list.forEach(c => {
+        tasks.push(fetchRoutePlaces("food", c.lat, c.lng, { domestic, radius, limit: 15, destName: destRaw })
+          .then(rows => ({ kind: "food", rows })).catch(() => ({ kind: "food", rows: [] })));
+        tasks.push(fetchRoutePlaces("cafe", c.lat, c.lng, { domestic, radius, limit: 12, destName: destRaw })
+          .then(rows => ({ kind: "cafe", rows })).catch(() => ({ kind: "cafe", rows: [] })));
+      });
+      const results = await Promise.all(tasks);
+      results.forEach(r => (r.rows || []).forEach(row => addRow(r.kind === "cafe" ? cafes : foods, row)));
+      return { foods, cafes };
     }
 
     // 하루의 슬롯 순서와 체류 시간 (스타일에 따라 강도만 조절)
@@ -14975,7 +15529,8 @@
           badges,
           lat: row.lat,
           lng: row.lng,
-          mapUrl: mapSearchUrl(row.name, row.lat, row.lng),
+          indoor: spotIndoorInfo(row).indoor === true,
+          mapUrl: opts.mapDomestic === false ? naverMapUrl(row.name) : mapSearchUrl(row.name, row.lat, row.lng),
           memo: row.desc || ""
         });
         prevRow = row;
@@ -14994,16 +15549,25 @@
       if (!startStr || !endStr || endStr < startStr) return alert("여행 시작일과 종료일을 올바르게 입력해 주세요.");
 
       const resBox = document.getElementById("route-results");
-      resBox.innerHTML = `<div class="card" style="text-align:center;color:var(--muted);padding:20px;">🗺️ '${destRaw}' 맞춤 루트를 짜고 있어요...</div>`;
+      const prog = (msg) => {
+        if (!resBox) return;
+        resBox.innerHTML = `<div class="card" id="route-progress" style="text-align:center;color:var(--muted);padding:18px;font-size:13px;line-height:1.7;">${msg}</div>`;
+      };
+      prog(`🗺️ '${destRaw}' 맞춤 루트를 준비하고 있어요...`);
 
-      const cityKey = Object.keys(CITY_ROUTE_SPOTS).find(k => destRaw.includes(k)) || tripCityKey();
-      let pool = cityKey ? [...CITY_ROUTE_SPOTS[cityKey]] : [];
+      const domestic = routeDestIsDomestic(destRaw);
+      const weatherOn = recWeatherOn();
+      const cityKey = krCityKeyOf(destRaw) || (domestic ? tripCityKey() : "");
+      const styleKey = routeStyleKey || "balanced";
+      const warnings = [];
 
-      // 내장 지명 DB로 같은 도시의 관광지·동네를 보강한다 (서울 12~15곳 이상 확보)
+      // 1) 내장 큐레이션 후보 (국내 도시)
+      let pool = [];
       if (cityKey) {
+        pool = [...(CITY_ROUTE_SPOTS[cityKey] || [])];
         KR_PLACES.filter(p => p.c === cityKey && /attraction|nature|area/.test(p.k)).forEach(p => {
           const nk = normPlaceQuery(p.n);
-          if (pool.some(x => normPlaceQuery(x.name).includes(nk) || nk.includes(normPlaceQuery(x.name)))) return;
+          if (pool.some(x => normPlaceQuery(x.name) === nk)) return;
           pool.push({
             name: p.n,
             cat: p.k === "area" ? "산책" : "관광",
@@ -15016,78 +15580,30 @@
         });
       }
 
-      if (pool.length < 6) {
-        // 🗺️ 국내는 카카오맵 검색으로 여행지 명소를 보강한다
-        let filled = false;
-        if (kakaoMapsApi() && isDomesticTripSafe()) {
-          try {
-            const cityCenter = cityCenterOf(cityKey) || null;
-            const around = cityCenter ? await kakaoNearbySpots(cityCenter.lat, cityCenter.lng, "데이트", 6000) : [];
-            const docs = around.length ? [] : await kakaoPlaceSearch(`${destRaw} 명소`, { limit: 8 });
-            [...around, ...docs].forEach(r => {
-              const nm = String(r.name || "").trim();
-              if (!nm || pool.some(p => p.name === nm)) return;
-              const lat = Number(r.lat), lng = Number(r.lng);
-              if (!isFinite(lat) || !isFinite(lng)) return;
-              pool.push({ name: nm, cat: "관광", lat, lng, cost: 15000, stay: "체류 60분", desc: `${destRaw} 추천 스팟` });
-              filled = true;
-            });
-          } catch (e) { /* 카카오 실패 → OSM 보조 */ }
-        }
-        if (!filled && !(kakaoMapsApi() && isDomesticTripSafe())) {
-          try {
-            const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&accept-language=ko&countrycodes=kr&limit=8&q=${encodeURIComponent(destRaw + " 명소 카페 맛집")}`;
-            const resp = await fetch(url);
-            const rows = await resp.json();
-            (rows || []).forEach(r => {
-              const nm = (r.display_name || "").split(",")[0].trim();
-              if (nm && !pool.some(p => p.name === nm)) {
-                pool.push({
-                  name: nm,
-                  cat: "관광",
-                  lat: parseFloat(r.lat),
-                  lng: parseFloat(r.lon),
-                  cost: 15000,
-                  stay: "체류 60분",
-                  desc: `${destRaw} 추천 스팟`
-                });
-              }
-            });
-          } catch {}
-        }
-      }
-
-      if (!pool.length) {
-        pool = recWeatherOn() ? [
-          { name: `${destRaw} 대표 실내 미술관·전시관`, cat: "관광", cost: 15000, stay: "체류 80분", desc: "냉·난방되는 실내 전시 관람" },
-          { name: `${destRaw} 시내 맛집 점심`, cat: "음식점", cost: 24000, stay: "체류 60분", desc: "현지 인기 맛집에서 식사" },
-          { name: `${destRaw} 복합쇼핑몰 & 카페`, cat: "카페", cost: 14000, stay: "체류 80분", desc: "실내 쇼핑·카페에서 더위와 추위 피하기" },
-          { name: `${destRaw} 실내 아쿠아리움·전망대`, cat: "관광", cost: 20000, stay: "체류 90분", desc: "실내 위주 대표 명소" }
-        ] : [
-          { name: `${destRaw} 시내 도착 & 대표 맛집`, cat: "음식점", cost: 24000, stay: "체류 60분", desc: "현지 인기 맛집 점심" },
-          { name: `${destRaw} 감성 카페`, cat: "카페", cost: 14000, stay: "체류 60분", desc: "여유로운 오후 티타임" },
-          { name: `${destRaw} 핵심 랜드마크 산책`, cat: "관광", cost: 10000, stay: "체류 80분", desc: "대표 명소 둘러보기" },
-          { name: `${destRaw} 저녁 로컬 식사`, cat: "음식점", cost: 32000, stay: "체류 70분", desc: "저녁 식사 & 야경 산책" }
-        ];
-      }
-
-      // 같은 이름 장소는 풀에서 한 번만
-      const poolSeen = new Set();
-      pool = pool.filter(p => {
-        const k = normPlaceQuery(p.name);
-        if (!k || poolSeen.has(k)) return false;
-        poolSeen.add(k);
+      // 2) 실제 명소 — 목적지 중심에서 카카오(국내)/OSM(해외)로 조회 (몇 초 걸려도 정확하게)
+      const center = await destinationAnchorOf(destRaw, cityKey);
+      prog(`🏛️ '${destRaw}'의 실제 명소·전시관을 찾고 있어요...`);
+      const liveSights = center ? await fetchRouteSights(destRaw, center, domestic, weatherOn) : [];
+      const poolKeys = new Set(pool.map(p => normPlaceQuery(p.name)));
+      const addPoolSpot = (row) => {
+        if (!row || !row.name) return false;
+        const k = normPlaceQuery(row.name);
+        if (!k || poolKeys.has(k)) return false;
+        poolKeys.add(k);
+        pool.push(row);
         return true;
-      });
+      };
+      liveSights.forEach(addPoolSpot);
+      if (!center) warnings.push(`'${destRaw}'의 위치를 찾지 못해 실제 장소를 불러오지 못했어요. 목적지를 도시 이름으로 다시 입력해 주세요.`);
 
-      // 🌡️ 실내 모드: 야외 장소(한강공원·해수욕장·야외 산책로 등)는 풀에서 빠지고,
-      // 후보가 모자라면 같은 도시의 실내 추천(카페·식당·박물관·쇼핑몰)으로 채운다
-      if (recWeatherOn()) {
+      // 3) 🌡️ 실내 모드 필터 + 스타일 정렬
+      if (weatherOn) {
         pool = recWeatherFilterSpots(pool);
         if (pool.length < 6 && cityKey) {
           curatedSpotsForCity(cityKey).forEach(s => {
             if (spotIsOutdoor(s)) return;
-            if (pool.some(p => normPlaceQuery(p.name) === normPlaceQuery(s.name))) return;
+            const k = normPlaceQuery(s.name);
+            if (!k || pool.some(p => normPlaceQuery(p.name) === k)) return;
             pool.push({
               name: s.name,
               cat: s.purpose === "카페" ? "카페" : s.purpose === "음식점" ? "음식점" : "관광",
@@ -15099,8 +15615,6 @@
           });
         }
       }
-
-      const styleKey = routeStyleKey || "balanced";
       const styleRank = {
         balanced: null,
         ocean: { "관광": 0, "카페": 1, "음식점": 2 },
@@ -15137,65 +15651,103 @@
           .map((x) => x.p);
       }
       // 실내 모드에서는 스타일을 고른 뒤에도 실내 장소를 먼저 배치한다
-      if (recWeatherOn()) {
+      if (weatherOn) {
         pool = pool
           .map((p, i) => ({ p, i, indoor: spotIndoorInfo(p).indoor ? 0 : 1 }))
           .sort((a, b) => a.indoor - b.indoor || a.i - b.i)
           .map((x) => x.p);
       }
+
       // 🍽️ 관광 후보와 식사·카페 후보를 나눈다 (같은 곳을 식사 자리에 다시 넣지 않는다)
       let sightPool = pool.filter(p => !isCafeSpot(p) && !isFoodSpot(p));
+      if (sightPool.length < 3) sightPool = pool.filter(p => !isCafeSpot(p));
       if (sightPool.length < 3) sightPool = pool.slice();
-      const mealPools = routeMealSpotPools(destRaw, cityKey);
-      const registry = makeRouteNameRegistry();
-      const takeMeal = makeRouteMealPicker(mealPools, destRaw, recWeatherOn(), registry);
 
       const days = buildDateRangeDays(startStr, endStr, destRaw);
+      const registry = makeRouteNameRegistry();
+      const chosenSightCoords = [];   // 같은 건물·같은 명소가 두 번 들어가지 않게 (이름만으로는 못 거른다)
       let cursor = 0;
-      const takeSight = (dayNum) => {
+      const takeSight = () => {
         while (cursor < sightPool.length) {
           const cand = sightPool[cursor++];
-          if (registry.has(cand.name)) continue;
+          if (!cand || registry.has(cand.name)) continue;
+          if (typeof cand.lat === "number" && chosenSightCoords.some(c => haversineKm(c.lat, c.lng, cand.lat, cand.lng) < 0.2)) continue;
+          if (typeof cand.lat === "number") chosenSightCoords.push({ lat: cand.lat, lng: cand.lng });
           registry.add(cand.name);
           return cand;
         }
-        // 풀이 모자라면 같은 도시의 명소로 채우고, 그래도 없으면 여유 일정으로
-        const spare = KR_PLACES.find(p => p.c === cityKey && !registry.has(p.n) && /attraction|nature|area/.test(p.k)
-          && (!recWeatherOn() || (p.k === "attraction" && !spotIsOutdoor({ name: p.n, desc: p.s, cat: "관광" }))));
+        // 내장 지명 DB의 명소로 한 번 더 채운다 (국내 도시만)
+        const spare = cityKey
+          ? KR_PLACES.find(p => p.c === cityKey && !registry.has(p.n) && /attraction|nature|area/.test(p.k))
+          : null;
         if (spare) {
           registry.add(spare.n);
           return { name: spare.n, cat: spare.k === "area" ? "산책" : "관광", lat: spare.lat, lng: spare.lng, cost: 0, desc: spare.s || "" };
         }
-        // 명소 후보가 없으면(해외·정보 부족) 그날의 여유 코스로 비워 두지 않는다
-        const genericName = recWeatherOn() ? `${destRaw} ${dayNum}일차 실내 전시·갤러리` : `${destRaw} ${dayNum}일차 여유 산책`;
-        if (registry.has(genericName)) return null;
-        registry.add(genericName);
-        return {
-          name: genericName,
-          cat: recWeatherOn() ? "관광" : "산책",
-          indoor: recWeatherOn() ? true : undefined,
-          cost: 0,
-          desc: recWeatherOn() ? "냉·난방되는 실내에서 쉬어 가는 시간" : "주변 골목을 천천히 둘러보는 여유 시간"
-        };
+        // 실제 후보가 없으면 그날 관광 수를 줄인다 — 가짜 이름은 만들지 않는다
+        return null;
       };
-      days.forEach((d, di) => {
+
+      for (let di = 0; di < days.length; di++) {
+        const d = days[di];
         const want = routeSightSlotsFor(di, days.length, styleKey);
         const sights = [];
         for (let i = 0; i < want; i++) {
-          const s = takeSight(d.day);
-          if (s) sights.push(s);
+          const s = takeSight();
+          if (!s) break;
+          sights.push(s);
         }
+        let orderedSights = orderSightsNearest(sights);
+
+        // 그날 첫 장소 주변에 실제 명소가 더 있으면 채운다 (하루가 비지 않게)
+        let guard = 0;
+        while (orderedSights.length < want && guard++ < 2) {
+          const a = orderedSights.find(x => typeof x?.lat === "number") || (center ? { ...center } : null);
+          if (!a) break;
+          const more = await fetchRoutePlaces(weatherOn ? "indoorSight" : "sight", a.lat, a.lng, {
+            domestic, radius: domestic ? 5000 : 2500, limit: 14, destName: destRaw, indoorOnly: weatherOn
+          });
+          const fresh = more.find(r => !registry.has(r.name) && (!weatherOn || spotIndoorInfo(r).indoor));
+          if (!fresh) break;
+          registry.add(fresh.name);
+          sights.push(fresh);
+          orderedSights = orderSightsNearest(sights);
+        }
+
+        prog(`🍽️ '${destRaw}' 실제 맛집·카페를 찾고 있어요... (${di + 1}/${days.length}일차)`);
+        const anchors = [...orderedSights, ...(di > 0 ? (days[di - 1].items || []).slice(-1) : [])]
+          .filter(x => x && typeof x.lat === "number" && typeof x.lng === "number");
+        const mealPools = await buildRouteMealPoolsForDay(destRaw, cityKey, anchors, domestic, weatherOn);
+        const takeMeal = makeRouteMealPicker(mealPools, destRaw, weatherOn, registry);
         d.items = buildPacedDayItems({
           day: d, dayIndex: di, totalDays: days.length, styleKey,
-          sights: orderSightsNearest(sights), takeMeal, weatherOn: recWeatherOn(), sourceBadge: "AI 루트"
+          sights: orderedSights, takeMeal, weatherOn, sourceBadge: "AI 루트", mapDomestic: domestic
         });
-      });
+
+        const badges = d.items.map(it => (it.badges || []).join(" "));
+        const missing = [];
+        if (!badges.some(t => /점심/.test(t))) missing.push("점심");
+        if (!badges.some(t => /식후 카페/.test(t))) missing.push("카페");
+        if (!badges.some(t => /저녁/.test(t))) missing.push("저녁");
+        if (missing.length) warnings.push(`${d.label}: 실제 장소를 찾지 못해 ${missing.join("·")} 자리를 비웠어요. 지도에서 직접 골라 주세요.`);
+      }
+
+      // 실제 장소를 하나도 못 찾았으면 빈 카드 대신 이유를 알려 준다
+      if (days.every(d => !(d.items || []).length)) {
+        window._generatedRoutePlan = null;
+        resBox.innerHTML = `<div class="card" style="font-size:12.5px;line-height:1.7;">😢 '${escapeAttr(destRaw)}'의 실제 장소를 불러오지 못했어요. 네트워크를 확인한 뒤 다시 시도하거나, 목적지를 도시 이름으로 입력해 주세요.</div>`;
+        return;
+      }
 
       window._generatedRoutePlan = { dest: destRaw, startDate: startStr, endDate: endStr, days, weather: recWeatherMode };
       const routeWeatherNote = recWeatherOn()
         ? `<div class="card" style="font-size:12px;font-weight:700;color:var(--ocean-dark);background:var(--ocean-soft);line-height:1.55;">${recWeatherLabel()} 대비 실내·냉난방 위주로 짰어요 — 한강공원·해수욕장·야외 산책로는 뺐어요.</div>`
         : "";
-      resBox.innerHTML = routePaceNoteHtml() + routeWeatherNote + days.map(d => `
+      const sourceNote = `<div class="card" style="font-size:11.5px;font-weight:700;color:var(--ocean-dark);background:var(--ocean-soft);line-height:1.55;">${domestic ? "🗺️ 카카오맵" : "🌐 OpenStreetMap"}에서 찾은 실제 장소 ${days.reduce((n, d) => n + d.items.length, 0)}곳으로 짰어요 · 영업일은 방문 전에 한 번 더 확인해 주세요.</div>`;
+      const warnNote = warnings.length
+        ? `<div class="card" style="background:var(--warn-bg);border-color:#fde68a;font-size:12px;line-height:1.55;">${warnings.map(w => escapeAttr(w)).join("<br>")}</div>`
+        : "";
+      resBox.innerHTML = routePaceNoteHtml() + routeWeatherNote + sourceNote + warnNote + days.map(d => `
         <div class="card">
           <div style="font-weight:800;font-size:14px;color:var(--ocean-dark);margin-bottom:6px;">📅 ${d.label} · ${d.date}</div>
           ${d.items.map(it => `
