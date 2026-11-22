@@ -1823,8 +1823,6 @@
     .tl-edit-row.tl-edit-memo .tl-edit-card { background: #fffdf5; box-shadow: inset 0 0 0 1px #fde68a; }
     .tl-edit-memo-line { display: flex; align-items: baseline; gap: 6px; }
     .tl-edit-row.tl-edit-memo .tl-edit-place { font-size: 14px; flex: 1 1 auto; min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
-    .home-row.home-row-memo { background: #fffdf5; }
-    .home-row.home-row-memo .hr-place { color: #92400e; }
 
     /* ===== 🔎 연관검색어 (공통 자동완성) ===== */
     .ac-wrap { position: relative; flex: 1 1 auto; min-width: 0; }
@@ -10162,39 +10160,32 @@
     function renderHomeSheet(dayObj) {
       const bodyEl = document.getElementById("home-sheet-body");
       if (!bodyEl) return;
-      const items = dayObj?.items || [];
+      // 📝 메모는 홈 요약에서 빼고 장소 일정만 보여 준다 (메모는 일정 탭에서)
+      const items = (dayObj?.items || []).filter(it => !isMemoItem(it));
       const region = photoRegionOfDay(dayObj);
-      // 번호는 일정 탭·지도 핀과 같은 1·2·3·4 (메모는 번호 없이 📝)
+      // 번호는 일정 탭·지도 핀과 같은 1·2·3·4 (메모는 번호를 받지 않으므로 건너뛴다)
       const stopNums = dayItemNumbers(dayObj);
       bodyEl.innerHTML = items.map((it) => {
-        const memo = isMemoItem(it);
-        const num = memo ? null : stopNums.get(String(it.id));
-        const hasPin = !memo && homePts.some(p => p.num === num);
-        const photo = memo
-          ? `<span class="hr-emo">📝</span>`
-          : (shouldLookupPhoto(it)
-            ? `<span class="ph-slot ph-sm" data-ph="${escapeAttr(it.place)}" data-ph-region="${escapeAttr(region)}" data-emo="${homePlaceEmoji(it)}"></span>`
-            : `<span class="hr-emo">${homePlaceEmoji(it)}</span>`);
-        const rowClick = memo ? `openTimelineFromHome(${dayObj?.day || currentDay})` : `homeFocusPin(${num})`;
-        return `<div class="home-row${memo ? " home-row-memo" : ""}" data-num="${memo ? "memo" : num}" role="button" tabindex="0" onclick="${rowClick}">
-          <span class="hr-num${hasPin ? "" : " no-pin"}">${memo ? "📝" : num}</span>
+        const num = stopNums.get(String(it.id));
+        const hasPin = homePts.some(p => p.num === num);
+        const photo = shouldLookupPhoto(it)
+          ? `<span class="ph-slot ph-sm" data-ph="${escapeAttr(it.place)}" data-ph-region="${escapeAttr(region)}" data-emo="${homePlaceEmoji(it)}"></span>`
+          : `<span class="hr-emo">${homePlaceEmoji(it)}</span>`;
+        return `<div class="home-row" data-num="${num}" role="button" tabindex="0" onclick="homeFocusPin(${num})">
+          <span class="hr-num${hasPin ? "" : " no-pin"}">${num}</span>
           <span class="hr-main">
-            <span class="hr-place">${escapeAttr(memo ? (memoTitleOf(it) || "메모") : (it.place || "이름 없음"))}</span>
+            <span class="hr-place">${escapeAttr(it.place || "이름 없음")}</span>
             <span class="hr-memo">${escapeAttr(homeMemoLine(it))}</span>
           </span>
           <span class="hr-photo">${photo}</span>
-          ${memo ? "" : homeMoveChip(it)}
+          ${homeMoveChip(it)}
           <button class="hr-chev" onclick="event.stopPropagation();openTimelineFromHome(${dayObj?.day || currentDay})" title="일정 탭에서 상세히 보기">›</button>
         </div>`;
       }).join("");
       const titleEl = document.getElementById("home-sheet-title");
       if (titleEl) titleEl.textContent = `${dayObj?.day || currentDay}일차 일정 요약`;
       const countEl = document.getElementById("home-sheet-count");
-      if (countEl) {
-        const placeCount = items.filter(x => !isMemoItem(x)).length;
-        const memoCount = items.length - placeCount;
-        countEl.textContent = ` · ${placeCount}곳` + (memoCount ? ` · 메모 ${memoCount}개` : "");
-      }
+      if (countEl) countEl.textContent = ` · ${items.length}곳`;
       syncHomeRowsHidden();
       try { hydrateHomePhotos(bodyEl); } catch (e) { console.warn(e); }
     }
