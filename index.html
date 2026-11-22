@@ -220,7 +220,6 @@
     .tl-meal { font-size: 10.5px; font-weight: 800; padding: 2px 7px; border-radius: 999px; white-space: nowrap; flex: none; }
     .tl-meal.food { background: #fff1e6; color: #b45309; }
     .tl-meal.cafe { background: #eef7ee; color: #15803d; }
-    .tl-stay { font-size: 11.5px; color: var(--muted); white-space: nowrap; }
     .tl-badges { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
     .tag {
       font-size: 11px;
@@ -1170,8 +1169,7 @@
     .wx-cell-temp { font-size: 15px; font-weight: 800; margin-top: 2px; }
     .wx-cell-sub { font-size: 11px; color: #334155; margin-top: 2px; line-height: 1.35; }
 
-    /* 🔗 예약 연동 타임라인 카드 */
-    .tl-virtual { border-left: 4px solid var(--ocean); background: var(--ocean-soft); }
+    /* 🔗 예약 연동 타임라인 카드도 일반 일정 카드와 같은 모양 (금액·결제 정보는 경비 탭에서) */
 
     /* 🌤️ 날씨·짐 통합 탭 — 상단 세그먼트 전환 */
     .wp-seg {
@@ -1573,7 +1571,9 @@
       display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 0 16px; align-items: start;
     }
-    body.view-pc #tab-expenses.active > .card:last-child { grid-column: 1 / -1; }
+    body.view-pc #tab-expenses.active > .card:last-child,
+    body.view-pc #tab-expenses.active > #bookings-section { grid-column: 1 / -1; }
+    #bookings-section:empty { display: none; }
     /* 넓은 화면에서 '추가' 버튼 글자가 두 줄로 쪼개지지 않게 */
     body.view-pc #tab-expenses.active .row > .btn,
     body.view-pc #tab-checklist.active .row > .btn { flex: 0 0 auto; white-space: nowrap; padding-left: 16px; padding-right: 16px; }
@@ -1727,10 +1727,7 @@
     .tl-fold-cue { font-size: 11px; color: var(--muted); font-weight: 700; margin-left: auto; white-space: nowrap; }
     .tl-extra { display: none; }
     .card.tl-open .tl-extra { display: block; }
-    /* 접힌 카드는 시간·장소·메모만 깔끔하게 */
-    .card.tl-collapsible:not(.tl-open) .tl-stay { display: none; }
-    /* 🔗 예약 연동 카드(호텔 출발·북귀·교통편)도 일반 카드처럼 접힌다 — 접힌 땐 한 줄 요약만 */
-    .card.tl-virtual.tl-collapsible:not(.tl-open) .tl-memo { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; overflow: hidden; }
+    /* 접힌 카드는 장소·메모만 깔끔하게 */
     /* 접힌 카드에서도 대표 사진 1장은 보인다 (조금 작게) */
     .card.tl-collapsible:not(.tl-open) .ph-slot .ph-thumb { width: 56px; height: 56px; border-radius: 12px; }
     .tl-body .ph-slot .ph-thumb { cursor: zoom-in; }
@@ -1911,7 +1908,6 @@
         </div>
         <div id="timeline-list"></div>
         <div id="lodging-rec-box"></div>
-        <div id="bookings-section"></div>
         <div class="tl-foot-row" style="margin-top:16px;margin-bottom:6px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-soft btn-sm" onclick="openThemeModal()" style="padding:8px 18px;">⚙️ 설정</button>
           <button class="btn btn-soft btn-sm hours-refresh-btn" data-default-label="🔄 영업시간 업데이트" onclick="refreshBusinessHours()" style="padding:8px 14px;">🔄 영업시간 업데이트</button>
@@ -1977,6 +1973,9 @@
           <div id="exp-transit-note" style="display:none;font-size:11.5px;font-weight:600;color:var(--ocean-dark);background:var(--ocean-soft);border:1px solid var(--ocean-border);border-radius:8px;padding:6px 9px;margin:0 0 8px;line-height:1.45;word-break:keep-all;"></div>
           <div id="expense-list"></div>
         </div>
+
+        <!-- 🏨 숙소 · 🚆 교통편 예약 내역 — 금액·결제 예정/완료는 경비 탭에서 확인 (일정 연동은 그대로) -->
+        <div id="bookings-section"></div>
       </section>
 
       <!-- TAB 3: WEATHER & OUTFIT -->
@@ -6437,11 +6436,8 @@
         const hasMenus = Array.isArray(it.menus);
         const picked = hasMenus ? it.menus.filter(m => m.qty > 0) : [];
         const pickedText = picked.length ? picked.map(m => `${m.name}×${m.qty}`).join(" · ") : "";
-        const virtualActions = virtual && canEdit()
-          ? `<div style="display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid #bae6fd;" onclick="event.stopPropagation()">
-              <button class="btn btn-soft btn-sm" style="flex:1;" onclick="openBookingModal('${it.bookingId}')">✏️ 예약 수정</button>
-            </div>`
-          : "";
+        // 🔗 예약 연동 카드도 일반 일정 카드와 같은 구성 — 금액·결제 정보는 경비 탭에서 본다
+        const virtualActions = "";
         const photoRegion = photoRegionOfDay(dayObj);
         // 모든 카드에 대표 사진 1장 — 이동 카드는 목적지(toPlace) 사진
         const photoSlot = photoSlotHtml(photoSubjectOf(it) || it.place || "", photoRegion, "md", tlTimeCat(it));
@@ -6459,7 +6455,7 @@
             <div class="tl-main">
             <div class="tl-head">
               ${stopBadgeHtml(it, virtual, stopNums)}
-              <div class="tl-place">${it.place}</div>
+              <div class="tl-place">${virtual ? String(it.place || "").replace(/^🏨\s*/, "") : it.place}</div>
               ${(function () {
                 const label = (it.badges || []).map(String).find(x => /점심|식후 카페|저녁/.test(x));
                 if (!label) return "";
@@ -6467,22 +6463,19 @@
                 const text = label.replace(/^[^가-힣A-Za-z0-9]+/, "").trim() || label;
                 return `<span class="tl-meal ${kind}">${text}</span>`;
               })()}
-              ${virtual && it.stay ? `<span class="tl-stay">${it.stay}</span>` : ""}
               <span class="tl-fold-cue">${isOpen ? "접기 ▴" : "더 보기 ▾"}</span>
             </div>
             <div class="tl-memo">${it.memo || ""}</div>
             <div class="tl-extra">
             <div class="tl-badges">${badges}${hasMenus ? `<span class="tag blue">🍽️ 메뉴 선택</span>` : ""}</div>
             ${pickedText ? `<div style="font-size:12.5px;font-weight:700;color:var(--ocean-dark);background:var(--ocean-soft);padding:6px 9px;border-radius:8px;margin-bottom:6px;">🍴 ${pickedText} (${fmt(it.costTotal)})</div>` : ""}
-            ${it.scheduled && it.routeSummary ? `<div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:2px;">🛣️ ${it.routeSummary}</div>` : ""}
+            ${!virtual && it.scheduled && it.routeSummary ? `<div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:2px;">🛣️ ${it.routeSummary}</div>` : ""}
             <div class="tl-meta">
               <div class="tl-move">${moveIconOf(it.moveMode)} ${it.moveMode || ""} ${virtual
-                ? (it.moveMin ? `(${it.moveMin}분${it.moveCost ? ` · ${fmt(it.moveCost)}` : ""})` : "")
+                ? (it.moveMin ? `(${it.moveMin}분)` : "")
                 : `(${it.moveMin || 0}분 · ${fmt(it.moveCost || 0)})`}</div>
               ${virtual
-                ? `<div style="display:flex;align-items:center;gap:6px;">${it.showCost === false
-                    ? `<span class="tl-cost" style="color:var(--muted);">—</span>`
-                    : `<span class="tl-cost">${fmt(it.costTotal || 0)}</span>`}${it.routeUrl ? `<a class="map-btn" href="${escapeAttr(itemRouteUrl(it))}" target="_blank" onclick="event.stopPropagation()">길찾기</a>` : ""}${it.mapUrl ? `<a class="map-btn" href="${escapeAttr(itemMapUrl(it))}" target="_blank" onclick="event.stopPropagation()">지도</a>` : ""}</div>`
+                ? `<div style="display:flex;align-items:center;gap:6px;">${it.routeUrl ? `<a class="map-btn" href="${escapeAttr(itemRouteUrl(it))}" target="_blank" onclick="event.stopPropagation()">길찾기</a>` : ""}${it.mapUrl ? `<a class="map-btn" href="${escapeAttr(itemMapUrl(it))}" target="_blank" onclick="event.stopPropagation()">지도</a>` : ""}</div>`
                 : `<div style="display:flex;align-items:center;gap:6px;">
                 <span class="tl-cost">${fmt(it.costTotal || 0)} <span style="font-weight:500;color:var(--muted);">(1인 ${fmt(per)})</span></span>
               </div>`}
@@ -8390,6 +8383,152 @@
       });
     }
 
+    /* =====================================================================
+       📍 같은 장소는 지도 위에 핀 하나만
+       · 일정에 같은 곳을 여러 번 넣거나 숙소 자동 핀(출발·복귀)과 숙소 일정 카드가
+         겹쳐도 마커(아이콘)는 1개만 — 동선(polyline)은 실제 방문 순서 그대로 잇는다
+       ===================================================================== */
+    const MAP_SAME_NAME_M = 300;   // 이름이 똑같으면 이 거리 안은 같은 곳 (같은 건물의 입구 차이)
+    const MAP_SAME_SPOT_M = 30;    // 이름이 같거나 비슷할 때 같은 곳으로 보는 거리
+    const MAP_SAME_HOTEL_M = 25;   // 숙소 자동 핀·숙소 일정 카드는 이 거리 안이면 같은 숙소
+
+    // '🏨 호텔 OO 출발' · '호텔 OO 체크인' → 같은 키('oo')로 맞춘다
+    function mapPlaceKeyOf(place) {
+      const s = String(place || "").replace(/^[^0-9A-Za-z가-힣]+/, "").trim();
+      return placeCoreKey(s);
+    }
+
+    function mapEditDistance(a, b) {
+      const s = String(a || ""), t = String(b || "");
+      if (!s.length) return t.length;
+      if (!t.length) return s.length;
+      let prev = Array.from({ length: t.length + 1 }, (_, i) => i);
+      for (let i = 1; i <= s.length; i++) {
+        const cur = [i];
+        for (let j = 1; j <= t.length; j++) {
+          cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (s[i - 1] === t[j - 1] ? 0 : 1));
+        }
+        prev = cur;
+      }
+      return prev[t.length];
+    }
+
+    // 이름이 같은/비슷한 곳인지 — 띄어쓰기 차이, 한 글자 오타, 포함 관계까지 같은 곳으로 본다
+    function mapNameAlike(a, b) {
+      const s = String(a || "").replace(/\s+/g, "");
+      const t = String(b || "").replace(/\s+/g, "");
+      if (!s || !t) return false;
+      if (s === t) return true;
+      if (s.length >= 3 && t.length >= 3 && (s.includes(t) || t.includes(s))) return true;
+      if (Math.min(s.length, t.length) >= 3 && Math.abs(s.length - t.length) <= 2 && mapEditDistance(s, t) <= 1) return true;
+      return false;
+    }
+
+    // 두 좌표 사이 거리(m) — 지도 핀이 같은 자리인지 볼 때만 쓴다
+    function mapMetersBetween(a, b) {
+      if (!Array.isArray(a) || !Array.isArray(b)) return Infinity;
+      if (![a[0], a[1], b[0], b[1]].every(v => isFinite(v))) return Infinity;
+      const toRad = (d) => d * Math.PI / 180;
+      const dLat = toRad(b[0] - a[0]);
+      const dLng = toRad(b[1] - a[1]) * Math.cos(toRad((a[0] + b[0]) / 2));
+      return Math.hypot(dLat, dLng) * 6371000;
+    }
+
+    function isHotelMapPoint(p) {
+      if (!p) return false;
+      if (p.kind && String(p.kind).indexOf("hotel") === 0) return true;
+      if (p.it && p.it.hotelPin) return true;
+      const place = String((p.it && p.it.place) || "");
+      return /🏨/.test(place) || /호텔|숙소|리조트|펜션|게스트하우스|모텔/.test(place);
+    }
+
+    // 지도에 올릴 점 목록 → 같은 장소끼리 묶은 그룹 (순서는 처음 나온 자리 그대로)
+    function mergeMapPoints(pts) {
+      const groups = [];
+      (pts || []).forEach((p, idx) => {
+        if (!p || !Array.isArray(p.ll)) return;
+        if (!isFinite(p.ll[0]) || !isFinite(p.ll[1])) return;
+        const key = mapPlaceKeyOf(p.it && p.it.place);
+        const hotel = isHotelMapPoint(p);
+        let hit = null;
+        for (const g of groups) {
+          const d = mapMetersBetween(g.ll, p.ll);
+          if (d > MAP_SAME_NAME_M) continue;
+          if (key && g.key && key === g.key) { hit = g; break; }        // 같은 이름 — 같은 건물·같은 곳
+          if (key && g.key && mapNameAlike(key, g.key) && d <= MAP_SAME_SPOT_M) { hit = g; break; }
+          // 숙소 자동 핀·숙소 일정 카드 — 이름이 조금 달라도 사실상 한 건물이면 하나로
+          if (hotel && g.hotel && d <= MAP_SAME_HOTEL_M
+            && (mapNameAlike(key, g.key) || !key || !g.key || d <= 8)) { hit = g; break; }
+          if (!key && !g.key && d <= 10) { hit = g; break; }
+        }
+        if (!hit) {
+          hit = { ll: [p.ll[0], p.ll[1]], key, hotel, entries: [], indexes: [], nums: [] };
+          groups.push(hit);
+        }
+        hit.indexes.push(idx);
+        hit.entries.push(p);
+        if (p.num != null) hit.nums.push(p.num);
+        if (hotel) hit.hotel = true;
+      });
+      return groups;
+    }
+
+    // 합쳐진 핀에 보여 줄 대표 번호 (일정 번호가 있으면 그것, 숙소 핀만 있으면 🏨)
+    function mapGroupNum(g) {
+      const n = g.nums.find(v => typeof v === "number" || /^\d+$/.test(String(v)));
+      if (n != null) return n;
+      if (g.nums.length) return g.nums[0];
+      return g.indexes.length ? g.indexes[0] + 1 : "📍";
+    }
+
+    // 합쳐진 핀의 대표 장소명 — '출발·복귀·체크인' 꼬리표만 떼고 숙소는 🏨 를 붙인다
+    function mapGroupPlace(g) {
+      const rep = g.entries.find(e => typeof e.num === "number") || g.entries[0] || {};
+      let s = String((rep.it && rep.it.place) || "").trim();
+      s = s.replace(/\s*(출발|복귀|체크인|체크아웃|도착)\s*$/, "").trim();
+      if (!s) s = String((g.entries[0] && g.entries[0].it && g.entries[0].it.place) || "").trim();
+      if (g.hotel && s && !/🏨/.test(s)) s = `🏨 ${s}`;
+      return s;
+    }
+
+    // 합쳐진 핀의 둘째 줄 — 몇 번 들르는지(1·4번 방문), 숙소면 출발·복귀까지
+    function mapGroupVisitLine(g) {
+      const parts = [];
+      const kinds = new Set(g.entries.map(e => e.kind).filter(Boolean));
+      if (kinds.has("hotelStart") && kinds.has("hotelEnd")) parts.push("숙소 출발·복귀");
+      else if (kinds.has("hotelStart")) parts.push("숙소 출발");
+      else if (kinds.has("hotelEnd")) parts.push("숙소 복귀");
+      else if (kinds.has("hotelPin")) parts.push("숙소");
+      const nums = [...new Set(g.nums.filter(v => typeof v === "number").map(Number))];
+      if (nums.length > 1) parts.push(`${nums.join("·")}번 방문`);
+      if (!parts.length) {
+        const rep = g.entries.find(e => typeof e.num === "number") || g.entries[0];
+        const move = rep && rep.it ? pinPopupSub(rep.it) : "";
+        if (move) parts.push(move);
+      }
+      return parts.join(" · ");
+    }
+
+    // 마커 말풍선 — 한 곳뿐이면 예전 그대로, 합쳐진 핀이면 대표 정보 + 방문 횟수
+    function mapGroupPopupHtml(g) {
+      if (g.entries.length === 1) {
+        const p = g.entries[0];
+        return pinPopupHtml(mapGroupNum(g), p.it && p.it.place, pinPopupSub(p.it));
+      }
+      const place = mapGroupPlace(g);
+      const sub = mapGroupVisitLine(g);
+      const num = mapGroupNum(g);
+      if (typeof num === "number" || /^\d+$/.test(String(num))) return pinPopupHtml(num, place, sub);
+      return `<strong>${escapeAttr(place || "이름 없음")}</strong>${sub ? `<br>${escapeAttr(sub)}` : ""}`;
+    }
+
+    // 점 목록 → 그룹 인덱스 (동선을 그룹 핀 자리로 이어 그릴 때 쓴다)
+    function mapGroupAt(groups, count) {
+      const at = new Array(count).fill(0);
+      groups.forEach((g, gi) => g.indexes.forEach(i => { at[i] = gi; }));
+      return at;
+    }
+
     function pinHtml(num, active, homePin) {
       return `<div class="pin-num${active ? " active" : ""}${homePin ? " home-pin" : ""}">${escapeHtmlText(num)}</div>`;
     }
@@ -8867,15 +9006,22 @@
       homeMap.clearMarkers();
       homeMap.clearShapes();
       homeMarkers = {};
-      const shown = spreadPinPoints(homeMap, homePts.map(p => p.ll), 17);
-      homePts.forEach((p, i) => {
-        const popup = pinPopupHtml(p.num, p.it.place, pinPopupSub(p.it));
-        homeMarkers[p.num] = homeMap.addMarker({
-          ll: shown[i], num: p.num, homePin: true, size: 26, popup
+      // 같은 장소(숙소 등)는 핀 하나로 — 동선은 방문 순서 그대로 이어 그린다
+      const groups = mergeMapPoints(homePts);
+      const shown = spreadPinPoints(homeMap, groups.map(g => g.ll), 17);
+      groups.forEach((g, gi) => {
+        const mk = homeMap.addMarker({
+          ll: shown[gi], num: mapGroupNum(g), homePin: true, size: 26, popup: mapGroupPopupHtml(g)
+        });
+        g.indexes.forEach(i => {
+          const p = homePts[i];
+          if (p && p.num != null) homeMarkers[p.num] = mk;
         });
       });
-      if (shown.length > 1) {
-        homeMap.polyline(shown, { color: "#2563eb", weight: 3.5, dashArray: "7, 7", opacity: 0.9 });
+      if (homePts.length > 1) {
+        const at = mapGroupAt(groups, homePts.length);
+        const path = homePts.map((p, i) => shown[at[i]] || p.ll);
+        homeMap.polyline(path, { color: "#2563eb", weight: 3.5, dashArray: "7, 7", opacity: 0.9 });
       }
       // 확대·이동으로 핀을 다시 그리면 말풍선이 사라지므로, 보고 있던 항목은 다시 열어 준다
       if (homeFocusNum && homeMarkers[homeFocusNum]) {
@@ -9077,7 +9223,21 @@
         });
       }
       const dayObj = state.days.find(d => d.day === currentDay) || state.days[0];
-      // 1·2·3·4 핀 번호 = 일정 카드의 방문 번호와 같은 번호
+      dayMapPts = dayMapGeoPts(dayObj);
+      leafletMap.closePopup();
+      leafletMap.clear();
+      if (!dayMapPts.length) { leafletMap.applyDefaultView(); return; }
+      // 다른 탭에 있다가 돌아온 경우 크기가 늦게 잡혀 엉뚱한 배율로 맞춰지는 것을 막는다
+      leafletMap.relayout();
+      leafletMap.fitBounds(dayMapPts.map(p => p.ll), { top: 26, right: 26, bottom: 26, left: 26 });
+      drawDayPins(dayMapPts);
+      setTimeout(() => { if (!leafletMap) return; leafletMap.relayout(); if (dayMapPts.length) drawDayPins(dayMapPts); }, 60);
+    }
+
+    // 하루 지도에 올릴 점 = 숙소 출발 핀 · 일정 순서대로 · 숙소 복귀 핀
+    // 1·2·3·4 핀 번호 = 일정 카드의 방문 번호와 같은 번호
+    function dayMapGeoPts(dayObj) {
+      if (!dayObj) return [];
       const stopNums = dayItemNumbers(dayObj);
       const itemPts = (dayObj.items || []).map(it => {
         if (isMemoItem(it)) return null;   // 📝 메모는 지도 핀·폴리라인에서 제외
@@ -9097,22 +9257,14 @@
           if (!inStay) return;
           if (!bookingAutoOn(b)) {
             // 자동 동선을 꺼 둠 — 숙소 위치 핀 하나만 조용히 보여 준다
-            endPts.push({ it: { place: nm, time: "", moveMode: "", hotelPin: true }, ll: [c.lat, c.lng], num: "🏨" });
+            endPts.push({ it: { place: nm, time: "", moveMode: "", hotelPin: true }, ll: [c.lat, c.lng], num: "🏨", kind: "hotelPin" });
             return;
           }
-          if (s.mornings.includes(dayObj.date)) startPts.push({ it: { place: `${nm} 출발`, time: "", moveMode: "" }, ll: [c.lat, c.lng], num: "🏨" });
-          if (s.nights.includes(dayObj.date)) endPts.push({ it: { place: `${nm} 복귀`, time: "", moveMode: "" }, ll: [c.lat, c.lng], num: "🏨" });
+          if (s.mornings.includes(dayObj.date)) startPts.push({ it: { place: `${nm} 출발`, time: "", moveMode: "" }, ll: [c.lat, c.lng], num: "🏨", kind: "hotelStart" });
+          if (s.nights.includes(dayObj.date)) endPts.push({ it: { place: `${nm} 복귀`, time: "", moveMode: "" }, ll: [c.lat, c.lng], num: "🏨", kind: "hotelEnd" });
         });
       }
-      dayMapPts = [...startPts, ...itemPts, ...endPts];
-      leafletMap.closePopup();
-      leafletMap.clear();
-      if (!dayMapPts.length) { leafletMap.applyDefaultView(); return; }
-      // 다른 탭에 있다가 돌아온 경우 크기가 늦게 잡혀 엉뚱한 배율로 맞춰지는 것을 막는다
-      leafletMap.relayout();
-      leafletMap.fitBounds(dayMapPts.map(p => p.ll), { top: 26, right: 26, bottom: 26, left: 26 });
-      drawDayPins(dayMapPts);
-      setTimeout(() => { if (!leafletMap) return; leafletMap.relayout(); if (dayMapPts.length) drawDayPins(dayMapPts); }, 60);
+      return [...startPts, ...itemPts, ...endPts];
     }
 
     // 번호 핀이 서로 가려지지 않도록, 지금 확대 수준에서 겹치는 핀만 화면상에서 조금씩 떼어 놓는다.
@@ -9121,17 +9273,21 @@
       if (!leafletMap || !leafletMap.alive) return;
       leafletMap.clearMarkers();
       leafletMap.clearShapes();
-      const shown = spreadPinPoints(leafletMap, pts.map(p => p.ll), 16);
-      pts.forEach((p, idx) => {
+      const list = Array.isArray(pts) ? pts : [];
+      // 숙소 출발·복귀 핀과 숙소 일정 카드처럼 같은 곳은 핀 하나로
+      const groups = mergeMapPoints(list);
+      const shown = spreadPinPoints(leafletMap, groups.map(g => g.ll), 16);
+      groups.forEach((g, gi) => {
         // 방문 시간·체류 대신 타임라인과 같은 번호 + 이동수단
-        const num = p.num != null ? p.num : idx + 1;
         leafletMap.addMarker({
-          ll: shown[idx], num, size: 22,
-          popup: pinPopupHtml(num, p.it.place, pinPopupSub(p.it))
+          ll: shown[gi], num: mapGroupNum(g), size: 22,
+          popup: mapGroupPopupHtml(g)
         });
       });
-      if (shown.length > 1) {
-        leafletMap.polyline(shown, { color: "#0284c7", weight: 3.5, dashArray: "6, 6", opacity: 0.85 });
+      if (list.length > 1) {
+        const at = mapGroupAt(groups, list.length);
+        const path = list.map((p, i) => shown[at[i]] || p.ll);
+        leafletMap.polyline(path, { color: "#0284c7", weight: 3.5, dashArray: "6, 6", opacity: 0.85 });
       }
     }
 
@@ -9180,17 +9336,22 @@
       if (!bigMap || !bigMap.alive) return;
       bigMap.clearMarkers();
       bigMap.clearShapes();
-      bigMapMarkers = bigMapPts.map((p, idx) => {
-        const active = idx === bigMapIdx;
-        const num = p.num != null ? p.num : idx + 1;
-        const popup = pinPopupHtml(num, p.it.place, pinPopupSub(p.it));
-        return bigMap.addMarker({
-          ll: p.ll, num, size: active ? 28 : 22, active, popup,
-          zIndexOffset: active ? 1000 : 0
+      // 같은 장소는 핀 하나로 — 스텝(◀ ▶)은 일정 순서 그대로 같은 핀을 가리킨다
+      const groups = mergeMapPoints(bigMapPts);
+      const at = mapGroupAt(groups, bigMapPts.length);
+      const activeGroup = bigMapPts.length ? at[Math.max(0, Math.min(bigMapPts.length - 1, bigMapIdx))] : -1;
+      bigMapMarkers = new Array(bigMapPts.length).fill(null);
+      groups.forEach((g, gi) => {
+        const active = gi === activeGroup;
+        const mk = bigMap.addMarker({
+          ll: g.ll, num: mapGroupNum(g), size: active ? 28 : 22, active,
+          popup: mapGroupPopupHtml(g), zIndexOffset: active ? 1000 : 0
         });
+        g.indexes.forEach(i => { bigMapMarkers[i] = mk; });
       });
       if (bigMapPts.length > 1) {
-        bigMap.polyline(bigMapPts.map(p => p.ll), { color: "#0284c7", weight: 3.5, dashArray: "6, 6", opacity: 0.85 });
+        const path = bigMapPts.map((p, i) => groups[at[i]] ? groups[at[i]].ll : p.ll);
+        bigMap.polyline(path, { color: "#0284c7", weight: 3.5, dashArray: "6, 6", opacity: 0.85 });
       }
     }
 
@@ -9346,6 +9507,8 @@
           </div>
         `;
       }).join("");
+      // 🏨🚆 예약 내역은 경비 탭에 있다 — 금액·결제 상태를 같이 그려 둔다
+      try { renderBookings(); } catch (e) { console.warn(e); }
     }
 
     // 🎫 경비 탭에서 대중교통 항목을 총액에 넣었다 뺄 수 있게 한다
@@ -11661,8 +11824,7 @@
     // · 숙소: '일정에 숙소 동선 자동 반영'이 켜져 있으면 체크인~체크아웃 날짜 기준으로
     //   매일 밤 마지막에 '🏨 숙소 복귀', 다음 날 아침 맨 처음에 '🏨 숙소 출발' 카드를 만든다.
     // · 교통편은 출발일 타임라인에 그대로 표시.
-    // · 금액은 예약 내역에 입력한 값을 그대로 보여 준다(예전 ₩0 오류 수정).
-    //   숙소 요금은 여러 장 중 체크인 날 카드에만 한 번 적는다.
+    // · 금액·결제 예정/완료·객실 상세는 일정 카드에 넣지 않는다 — 경비 탭 '🏨 숙소 · 🚆 교통편 예약 내역'에서 확인.
     function bookingTimelineItems(dayObj) {
       const out = [];
       const date = dayObj?.date || "";
@@ -11670,7 +11832,6 @@
       if (!date) return out;
       (state.bookings || []).forEach(b => {
         if (!b) return;
-        const amount = bookingAmount(b);
         if (b.type === "transit") {
           if (b.depDate && b.depDate === date) {
             const rideMin = (b.depTime && b.arrTime) ? parseMinDiff(b.depTime, b.arrTime) : 0;
@@ -11679,10 +11840,9 @@
               virtual: true, bookingId: b.id,
               time: b.depTime || "00:00",
               place: `${b.from || "출발지"} → ${b.to || "도착지"}`,
-              stay: b.depTime && b.arrTime ? `${b.depTime}~${b.arrTime}` : "",
               moveMode: (b.name && b.mode && String(b.name).startsWith(b.mode)) ? b.name : [b.mode, b.name].filter(Boolean).join(" "),
-              moveMin: rideMin, moveCost: 0, costTotal: amount,
-              memo: [b.seat, b.payStatus === "paid" ? "결제 완료" : "결제 예정", b.memo].filter(Boolean).join(" · "),
+              moveMin: rideMin, moveCost: 0, costTotal: 0, showCost: false,
+              memo: [(b.depTime && b.arrTime) ? `${b.depTime}~${b.arrTime}` : "", b.seat ? `좌석 ${b.seat}` : "", b.memo].filter(Boolean).join(" · "),
               mapUrl: mapSearchUrl(b.to || b.from || ""),
               badges: ["🔗 예약 연동", b.mode || "교통편"].filter(Boolean)
             });
@@ -11696,7 +11856,6 @@
           const coord = hotelCoordsForBooking(b);
           const items = (dayObj.items || []).filter(it => !isMemoItem(it));   // 배열 순서 = 동선 순서 (첫·마지막 일정 기준)
           const nightsTxt = stay.nightsCount ? `${stay.nightsCount}박` : "";
-          const primaryDate = stay.nights[0] || stay.mornings[0] || "";
 
           if (isMorning) {
             const first = items[0] || null;
@@ -11713,19 +11872,18 @@
               virtual: true, scheduled: true, pin: "first", bookingId: b.id, autoCard: "out",
               time: depTime,
               place: `🏨 ${hotel} 출발`,
-              stay: isOut ? `체크아웃 ${b.outTime || ""}`.trim() : "",
               moveMode: est?.moveMode || "",
               moveMin: Number(est?.moveMin) || 0,
               moveCost: Number(est?.moveCost) || 0,
               costTotal: 0, showCost: false,
               memo: [
-                isOut ? `체크아웃 ${b.outTime || "-"} · 짐은 프런트에 맡겨도 좋아요` : (nightsTxt ? `${nightsTxt} 중 아침 출발` : "아침 출발"),
-                first ? `${first.time} '${first.place}' 일정으로 출발` : "일정이 비어 있어요",
-                b.room, b.memo
+                isOut ? `체크아웃 ${b.outTime || "11:00"}` : "숙소 출발",
+                first ? `${first.time} ${first.place}으로 출발` : "",
+                b.memo
               ].filter(Boolean).join(" · "),
               mapUrl: mapSearchUrl(hotel, coord && coord.lat, coord && coord.lng),
               routeUrl: est?.routeUrl || "",
-              routeSummary: est ? `숙소 → 첫 장소 ${est.summary}` : (coord ? "첫 장소 위치를 찾지 못해 이동 시간은 계산하지 못했어요." : "📍 호텔 위치가 없어 이동 시간은 못 쟀어요 — '✏️ 예약 수정'에서 ‘🔎 위치 검색’으로 호텔 주소·가까운 역을 찾아 주세요."),
+              routeSummary: est ? `숙소 → 첫 장소 ${est.summary}` : (coord ? "첫 장소 위치를 찾지 못해 이동 시간은 계산하지 못했어요." : "📍 호텔 위치가 없어 이동 시간은 못 쟀어요 — 경비 탭 '🏨 숙소 · 🚆 교통편 예약 내역'의 ✏️ 수정에서 ‘🔎 위치 검색’으로 호텔 주소·가까운 역을 찾아 주세요."),
               badges: ["🔗 예약 연동", "숙소 출발"].filter(Boolean)
             });
           }
@@ -11737,34 +11895,23 @@
             const base = last ? timeToMin(last.time) : null;
             let retTime = base != null ? minToTime(base + stayMinutes(last.stay) + (est?.moveMin || 0)) : (date === b.inDate ? (b.inTime || "15:00") : "21:30");
             const isCheckIn = date === b.inDate;
-            // 같은 숙소 금액을 이미 일정 카드가 보여 주고 있으면 두 번 적지 않는다
-            const manualHasAmount = Boolean(amount) && items.some(it => {
-              const cat = inferItemExpenseCategory(it);
-              return (Number(it.costTotal) || 0) > 0 && expenseMatchesBooking(it, cat, Number(it.costTotal) || 0, state.bookings);
-            });
-            const showAmount = Boolean(date === primaryDate && amount && !manualHasAmount);
             out.push({
               id: "bkvl-" + b.id + "-ret-" + date,
               virtual: true, scheduled: true, pin: "last", bookingId: b.id, autoCard: "ret",
               time: retTime,
               place: `🏨 ${hotel} 복귀`,
-              stay: isCheckIn ? `체크인 ${b.inTime || ""}`.trim() : "",
               moveMode: est?.moveMode || "",
               moveMin: Number(est?.moveMin) || 0,
               moveCost: Number(est?.moveCost) || 0,
-              costTotal: showAmount ? amount : 0,
-              showCost: showAmount,
+              costTotal: 0, showCost: false,
               memo: [
-                isCheckIn ? `체크인 ${b.inTime || "-"}${nightsTxt ? ` · ${nightsTxt}` : ""}` : "숙소 복귀",
-                last ? `'${last.place}'에서 이동` : "",
-                b.room,
-                showAmount ? `숙소 예약 ${fmt(amount)} · ${b.payStatus === "paid" ? "결제 완료" : "결제 예정"}` : "",
-                b.payStatus === "paid" ? "결제 완료" : "결제 예정",
+                isCheckIn ? `체크인 ${b.inTime || "15:00"}${nightsTxt ? ` · ${nightsTxt}` : ""}` : "숙소 복귀",
+                last ? `${last.place}에서 복귀` : "",
                 b.memo
               ].filter(Boolean).join(" · "),
               mapUrl: mapSearchUrl(hotel, coord && coord.lat, coord && coord.lng),
               routeUrl: est?.routeUrl || "",
-              routeSummary: est ? `마지막 장소 → 숙소 ${est.summary}` : (coord ? "마지막 장소 위치를 찾지 못해 이동 시간은 계산하지 못했어요." : "📍 호텔 위치가 없어 이동 시간은 못 쟀어요 — '✏️ 예약 수정'에서 ‘🔎 위치 검색’으로 호텔 주소·가까운 역을 찾아 주세요."),
+              routeSummary: est ? `마지막 장소 → 숙소 ${est.summary}` : (coord ? "마지막 장소 위치를 찾지 못해 이동 시간은 계산하지 못했어요." : "📍 호텔 위치가 없어 이동 시간은 못 쟀어요 — 경비 탭 '🏨 숙소 · 🚆 교통편 예약 내역'의 ✏️ 수정에서 ‘🔎 위치 검색’으로 호텔 주소·가까운 역을 찾아 주세요."),
               badges: ["🔗 예약 연동", "숙소 복귀"].filter(Boolean)
             });
           }
@@ -19001,7 +19148,7 @@
       const panel = document.getElementById("tab-timeline");
       if (!panel) return;
       const leftSel = [".day-tabs", ".tl-map-card", ".map-action-row", ".map-help-row", "#map-hours-stamp", ".tl-planb-row", "#planb-content", "#add-btns-row", ".tl-places-row"];
-      const rightSel = ["#timeline-list", "#lodging-rec-box", "#bookings-section", ".tl-foot-row", ".tl-foot-stamp"];
+      const rightSel = ["#timeline-list", "#lodging-rec-box", ".tl-foot-row", ".tl-foot-stamp"];
       let left = panel.querySelector(".tl-pc-left");
       let right = panel.querySelector(".tl-pc-right");
       const built = Boolean(left && right);
