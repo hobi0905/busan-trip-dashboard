@@ -2834,6 +2834,153 @@ setTimeout(async () => {
       ev(`state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }]; state.bookings = []; state.expenses = []; saveState();`);
     }
 
+    // 69) ✏️ 메뉴 모달 인라인 수정 — 메뉴명·가격을 그 자리에서 고치고 저장
+    {
+      const $ = (sel) => w.document.querySelector(sel);
+      const $$ = (sel) => Array.from(w.document.querySelectorAll(sel));
+      const typeInto = (el, v) => { el.value = v; el.dispatchEvent(new w.Event("input", { bubbles: true })); };
+      const totalTxt = () => w.document.getElementById("menu-modal-total").textContent;
+      const draft = () => JSON.parse(ev("JSON.stringify(draftMenus)"));
+      const rowName = (i) => ($(`#menu-modal-list [data-menu-row="${i}"] .menu-name-text`) || {}).textContent;
+      const rowPrice = (i) => ($(`#menu-modal-list [data-menu-row="${i}"] .menu-price-text`) || {}).textContent;
+      const rowEditBtn = (i) => $(`#menu-modal-list [data-menu-row="${i}"] .menu-ic-btn`);
+
+      // OCR이 '팔말차롤 6500'으로 잘못 읽은 목록 (가격 변동 메뉴 하나 포함)
+      ev(`state.meta = { title:'메뉴', destination:'부산', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.expenses = [{ id:'e5', amount: 0 }, { id:'e6', amount: 0 }, { id:'e7', amount: 0 }];
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [{ id:'edit-1', place:'보통공원 망원', badges:[], menus:[
+          { name:'팔말차롤', price:6500, qty:1 },
+          { name:'오늘의 산도', price:null, variablePrice:true, qty:1 }
+        ] }] }];
+        currentDay = 1; editMode = false; renderTimeline(); openMenuModal('edit-1');`);
+
+      ok("메뉴 인라인 수정: 행마다 이름·가격·✏️·✕·수량 버튼이 한 줄씩 보인다",
+        $$("#menu-modal-list .menu-row").length === 2 && $$("#menu-modal-list .menu-ic-btn").length === 4
+        && $$("#menu-modal-list .menu-ic-btn.del").length === 2 && $$("#menu-modal-list .menu-qty-btn").length === 4
+        && rowName(0) === "팔말차롤" && rowPrice(0) === "₩6,500" && rowPrice(1) === "-",
+        `rows=${$$("#menu-modal-list .menu-row").length} ${rowName(0)}/${rowPrice(0)} ${rowName(1)}/${rowPrice(1)}`);
+      ok("메뉴 인라인 수정: 손대기 전에는 입력칸이 아니라 글자로 보인다",
+        $$("#menu-modal-list input").length === 0 && $$("#menu-modal-list .menu-qty-num").map(e => e.textContent).join(",") === "1,1",
+        `inputs=${$$("#menu-modal-list input").length}`);
+      // 모바일 폭에서 겹치지 않게 — 윗줄은 이름+수정+삭제, 아랫줄은 가격+수량으로 나뉘어 있다
+      const row0 = $("#menu-modal-list [data-menu-row=\"0\"]");
+      ok("메뉴 인라인 수정: 윗줄(이름·✏️·✕)과 아랫줄(가격·수량)이 분리된 2줄 구조",
+        row0.children.length === 2 && row0.children[0].classList.contains("menu-row-top") && row0.children[1].classList.contains("menu-row-bottom")
+        && row0.children[0].querySelectorAll("button").length === 2 && row0.children[1].querySelector(".menu-qty")
+        && row0.children[1].querySelector(".menu-price-text"), row0.children.length + "줄");
+
+      // ✏️ 를 누르면 그 행만 입력칸으로 바뀌고, 지금 값이 들어 있다
+      rowEditBtn(0).click();
+      const nameIn = $("#menu-modal-list .menu-name-input");
+      const priceIn = $("#menu-modal-list .menu-price-input");
+      ok("메뉴 인라인 수정: ✏️ 를 누르면 그 행에 이름·가격 입력칸이 열린다",
+        !!nameIn && !!priceIn && nameIn.value === "팔말차롤" && priceIn.value === "6500"
+        && $$("#menu-modal-list input").length === 2 && $("#menu-modal-list .menu-ic-btn.done") !== null,
+        `${nameIn && nameIn.value} / ${priceIn && priceIn.value}`);
+      ok("메뉴 인라인 수정: 입력칸이 열려도 다른 행은 그대로 보인다", rowName(1) === "오늘의 산도" && rowPrice(1) === "-", `${rowName(1)}/${rowPrice(1)}`);
+
+      // 이름 고치기 — '팔말차롤' → '팥말차롤'
+      typeInto(nameIn, "팥말차롤");
+      ok("메뉴 인라인 수정: 이름을 고치면 draftMenus 에 바로 반영", draft()[0].name === "팥말차롤" && !!$("#menu-modal-list .menu-name-input"), draft()[0].name);
+
+      // 가격 고치기 — '6,800원' → 6800, 합계도 바로
+      typeInto(priceIn, "6,800원");
+      ok("메뉴 인라인 수정: '6,800원' 가격이 6800으로 파싱돼 합계에 바로 반영",
+        draft()[0].price === 6800 && !draft()[0].variablePrice && totalTxt() === "₩6,800", `${draft()[0].price} / ${totalTxt()}`);
+      // 숫자만 쳐도(6500) 같은 값
+      typeInto(priceIn, "6800");
+      ok("메뉴 인라인 수정: 숫자만 입력한 가격도 그대로", draft()[0].price === 6800 && totalTxt() === "₩6,800", `${draft()[0].price} / ${totalTxt()}`);
+
+      // 수량 조절이 입력 중인 행을 망가뜨리지 않는다
+      const qtyPlus = $("#menu-modal-list [data-menu-row=\"0\"] .menu-qty-btn:last-child");
+      qtyPlus.click();
+      ok("메뉴 인라인 수정: 수량 + 는 입력칸을 닫지 않고 합계만 올린다",
+        draft()[0].qty === 2 && totalTxt() === "₩13,600" && !!$("#menu-modal-list .menu-name-input") && draft()[0].price === 6800,
+        `qty=${draft()[0].qty} ${totalTxt()}`);
+
+      // ✓ 로 마치면 글자로 돌아온다
+      $("#menu-modal-list .menu-ic-btn.done").click();
+      ok("메뉴 인라인 수정: ✓ 를 누르면 고친 이름·가격이 글자로 보인다",
+        $$("#menu-modal-list input").length === 0 && rowName(0) === "팥말차롤" && rowPrice(0) === "₩6,800", `${rowName(0)}/${rowPrice(0)}`);
+
+      // 가격 자리를 탭해도 편집이 열린다 + '-' 는 가격 변동
+      $(`#menu-modal-list [data-menu-row="0"] .menu-price-text`).click();
+      const priceIn2 = $("#menu-modal-list .menu-price-input");
+      typeInto(priceIn2, "-");
+      ok("메뉴 인라인 수정: 가격을 '-'로 바꾸면 가격 변동(합계 0원)",
+        draft()[0].price === null && draft()[0].variablePrice === true && totalTxt() === "₩0", `${JSON.stringify(draft()[0])} / ${totalTxt()}`);
+      typeInto(priceIn2, "가격 변동");
+      ok("메뉴 인라인 수정: '가격 변동'이라고 써도 변동 메뉴", draft()[0].variablePrice === true && draft()[0].price === null, JSON.stringify(draft()[0]));
+      typeInto(priceIn2, "6800");
+      ok("메뉴 인라인 수정: 변동 → 숫자로 되돌리면 다시 계산", draft()[0].variablePrice !== true && draft()[0].price === 6800 && totalTxt() === "₩13,600", `${JSON.stringify(draft()[0])} / ${totalTxt()}`);
+      typeInto(priceIn2, "");
+      ok("메뉴 인라인 수정: 가격을 비우면 변동 메뉴로", draft()[0].variablePrice === true && draft()[0].price === null && totalTxt() === "₩0", `${JSON.stringify(draft()[0])} / ${totalTxt()}`);
+      typeInto(priceIn2, "6800");
+      typeInto(priceIn2, "abc");
+      ok("메뉴 인라인 수정: 숫자도 '-'도 아닌 글자는 직전 가격을 지우지 않는다",
+        draft()[0].price === 6800 && draft()[0].variablePrice !== true && totalTxt() === "₩13,600", `${JSON.stringify(draft()[0])} / ${totalTxt()}`);
+      typeInto($("#menu-modal-list .menu-name-input"), "");       // 이름을 지우고 ✓
+      $("#menu-modal-list .menu-ic-btn.done").click();
+      ok("메뉴 인라인 수정: 이름을 비우고 ✓ 해도 직전 이름이 남는다", draft()[0].name === "팥말차롤" && rowName(0) === "팥말차롤", JSON.stringify(draft()[0]));
+
+      // 두 번째 행(가격 변동)에 가격을 넣어 주기
+      rowEditBtn(1).click();
+      const priceIn3 = $("#menu-modal-list .menu-price-input");
+      ok("메뉴 인라인 수정: 가격 변동 메뉴의 입력칸에는 '-'가 들어 있다", priceIn3 && priceIn3.value === "-", priceIn3 && priceIn3.value);
+      typeInto(priceIn3, "9,000");
+      $(`#menu-modal-list [data-menu-row="1"] .menu-ic-btn.done`).click();
+      ok("메뉴 인라인 수정: 변동 메뉴에 가격을 넣으면 합계에 더해진다",
+        draft()[1].price === 9000 && totalTxt() === "₩22,600" && rowPrice(1) === "₩9,000", `${JSON.stringify(draft()[1])} / ${totalTxt()}`);
+
+      // 저장 — 고친 이름·가격이 일정의 menus 와 경비에 그대로
+      ev("saveMenuSelection()");
+      const saved = JSON.parse(ev("JSON.stringify(state.days[0].items[0])"));
+      const e5 = JSON.parse(ev("JSON.stringify(state.expenses.find(e => e.id === 'e5'))"));
+      ok("메뉴 인라인 수정: 저장하면 고친 이름·가격이 일정 menus 에 들어간다",
+        saved.menus.length === 2 && saved.menus[0].name === "팥말차롤" && saved.menus[0].price === 6800 && saved.menus[0].qty === 2
+        && !("variablePrice" in saved.menus[0]) && saved.menus[1].name === "오늘의 산도" && saved.menus[1].price === 9000,
+        JSON.stringify(saved.menus));
+      ok("메뉴 인라인 수정: 저장한 합계·식비 경비도 함께 맞는다", saved.costTotal === 22600 && e5.amount === 22600, `${saved.costTotal} / ${e5.amount}`);
+
+      // 가격 변동으로 저장하는 경우 — 합계 0원, '-' 표시
+      ev(`state.days[0].items[0].menus = [{ name:'오늘의 산도', price:null, variablePrice:true, qty:2 }]; state.days[0].items[0].costTotal = 0;
+        renderTimeline(); openMenuModal('edit-1');`);
+      rowEditBtn(0).click();
+      typeInto($("#menu-modal-list .menu-price-input"), "-");
+      $("#menu-modal-list .menu-ic-btn.done").click();
+      ev("saveMenuSelection()");
+      const savedVar = JSON.parse(ev("JSON.stringify(state.days[0].items[0])"));
+      ok("메뉴 인라인 수정: '-'로 저장한 메뉴는 price null·가격 변동, 합계 0원",
+        savedVar.menus.length === 1 && savedVar.menus[0].price === null && savedVar.menus[0].variablePrice === true && savedVar.costTotal === 0,
+        JSON.stringify(savedVar.menus));
+
+      // ✕ 로 목록에서 빼기 — 이번 목록에서만 빠지고 저장 전에는 일정이 그대로
+      ev(`state.days[0].items[0].menus = [{ name:'팥말차롤', price:6800, qty:1 }, { name:'라떼(ICE)', price:5300, qty:1 }, { name:'쌀음료', price:6700, qty:1 }];
+        renderTimeline(); openMenuModal('edit-1');`);
+      $(`#menu-modal-list [data-menu-row="1"] .menu-ic-btn.del`).click();
+      ok("메뉴 인라인 수정: ✕ 를 누르면 그 메뉴가 목록에서 빠지고 합계도 줄어든다",
+        draft().length === 2 && !draft().some(m => m.name === "라떼(ICE)") && totalTxt() === "₩13,500"
+        && $$("#menu-modal-list .menu-row").length === 2 && JSON.parse(ev("JSON.stringify(state.days[0].items[0].menus)")).length === 3,
+        `${draft().map(m => m.name).join(",")} / ${totalTxt()}`);
+      ev("saveMenuSelection()");
+      ok("메뉴 인라인 수정: 저장하면 뺀 메뉴가 일정에서도 사라진다",
+        JSON.parse(ev("JSON.stringify(state.days[0].items[0].menus)")).map(m => m.name).join(",") === "팥말차롤,쌀음료",
+        ev("state.days[0].items[0].menus.map(m=>m.name).join(', ')"));
+
+      // 이름에 따옴표·태그가 들어와도 깨지지 않는다 (OCR 오인식·직접 입력)
+      ev(`state.days[0].items[0].menus = [{ name:'<img src=x onerror=alert(1)>', price:1000, qty:1 }]; renderTimeline(); openMenuModal('edit-1');`);
+      ok("메뉴 인라인 수정: 이름의 <>·따옴표는 글자로만 보인다",
+        w.document.querySelectorAll("#menu-modal-list img").length === 0
+        && $("#menu-modal-list .menu-name-text").textContent === "<img src=x onerror=alert(1)>",
+        $("#menu-modal-list .menu-name-text").textContent);
+      rowEditBtn(0).click();
+      ok("메뉴 인라인 수정: 그런 이름도 입력칸 값으로 온전히 열린다",
+        $("#menu-modal-list .menu-name-input").value === "<img src=x onerror=alert(1)>",
+        $("#menu-modal-list .menu-name-input").value);
+      w.closeMenuModal();
+      ev(`state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }]; state.expenses = []; saveState();`);
+    }
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }

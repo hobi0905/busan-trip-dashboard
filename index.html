@@ -315,6 +315,46 @@
       border-bottom: 1px solid var(--border);
     }
     .expense-item:last-child { border-bottom: none; }
+    /* ===== 🍽️ 메뉴 모달 — 메뉴명·가격 인라인 수정 ===== */
+    .menu-edit-hint { font-size: 11px; line-height: 1.5; color: var(--muted); margin: 0 0 4px; }
+    .menu-edit-hint b { color: var(--ocean-dark); }
+    .menu-empty { font-size: 12.5px; color: var(--muted); text-align: center; padding: 14px 4px; }
+    .menu-row { padding: 6px 0; border-bottom: 1px solid var(--border); }
+    .menu-row:last-child { border-bottom: none; }
+    .menu-row.editing { background: var(--ocean-soft); border: 1px solid var(--ocean-border); border-radius: 10px; padding: 7px 8px; margin: 3px 0; }
+    .menu-row-top, .menu-row-bottom { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .menu-row-top { margin-bottom: 3px; }
+    .menu-name-wrap, .menu-price-wrap { flex: 1 1 auto; min-width: 0; cursor: text; }
+    .menu-name-text { font-size: 13.5px; font-weight: 700; line-height: 1.35; word-break: break-all; }
+    .menu-price-text { font-size: 12px; font-weight: 700; color: var(--muted); }
+    .menu-price-text.fixed { color: var(--ocean-dark); }
+    .menu-ic-btn {
+      flex: 0 0 auto; width: 30px; height: 30px; padding: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: 1px solid var(--border); border-radius: 9px;
+      background: #f8fafc; color: var(--text);
+      font-family: inherit; font-size: 13px; line-height: 1; cursor: pointer;
+    }
+    .menu-ic-btn:active { background: var(--ocean-light); }
+    .menu-ic-btn.done { background: var(--ocean); border-color: var(--ocean); color: #fff; font-weight: 800; }
+    .menu-ic-btn.del { color: var(--muted); font-size: 14px; }
+    .menu-qty { flex: 0 0 auto; display: flex; align-items: center; gap: 4px; }
+    .menu-qty-btn {
+      width: 28px; height: 28px; padding: 0;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: #f8fafc; color: var(--text);
+      font-family: inherit; font-size: 14px; font-weight: 800; line-height: 1; cursor: pointer;
+    }
+    .menu-qty-btn:active { background: var(--ocean-light); }
+    .menu-qty-num { min-width: 18px; text-align: center; font-size: 13px; font-weight: 800; }
+    #menu-modal-list .menu-name-input { flex: 1 1 auto; min-width: 0; height: 32px; padding: 4px 8px; font-size: 13px; font-weight: 700; border-radius: 8px; }
+    #menu-modal-list .menu-price-input { flex: 1 1 auto; min-width: 0; height: 32px; padding: 4px 8px; font-size: 13px; font-weight: 700; color: var(--ocean-dark); border-radius: 8px; }
+    @media (max-width: 390px) {
+      .menu-ic-btn { width: 28px; height: 28px; }
+      .menu-qty-btn { width: 26px; height: 26px; }
+      .menu-row-bottom .menu-qty { gap: 3px; }
+    }
     .status-btn {
       border: none;
       border-radius: 8px;
@@ -2437,6 +2477,7 @@
         <div id="menu-modal-title" style="font-size:16px;font-weight:800;">🍽️ 메뉴 선택</div>
         <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeMenuModal()">닫기</button>
       </div>
+      <div id="menu-edit-hint" class="menu-edit-hint">✏️ 를 누르면 그 자리에서 메뉴명·가격을 고칠 수 있어요. 가격은 <b>6,800</b>처럼 숫자로, 가격 변동 메뉴는 <b>-</b> 로.</div>
       <div id="menu-modal-list" style="max-height:34vh;overflow-y:auto;"></div>
       <details style="margin-top:8px;background:var(--ocean-soft);padding:8px 10px;border-radius:10px;border:1px solid #bae6fd;">
         <summary style="font-size:12.5px;font-weight:800;color:var(--ocean-dark);cursor:pointer;">📥 메뉴판 한 번에 불러오기 (텍스트 / 사진)</summary>
@@ -9025,6 +9066,7 @@
 
     let editingMenuDayIdx = -1;
     let editingMenuItemId = null;
+    let editingMenuRowIdx = -1;          // 지금 인라인 수정 중인 메뉴 행 (-1 = 없음)
     let draftMenus = [];
 
     function openMenuModal(itemId) {
@@ -9035,6 +9077,7 @@
       editingMenuDayIdx = dIdx;
       editingMenuItemId = itemId;
       draftMenus = item.menus.map(m => ({ ...m }));
+      editingMenuRowIdx = -1;
       // 다른 식당·카페에서 쓰던 입력·OCR 상태가 남지 않게 매번 비운다
       const reset = (id, prop, val) => {
         const el = document.getElementById(id);
@@ -9052,28 +9095,136 @@
 
     function closeMenuModal() { document.getElementById("menu-modal").classList.remove("open"); }
 
+    // 목록 행의 구조: 윗줄 [메뉴명 · ✏️ · ✕] / 아랫줄 [가격 · − 수량 +]
+    // ✏️(또는 이름·가격을 탭)를 누르면 그 행만 입력칸으로 바뀌어 바로 고칠 수 있다
     function renderMenuDraft() {
       const listEl = document.getElementById("menu-modal-list");
-      listEl.innerHTML = draftMenus.map((m, i) => `
-        <div class="expense-item" style="padding:8px 0;">
-          <div style="flex:1;">
-            <div style="font-size:13.5px;font-weight:700;">${m.name}</div>
-            <div style="font-size:12px;color:var(--muted);">${menuPriceLabel(m)}</div>
+      const hintEl = document.getElementById("menu-edit-hint");
+      if (hintEl) hintEl.style.display = draftMenus.length ? "" : "none";
+      if (editingMenuRowIdx >= draftMenus.length || editingMenuRowIdx < 0) editingMenuRowIdx = -1;
+      if (!draftMenus.length) {
+        listEl.innerHTML = `<div class="menu-empty">아직 메뉴가 없어요. 아래에서 메뉴판을 통째로 불러오거나 직접 추가해 주세요.</div>`;
+      } else {
+        listEl.innerHTML = draftMenus.map((m, i) => menuRowHtml(m, i)).join("");
+      }
+      updateMenuTotal();
+    }
+
+    function menuRowHtml(m, i) {
+      const editing = i === editingMenuRowIdx;
+      const nameCell = editing
+        ? `<input class="input menu-name-input" data-menu-name="${i}" value="${escapeAttr(m.name || "")}" maxlength="60" placeholder="메뉴명" oninput="setMenuRowName(${i}, this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();commitMenuRow(${i});}" />`
+        : `<div class="menu-name-wrap" onclick="editMenuRow(${i}, 'name')"><div class="menu-name-text">${escapeHtmlText(m.name)}</div></div>`;
+      const priceCell = editing
+        ? `<input class="input menu-price-input" data-menu-price="${i}" type="text" inputmode="decimal" value="${escapeAttr(menuPriceInputText(m))}" placeholder="가격 (변동은 -)" oninput="setMenuRowPrice(${i}, this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();commitMenuRow(${i});}" />`
+        : `<div class="menu-price-wrap" onclick="editMenuRow(${i}, 'price')"><span class="menu-price-text${Number(m.price) > 0 && !m.variablePrice ? " fixed" : ""}">${menuPriceLabel(m)}</span></div>`;
+      const editBtn = editing
+        ? `<button class="menu-ic-btn done" type="button" title="수정 완료" aria-label="수정 완료" onclick="commitMenuRow(${i})">✓</button>`
+        : `<button class="menu-ic-btn" type="button" title="메뉴명·가격 수정" aria-label="메뉴명·가격 수정" onclick="editMenuRow(${i})">✏️</button>`;
+      return `
+        <div class="menu-row${editing ? " editing" : ""}" data-menu-row="${i}">
+          <div class="menu-row-top">
+            ${nameCell}
+            ${editBtn}
+            <button class="menu-ic-btn del" type="button" title="목록에서 빼기" aria-label="목록에서 빼기" onclick="removeMenuRow(${i})">✕</button>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <button class="btn btn-soft btn-sm" onclick="chgMenuQty(${i}, -1)">-</button>
-            <strong style="min-width:18px;text-align:center;">${m.qty}</strong>
-            <button class="btn btn-soft btn-sm" onclick="chgMenuQty(${i}, 1)">+</button>
+          <div class="menu-row-bottom">
+            ${priceCell}
+            <div class="menu-qty">
+              <button class="menu-qty-btn" type="button" aria-label="수량 줄이기" onclick="chgMenuQty(${i}, -1)">−</button>
+              <strong class="menu-qty-num" data-menu-qty="${i}">${Number(m.qty) || 0}</strong>
+              <button class="menu-qty-btn" type="button" aria-label="수량 늘리기" onclick="chgMenuQty(${i}, 1)">+</button>
+            </div>
           </div>
-        </div>
-      `).join("");
+        </div>`;
+    }
+
+    // 합계는 다시 그리지 않고 숫자만 새로 고친다 (입력 중인 칸이 흔들리지 않게)
+    function updateMenuTotal() {
       const sum = draftMenus.reduce((s, m) => s + (Number(m.price) || 0) * (Number(m.qty) || 0), 0);
-      document.getElementById("menu-modal-total").textContent = fmt(sum);
+      const el = document.getElementById("menu-modal-total");
+      if (el) el.textContent = fmt(sum);
+    }
+
+    // 수정 입력칸에 넣을 가격 글자 — 가격 변동은 '-'
+    function menuPriceInputText(m) {
+      const price = Number(m && m.price);
+      if (!m || m.variablePrice || m.price === null || m.price === undefined || !isFinite(price) || price <= 0) return "-";
+      return String(price);
+    }
+
+    function editMenuRow(idx, field) {
+      if (!draftMenus[idx]) return;
+      editingMenuRowIdx = idx;
+      renderMenuDraft();
+      const sel = field === "price" ? `[data-menu-price="${idx}"]` : `[data-menu-name="${idx}"]`;
+      const el = document.querySelector(`#menu-modal-list ${sel}`);
+      if (!el || typeof el.focus !== "function") return;
+      try { el.focus({ preventScroll: true }); } catch { try { el.focus(); } catch {} }
+      // 바로 다시 칠 수 있게 전체 선택 (OCR 오인식을 고치는 게 가장 흔한 일)
+      if (typeof el.select === "function") { try { el.select(); } catch {} }
+    }
+
+    function commitMenuRow(idx) {
+      const m = draftMenus[idx];
+      if (m) {
+        const nameEl = document.querySelector(`#menu-modal-list [data-menu-name="${idx}"]`);
+        if (nameEl && typeof nameEl.value === "string") {
+          const nm = nameEl.value.replace(/\s+/g, " ").trim();
+          if (nm) m.name = nm;                      // 이름을 다 지웠으면 직전 이름을 그대로 둔다
+        }
+        const priceEl = document.querySelector(`#menu-modal-list [data-menu-price="${idx}"]`);
+        if (priceEl && typeof priceEl.value === "string") applyMenuRowPrice(idx, priceEl.value);
+      }
+      editingMenuRowIdx = -1;
+      renderMenuDraft();
+    }
+
+    function setMenuRowName(idx, value) {
+      const m = draftMenus[idx];
+      if (!m) return;
+      // 입력 중에는 다시 그리지 않는다 (커서가 튀지 않게). 다 지운 순간에는 직전 이름을 지킨다
+      const v = String(value == null ? "" : value);
+      if (v.trim()) m.name = v;
+    }
+
+    // '6,500' · '6,500원' · '6500' → 6500 / '-' · '가격 변동' · 빈칸 → 가격 변동(합계 0원)
+    function applyMenuRowPrice(idx, value) {
+      const m = draftMenus[idx];
+      if (!m) return;
+      const s = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
+      const digits = s.replace(/[^0-9]/g, "");
+      if (digits) {
+        const num = Number(digits);
+        if (num > 0) { m.price = num; delete m.variablePrice; return; }
+      }
+      if (!s || digits || isVariablePriceText(s)) {
+        m.price = null;
+        m.variablePrice = true;
+        return;
+      }
+      // 숫자도 '변동' 표시도 아니면 직전 값을 그대로 둔다 (합계가 흔들리지 않게)
+    }
+
+    function setMenuRowPrice(idx, value) {
+      applyMenuRowPrice(idx, value);
+      updateMenuTotal();
+    }
+
+    function removeMenuRow(idx) {
+      if (!draftMenus[idx]) return;
+      draftMenus.splice(idx, 1);
+      editingMenuRowIdx = -1;
+      renderMenuDraft();
     }
 
     function chgMenuQty(idx, delta) {
-      draftMenus[idx].qty = Math.max(0, (draftMenus[idx].qty || 0) + delta);
-      renderMenuDraft();
+      const m = draftMenus[idx];
+      if (!m) return;
+      m.qty = Math.max(0, (Number(m.qty) || 0) + delta);
+      const qtyEl = document.querySelector(`#menu-modal-list [data-menu-qty="${idx}"]`);
+      if (qtyEl) qtyEl.textContent = String(m.qty);
+      updateMenuTotal();
     }
 
     function addCustomMenuItem() {
@@ -9094,9 +9245,23 @@
       const dayObj = state.days[editingMenuDayIdx];
       const item = dayObj?.items.find(x => x.id === editingMenuItemId);
       if (!item) return;
-      item.menus = draftMenus;
+      // 인라인으로 고치던 칸이 남아 있으면 먼저 반영한다
+      if (editingMenuRowIdx >= 0 && draftMenus[editingMenuRowIdx]) commitMenuRow(editingMenuRowIdx);
+      // 이름·가격을 한 번 더 다듬어 저장한다 — 이름이 빈 행은 저장하지 않는다
+      const cleaned = draftMenus.map(m => {
+        const price = Number(m.price);
+        const variable = m.variablePrice === true || m.price === null || m.price === undefined || !isFinite(price) || price <= 0;
+        return {
+          name: String(m.name || "").replace(/\s+/g, " ").trim(),
+          price: variable ? null : price,
+          ...(variable ? { variablePrice: true } : {}),
+          qty: Math.max(0, Number(m.qty) || 0)
+        };
+      }).filter(m => m.name);
+      draftMenus = cleaned;
+      item.menus = cleaned;
       // '가격 변동'(-) 메뉴는 합계에서 0원으로 더한다 (오류 없이)
-      item.costTotal = draftMenus.reduce((s, m) => s + (Number(m.price) || 0) * (Number(m.qty) || 0), 0);
+      item.costTotal = cleaned.reduce((s, m) => s + (Number(m.price) || 0) * (Number(m.qty) || 0), 0);
 
       // 해당 일차 식비 경비 항목도 자동 동기화
       const foodSum = dayObj.items.filter(x => Array.isArray(x.menus)).reduce((s, x) => s + (x.costTotal || 0), 0);
