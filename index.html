@@ -9803,10 +9803,17 @@
         const p = kakaoDocToPlace(doc);
         if (!p) return null;
         // '공덕역 5호선'처럼 노선이 붙은 이름은 역 이름만 남긴다 (호선별 중복 제거)
-        const name = String(p.name || "")
-          .replace(/\s*\(?[0-9]+호선\)?\s*$/g, "")
-          .replace(/\s*(수도권|경의중앙|경춘|수인분당|신분당|공항철도|경강|서해|동해|우이신설|김포골드|인천[0-9]?호선)\s*$/g, "")
-          .trim();
+        let name = String(p.name || "");
+        // '공덕역 5호선' · '공덕역 경의중앙선'처럼 노선 이름이 붙은 역명은 역 이름만 남긴다
+        for (let pass = 0; pass < 3; pass++) {
+          const next = name
+            .replace(/\s*\(?수도권?[0-9]+호선\)?\s*$/g, "")
+            .replace(/\s*\(?[0-9]+호선\)?\s*$/g, "")
+            .replace(/\s*\(?(경의중앙|경춘|수인분당|신분당|공항철도|경강|서해|동해|우이신설|김포골드라인|김포골드|인천[0-9]?호선|신안산)선?\)?\s*$/g, "")
+            .trim();
+          if (next === name) break;
+          name = next;
+        }
         if (!name) return null;
         const key = name.replace(/역$/, "").replace(/\s+/g, "");
         const distM = Number(doc.distance);
