@@ -1454,6 +1454,21 @@ setTimeout(async () => {
       const autoSaved = JSON.parse(ev("JSON.stringify(state.days[0].items.find(i => i.place === '신라스테이 해운대') || null)"));
       ok("자동 찾은 위치로 바로 저장", !!autoSaved && autoSaved.lat === 35.1595 && autoSaved.lng === 129.1626, JSON.stringify(autoSaved && { lat: autoSaved.lat, lng: autoSaved.lng }));
 
+      // 칩을 안 누르고 이름만 직접 쳐도, 저장해 둔 집·호텔이면 위치를 같이 저장한다
+      w.openPlaceModal(null);
+      w.document.getElementById("pm-place").value = "호텔 아쿠아 펠리스 체크인";
+      await w.savePlaceEdit();
+      const typed = JSON.parse(ev("JSON.stringify(state.days[0].items[state.days[0].items.length - 1] || null)"));
+      ok("이름만 쳐도 저장 거점 위치 사용", !!typed && typed.place === "호텔 아쿠아 펠리스 체크인" && typed.lat === 35.1532 && typed.addr === "부산 수영구 광안해변로 225",
+        JSON.stringify(typed && { place: typed.place, lat: typed.lat, addr: typed.addr }));
+
+      // 저장한 적 없는 새 이름에는 위치를 지어내지 않는다
+      w.openPlaceModal(null);
+      w.document.getElementById("pm-place").value = "처음 가는 식당";
+      await w.savePlaceEdit();
+      const fresh = JSON.parse(ev("JSON.stringify(state.days[0].items[state.days[0].items.length - 1] || null)"));
+      ok("모르는 이름은 위치를 지어내지 않는다", !!fresh && fresh.place === "처음 가는 식당" && fresh.lat === undefined, JSON.stringify(fresh && { place: fresh.place, lat: fresh.lat }));
+
       w.geocodeByName = realGeo;
       w.smartPlaceSearch = realSearch;
       ev("state.bookings = []; state.savedPlaces = []; state.days[0].items = []; saveState();");
