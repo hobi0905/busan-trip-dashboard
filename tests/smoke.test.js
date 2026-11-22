@@ -1626,6 +1626,11 @@ setTimeout(async () => {
       const moveVal = w.document.getElementById("pm-move").value;
       ok("카드 클릭 → 이동수단 칸 자동 입력", moveVal === "간선 271 (홍대입구역 > 종로1가.종각역) · 약 38분", moveVal);
       ok("카드 클릭 → 선택 카드 강조", cards()[1].classList.contains("sel") && !cards()[0].classList.contains("sel") && /선택됨/.test(cards()[1].textContent), cards().map(c => c.className).join(" / "));
+      // 같은 구간을 다시 띄워도(거점 칩을 또 눌러도) 고른 카드는 그대로 강조된다
+      const callsBeforeRepeat = transitCalls.length;
+      w.setRouteEndpointCoord("to", { lat: 37.5651, lng: 126.9816, name: "롯데호텔 서울" });
+      await wait(320);
+      ok("같은 구간 다시 띄워도 선택 유지·재호출 없음", cards()[1].classList.contains("sel") && transitCalls.length === callsBeforeRepeat, `${cards().map(c => c.className).join(" / ")} / ${transitCalls.length - callsBeforeRepeat}회`);
 
       // (5) 자동 입력 뒤 직접 고쳐도 그대로 저장된다
       w.document.getElementById("pm-move").value = "간선 271 (홍대입구역 > 종로1가.종각역) · 약 40분 (막차 주의)";
