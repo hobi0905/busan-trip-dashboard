@@ -7516,8 +7516,10 @@
     async function savePlaceEdit() {
       const dayObj = state.days.find(d => d.day === currentDay);
       if (!dayObj) return;
-      // 저장한 거점의 위치를 뒤에서 찾는 중이면 저장 전에 잠깐 기다린다 (좌표 없이 저장되지 않게)
-      if (pickedCoordPromise) { try { await pickedCoordPromise; } catch (e) {} }
+      // 저장한 거점의 위치를 뒤에서 찾는 중이면 잠깐만 기다린다 (길게 끌지 않고, 못 찾으면 이름만 저장)
+      if (pickedCoordPromise) {
+        try { await Promise.race([pickedCoordPromise, new Promise(r => setTimeout(r, 4000))]); } catch (e) {}
+      }
       const time = document.getElementById("pm-time").value.trim();
       const timeOk = /^\d{1,2}:\d{2}$/.test(time) ? time : "";   // 비워 두면 시간 없이 순서로만
       let place = "", fromPlace = "", toPlace = "";
