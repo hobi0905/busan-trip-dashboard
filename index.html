@@ -14972,6 +14972,13 @@
           : await kakaoKeywordSearch(val, { location: loc, radius, sort: "distance", limit });
         (docs || []).forEach(d => push(d, type === "kw" ? val : meta.cat));
       }
+      // 카페·디저트가 많은 동네는 반경 안 식당이 적다 — 조금 넓게 한 번 더 받아 온다
+      if (out.length < Math.min(6, limit) && (meta.kakaoCats || []).length) {
+        const wider = await kakaoCategorySearch(meta.kakaoCats[0], {
+          location: loc, radius: Math.min(20000, radius * 2), sort: "distance", limit: 15
+        });
+        (wider || []).forEach(d => push(d, meta.cat));
+      }
       return out.sort((a, b) => a.distanceM - b.distanceM).slice(0, limit);
     }
 
