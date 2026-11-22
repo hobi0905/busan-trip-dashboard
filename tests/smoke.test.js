@@ -2274,6 +2274,10 @@ setTimeout(async () => {
       ok("이동 카드: 추천 루트 시간과 moveMin이 겹쳐도 한 번만", /약 46분/.test(etaOf(cMv2))
         && (etaOf(cMv2).match(/46\s*분/g) || []).length === 1 && !/10\s*분/.test(etaOf(cMv2)), etaOf(cMv2));
       ok("이동 카드: moveMin만 있어도 시간·수단 표시", /약 25분/.test(etaOf(cMv3)) && /해운대 2호선/.test(etaOf(cMv3)), etaOf(cMv3));
+      ok("이동 카드: '⏱️ 이동시간 약 N분' — 이모티콘 옆에 이동시간이라고 밝힌다",
+        /^⏱️ 이동시간 약 46분$/.test(etaOf(cMv2)) && /^⏱️ 이동시간 약 25분 · 해운대 2호선$/.test(etaOf(cMv3)),
+        `${etaOf(cMv2)} | ${etaOf(cMv3)}`);
+      ok("이동 카드: 체류 시간이 아니라 이동 시간임이 글자로 드러난다", /이동시간/.test(etaOf(cMv2)) && !/체류/.test(etaOf(cMv2)), etaOf(cMv2));
       ok("이동 카드 데이터는 그대로(펼친 상세 줄에 원래 이동수단)", (() => {
         const move = cMv2.querySelector(".tl-extra .tl-move");
         return !!move && /수영로 · 약 46분/.test(move.textContent) && ev("state.days[0].items[1].moveMode") === "수영로 · 약 46분";
@@ -2292,7 +2296,7 @@ setTimeout(async () => {
       w.renderTimeline();
       const vMove = [...w.document.querySelectorAll("#timeline-list .card.tl-virtual")].find(c => /광명역/.test(c.textContent));
       ok("예약 교통편 카드도 접힌 채로 이동 시간", !!vMove && !vMove.classList.contains("tl-open")
-        && /약 149분/.test(((vMove.querySelector(".tl-eta") || {}).textContent || "")), vMove && ((vMove.querySelector(".tl-eta") || {}).textContent || ""));
+        && /⏱️ 이동시간 약 149분/.test(((vMove.querySelector(".tl-eta") || {}).textContent || "")), vMove && ((vMove.querySelector(".tl-eta") || {}).textContent || ""));
 
       ev("state.bookings = []; saveState();");
     }
@@ -2377,6 +2381,21 @@ setTimeout(async () => {
       const views = [...list().querySelectorAll(".tl-br-view")];
       ok("보기 모드: 구간이 작은 화살표 하나로", views.length === 1 && /↓ 약 18분/.test(views[0].querySelector(".tl-br-arrow").textContent), views.map(v => v.textContent.trim().replace(/\s+/g, " ")).join(" | "));
       ok("보기 모드: 화살표 줄에는 가격이 안 보인다(접힘)", views[0].querySelector(".tl-br-detail").style.display === "none" && views[0].querySelector(".tl-br-arrow").getAttribute("aria-expanded") === "false", views[0].querySelector(".tl-br-arrow").getAttribute("aria-expanded"));
+      const cssRule = (sel) => {
+        const pat = sel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*\\{([^}]*)\\}";
+        const m = html.match(new RegExp(pat));
+        return m ? m[1] : "";
+      };
+      const brViewCss = cssRule(".tl-br-view");
+      ok("보기 모드: 화살표·이동시간 줄은 가운데 정렬(CSS)", /flex-direction:\s*column/.test(brViewCss) && /align-items:\s*center/.test(brViewCss)
+        && /justify-content:\s*center/.test(brViewCss) && /text-align:\s*center/.test(brViewCss) && !/margin:[^;]*14px/.test(brViewCss), brViewCss);
+      const brDetailCss = cssRule(".tl-br-detail");
+      ok("보기 모드: 펼친 상세 박스도 가운데·카드 폭 안", /max-width:[^;]*100%/.test(brDetailCss) && /text-align:\s*center/.test(brDetailCss)
+        && /margin:[^;]*auto/.test(brDetailCss), brDetailCss);
+      const brEditCss = cssRule(".tl-br-edit");
+      const brBaseCss = cssRule(".tl-br");
+      ok("편집 모드 '─── 길찾기 ───' 버튼도 가운데 정렬", /display:\s*flex/.test(brBaseCss) && /align-items:\s*center/.test(brBaseCss)
+        && /justify-content:\s*center/.test(brBaseCss) && !/align-items|justify-content/.test(brEditCss), `${brBaseCss} / ${brEditCss}`);
       views[0].querySelector(".tl-br-arrow").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
       const dtxt = views[0].querySelector(".tl-br-detail").textContent.replace(/\s+/g, " ");
       ok("보기 모드: 화살표 클릭 → 요금(1인·인원수)·자세한 이동수단", views[0].querySelector(".tl-br-detail").style.display === "block"
