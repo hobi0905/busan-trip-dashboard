@@ -247,7 +247,7 @@ setTimeout(async () => {
     const ktxItem = ev("state.days[0].items.filter(i => i.transitType === 'KTX/SRT')[0]");
     const ktxAlert = w.autoAlertForItem(ev("state.days[0]"), ktxItem);
     ok("KTX 저장: 예매 알림 연결됨", ktxAlert !== null && /예매/.test(ktxAlert.title), ktxAlert && ktxAlert.title);
-    ok("KTX 저장: '직접 추가' 배지 유지", (ktxItem.badges || []).includes("직접 추가") && !(ktxItem.badges || []).includes("예매 불필요"),
+    ok("KTX 저장: '직접 추가' 꼬리표 없이 수단만", (ktxItem.badges || []).includes("KTX/SRT") && !(ktxItem.badges || []).some(b => /직접\s*추가/.test(String(b))) && !(ktxItem.badges || []).includes("예매 불필요"),
       (ktxItem.badges || []).join("|"));
 
     // 15) 룰렛 없이 바로 직접 입력해 여행 만들기
@@ -2534,6 +2534,125 @@ setTimeout(async () => {
       ok("메뉴 모달: 붙여넣은 텍스트로 일괄 추가가 그대로 동작", draft.length === 2 && draft[0].name === "아메리카노" && draft[0].price === 5500 && draft[1].name === "카페라떼" && draft[1].price === 6000, JSON.stringify(draft));
       ok("메뉴 모달: 추가 후 입력창이 비워진다", bulk.value === "", bulk.value);
       ok("메뉴 모달: 화면에 추가된 메뉴가 보인다", /아메리카노/.test(w.document.getElementById("menu-modal-list").textContent), w.document.getElementById("menu-modal-list").textContent.replace(/\s+/g, " "));
+      w.closeMenuModal();
+      ev(`state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }]; state.bookings = []; state.expenses = []; saveState();`);
+    }
+
+    // 66) 🌏 해외 여행 지도·길찾기 = 구글 지도 / 국내 여행 = 카카오맵 그대로 + 홈 탭 '직접추가' 꼬리표 제거
+    {
+      const setMapTrip = (overseas) => ev(`state.meta = { title:'지도 링크', destination:'${overseas ? "시드니" : "부산"}', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2, tripType:'${overseas ? "overseas" : "domestic"}', country:'${overseas ? "호주" : "대한민국"}' };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [
+          { id:'gl-a', place:'시드니 오페라하우스', stay:'체류 60분', moveMode:'도보', badges:['예매 필수'], lat:-33.8568, lng:151.2153, mapUrl:'https://map.naver.com/p/search/Sydney%20Opera%20House' },
+          { id:'gl-b', place:'서클러키 → 맨리', fromPlace:'서클러키 선창장', toPlace:'맨리 선창장', fromLat:-33.8577, fromLng:151.2108, toLat:-33.7969, toLng:151.2840, lat:-33.8577, lng:151.2108, moveMode:'페리 F1', routeUrl:'https://map.naver.com/p/directions/151.210800,-33.857700/Sydney%20Ferries/-/transit', mapUrl:'https://map.naver.com/p/search/Manly%20Wharf' }
+        ] }];
+        state.bookings = []; state.savedPlaces = []; currentDay = 1; editMode = false; saveState();`);
+      const itemA = "state.days[0].items[0]", itemB = "state.days[0].items[1]";
+
+      // (1) 해외 — 지도 열기·검색
+      setMapTrip(true);
+      ok("해외: 지도 버튼 라벨이 '구글 지도'", ev("mapSearchLabel()") === "🗺️ 구글 지도", ev("mapSearchLabel()"));
+      const osSearch = String(ev("mapSearchUrl('시드니 오페라하우스', -33.8568, 151.2153)"));
+      ok("해외: 좌표가 있으면 구글 지도 좌표 핀", osSearch === "https://www.google.com/maps/search/?api=1&query=-33.8568,151.2153", osSearch);
+      const osSearchName = String(ev("mapSearchUrl('시드니 오페라하우스')"));
+      ok("해외: 좌표가 없으면 장소명으로 구글 검색", osSearchName === "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent("시드니 오페라하우스"), osSearchName);
+      const osItemMap = String(ev(`itemMapUrl(${itemA})`));
+      ok("해외: 저장된 네이버 지도 링크는 구글 지도로 바뀐다", osItemMap === "https://www.google.com/maps/search/?api=1&query=-33.8568,151.2153" && !/naver/.test(osItemMap), osItemMap);
+      const osMoveMap = String(ev(`itemMapUrl(${itemB})`));
+      ok("해외: '이동' 카드 지도는 도착지(toLat·Lng) 좌표", /query=-33\.7969,151\.284/.test(osMoveMap) && !/naver/.test(osMoveMap), osMoveMap);
+      ok("해외: 공식 예약 사이트 링크는 그대로 둔다", ev(`itemMapUrl({ place:'블루라인파크', mapUrl:'https://www.bluelinepark.com/' })`) === "https://www.bluelinepark.com/", ev(`itemMapUrl({ place:'블루라인파크', mapUrl:'https://www.bluelinepark.com/' })`));
+
+      // (2) 해외 — 길찾기
+      const osRoute = String(ev(`itemRouteUrl(${itemB})`));
+      ok("해외: 저장된 네이버 길찾기 링크는 구글 길찾기로", /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&/.test(osRoute)
+        && /origin=-33\.8577,151\.2108/.test(osRoute) && /destination=-33\.7969,151\.284/.test(osRoute) && /travelmode=transit/.test(osRoute), osRoute);
+      const osWalk = String(ev("mapRouteUrl({name:'호텔', lat:-33.8614, lng:151.2108}, {name:'오페라하우스', lat:-33.8568, lng:151.2153}, '도보')"));
+      const osTaxi = String(ev("mapRouteUrl({name:'호텔', lat:-33.8614, lng:151.2108}, {name:'오페라하우스', lat:-33.8568, lng:151.2153}, '택시')"));
+      ok("해외: 이동수단이 구글 travelmode로 (도보=walking·택시=driving)", /travelmode=walking/.test(osWalk) && /travelmode=driving/.test(osTaxi), `${osWalk} / ${osTaxi}`);
+      const osNameRoute = String(ev("mapRouteUrl({name:'센트럴역'}, {name:'오페라하우스'}, '대중교통')"));
+      ok("해외: 좌표 없는 지점은 장소명으로 길찾기", osNameRoute.indexOf("origin=" + encodeURIComponent("센트럴역")) > 0
+        && osNameRoute.indexOf("destination=" + encodeURIComponent("오페라하우스")) > 0, osNameRoute);
+
+      w.openTransitModal();
+      w.document.getElementById("tr-from").value = "센트럴역";
+      w.document.getElementById("tr-to").value = "오페라하우스";
+      ev("trFromCoord = { lat:-33.8830, lng:151.2070, name:'센트럴역' }; trToCoord = { lat:-33.8568, lng:151.2153, name:'오페라하우스' }; updateTransitDirLink();");
+      const trBtnOs = w.document.getElementById("tr-naver-dir");
+      ok("해외: 교통편 모달 길찾기 버튼이 '구글'", /구글 길찾기/.test(trBtnOs.textContent) && /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&/.test(trBtnOs.href)
+        && /destination=-33\.8568,151\.2153/.test(trBtnOs.href), `${trBtnOs.textContent} ${trBtnOs.href}`);
+      w.closeTransitModal();
+
+      // (3) 홈 탭 — 일정마다 붙던 '직접추가' 꼬리표가 없다 (예전 저장 데이터도 포함)
+      ev(`${itemA}.memo = ''; ${itemA}.badges = ['직접 추가', '예매 필수']; renderHome();`);
+      const osHomeTxt = w.document.getElementById("home-sheet-body").textContent;
+      ok("홈 탭: '직접추가' 꼬리표 없음", !/직접\s*추가/.test(osHomeTxt) && /예매 필수/.test(osHomeTxt), osHomeTxt.replace(/\s+/g, " ").slice(0, 90));
+
+      // (4) 새 일정·교통편에도 '직접 추가' 배지를 붙이지 않는다
+      w.openPlaceModal(null);
+      w.document.getElementById("pm-place").value = "오페라하우스";
+      w.document.getElementById("pm-time").value = "10:00";
+      await w.savePlaceEdit();
+      const newItem = JSON.parse(ev("JSON.stringify(state.days[0].items[state.days[0].items.length - 1] || null)"));
+      ok("새 일정 추가: '직접 추가' 배지 없음", !!newItem && newItem.place === "오페라하우스" && !(newItem.badges || []).some(b => /직접\s*추가/.test(String(b))),
+        JSON.stringify(newItem && newItem.badges));
+      ok("새 일정·교통편 생성 코드에 '직접 추가' 없음", !/badges:\s*\["직접 추가"\]/.test(html) && !/\[type, "직접 추가"\]/.test(html), "");
+
+      // (5) 국내 회귀 — 카카오맵 링크·라벨 그대로, 구글 지도는 쓰지 않는다
+      setMapTrip(false);
+      ok("국내: 지도 버튼 라벨이 '카카오맵'", ev("mapSearchLabel()") === "🗺️ 카카오맵", ev("mapSearchLabel()"));
+      const krSearch = String(ev("mapSearchUrl('광안리 해변', 35.1533, 129.1186)"));
+      ok("국내: 좌표가 있으면 카카오맵 장소 링크", /^https:\/\/map\.kakao\.com\/link\/map\//.test(krSearch) && !/google/.test(krSearch), krSearch);
+      const krItemMap = String(ev(`itemMapUrl(${itemA})`));
+      const krItemRoute = String(ev(`itemRouteUrl(${itemB})`));
+      ok("국내: 일정 지도·길찾기는 카카오맵", /^https:\/\/map\.kakao\.com\//.test(krItemMap) && /^https:\/\/map\.kakao\.com\//.test(krItemRoute) && !/google/.test(krItemMap + krItemRoute), `${krItemMap} / ${krItemRoute}`);
+      w.openTransitModal();
+      w.document.getElementById("tr-from").value = "부산역";
+      w.document.getElementById("tr-to").value = "광안역";
+      ev("trFromCoord = { lat:35.1152, lng:129.0422, name:'부산역' }; trToCoord = { lat:35.1520, lng:129.1180, name:'광안역' }; updateTransitDirLink();");
+      const trBtnKr = w.document.getElementById("tr-naver-dir");
+      ok("국내: 교통편 모달 길찾기 버튼은 카카오맵", /카카오맵 길찾기/.test(trBtnKr.textContent) && /^https:\/\/map\.kakao\.com\//.test(trBtnKr.href), `${trBtnKr.textContent} ${trBtnKr.href}`);
+      w.closeTransitModal();
+      ev(`state.meta = { title:'', destination:'', startDate:'', endDate:'', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }];
+        state.bookings = []; state.savedPlaces = []; editMode = false; saveState();`);
+    }
+
+    // 67) 🍽️ 메뉴 모달 — 받은 입력·OCR 상태가 다음 가게로 넘어가지 않고, 메뉴판 사진은 여러 장을 순서대로 읽는다
+    {
+      ev(`state.meta = { title:'메뉴', destination:'부산', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [
+          { id:'mn-food', place:'칼국수집', badges:[], menus:[{ name:'칼국수', price:9000, qty:0 }] },
+          { id:'mn-cafe', place:'카페', badges:[], menus:[{ name:'아메리카노', price:5500, qty:0 }] }
+        ] }];
+        currentDay = 1; editMode = false; saveState();`);
+      const bulk = w.document.getElementById("menu-bulk-text");
+      const status = w.document.getElementById("menu-ocr-status");
+      const nameIn = w.document.getElementById("menu-custom-name");
+      const priceIn = w.document.getElementById("menu-custom-price");
+      w.openMenuModal("mn-food");
+      bulk.value = "칼국수 9,000원\n만두 6,000원";
+      status.textContent = "✓ 2개 메뉴를 추가했습니다!";
+      nameIn.value = "공기밥";
+      priceIn.value = "1000";
+      w.closeMenuModal();
+      w.openMenuModal("mn-cafe");
+      ok("메뉴 모달: 다른 가게로 열면 이전 텍스트·상태가 비워진다", bulk.value === "" && status.textContent === "" && nameIn.value === "" && priceIn.value === "",
+        `text="${bulk.value}" status="${status.textContent}" name="${nameIn.value}" price="${priceIn.value}"`);
+      ok("메뉴 모달: 메뉴 목록은 그 가게 메뉴로 새로 시작", ev("draftMenus.map(m=>m.name).join(',')") === "아메리카노", ev("draftMenus.map(m=>m.name).join(',')"));
+      const fileIn = w.document.getElementById("menu-ocr-file");
+      const fileTag = html.slice(html.indexOf('id="menu-ocr-file"'), html.indexOf('id="menu-ocr-file"') + 200);
+      ok("메뉴판 사진: 여러 장 선택 가능(multiple)", fileIn.multiple === true && /multiple/.test(fileTag), fileTag);
+      const realTesseract = w.Tesseract;
+      const seen = [];
+      w.Tesseract = { recognize: (file) => { seen.push(file.name); return Promise.resolve({ data: { text: file.text } }); } };
+      await w.handleMenuImageFiles([
+        { name: "menu-1.png", text: "아메리카노 5,500원\n카페라떼 6,000원" },
+        { name: "menu-2.png", text: "치즈케이크 7,500원" }
+      ]);
+      ok("메뉴판 사진: 여러 장을 순서대로 읽는다", seen.join(",") === "menu-1.png,menu-2.png", seen.join(","));
+      ok("메뉴판 사진: 모든 장의 텍스트를 합친다", /아메리카노/.test(bulk.value) && /치즈케이크/.test(bulk.value) && bulk.value.split("\n").length >= 3, JSON.stringify(bulk.value));
+      ok("메뉴판 사진: 모든 장에서 메뉴를 더한다", ev("draftMenus.map(m=>m.name).join(',')") === "아메리카노,카페라떼,치즈케이크", ev("draftMenus.map(m=>m.name).join(',')"));
+      ok("메뉴판 사진: 진행 상태에 장수를 보여 준다", /2장/.test(status.textContent), status.textContent);
+      w.Tesseract = realTesseract;
       w.closeMenuModal();
       ev(`state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }]; state.bookings = []; state.expenses = []; saveState();`);
     }

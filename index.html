@@ -2446,7 +2446,7 @@
             <button class="btn btn-primary btn-sm" style="flex:1;" onclick="applyBulkMenuText()">텍스트로 일괄 추가</button>
             <label class="btn btn-soft btn-sm" style="flex:1;cursor:pointer;">
               📷 사진 첨부 (OCR)
-              <input id="menu-ocr-file" type="file" accept="image/*" style="display:none;" onchange="handleMenuImageFile(this.files[0])" />
+              <input id="menu-ocr-file" type="file" accept="image/*" multiple style="display:none;" onchange="handleMenuImageFiles(this.files)" />
             </label>
           </div>
           <div id="menu-ocr-status" style="font-size:11.5px;color:var(--ocean-dark);"></div>
@@ -4887,9 +4887,11 @@
     }
 
     /* =====================================================================
-       🗺️ 지도 링크 — 국내 여행은 카카오맵, 해외 여행은 기존 네이버 지도 링크 그대로
+       🗺️ 지도 링크 — 국내 여행은 카카오맵, 해외 여행은 구글 지도
        · 카카오맵은 국내 지도만 지원하므로 해외 여행에는 절대 쓰지 않는다
-       · /link/search/검색어 · /link/map/이름,위도,경도 · /link/by/{이동수단}/출발/도착
+       · 국내: /link/search/검색어 · /link/map/이름,위도,경도 · /link/by/{이동수단}/출발/도착
+       · 해외: www.google.com/maps/search/?api=1&query=좌표(또는 장소명)
+               www.google.com/maps/dir/?api=1&origin=…&destination=…&travelmode=…
        ===================================================================== */
     function mapLinkIsDomestic() { return isDomesticTripSafe(); }
 
@@ -4906,7 +4908,53 @@
       return kakaoMapSearchUrl(nm || name);
     }
 
-    // 교통편 모달의 길찾기 버튼 — 국내는 카카오맵, 해외는 네이버 지도
+    // 구글 지도용 좌표 문자열 — 값이 없거나 좌표 범위를 벗어나면 빈 문자열
+    function googleCoordQuery(lat, lng) {
+      if (lat == null || lng == null || lat === "" || lng === "") return "";
+      const la = Number(lat), ln = Number(lng);
+      if (!Number.isFinite(la) || !Number.isFinite(ln)) return "";
+      if (Math.abs(la) > 90 || Math.abs(ln) > 180 || (la === 0 && ln === 0)) return "";
+      return `${la},${ln}`;
+    }
+
+    // 구글 지도 검색/장소 열기 — 좌표가 있으면 그 자리에 핀이 찍히고, 없으면 장소명으로 찾는다
+    function googleMapSearchUrl(name, lat, lng) {
+      const pair = googleCoordQuery(lat, lng);
+      if (pair) return `https://www.google.com/maps/search/?api=1&query=${pair}`;
+      const q = cleanPlaceName(name) || String(name || "").trim();
+      return q
+        ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
+        : "https://www.google.com/maps/";
+    }
+
+    // 구글 길찾기 이동수단 — 구글 travelmode(walking·driving·transit)로 옮긴다
+    function googleTravelMode(mode) {
+      const m = String(mode || "");
+      if (/도보|걷|산책/.test(m)) return "walking";
+      if (/택시|자차|자동차|운전|렌터카/.test(m)) return "driving";
+      return "transit";
+    }
+
+    // 구글 길찾기 지점 — 좌표가 있으면 'lat,lng', 없으면 인코딩한 장소명
+    function googlePointText(p) {
+      if (!p) return "";
+      const pair = googleCoordQuery(p.lat, p.lng);
+      if (pair) return pair;
+      const nm = cleanPlaceName(p.name) || String(p.name || "").trim();
+      return nm ? encodeURIComponent(nm) : "";
+    }
+
+    function googleDirectionsUrl(from, to, mode) {
+      const origin = googlePointText(from);
+      const dest = googlePointText(to);
+      if (!dest) return origin ? `https://www.google.com/maps/search/?api=1&query=${origin}` : "https://www.google.com/maps/";
+      const params = ["api=1"];
+      if (origin) params.push(`origin=${origin}`);
+      params.push(`destination=${dest}`, `travelmode=${googleTravelMode(mode)}`);
+      return `https://www.google.com/maps/dir/?${params.join("&")}`;
+    }
+
+    // 교통편 모달의 길찾기 버튼 — 국내는 카카오맵, 해외는 구글 지도
     function updateTransitDirLink() {
       const btn = document.getElementById("tr-naver-dir");
       if (!btn) return;
@@ -4920,8 +4968,10 @@
           btn.href = kakaoMapSearchUrl(t || f || "부산역");
         }
       } else {
-        btn.textContent = "네이버 길찾기";
-        btn.href = t ? `https://map.naver.com/p/search/${encodeURIComponent(t)}` : "https://map.naver.com/p/directions";
+        btn.textContent = "🗺️ 구글 길찾기";
+        const from = trFromCoord ? { ...trFromCoord, name: f || trFromCoord.name } : { name: f };
+        const to = trToCoord ? { ...trToCoord, name: t || trToCoord.name } : { name: t };
+        btn.href = googleDirectionsUrl(from, to, "대중교통");
       }
     }
 
@@ -4932,9 +4982,9 @@
           ? kakaoMapPlaceUrl(name, lat, lng)
           : kakaoMapSearchUrl(name);
       }
-      return naverMapUrl(name);
+      return googleMapSearchUrl(name, lat, lng);
     }
-    function mapSearchLabel() { return mapLinkIsDomestic() ? "🗺️ 카카오맵" : "🗺️ 네이버 지도"; }
+    function mapSearchLabel() { return mapLinkIsDomestic() ? "🗺️ 카카오맵" : "🗺️ 구글 지도"; }
 
     // 길찾기 링크 (도보·자동차·대중교통)
     function kakaoDirectionsUrl(from, to, mode) {
@@ -4954,7 +5004,7 @@
 
     function mapRouteUrl(from, to, mode) {
       if (mapLinkIsDomestic()) return kakaoDirectionsUrl(from, to, mode);
-      return naverDirectionsUrl(from, to, mode);
+      return googleDirectionsUrl(from, to, mode);
     }
 
     // 일정 항목의 지도 검색어 (이동 카드는 도착지, '🏨 OO 복귀'는 숙소 이름)
@@ -4970,11 +5020,20 @@
       return cleanPlaceName(p) || p || String(it.place || "");
     }
 
-    // 일정 카드의 길찾기 링크 — 예전에 저장된 네이버 길찾기 링크는 국내 여행에서 카카오로 바꾼다
+    // 일정 카드의 길찾기 링크 — 국내는 카카오맵, 해외는 구글 길찾기로 맞춘다
     function itemRouteUrl(it) {
       if (!it || !it.routeUrl) return "";
-      if (!mapLinkIsDomestic()) return it.routeUrl;
-      if (!/map\.naver\.com/.test(it.routeUrl)) return it.routeUrl;
+      const stored = String(it.routeUrl);
+      if (!mapLinkIsDomestic()) {
+        // 일부러 다른 사이트(공식 예약 페이지 등)를 걸어 둔 링크는 건드리지 않는다
+        if (stored && !/^https?:\/\/map\.(naver|kakao)\.com/.test(stored)) return stored;
+        const from = it.fromPlace ? { name: it.fromPlace, lat: it.fromLat, lng: it.fromLng } : null;
+        const to = it.toPlace
+          ? { name: it.toPlace, lat: it.toLat, lng: it.toLng }
+          : { name: itemPlaceQuery(it), lat: it.toLat != null ? it.toLat : it.lat, lng: it.toLng != null ? it.toLng : it.lng };
+        return googleDirectionsUrl(from, to, it.moveMode);
+      }
+      if (!/map\.naver\.com/.test(stored)) return stored;
       const q = itemPlaceQuery(it);
       const hasCoord = (typeof it.lat === "number" && typeof it.lng === "number");
       return hasCoord
@@ -4982,19 +5041,24 @@
         : kakaoMapSearchUrl(q);
     }
 
-    // 일정 카드의 지도 링크 — 국내는 카카오맵으로 다시 계산하고, 해외는 저장된 링크를 그대로 쓴다
+    // 일정 카드의 지도 링크 — 국내는 카카오맵, 해외는 구글 지도로 다시 계산한다
     function itemMapUrl(it) {
       if (!it) return "";
       const stored = String(it.mapUrl || "");
-      const isNaverMap = /^https?:\/\/map\.naver\.com/.test(stored);
+      const isMapLink = /^https?:\/\/map\.(naver|kakao)\.com/.test(stored);
       if (mapLinkIsDomestic()) {
         // 공식 예약 페이지처럼 일부러 다른 사이트를 걸어 둔 링크는 건드리지 않는다
-        if (stored && !isNaverMap) return stored;
+        if (stored && !/^https?:\/\/map\.naver\.com/.test(stored)) return stored;
         const q = itemPlaceQuery(it);
         const hasCoord = (typeof it.lat === "number" && typeof it.lng === "number");
         return hasCoord ? kakaoMapPlaceUrl(q, it.lat, it.lng) : kakaoMapSearchUrl(q);
       }
-      return stored || naverMapUrl(itemPlaceQuery(it));
+      // 해외 — 예전에 저장된 네이버·카카오 지도 링크는 구글 지도로 다시 계산한다
+      if (stored && !isMapLink) return stored;
+      const q = itemPlaceQuery(it);
+      // '이동' 카드의 lat/lng는 출발지일 수 있어 도착 좌표(toLat/toLng)만 믿는다
+      if (String(it.toPlace || "").trim()) return googleMapSearchUrl(q, it.toLat, it.toLng);
+      return googleMapSearchUrl(q, it.lat, it.lng);
     }
 
 
@@ -7358,7 +7422,7 @@
         moveMin: dur,
         moveCost: cost,
         costTotal: cost,
-        badges: bookingFree ? [type, "예매 불필요"] : [type, "직접 추가"],
+        badges: bookingFree ? [type, "예매 불필요"] : [type],
         mapUrl: mapSearchUrl(toPlace),
         memo: `${dep} 출발 → ${arr} 도착`
       };
@@ -8524,7 +8588,7 @@
         const newItem = {
           id: "d" + currentDay + "-" + Date.now(),
           time: timeOk, place, stay, moveMode, moveMin: 10, moveCost: placeEditMode === "route" ? c : 0, costTotal: c,
-          badges: ["직접 추가"], mapUrl, memo
+          badges: [], mapUrl, memo
         };
         if (placeEditMode === "route") { newItem.fromPlace = fromPlace; newItem.toPlace = toPlace; rememberRouteEndpointCoords(newItem); }
         if (typeof pickedLat === "number") { newItem.lat = pickedLat; newItem.lng = pickedLng; }
@@ -8573,40 +8637,57 @@
       document.getElementById("menu-ocr-status").textContent = `✓ ${parsed.length}개 메뉴를 추가했습니다! 수량을 조절해 주세요.`;
     }
 
-    async function handleMenuImageFile(file) {
-      if (!file) return;
+    // 메뉴판 사진 OCR — 여러 장을 고르면 순서대로 읽어 텍스트·메뉴를 합진다
+    async function handleMenuImageFiles(files) {
+      const list = Array.from(files || []).filter(Boolean);
+      if (!list.length) return;
       const stEl = document.getElementById("menu-ocr-status");
       if (!window.Tesseract) return (stEl.textContent = "OCR 라이브러리 로드 중입니다. 잠시 후 다시 시도해 주세요.");
-      stEl.textContent = "📷 사진에서 메뉴 글자를 읽는 중...";
-      try {
-        const res = await window.Tesseract.recognize(file, "kor+eng", {
-          logger: m => {
-            if (m.status === "recognizing text") stEl.textContent = `📷 메뉴판 분석 중... ${Math.round((m.progress || 0) * 100)}%`;
-          }
-        });
-        const text = res?.data?.text || "";
-        document.getElementById("menu-bulk-text").value = text;
-        const parsed = parseMenuTextToItems(text);
-        if (parsed.length) {
+      const texts = [];
+      let parsedCount = 0;
+      for (let i = 0; i < list.length; i++) {
+        const file = list[i];
+        // 여러 장일 때만 '1/3장'을 붙인다 (한 장이면 기존 문구 그대로)
+        const tag = list.length > 1 ? `${i + 1}/${list.length}장 ` : "";
+        stEl.textContent = `📷 ${tag}사진에서 메뉴 글자를 읽는 중...`;
+        try {
+          const res = await window.Tesseract.recognize(file, "kor+eng", {
+            logger: m => {
+              if (m.status === "recognizing text") stEl.textContent = `📷 ${tag}메뉴판 분석 중... ${Math.round((m.progress || 0) * 100)}%`;
+            }
+          });
+          const text = String((res && res.data && res.data.text) || "").trim();
+          if (!text) continue;
+          texts.push(text);
+          const parsed = parseMenuTextToItems(text);
           parsed.forEach(p => { if (!draftMenus.some(m => m.name === p.name)) draftMenus.push(p); });
-          renderMenuDraft();
-          stEl.textContent = `✓ 사진에서 ${parsed.length}개 메뉴를 인식해 추가했습니다!`;
-        } else {
-          stEl.textContent = "글자는 읽었지만 가격 패턴을 못 찾았어요. 위 입력창에서 다듬고 '텍스트로 일괄 추가'를 눌러주세요.";
+          parsedCount += parsed.length;
+        } catch (e) {
+          // 한 장이 실패해도 나머지 사진은 계속 읽는다
         }
-      } catch (e) {
-        stEl.textContent = "사진 분석 중 오류가 발생했습니다.";
+      }
+      if (!texts.length) return (stEl.textContent = "사진에서 글자를 읽지 못했어요. 더 선명한 사진으로 다시 시도해 주세요.");
+      document.getElementById("menu-bulk-text").value = texts.join("\n");
+      renderMenuDraft();
+      if (parsedCount) {
+        stEl.textContent = `✓ 사진 ${list.length}장에서 ${parsedCount}개 메뉴를 인식해 추가했습니다!`;
+      } else {
+        stEl.textContent = "글자는 읽었지만 가격 패턴을 못 찾았어요. 위 입력창에서 다듬고 '텍스트로 일괄 추가'를 눌러주세요.";
       }
     }
 
+    // 한 장만 넘어오는 예전 경로(붙여넣기 등)도 같은 함수로 처리한다
+    async function handleMenuImageFile(file) { return handleMenuImageFiles([file]); }
+
     document.getElementById("menu-modal")?.addEventListener("paste", (ev) => {
       const items = ev.clipboardData?.items || [];
+      const images = [];
       for (const it of items) {
-        if (it.type.startsWith("image/")) {
-          ev.preventDefault();
-          handleMenuImageFile(it.getAsFile());
-          break;
-        }
+        if (it.type.startsWith("image/")) images.push(it.getAsFile());
+      }
+      if (images.length) {
+        ev.preventDefault();
+        handleMenuImageFiles(images);
       }
     });
 
@@ -8622,6 +8703,16 @@
       editingMenuDayIdx = dIdx;
       editingMenuItemId = itemId;
       draftMenus = item.menus.map(m => ({ ...m }));
+      // 다른 식당·카페에서 쓰던 입력·OCR 상태가 남지 않게 매번 비운다
+      const reset = (id, prop, val) => {
+        const el = document.getElementById(id);
+        if (el) el[prop] = val;
+      };
+      reset("menu-bulk-text", "value", "");
+      reset("menu-ocr-status", "textContent", "");
+      reset("menu-custom-name", "value", "");
+      reset("menu-custom-price", "value", "");
+      reset("menu-ocr-file", "value", "");
       document.getElementById("menu-modal-title").textContent = `🍽️ ${item.place} 메뉴`;
       renderMenuDraft();
       document.getElementById("menu-modal").classList.add("open");
@@ -9448,11 +9539,13 @@
       }).filter(Boolean);
     }
 
+    // 홈 요약에는 '직접 추가' 같은 꼬리표를 붙이지 않는다 (예전에 저장된 배지도 걸러낸다)
+    const HOME_HIDDEN_BADGE_RE = /^\s*직접\s*추가\s*$/;
     function homeMemoLine(it) {
       const raw = String(it.memo || "").replace(/\s+/g, " ").trim();
       if (raw) return raw;
       // 체류 시간은 적지 않는다 — 메모가 없으면 배지, 그것도 없으면 이동수단
-      const b = (it.badges || []).filter(Boolean);
+      const b = (it.badges || []).filter(Boolean).filter(x => !HOME_HIDDEN_BADGE_RE.test(String(x)));
       return b.length ? b.join(" · ") : String(it.moveMode || "");
     }
 
@@ -15881,7 +15974,7 @@
             <div class="roul-meta" style="margin-top:8px;">🚉 ${d.transit}<br>🗓️ ${d.best}</div>
             <div class="roul-do">
               <button class="btn btn-primary btn-sm" onclick="fillTripSetupFromRoulette('${d.country ? "overseas" : "domestic"}','${String(d.name).replace(/'/g, "\\'")}')">🎯 이 여행지로 채우기</button>
-              <a class="btn btn-soft btn-sm" style="text-decoration:none;" href="${escapeAttr(d.country ? naverMapUrl(d.name) : kakaoMapSearchUrl(d.name))}" target="_blank" rel="noopener">${d.country ? "🗺️ 네이버 지도" : "🗺️ 카카오맵"}</a>
+              <a class="btn btn-soft btn-sm" style="text-decoration:none;" href="${escapeAttr(d.country ? googleMapSearchUrl(d.name) : kakaoMapSearchUrl(d.name))}" target="_blank" rel="noopener">${d.country ? "🗺️ 구글 지도" : "🗺️ 카카오맵"}</a>
             </div>
           </div>`;
       }).join("") + `<div class="roul-note">※ ${people}명 기준 · 숙박은 2인 1실 1박 평균가로 계산했어요. 선택한 일정 길이·계절·예매 시점에 따라 달라져요.</div>`;
@@ -17408,7 +17501,7 @@
           lat: row.lat,
           lng: row.lng,
           indoor: spotIndoorInfo(row).indoor === true,
-          mapUrl: opts.mapDomestic === false ? naverMapUrl(row.name) : mapSearchUrl(row.name, row.lat, row.lng),
+          mapUrl: opts.mapDomestic === false ? googleMapSearchUrl(row.name, row.lat, row.lng) : mapSearchUrl(row.name, row.lat, row.lng),
           memo: row.desc || ""
         });
         prevRow = row;
