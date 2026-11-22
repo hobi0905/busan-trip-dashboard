@@ -10966,7 +10966,7 @@
         const off = !e.included;
         const alloc = expenseAllocation(e, people);
         const payerText = alloc.custom
-          ? people.filter(nm => (alloc.amounts[nm] || 0) > 0).map(nm => `${nm} ${fmt(alloc.amounts[nm])}`).join(" · ")
+          ? people.filter(nm => (alloc.amounts[nm] || 0) > 0).map(nm => `${escapeHtmlText(nm)} ${fmt(alloc.amounts[nm])}`).join(" · ")
           : "";
         return `
           <div class="expense-item"${off ? ' style="opacity:.68;"' : ""} data-expense-id="${escapeAttr(e.id)}">
