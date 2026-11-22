@@ -938,6 +938,8 @@ setTimeout(async () => {
       ok("메모 모달: 시간 입력 없음", memoModal.classList.contains("open")
         && !memoModal.querySelector('input[type="time"]') && !/id="memo-time"/.test(memoModal.innerHTML),
         "");
+      ok("메모 안내문: 버튼 대신 편집 모드 드래그 안내", /✏️ 일정 편집/.test(memoModal.innerHTML)
+        && !/위로|아래로/.test(memoModal.innerHTML), "");
       w.document.getElementById("memo-title").value = "체크인 준비";
       w.document.getElementById("memo-body").value = "15시 체크인\n우산 챙기기";
       w.saveMemoItem();
