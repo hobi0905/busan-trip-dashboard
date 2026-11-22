@@ -2870,6 +2870,8 @@ setTimeout(async () => {
         && row0.children[1].querySelector(".menu-price-text"), row0.children.length + "줄");
 
       // ✏️ 를 누르면 그 행만 입력칸으로 바뀌고, 지금 값이 들어 있다
+      const listEl = w.document.getElementById("menu-modal-list");
+      listEl.scrollTop = 48;                       // 목록을 내려 본 상태에서 고치기 시작
       rowEditBtn(0).click();
       const nameIn = $("#menu-modal-list .menu-name-input");
       const priceIn = $("#menu-modal-list .menu-price-input");
@@ -2878,6 +2880,7 @@ setTimeout(async () => {
         && $$("#menu-modal-list input").length === 2 && $("#menu-modal-list .menu-ic-btn.done") !== null,
         `${nameIn && nameIn.value} / ${priceIn && priceIn.value}`);
       ok("메뉴 인라인 수정: 입력칸이 열려도 다른 행은 그대로 보인다", rowName(1) === "오늘의 산도" && rowPrice(1) === "-", `${rowName(1)}/${rowPrice(1)}`);
+      ok("메뉴 인라인 수정: 고치는 동안 목록이 맨 위로 튀지 않는다", listEl.scrollTop === 48, String(listEl.scrollTop));
 
       // 이름 고치기 — '팔말차롤' → '팥말차롤'
       typeInto(nameIn, "팥말차롤");
