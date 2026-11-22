@@ -5927,6 +5927,26 @@
       });
     }
 
+    // 이미 저장해 둔 거점 이름('집'·'호텔 OO' 등)인지 — 위치가 이미 정해져 있으니 연관검색어를 띄우지 않는다
+    function isSavedPlaceNameExact(v) {
+      const key = normalizePlaceKey(cleanPlaceName(v) || String(v || ""));
+      if (!key) return false;
+      const list = Array.isArray(state?.savedPlaces) ? state.savedPlaces : [];
+      return list.some(p => p && normalizePlaceKey(cleanPlaceName(p.label) || p.label) === key);
+    }
+
+    // 프로그램이 값을 넣을 때(예: 거점 칩 클릭)는 자동완성을 열지 않는다
+    // — 칩을 눌렀을 뿐인데 '집'을 검색하는 목록이 뜨던 문제를 막는다
+    function setPlaceInputValueQuiet(el, val) {
+      if (!el) return;
+      try { el._acCancel && el._acCancel(); } catch (e) {}      // 예약된 자동완성 조회·목록 취소
+      el.dataset.acSkip = "1";
+      el.value = val;
+      try { el.dispatchEvent(new Event("input", { bubbles: true })); } catch (e) {}
+      delete el.dataset.acSkip;
+      closeAllPlaceAutocomplete();
+    }
+
     function attachPlaceAutocomplete(inputId, opts = {}) {
       const input = document.getElementById(inputId);
       if (!input || PLACE_AC_WIRED[inputId]) return;
@@ -5987,9 +6007,18 @@
         }
       };
 
+      const cancelPending = () => {
+        clearTimeout(timer); timer = null;
+        items = []; activeIdx = -1;
+        list.innerHTML = ""; list.classList.remove("open");
+      };
+      input._acCancel = cancelPending;   // 거점 칩처럼 값을 프로그램으로 넣을 때 예약된 조회를 취소한다
+      const acSuppressed = () => input.dataset.acSkip === "1";
+
       const schedule = (allowRemote) => {
         clearTimeout(timer);
         timer = setTimeout(() => {
+          if (acSuppressed()) return;
           const q = input.value.trim();
           if (!q) { items = []; paint(); return; }
           lastQuery = q;
@@ -5998,8 +6027,14 @@
       };
 
       input.setAttribute("autocomplete", "off");
-      input.addEventListener("input", () => schedule(true));
+      input.addEventListener("input", () => {
+        if (acSuppressed()) return;                     // 거점 칩으로 넣은 값 — 검색 목록을 열지 않는다
+        if (isSavedPlaceNameExact(input.value)) { cancelPending(); return; }
+        schedule(true);
+      });
       input.addEventListener("focus", () => {
+        if (acSuppressed()) return;
+        if (isSavedPlaceNameExact(input.value)) { cancelPending(); return; }
         if (input.value.trim()) schedule(true);
       });
       input.addEventListener("keydown", (ev) => {
@@ -11821,6 +11856,14 @@
       return "";
     }
 
+    // '집'·'호텔' 같은 일반 명사는 지오코딩해도 엉뚱한 곳이 나온다 — 주소로만 찾는다
+    const GENERIC_PLACE_WORDS = new Set(["집", "우리집", "본가", "호텔", "숙소", "회사", "학교", "직장", "역", "공항", "시내", "동네"]);
+    function isGenericPlaceQuery(q) {
+      const key = normalizePlaceKey(q);
+      if (!key) return true;
+      return GENERIC_PLACE_WORDS.has(key);
+    }
+
     // 좌표가 없는 거점도 주소·이름·같은 이름의 일정으로 조용히 위치를 찾아 둔다
     async function resolveSavedPlaceCoords(pl) {
       if (!pl) return null;
@@ -11832,10 +11875,12 @@
       if (fromItem && typeof fromItem.lat === "number") {
         return { lat: fromItem.lat, lng: fromItem.lng, address: String(fromItem.address || "") };
       }
+      // 지오코딩은 실제 주소(도로명·지번)로만 — '집' 같은 이름만으로는 찾지 않는다
       const queries = [];
-      [pl.roadAddress, pl.address, nm].forEach(v => {
+      [pl.roadAddress, pl.address].forEach(v => {
         const q = String(v || "").trim();
-        if (q && !looksLikeCoordText(q) && !queries.includes(q)) queries.push(q);
+        if (!q || looksLikeCoordText(q) || isGenericPlaceQuery(q) || queries.includes(q)) return;
+        queries.push(q);
       });
       for (const q of queries) {
         let g = null;
@@ -11913,12 +11958,16 @@
       const raw = String(pl.address || pl.label || "").trim();
       const val = cleanPlaceName(pl.label) || cleanPlaceName(raw) || raw;
       if (!val) return;
-      el.value = val;
-      try { el.dispatchEvent(new Event("input", { bubbles: true })); } catch {}
-      // 단일 장소 칸이면 지도 검색칸도 같은 깨끗한 이름으로 채워 바로 검색되게 한다
+      // 칩 클릭은 '고르기'지 '검색'이 아니다 — 자동완성(연관검색어)을 열지 않고 값을 바로 넣는다
+      setPlaceInputValueQuiet(el, val);
+      // 단일 장소 칸이면 지도 검색칸은 비워 둔다 (거점은 위치까지 이미 정해져 있어 검색할 것이 없다)
       if (target === "pm-place") {
         const q = document.getElementById("pm-search-q");
-        if (q) q.value = val;
+        if (q) {
+          try { q._acCancel && q._acCancel(); } catch (e) {}
+          q.value = "";
+        }
+        closeAllPlaceAutocomplete();
         // ✅ 이미 등록해 둔 집·호텔 — 위치까지 바로 넣고 다시 검색하지 않게 한다
         pickSavedPlaceIntoModal(pl, val);
       }
