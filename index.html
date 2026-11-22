@@ -1740,11 +1740,12 @@
     .tl-br-set .tl-br-btn { color: var(--ocean-dark); border-style: solid; border-color: var(--ocean-border); background: var(--ocean-soft); }
     .tl-br-clear { font-family: inherit; font-size: 10.5px; font-weight: 800; color: #94a3b8; background: #fff; border: 1px solid var(--border); border-radius: 999px; width: 20px; height: 20px; line-height: 1; padding: 0; cursor: pointer; flex: 0 0 auto; }
     .tl-br-clear:active { background: var(--danger-bg); color: var(--danger); }
-    .tl-br-view { flex-direction: column; align-items: flex-start; margin: -2px 0 7px 14px; }
+    /* 보기 모드 화살표·이동시간은 카드 사이 가운데에 (편집 모드 버튼과 같은 중심선) */
+    .tl-br-view { flex-direction: column; align-items: center; justify-content: center; text-align: center; width: 100%; margin: -2px 0 7px; }
     .tl-br-arrow { font-family: inherit; font-size: 11px; font-weight: 800; line-height: 1.4; color: var(--ocean-dark); background: #f8fafc; border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; cursor: pointer; white-space: nowrap; }
     .tl-br-arrow:active { background: var(--ocean-soft); }
     .tl-br-view.tl-br-open .tl-br-arrow { background: var(--ocean-soft); border-color: var(--ocean-border); }
-    .tl-br-detail { margin: 4px 0 0 2px; padding: 5px 9px; font-size: 11px; line-height: 1.55; color: var(--muted); background: #fff; border: 1px solid var(--border); border-left: 3px solid var(--ocean-border); border-radius: 9px; word-break: keep-all; }
+    .tl-br-detail { margin: 4px auto 0; max-width: min(100%, 340px); padding: 5px 10px; font-size: 11px; line-height: 1.55; color: var(--muted); background: #fff; border: 1px solid var(--border); border-left: 3px solid var(--ocean-border); border-radius: 9px; word-break: keep-all; text-align: center; box-sizing: border-box; }
     .tl-br-detail .tl-br-fare { font-weight: 800; color: var(--ocean-dark); }
     .tl-br-detail .tl-br-mode { font-weight: 600; }
     .br-sheet { max-width: 520px; }
@@ -6506,7 +6507,7 @@
     function moveEtaHtml(it) {
       const text = moveEtaText(it);
       if (!text) return "";
-      return `<div class="tl-eta">⏱️ ${escapeHtmlText(text)}</div>`;
+      return `<div class="tl-eta">⏱️ 이동시간 ${escapeHtmlText(text)}</div>`;
     }
 
     function renderTimeline() {
