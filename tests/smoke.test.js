@@ -2253,6 +2253,50 @@ setTimeout(async () => {
         ev("JSON.stringify(getSyncedExpenses().filter(e => e.fromBooking).map(e => [e.name, e.amount]))"));
     }
 
+    // 59) ⏱️ '이동' 카드는 접힌 상태(더보기 전)에서도 이동 시간이 보인다
+    {
+      ev(`state.meta = { title:'이동 시간 테스트', destination:'부산', startDate:'2027-06-01', endDate:'2027-06-02', travelers:2 };
+        state.days = [{ day:1, date:'2027-06-01', label:'1일차', items: [
+          { id:'mv-1', time:'09:00', place:'부산역', lat:35.1157, lng:129.0403, moveMode:'', moveMin:0, costTotal:0 },
+          { id:'mv-2', time:'10:00', place:'부산역 → 광안리', fromPlace:'부산역', toPlace:'광안리', moveMode:'수영로 · 약 46분', moveMin:10, moveCost:1550, costTotal:1550 },
+          { id:'mv-3', time:'11:00', place:'광안리 → 해운대', fromPlace:'광안리', toPlace:'해운대', moveMode:'해운대 2호선', moveMin:25, moveCost:1550, costTotal:1550 },
+          { id:'mv-4', time:'12:00', place:'감천문화마을', lat:35.0975, lng:129.0106, moveMode:'도보 5분', moveMin:5, costTotal:0 }
+        ] }];
+        state.bookings = []; state.expenses = []; currentDay = 1; saveState();`);
+      w.renderTimeline();
+      const tlCards = [...w.document.querySelectorAll("#timeline-list .card")];
+      const cardOf = (id) => tlCards.find(c => c.getAttribute("data-card-id") === id) || null;
+      const cMv2 = cardOf("mv-2"), cMv3 = cardOf("mv-3"), cMv4 = cardOf("mv-4");
+      const etaOf = (c) => (c && c.querySelector(".tl-eta") ? c.querySelector(".tl-eta").textContent.trim() : "");
+
+      ok("이동 카드: 접힌 상태에서도 이동 시간 표시", !!cMv2 && !cMv2.classList.contains("tl-open")
+        && /약 46분/.test(etaOf(cMv2)) && !cMv2.classList.contains("tl-open"), `opened=${cMv2 && cMv2.classList.contains("tl-open")} / ${etaOf(cMv2)}`);
+      ok("이동 카드: 추천 루트 시간과 moveMin이 겹쳐도 한 번만", /약 46분/.test(etaOf(cMv2))
+        && (etaOf(cMv2).match(/46\s*분/g) || []).length === 1 && !/10\s*분/.test(etaOf(cMv2)), etaOf(cMv2));
+      ok("이동 카드: moveMin만 있어도 시간·수단 표시", /약 25분/.test(etaOf(cMv3)) && /해운대 2호선/.test(etaOf(cMv3)), etaOf(cMv3));
+      ok("이동 카드 데이터는 그대로(펼친 상세 줄에 원래 이동수단)", (() => {
+        const move = cMv2.querySelector(".tl-extra .tl-move");
+        return !!move && /수영로 · 약 46분/.test(move.textContent) && ev("state.days[0].items[1].moveMode") === "수영로 · 약 46분";
+      })(), cMv2.querySelector(".tl-extra .tl-move") && cMv2.querySelector(".tl-extra .tl-move").textContent);
+      ok("일반 장소 카드에는 이동 시간 칩 없음·체류 문구도 없음", !!cMv4 && !cMv4.querySelector(".tl-eta")
+        && !/체류/.test(cMv4.textContent) && !/약 5분/.test(cMv4.textContent), cMv4 && cMv4.textContent.replace(/\s+/g, " ").slice(0, 80));
+      ok("이동 카드: 펼치면 상세 줄에 있으니 칩은 숨김(CSS)", /\.card\.tl-open \.tl-eta \{ display: none; \}/.test(html)
+        && /\.tl-eta \{/.test(html), "");
+      ok("이동 카드 판정: 출발·도착 또는 화살표 카드", ev("isMoveCardItem({ fromPlace:'A', toPlace:'B' })") === true
+        && ev("isMoveCardItem({ place:'A → B' })") === true && ev("isMoveCardItem({ place:'감천문화마을' })") === false, "");
+      ok("moveEtaText: 시간 없으면 빈 문자열", ev("moveEtaText({ fromPlace:'A', toPlace:'B', place:'A → B' })") === "",
+        ev("moveEtaText({ fromPlace:'A', toPlace:'B', place:'A → B' })"));
+
+      // 예약 연동 교통편 카드(경비 탭 예약 내역 기반)도 이동 카드라서 같은 자리에 시간이 보인다
+      ev(`state.bookings = [{ id:'mv-bk', type:'transit', mode:'KTX', name:'KTX 25', from:'광명역', to:'부산역', depDate:'2027-06-01', depTime:'10:17', arrTime:'12:46', seat:'4호 12A', price:104400, payStatus:'paid' }]; saveState();`);
+      w.renderTimeline();
+      const vMove = [...w.document.querySelectorAll("#timeline-list .card.tl-virtual")].find(c => /광명역/.test(c.textContent));
+      ok("예약 교통편 카드도 접힌 채로 이동 시간", !!vMove && !vMove.classList.contains("tl-open")
+        && /약 149분/.test(((vMove.querySelector(".tl-eta") || {}).textContent || "")), vMove && ((vMove.querySelector(".tl-eta") || {}).textContent || ""));
+
+      ev("state.bookings = []; saveState();");
+    }
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }

@@ -1725,6 +1725,13 @@
     /* ===== 일정 카드 접힘/펼침 ===== */
     .card.tl-collapsible { cursor: pointer; }
     .tl-fold-cue { font-size: 11px; color: var(--muted); font-weight: 700; margin-left: auto; white-space: nowrap; }
+    /* ⏱️ '이동' 카드의 이동 시간 — 접힌 카드에서도 보인다 (펼치면 상세 줄에 있으니 중복하지 않는다) */
+    .tl-eta {
+      display: inline-block; font-size: 11.5px; font-weight: 800; line-height: 1.5;
+      color: var(--ocean-dark); background: var(--ocean-soft); border: 1px solid var(--ocean-border);
+      border-radius: 999px; padding: 2px 9px; margin: 0 0 4px;
+    }
+    .card.tl-open .tl-eta { display: none; }
     .tl-extra { display: none; }
     .card.tl-open .tl-extra { display: block; }
     /* 접힌 카드는 장소·메모만 깔끔하게 */
@@ -6383,6 +6390,56 @@
       </div>`;
     }
 
+    /* =====================================================================
+       ⏱️ '이동' 카드의 이동 시간 — 카드가 접혀 있어도(더보기 전에도) 보이게
+       · 일반 방문 장소 카드의 체류 시간은 쓰지 않는다 (사용자 요청으로 뺐다)
+       · 추천 루트의 '노선 · 약 N분'이 moveMode에 들어 있어도 두 번 적지 않는다
+       ===================================================================== */
+    function isMoveCardItem(it) {
+      if (!it) return false;
+      return Boolean(String(it.fromPlace || "").trim() || String(it.toPlace || "").trim()
+        || /→|↔|⇄/.test(String(it.place || "")));
+    }
+
+    // '1시간 20분' · '약 46분' → 분 (없으면 0)
+    function moveMinutesFromText(txt) {
+      const s = String(txt || "");
+      if (!s) return 0;
+      const h = s.match(/(\d+)\s*시간/);
+      let total = h ? Number(h[1]) * 60 : 0;
+      const rest = h ? s.slice(s.indexOf(h[0]) + h[0].length) : s;
+      const m = rest.match(/(\d+)\s*분/);
+      if (m) total += Number(m[1]);
+      return total;
+    }
+
+    // 이동 시간(분) — 이동수단에 적힌 시간을 우선(추천 루트), 그다음 moveMin
+    function moveCardMinutes(it) {
+      if (!it) return 0;
+      const modeTxt = `${it.moveMode || ""} ${it.transitType || ""}`;
+      const fromMode = moveMinutesFromText(modeTxt);
+      if (fromMode > 0) return fromMode;
+      const n = Number(it.moveMin);
+      if (Number.isFinite(n) && n > 0) return Math.round(n);
+      return moveMinutesFromText(it.stay);
+    }
+
+    // 짧은 한 줄: '약 46분 · 지하철 2호선' (이동수단에 시간이 이미 있으면 한 번만)
+    function moveEtaText(it) {
+      if (!isMoveCardItem(it)) return "";
+      const mins = moveCardMinutes(it);
+      if (!mins) return "";
+      const mode = String(it.moveMode || it.transitType || "").trim();
+      const modeHasTime = /\d+\s*(분|시간)/.test(mode);
+      return mode && !modeHasTime ? `약 ${mins}분 · ${mode}` : `약 ${mins}분`;
+    }
+
+    function moveEtaHtml(it) {
+      const text = moveEtaText(it);
+      if (!text) return "";
+      return `<div class="tl-eta">⏱️ ${escapeHtmlText(text)}</div>`;
+    }
+
     function renderTimeline() {
       // 드래그 중에 날씨·동기화 등으로 목록이 다시 그려지면, 손을 떼기 전의 순서가 통째로 사라진다.
       // 목록을 다시 그리기 전에 지금까지의 드래그를 먼저 마무리(확정)한다.
@@ -6466,6 +6523,7 @@
               <span class="tl-fold-cue">${isOpen ? "접기 ▴" : "더 보기 ▾"}</span>
             </div>
             <div class="tl-memo">${it.memo || ""}</div>
+            ${moveEtaHtml(it)}
             <div class="tl-extra">
             <div class="tl-badges">${badges}${hasMenus ? `<span class="tag blue">🍽️ 메뉴 선택</span>` : ""}</div>
             ${pickedText ? `<div style="font-size:12.5px;font-weight:700;color:var(--ocean-dark);background:var(--ocean-soft);padding:6px 9px;border-radius:8px;margin-bottom:6px;">🍴 ${pickedText} (${fmt(it.costTotal)})</div>` : ""}
