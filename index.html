@@ -1551,8 +1551,11 @@
     body.view-pc .tl-pc-left .map-action-row .btn { flex: 1; min-width: 0; padding-left: 4px; padding-right: 4px; }
     body.view-pc .tl-pc-left .map-help-row { margin-bottom: 10px; }
     body.view-pc .tl-pc-left .tl-places-row { margin-bottom: 10px; }
+    body.view-pc .tl-pc-left .tl-planb-row { margin-bottom: 10px; }
+    body.view-pc .tl-pc-left .planb-box { margin-bottom: 10px; }
     body.view-pc #day-map { height: clamp(300px, 46vh, 460px); }
-    body.view-pc .tl-pc-right > .day-tabs { margin-bottom: 12px; }
+    /* 🗺️ 1일차 칸 바로 아래 = 오늘의 동선 지도 (좌 칸 맨 위에 날짜 탭) */
+    body.view-pc .tl-pc-left > .day-tabs { margin-bottom: 12px; }
 
     /* ─────────────── 나머지 탭: 넓은 2열 카드 그리드 ─────────────── */
     body.view-pc #tab-expenses.active,
@@ -1853,20 +1856,6 @@
       <!-- TAB 1: TIMELINE -->
       <section id="tab-timeline" class="tab-panel">
         <div class="day-tabs" id="day-tabs"></div>
-        <div class="tl-planb-row" style="display:flex;gap:8px;align-items:stretch;margin-bottom:10px;">
-          <button id="edit-mode-btn" class="btn btn-soft" style="flex:1 1 auto;min-width:0;height:48px;white-space:nowrap;font-size:15.5px;" onclick="toggleEditMode()">✏️ 일정 편집</button>
-          <div class="planb-bar planb-bar-compact" style="flex:0 0 auto;margin-bottom:0;padding:6px 10px;gap:8px;">
-            <div style="display:flex;flex-direction:column;justify-content:center;min-width:0;">
-              <div style="font-weight:800;font-size:12px;white-space:nowrap;" id="planb-bar-title">☔ 플랜 B</div>
-              <div style="font-size:10px;color:var(--muted);white-space:nowrap;" id="planb-bar-sub">우천·한파 대체</div>
-            </div>
-            <label class="switch" style="flex:0 0 auto;align-self:center;">
-              <input type="checkbox" id="planb-toggle" />
-              <span class="slider"></span>
-            </label>
-          </div>
-        </div>
-        <div id="planb-content" class="planb-box" style="display:none;"></div>
         <div class="card tl-map-card" style="padding:10px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:0 2px;gap:6px;">
             <span id="map-card-title" style="font-size:12.5px;font-weight:800;color:var(--ocean-dark);">🗺️ 오늘의 부산 동선 지도</span>
@@ -1887,6 +1876,21 @@
           <button class="map-help-btn" id="map-action-help" title="영업시간·변수·혜택 체크 설명 보기" onclick="openActionHelp()">?</button>
         </div>
         <div class="hours-note hours-updated-label map-stamp-line" id="map-hours-stamp" style="text-align:center;margin:0 0 12px;">아직 업데이트 전</div>
+        <!-- ☔ 일정 편집·플랜 B — 오늘의 동선 지도 바로 아래 (지도 → 편집 → 일정 순서) -->
+        <div class="tl-planb-row" style="display:flex;gap:8px;align-items:stretch;margin-bottom:10px;">
+          <button id="edit-mode-btn" class="btn btn-soft" style="flex:1 1 auto;min-width:0;height:48px;white-space:nowrap;font-size:15.5px;" onclick="toggleEditMode()">✏️ 일정 편집</button>
+          <div class="planb-bar planb-bar-compact" style="flex:0 0 auto;margin-bottom:0;padding:6px 10px;gap:8px;">
+            <div style="display:flex;flex-direction:column;justify-content:center;min-width:0;">
+              <div style="font-weight:800;font-size:12px;white-space:nowrap;" id="planb-bar-title">☔ 플랜 B</div>
+              <div style="font-size:10px;color:var(--muted);white-space:nowrap;" id="planb-bar-sub">우천·한파 대체</div>
+            </div>
+            <label class="switch" style="flex:0 0 auto;align-self:center;">
+              <input type="checkbox" id="planb-toggle" />
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+        <div id="planb-content" class="planb-box" style="display:none;"></div>
         <div id="add-btns-row" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
           <button class="btn btn-soft" style="flex:1 1 100px;white-space:nowrap;padding:9px 8px;font-size:12.5px;" onclick="openPlaceModal(null)">+ 일정 추가</button>
           <button class="btn btn-primary" style="flex:1 1 100px;white-space:nowrap;padding:9px 8px;font-size:12.5px;" onclick="openTransitModal()">🚆 교통편 추가</button>
@@ -8216,9 +8220,20 @@
     function homeMemoLine(it) {
       const raw = String(it.memo || "").replace(/\s+/g, " ").trim();
       if (raw) return raw;
-      if (it.stay) return String(it.stay);
+      // 체류 시간은 적지 않는다 — 메모가 없으면 배지, 그것도 없으면 이동수단
       const b = (it.badges || []).filter(Boolean);
       return b.length ? b.join(" · ") : String(it.moveMode || "");
+    }
+
+    // 🗺️ 핀 말풍선 — 순번·장소·이동수단까지만. 체류 시간은 말풍선 어디에도 적지 않는다
+    function pinPopupHtml(num, place, sub) {
+      const line = String(sub || "").trim();
+      return `<strong>${escapeAttr(num)}. ${escapeAttr(place || "")}</strong>${line ? `<br>${escapeAttr(line)}` : ""}`;
+    }
+
+    // 말풍선 둘째 줄 = 이동수단 (체류 문구가 없으니 값이 비면 줄도 만들지 않는다)
+    function pinPopupSub(it) {
+      return String((it && it.moveMode) || "").trim();
     }
 
     function homePlaceEmoji(it) {
@@ -8298,8 +8313,7 @@
       homeMarkers = {};
       const shown = spreadPinPoints(homeMap, homePts.map(p => p.ll), 17);
       homePts.forEach((p, i) => {
-        const sub = [p.it.stay, p.it.moveMode].filter(Boolean).join(" · ");
-        const popup = `<strong>${p.num}. ${escapeAttr(p.it.place || "")}</strong>${sub ? `<br>${escapeAttr(sub)}` : ""}`;
+        const popup = pinPopupHtml(p.num, p.it.place, pinPopupSub(p.it));
         homeMarkers[p.num] = homeMap.addMarker({
           ll: shown[i], num: p.num, homePin: true, size: 26, popup
         });
@@ -8553,12 +8567,11 @@
       leafletMap.clearShapes();
       const shown = spreadPinPoints(leafletMap, pts.map(p => p.ll), 16);
       pts.forEach((p, idx) => {
-        // 방문 시간 대신 타임라인과 같은 번호 + 체류·이동수단
+        // 방문 시간·체류 대신 타임라인과 같은 번호 + 이동수단
         const num = p.num != null ? p.num : idx + 1;
-        const detail = [p.it.stay, p.it.moveMode].filter(Boolean).join(" · ");
         leafletMap.addMarker({
           ll: shown[idx], num, size: 22,
-          popup: `<strong>${escapeAttr(num)}. ${escapeAttr(p.it.place || "")}</strong>${detail ? `<br>${escapeAttr(detail)}` : ""}`
+          popup: pinPopupHtml(num, p.it.place, pinPopupSub(p.it))
         });
       });
       if (shown.length > 1) {
@@ -8567,7 +8580,7 @@
     }
 
     /* =====================================================================
-       🗺️ 큰 지도 모달 + ◀ ▶ 스텝 투어 (시간·장소·체류·할 일 스트립)
+       🗺️ 큰 지도 모달 + ◀ ▶ 스텝 투어 (번호·장소·할 일 스트립)
        ===================================================================== */
     let bigMap = null, bigMapPts = [], bigMapMarkers = [];
     let bigMapIdx = 0;
@@ -8596,8 +8609,8 @@
       if (it.memo) doParts.push(it.memo);
       if (menuTxt) doParts.push(`🍴 ${menuTxt}`);
       if (it.moveMode) doParts.push(`🚶 ${it.moveMode}${it.moveMin ? ` (${it.moveMin}분)` : ""}`);
-      // 방문 시간은 적지 않는다 — 타임라인·핀과 같은 1·2·3·4 번호와 체류만
-      const sub = [it.stay, it.costTotal ? fmt(it.costTotal) : ""].filter(Boolean).join(" · ");
+      // 방문 시간·체류는 적지 않는다 — 타임라인·핀과 같은 1·2·3·4 번호와 경비만
+      const sub = it.costTotal ? fmt(it.costTotal) : "";
       return `
         <div class="bm-top">
           <span class="bm-step">${p.num != null ? p.num : idx + 1} / ${total}</span>
@@ -8614,7 +8627,7 @@
       bigMapMarkers = bigMapPts.map((p, idx) => {
         const active = idx === bigMapIdx;
         const num = p.num != null ? p.num : idx + 1;
-        const popup = `<strong>${escapeAttr(num)}. ${escapeAttr(p.it.place || "")}</strong>${p.it.stay ? `<br>${escapeAttr(p.it.stay)}` : ""}`;
+        const popup = pinPopupHtml(num, p.it.place, pinPopupSub(p.it));
         return bigMap.addMarker({
           ll: p.ll, num, size: active ? 28 : 22, active, popup,
           zIndexOffset: active ? 1000 : 0
@@ -17004,7 +17017,7 @@
       saveState();
       closeVarModal();
       const costLine = Number(f.cost) ? `\n• 경비 탭에 ${fmt(f.cost)} 자동 반영` : "\n• 무료 일정이라 경비 변동 없음";
-      alert(`✅ '${place}' 일정에 추가 완료!\n• ${day.label || dayNum + "일차"} ${time} ${f.stay || ""}${costLine}` +
+      alert(`✅ '${place}' 일정에 추가 완료!\n• ${day.label || dayNum + "일차"} ${time}${costLine}` +
         (addedPacking.length ? `\n• 짐 목록에 ${addedPacking.join(", ")} 추가` : "\n• 짐 목록은 이미 준비돼 있어요"));
     }
 
@@ -18187,8 +18200,8 @@
     function buildPcTimeline() {
       const panel = document.getElementById("tab-timeline");
       if (!panel) return;
-      const leftSel = [".tl-map-card", ".map-action-row", ".map-help-row", "#map-hours-stamp", "#add-btns-row", ".tl-places-row"];
-      const rightSel = [".day-tabs", ".tl-planb-row", "#planb-content", "#timeline-list", "#lodging-rec-box", "#bookings-section", ".tl-foot-row", ".tl-foot-stamp"];
+      const leftSel = [".day-tabs", ".tl-map-card", ".map-action-row", ".map-help-row", "#map-hours-stamp", ".tl-planb-row", "#planb-content", "#add-btns-row", ".tl-places-row"];
+      const rightSel = ["#timeline-list", "#lodging-rec-box", "#bookings-section", ".tl-foot-row", ".tl-foot-stamp"];
       let left = panel.querySelector(".tl-pc-left");
       let right = panel.querySelector(".tl-pc-right");
       const built = Boolean(left && right);

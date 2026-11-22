@@ -1220,6 +1220,119 @@ setTimeout(async () => {
       ok("홈 요약 시트: 시간 칸(.hr-time) 제거", sheetEl.querySelectorAll(".hr-time").length === 0 && !/\.hr-time/.test(html), "");
     }
 
+    // 53) 🗺️ 지도 핀 말풍선·큰 지도 스텝에서 '체류 N분' 제거
+    {
+      ev(`currentDay = 1; editMode = false;
+        state.meta = { title:'핀 말풍선 테스트', destination:'부산', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2 };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [
+          { id:'mp-a', time:'09:00', place:'부산역', stay:'체류 45분', stayMin:45, moveMode:'KTX 일반실', moveMin:149, lat:35.1157, lng:129.0403, badges:[], costTotal:94400 },
+          { id:'mp-b', time:'13:00', place:'본전돼지국밥', stay:'체류 45분', stayMin:45, moveMode:'', moveMin:0, lat:35.1165, lng:129.0411, badges:[], costTotal:22000 },
+          { id:'mp-c', time:'18:00', place:'광안리 해변', stay:'체류 60분', stayMin:60, moveMode:'도보 5분', moveMin:5, lat:35.1532, lng:129.1187, badges:[], costTotal:0 }
+        ] }, { day:2, label:'2일차', date:'2027-03-07', items: [] }];
+        state.bookings = []; saveState();`);
+
+      // 말풍선 문자열 — 번호·장소·이동수단만, 체류 문구도 빈 둘째 줄도 없다
+      const oneLine = ev("pinPopupHtml(2, '부산역', pinPopupSub(state.days[0].items[0]))");
+      const noSub = ev("pinPopupHtml(3, '본전돼지국밥', pinPopupSub(state.days[0].items[1]))");
+      ok("핀 말풍선: 번호·장소·이동수단만", !/체류/.test(oneLine) && /2\. 부산역/.test(oneLine)
+        && /KTX 일반실/.test(oneLine) && !/<br>/.test(noSub) && !/체류/.test(noSub), oneLine + " / " + noSub);
+
+      // 가짜 지도 표면을 세워 세 지도에 실제로 실린 말풍선 문자열을 모은다
+      const homePopups = ev(`(() => {
+        const got = [];
+        const surface = { alive:true, hostEl:()=>null, containerPoint:()=>null, fromContainerPoint:()=>null,
+          clearMarkers(){}, clearShapes(){}, polyline(){},
+          addMarker(m){ got.push(String(m.popup || "")); return { openPopup(){} }; } };
+        const savedMap = homeMap, savedPts = homePts;
+        homeMap = surface; homePts = homeGeoPts();
+        try { drawHomePins(); } finally { homeMap = savedMap; homePts = savedPts; }
+        return got.join(" | ");
+      })()`);
+      ok("홈 지도 핀 말풍선에 체류 없음", /1\. 부산역/.test(homePopups) && /3\. 광안리 해변/.test(homePopups)
+        && /KTX 일반실/.test(homePopups) && !/체류/.test(homePopups), homePopups);
+
+      const dayPopups = ev(`(() => {
+        const got = [];
+        const surface = { alive:true, hostEl:()=>null, containerPoint:()=>null, fromContainerPoint:()=>null,
+          clearMarkers(){}, clearShapes(){}, polyline(){},
+          addMarker(m){
+            got.push(String(m.popup || ""));
+            return { openPopup(){} };
+          } };
+        const savedMap = leafletMap;
+        leafletMap = surface;
+        try { drawDayPins(activeDayGeoPts()); } finally { leafletMap = savedMap; }
+        return got.join(" | ");
+      })()`);
+      ok("일정 지도 핀 말풍선에 체류 없음", /1\. 부산역/.test(dayPopups) && /도보 5분/.test(dayPopups)
+        && !/체류/.test(dayPopups), dayPopups);
+
+      const bigPopups = ev(`(() => {
+        const got = [];
+        const surface = { alive:true, hostEl:()=>null, containerPoint:()=>null, fromContainerPoint:()=>null,
+          clearMarkers(){}, clearShapes(){}, polyline(){},
+          addMarker(m){ got.push(String(m.popup || "")); return { openPopup(){} }; } };
+        const savedMap = bigMap, savedPts = bigMapPts, savedMk = bigMapMarkers;
+        bigMap = surface; bigMapPts = activeDayGeoPts();
+        try { drawBigPins(); } finally { bigMap = savedMap; bigMapPts = savedPts; bigMapMarkers = savedMk; }
+        return got.join(" | ");
+      })()`);
+      ok("큰 지도 핀 말풍선에 체류 없음", /1\. 부산역/.test(bigPopups) && /3\. 광안리 해변/.test(bigPopups)
+        && !/체류/.test(bigPopups), bigPopups);
+
+      const stepHtml = ev(`(() => { const pts = activeDayGeoPts(); return pts.map((p, i) => bigMapDetailHtml(p, i, pts.length)).join(" | "); })()`);
+      ok("큰 지도 스텝에 체류 없음·번호·경비는 그대로", !/체류/.test(stepHtml) && /1 \/ 3/.test(stepHtml)
+        && /94,400/.test(stepHtml), stepHtml.replace(/\s+/g, " ").slice(0, 160));
+
+      // 홈 요약 시트 메모 줄도 체류 대신 배지·이동수단
+      ok("홈 요약 메모 줄에 체류 없음", !/체류/.test(ev("homeMemoLine(state.days[0].items[0])"))
+        && ev("homeMemoLine(state.days[0].items[1])") === "", ev("homeMemoLine(state.days[0].items[0])"));
+
+      // 🔒 체류 값 자체는 지우지 않는다 (숙소 복귀 시각 계산 등 내부에서 쓴다)
+      ok("체류 값은 내부 데이터로 보존", ev("state.days[0].items[0].stay") === "체류 45분"
+        && ev("state.days[0].items[0].stayMin") === 45 && ev("stayMinutes(state.days[0].items[0].stay)") === 45, "");
+
+      // 🎉 축제 일정 추가 안내에도 체류 문구가 없다
+      ev("varFindings = [{ key:'mp-fest', kind:'festival', place:'광안리 불꽃축제', suggestTime:'19:00', stay:'체류 60분', cost:0, packing:[] }]; window.__alerts = [];");
+      ev("addVariableToItinerary('mp-fest')");
+      const festAlert = (w.__alerts || []).join(" | ");
+      const festItem = ev("JSON.stringify((state.days[0].items || []).filter(i => String(i.place||'').includes('광안리 불꽃축제'))[0] || null)");
+      ok("축제 추가 안내에 체류 없음", !/체류/.test(festAlert) && /광안리 불꽃축제/.test(festAlert), festAlert.replace(/\s+/g, " "));
+      ok("축제 일정의 체류 값도 내부 보존", /"stay":"체류 60분"/.test(festItem), festItem);
+    }
+
+    // 54) 🗺️ 일정 탭: 1일차 칸 바로 아래 오늘의 동선 지도 → 그 아래 편집·플랜 B
+    {
+      // 앞 테스트가 PC 화면을 켜 두었을 수 있으니 모바일 배치부터 확인한다
+      ev('document.body.classList.remove("view-pc"); buildPcTimeline();');
+      const panel = w.document.getElementById("tab-timeline");
+      const kids = [...panel.children];
+      const pos = (sel) => kids.findIndex(el => el.matches(sel));
+      const need = [".day-tabs", ".tl-map-card", ".map-action-row", ".map-help-row", "#map-hours-stamp", ".tl-planb-row", "#planb-content", "#add-btns-row", ".tl-places-row", "#timeline-list"];
+      const order = need.map(pos);
+      ok("일정 탭 순서: 날짜 탭 → 지도 → 편집·플랜B → 일정", order.every(i => i >= 0)
+        && order.every((v, i) => i === 0 || order[i - 1] < v), order.join(","));
+      ok("동선 지도는 1일차 칸 바로 밑", pos(".tl-map-card") === pos(".day-tabs") + 1
+        && pos(".tl-map-card") < pos(".map-action-row"), order.join(","));
+      ok("편집·플랜B는 지도 블록 바로 밑", pos(".tl-planb-row") === pos("#map-hours-stamp") + 1
+        && pos("#planb-content") === pos(".tl-planb-row") + 1 && pos("#planb-content") < pos("#add-btns-row"), order.join(","));
+
+      // PC 버전도 좌 칸 맨 위가 날짜 탭, 바로 아래 지도 (스티키 좌 칸 유지)
+      ev('document.body.classList.add("view-pc"); buildPcTimeline();');
+      const left = w.document.querySelector("#tab-timeline .tl-pc-left");
+      const right = w.document.querySelector("#tab-timeline .tl-pc-right");
+      const li = (sel) => (left ? [...left.children].indexOf(left.querySelector(sel)) : -99);
+      ok("PC: 좌 칸 날짜 탭 → 지도 → 편집·플랜B", !!left && li(".day-tabs") === 0 && li(".tl-map-card") === 1
+        && li(".tl-planb-row") > li("#map-hours-stamp") && li(".tl-planb-row") >= 0, left ? [...left.children].map(el => el.id || el.className).join(" | ") : "no-left");
+      ok("PC: 우 칸은 일정 목록부터", !!right && !!right.querySelector("#timeline-list")
+        && !right.querySelector(".day-tabs") && !right.querySelector(".tl-map-card"), "");
+      ok("PC 지도·날짜 탭 여백 CSS", /body\.view-pc \.tl-pc-left > \.day-tabs \{ margin-bottom: 12px; \}/.test(html)
+        && !/body\.view-pc \.tl-pc-right > \.day-tabs/.test(html), "");
+      ev('document.body.classList.remove("view-pc"); buildPcTimeline();');
+      ok("모바일로 돌아와도 순서 그대로", [...panel.children][1].classList.contains("tl-map-card")
+        && !panel.querySelector(".tl-pc-left"), "");
+    }
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }
