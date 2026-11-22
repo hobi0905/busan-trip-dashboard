@@ -2318,6 +2318,8 @@
         <div class="row">
           <input id="pm-place" class="input" placeholder="장소명" onfocus="focusSavedPlaceChips('pm-saved-single')" />
         </div>
+        <!-- 📍 저장한 거점(집·호텔)을 누르면 위치가 바로 확정됐다는 안내 — 다시 검색하지 않아도 된다 -->
+        <div id="pm-pick-hint" style="display:none;font-size:11.5px;font-weight:700;color:var(--success);padding:0 2px 6px;line-height:1.35;"></div>
         <div id="pm-saved-single"></div>
       </div>
       <div id="pm-route-box" style="display:none;">
@@ -7392,6 +7394,10 @@
     let placeEditMode = "single";
     let searchTargetSide = "single";
     let pickedLat = null, pickedLng = null;
+    // 📍 저장한 거점·검색에서 확정된 위치 정보 (장소명이 아니라 좌표·주소가 실제로 채워졌는지)
+    let pickedAddress = "";
+    let pickedCoordPromise = null;
+    let pickedCoordSeq = 0;
 
     function setPlaceMode(mode) {
       placeEditMode = mode;
@@ -7418,6 +7424,11 @@
       document.getElementById("place-modal-title").textContent = it ? "✏️ 장소 수정 / 검색" : "➕ 새 일정 추가";
       const isRoute = Boolean(it && (it.fromPlace || it.toPlace || (it.place && it.place.includes("→"))));
       setPlaceMode(isRoute ? "route" : "single");
+      // 새로 여는 모달이니 이전에 고른 위치·진행 중이던 자동 찾기는 모두 버린다
+      pickedCoordSeq++;
+      pickedCoordPromise = null;
+      pickedAddress = "";
+      showPlacePickHint("");
 
       if (isRoute) {
         let src = it.place || "";
@@ -7441,6 +7452,10 @@
       document.getElementById("pm-has-menus").checked = it ? Array.isArray(it.menus) : false;
       pickedLat = it?.lat ?? null;
       pickedLng = it?.lng ?? null;
+      if (typeof pickedLat === "number" && typeof pickedLng === "number") {
+        pickedAddress = String(it?.addr || "").trim();
+        showPlacePickHint(`📍 저장된 위치${pickedAddress ? ` · ${pickedAddress}` : ""} 그대로 사용`);
+      }
       document.getElementById("place-modal").classList.add("open");
     }
 
@@ -7490,13 +7505,19 @@
         if (pickedName) document.getElementById("pm-place").value = pickedName;
         pickedLat = parseFloat(p.lat);
         pickedLng = Number(p.lng != null ? p.lng : p.lon);
+        pickedCoordSeq++;
+        pickedCoordPromise = null;
+        pickedAddress = placeAddressText(p);
+        showPlacePickHint(`📍 선택한 위치${pickedAddress ? ` · ${pickedAddress}` : ""}`);
       }
       document.getElementById("pm-search-results").innerHTML = `<div style="font-size:12px;color:var(--success);padding:4px;">✓ ${searchTargetSide === "from" ? "출발지" : searchTargetSide === "to" ? "도착지" : "장소"} 선택됨</div>`;
     }
 
-    function savePlaceEdit() {
+    async function savePlaceEdit() {
       const dayObj = state.days.find(d => d.day === currentDay);
       if (!dayObj) return;
+      // 저장한 거점의 위치를 뒤에서 찾는 중이면 저장 전에 잠깐 기다린다 (좌표 없이 저장되지 않게)
+      if (pickedCoordPromise) { try { await pickedCoordPromise; } catch (e) {} }
       const time = document.getElementById("pm-time").value.trim();
       const timeOk = /^\d{1,2}:\d{2}$/.test(time) ? time : "";   // 비워 두면 시간 없이 순서로만
       let place = "", fromPlace = "", toPlace = "";
@@ -7533,6 +7554,9 @@
           if (placeEditMode === "route") { it.fromPlace = fromPlace; it.toPlace = toPlace; }
           else { delete it.fromPlace; delete it.toPlace; }
           if (typeof pickedLat === "number") { it.lat = pickedLat; it.lng = pickedLng; }
+          if (pickedAddress && placeEditMode !== "route") it.addr = pickedAddress; else if (placeEditMode !== "route") delete it.addr;
+          // 한 번 찾은 호텔 위치는 예약 거점에도 남겨 다음에 또 찾지 않게 한다
+          if (typeof pickedLat === "number" && placeEditMode !== "route") persistHotelCoords(place, { lat: pickedLat, lng: pickedLng, address: pickedAddress });
           if (hasMenus && !Array.isArray(it.menus)) it.menus = [];
           if (!hasMenus) delete it.menus;
           applyAutoBookingBadge(it);
@@ -7547,6 +7571,8 @@
         };
         if (placeEditMode === "route") { newItem.fromPlace = fromPlace; newItem.toPlace = toPlace; }
         if (typeof pickedLat === "number") { newItem.lat = pickedLat; newItem.lng = pickedLng; }
+        if (pickedAddress && placeEditMode !== "route") newItem.addr = pickedAddress;
+        if (typeof pickedLat === "number" && placeEditMode !== "route") persistHotelCoords(place, { lat: pickedLat, lng: pickedLng, address: pickedAddress });
         if (hasMenus) newItem.menus = [];
         applyAutoBookingBadge(newItem);
         autoAlertForItem(dayObj, newItem);
@@ -11365,6 +11391,8 @@
           const hotelAddr = String(b.addr || "").trim();
           if (hotelAddr && !looksLikeCoordText(hotelAddr)) rec.roadAddress = hotelAddr;
           if (typeof b.lat === "number" && typeof b.lng === "number") { rec.lat = b.lat; rec.lng = b.lng; }
+          // 📅 일정 자동 반영으로 찾아 둔 숙소 위치도 그대로 쓴다 (좌표가 b.lat에 없을 때)
+          else if (b.schedule && typeof b.schedule.lat === "number" && typeof b.schedule.lng === "number") { rec.lat = b.schedule.lat; rec.lng = b.schedule.lng; }
           wanted.push(rec);
         } else if (b.type === "transit") {
           const isAir = /항공|비행|air|plane/i.test([b.mode, b.name].filter(Boolean).join(" "));
@@ -11444,13 +11472,108 @@
       SAVED_PLACE_BOXES.forEach(id => renderSavedPlaceChips(id));
     }
 
+    // =====================================================================
+    // 📍 저장 거점 → 장소 모달에 위치까지 바로 채우기
+    //    집·호텔은 이미 검색해서 등록해 둔 곳이므로, 칩을 누르면 장소명·좌표·주소가
+    //    한 번에 확정되고 다시 '검색'할 필요가 없다.
+    // =====================================================================
+    function showPlacePickHint(text, tone) {
+      const el = document.getElementById("pm-pick-hint");
+      if (!el) return;
+      if (!text) { el.style.display = "none"; el.textContent = ""; el.style.color = "var(--success)"; return; }
+      el.style.display = "block";
+      el.style.color = tone === "muted" ? "var(--muted)" : tone === "warn" ? "var(--danger)" : "var(--success)";
+      el.textContent = text;
+    }
+
+    // 거점에 함께 저장된 도로명 주소 (좌표 문자열·이름과 같은 값은 버림)
+    function savedPlaceAddressText(p) {
+      if (!p) return "";
+      const nmKey = normalizePlaceKey(cleanPlaceName(p.label) || p.label || p.address || "");
+      for (const c of [p.roadAddress, p.address, p.label]) {
+        const v = String(c || "").trim();
+        if (!v || looksLikeCoordText(v)) continue;
+        if (normalizePlaceKey(v) === nmKey) continue;
+        return v;
+      }
+      return "";
+    }
+
+    // 좌표가 없는 거점도 주소·이름·같은 이름의 일정으로 조용히 위치를 찾아 둔다
+    async function resolveSavedPlaceCoords(pl) {
+      if (!pl) return null;
+      if (typeof pl.lat === "number" && typeof pl.lng === "number" && isFinite(pl.lat) && isFinite(pl.lng)) {
+        return { lat: pl.lat, lng: pl.lng, address: savedPlaceAddressText(pl) };
+      }
+      const nm = cleanPlaceName(pl.label) || String(pl.label || "").trim();
+      const fromItem = nm ? findItemCoordsByName(nm) : null;
+      if (fromItem && typeof fromItem.lat === "number") {
+        return { lat: fromItem.lat, lng: fromItem.lng, address: String(fromItem.address || "") };
+      }
+      const queries = [];
+      [pl.roadAddress, pl.address, nm].forEach(v => {
+        const q = String(v || "").trim();
+        if (q && !looksLikeCoordText(q) && !queries.includes(q)) queries.push(q);
+      });
+      for (const q of queries) {
+        let g = null;
+        try { g = await geocodeByName(q); } catch (e) { g = null; }
+        if (g && typeof g.lat === "number" && isFinite(g.lat) && isFinite(Number(g.lng))) {
+          return { lat: g.lat, lng: Number(g.lng), address: String(g.address || "") };
+        }
+      }
+      return null;
+    }
+
+    // 장소 모달의 단일 장소 칸에 거점의 위치를 바로 확정시킨다 (검색 결과가 필요 없음)
+    function pickSavedPlaceIntoModal(pl, name) {
+      const resEl = document.getElementById("pm-search-results");
+      if (resEl) resEl.innerHTML = "";            // 예전 검색 결과가 남아 헷갈리지 않게
+      const seq = ++pickedCoordSeq;
+      const addr = savedPlaceAddressText(pl);
+      if (typeof pl.lat === "number" && typeof pl.lng === "number" && isFinite(pl.lat) && isFinite(pl.lng)) {
+        pickedLat = pl.lat; pickedLng = pl.lng; pickedAddress = addr;
+        pickedCoordPromise = null;
+        showPlacePickHint(`📍 등록된 위치 바로 사용됨${addr ? ` · ${addr}` : ""} — 검색하지 말고 그대로 저장하면 돼요`);
+        // 주소가 아직 없으면 뒤에서 채워 문구만 살짝 보강 (저장을 막지 않는다)
+        if (!addr) {
+          reverseAddressOf(pl.lat, pl.lng).then(a => {
+            if (!a || seq !== pickedCoordSeq) return;
+            pickedAddress = pickedAddress || a;
+            if (!pl.roadAddress) pl.roadAddress = a;
+            showPlacePickHint(`📍 등록된 위치 바로 사용됨 · ${a} — 검색하지 말고 그대로 저장하면 돼요`);
+          }).catch(() => {});
+        }
+        return;
+      }
+      // 좌표가 없는 거점(새로 넣은 예약 등) — 주소·이름으로 뒤에서 찾아 바로 채운다
+      pickedLat = null; pickedLng = null; pickedAddress = addr;
+      showPlacePickHint("📍 저장된 위치를 찾는 중...", "muted");
+      pickedCoordPromise = resolveSavedPlaceCoords(pl).then(g => {
+        if (seq !== pickedCoordSeq) return null;
+        if (g && typeof g.lat === "number" && isFinite(g.lat) && isFinite(Number(g.lng))) {
+          const a = String(g.address || addr || "").trim();
+          pl.lat = g.lat; pl.lng = Number(g.lng);
+          if (a && !looksLikeCoordText(a) && !pl.roadAddress) pl.roadAddress = a;
+          pickedLat = g.lat; pickedLng = Number(g.lng); pickedAddress = a;
+          showPlacePickHint(`📍 위치 확인됨${a ? ` · ${a}` : ""} — 검색하지 말고 그대로 저장하면 돼요`);
+          return g;
+        }
+        showPlacePickHint("🔎 위치를 자동으로 찾지 못했어요. 그대로 저장해도 되고, 다른 곳이면 위에서 검색해 골라 주세요.", "warn");
+        return null;
+      }).catch(() => {
+        if (seq === pickedCoordSeq) showPlacePickHint("🔎 위치를 자동으로 찾지 못했어요. 그대로 저장해도 되고, 다른 곳이면 위에서 검색해 골라 주세요.", "warn");
+        return null;
+      });
+    }
+
     function applySavedPlace(pid, target) {
       const pl = ensureSavedPlaces().find(p => p.id === pid);
       const el = document.getElementById(target);
       if (!pl || !el) return;
       // 🏨 '룸타입 · 2명' 같은 예약 정보는 장소명에 넣지 않는다 (지도 검색이 깨진다)
       const raw = String(pl.address || pl.label || "").trim();
-      const val = cleanPlaceName(raw) || raw;
+      const val = cleanPlaceName(pl.label) || cleanPlaceName(raw) || raw;
       if (!val) return;
       el.value = val;
       try { el.dispatchEvent(new Event("input", { bubbles: true })); } catch {}
@@ -11458,6 +11581,8 @@
       if (target === "pm-place") {
         const q = document.getElementById("pm-search-q");
         if (q) q.value = val;
+        // ✅ 이미 등록해 둔 집·호텔 — 위치까지 바로 넣고 다시 검색하지 않게 한다
+        pickSavedPlaceIntoModal(pl, val);
       }
       if (typeof pl.lat === "number" && typeof pl.lng === "number") {
         if (target === "pm-place" || target === "pm-to") { pickedLat = pl.lat; pickedLng = pl.lng; }
