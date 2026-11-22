@@ -14937,9 +14937,17 @@
         if (!p || !p.name) return;
         const key = normPlaceQuery(p.name);
         if (!key || seen.has(key)) return;
+        const fullCat = String(doc.category_name || "");
+        // 키워드 검색('맛집' 등)은 카페·제과점도 섞여 오므로 종류에 맞는 업종만 남긴다
+        const catOk = !fullCat ? true
+          : kind === "cafe" ? /카페|커피|베이커리|제과|디저트|찻집|브런치/.test(fullCat)
+            : kind === "bar" ? /술집|호프|이자카야|주점|펍|바(\s|$)/.test(fullCat)
+              : kind === "food" ? (/음식점|한식|일식|중식|양식|분식|패스트푸드|국밥|고기|치킨|피자|해물|횟집|냉면|칼국수|돈까스|카츠|라멘|우동|스시|초밥|뷔페|정식|쌀국수|덮밥/.test(fullCat) && !/카페|커피|디저트|제과/.test(fullCat))
+                : true;
+        if (!catOk) return;
         seen.add(key);
         const addr = String(doc.road_address_name || doc.address_name || p.sub || "").trim();
-        const shortCat = String(doc.category_name || "").split(">").pop().trim();
+        const shortCat = fullCat.split(">").pop().trim();
         out.push({
           name: p.name, lat: p.lat, lng: p.lng,
           cat: meta.cat, kind,
