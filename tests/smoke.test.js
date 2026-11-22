@@ -2731,6 +2731,12 @@ setTimeout(async () => {
         inline.length === 4 && inline[0].name === "오늘의 산도" && inline[0].variablePrice === true && inline[1].name === "아메리카노" && inline[1].price === 5500
         && inline[2].variablePrice === true && inline[3].price === 6500, JSON.stringify(inline));
 
+      // OCR이 글자를 벌려 읽은 경우도 같은 뜻으로
+      const spaced = JSON.parse(ev(`JSON.stringify(parseBulkMenus('오늘의 산도 가 격 변 동\\n쌀음료 변 동\\n아메리카노(ICE) 4,800 원'))`));
+      ok("메뉴판 파싱: '가 격 변 동'처럼 벌어진 글자도 변동 메뉴",
+        spaced.length === 3 && spaced[0].name === "오늘의 산도" && spaced[0].variablePrice === true
+        && spaced[1].name === "쌀음료" && spaced[1].variablePrice === true && spaced[2].price === 4800, JSON.stringify(spaced));
+
       // '-' 표시
       ok("가격 표시: 변동 메뉴는 0원이 아니라 '-'", ev("menuPriceLabel({name:'오늘의 산도', price:null, variablePrice:true})") === "-"
         && ev("menuPriceLabel({name:'라떼', price:5300})") === "₩5,300", ev("menuPriceLabel({name:'오늘의 산도', price:null, variablePrice:true})"));
