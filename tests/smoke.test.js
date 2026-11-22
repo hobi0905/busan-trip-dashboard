@@ -1373,7 +1373,7 @@ setTimeout(async () => {
       const placeVal = w.document.getElementById("pm-place").value;
       const searchVal = w.document.getElementById("pm-search-q").value;
       ok("호텔 클릭 → 장소명에 호텔 이름만", placeVal === "롯데호텔 부산", placeVal);
-      ok("호텔 클릭 → 지도 검색어도 호텔 이름만", searchVal === "롯데호텔 부산", searchVal);
+      ok("호텔 클릭 → 지도 검색칸은 비어 있다(검색 화면 아님)", searchVal === "", searchVal);
       ok("호텔 클릭 → 예약 좌표 그대로 사용", ev("pickedLat") === 35.1532 && ev("pickedLng") === 129.0564,
         `${ev("pickedLat")},${ev("pickedLng")}`);
 
@@ -1733,6 +1733,92 @@ setTimeout(async () => {
       w.smartPlaceSearch = realSearch;
       ev(`state.meta = { title:'', destination:'', startDate:'', endDate:'', travelers:2, tripType:'domestic', country:'대한민국' };
         state.bookings = []; state.savedPlaces = []; state.days[0].items = []; PM_TRANSIT_CACHE.clear(); saveState();`);
+    }
+
+    // 58) 🏠 거점 칩('집')을 누르면 '집'을 검색하는 화면·자동완성이 뜨지 않는다 (사용자 제보 버그 회귀)
+    {
+      const wait = (ms) => new Promise(r => setTimeout(r, ms));
+      ev(`currentDay = 1; editMode = false;
+        state.meta = { title:'칩 클릭 버그', destination:'부산', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }];
+        state.bookings = [];
+        state.savedPlaces = [
+          { id:'home1', kind:'home', label:'집', address:'인천광역시 미추홀구 인하로 100', roadAddress:'인천광역시 미추홀구 인하로 100', lat:37.45, lng:126.65 },
+          { id:'hotel1', kind:'hotel', label:'롯데호텔 부산', address:'부산 부산진구 부전로 45', roadAddress:'부산 부산진구 부전로 45', lat:35.1567, lng:129.0564 }
+        ];
+        PM_TRANSIT_CACHE.clear(); saveState();`);
+      const realSearch = w.smartPlaceSearch, realGeo = w.geocodeByName, realFetch = w.fetch;
+      const searched = [], geoAsked = [], transitCalls = [];
+      w.smartPlaceSearch = (q, ...a) => { searched.push(String(q)); return realSearch(q, ...a); };
+      w.geocodeByName = async (q) => { geoAsked.push(String(q)); return null; };
+      w.fetch = (url, opt) => {
+        if (String(url).includes("kakao-transit")) {
+          transitCalls.push(JSON.parse((opt && opt.body) || "{}"));
+          return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ status: "NO_RESULT", routes: [] }) });
+        }
+        return Promise.reject(new Error("offline-test"));
+      };
+      const openAc = () => [...w.document.querySelectorAll(".ac-list.open")];
+      const clickChip = (boxId, re) => {
+        const box = w.document.getElementById(boxId);
+        const b = box ? [...box.querySelectorAll(".sp-chip")].find(x => re.test(x.textContent)) : null;
+        if (b) b.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+        return b;
+      };
+
+      // (1) 단일 장소 모드 — 🏠 집
+      w.openPlaceModal(null);
+      searched.length = 0; geoAsked.length = 0;
+      ok("집 칩이 보인다", !!clickChip("pm-saved-single", /집/), w.document.getElementById("pm-saved-single").textContent.replace(/\s+/g, " ").slice(0, 60));
+      ok("집 칩 클릭 직후 — 자동완성 드롭다운 없음", openAc().length === 0, openAc().map(e => e.id).join(","));
+      await wait(430);   // 자동완성 디바운스(250ms)가 지나도 목록이 뜨지 않아야 한다
+      ok("집 칩 → 검색칸에 '집'이 채워지지 않음", w.document.getElementById("pm-search-q").value === "", JSON.stringify(w.document.getElementById("pm-search-q").value));
+      ok("집 칩 → 자동완성 드롭다운이 열리지 않음", openAc().length === 0, openAc().map(e => e.id).join(","));
+      ok("집 칩 → '집'으로 검색·지오코딩하지 않음", searched.length === 0 && geoAsked.length === 0, `검색 ${JSON.stringify(searched)} / 지오코딩 ${JSON.stringify(geoAsked)}`);
+      ok("집 칩 → 장소명 '집' + 좌표 바로 확정", w.document.getElementById("pm-place").value === "집" && ev("pickedLat") === 37.45 && ev("pickedLng") === 126.65,
+        `${w.document.getElementById("pm-place").value} / ${ev("pickedLat")},${ev("pickedLng")}`);
+      // 칸을 다시 눌러도 '집' 연관검색어가 붙지 않는다
+      w.document.getElementById("pm-place").dispatchEvent(new w.Event("focus"));
+      await wait(340);
+      ok("집 칸에 포커스해도 자동완성 안 열림", openAc().length === 0, openAc().map(e => e.id).join(","));
+      await w.savePlaceEdit();
+      const homeItem = JSON.parse(ev("JSON.stringify(state.days[0].items[state.days[0].items.length - 1] || null)"));
+      ok("집 칩 → 검색 없이 바로 저장(좌표 포함)", !!homeItem && homeItem.place === "집" && homeItem.lat === 37.45 && homeItem.lng === 126.65,
+        JSON.stringify(homeItem && { place: homeItem.place, lat: homeItem.lat, lng: homeItem.lng }));
+
+      // (2) 이동 모드 — 출발 🏠 집
+      w.openPlaceModal(null);
+      w.setPlaceMode("route");
+      searched.length = 0; transitCalls.length = 0;
+      clickChip("pm-saved-from", /집/);
+      await wait(430);
+      ok("이동 모드 집 칩 → 출발칸 '집'", w.document.getElementById("pm-from").value === "집", w.document.getElementById("pm-from").value);
+      ok("이동 모드 집 칩 → 자동완성 드롭다운 안 열림", openAc().length === 0, openAc().map(e => e.id).join(","));
+      ok("이동 모드 집 칩 → 출발 좌표 바로 확정", ev("pmCoordOf(pmFromCoord).lat") === 37.45 && ev("pmCoordOf(pmFromCoord).lng") === 126.65, ev("JSON.stringify(pmFromCoord)"));
+      ok("이동 모드 집 칩 → '집' 검색 없음", searched.length === 0, JSON.stringify(searched));
+      // 도착도 거점 칩으로 넣으면 검색 없이 바로 대중교통 루트를 조회한다
+      clickChip("pm-saved-to", /롯데호텔 부산/);
+      await wait(430);
+      ok("도착 거점 칩 → 자동완성 없이 루트 조회", openAc().length === 0 && transitCalls.length === 1, `ac=${openAc().length} / 조회 ${transitCalls.length}`);
+      ok("보낸 좌표가 거점 좌표", (transitCalls[0] || {}).start_x === 126.65 && (transitCalls[0] || {}).start_y === 37.45
+        && (transitCalls[0] || {}).end_x === 129.0564 && (transitCalls[0] || {}).end_y === 35.1567, JSON.stringify(transitCalls[0] || {}));
+
+      // (3) 좌표도 주소도 없는 '집' — 이름만으로 지오코딩하지 않는다
+      w.closePlaceModal();
+      ev("state.days[0].items = []; state.savedPlaces.push({ id:'home2', kind:'home', label:'집', address:'집' }); saveState();");
+      w.openPlaceModal(null);
+      geoAsked.length = 0; searched.length = 0;
+      const homes = [...w.document.getElementById("pm-saved-single").querySelectorAll(".sp-chip")].filter(b => /집/.test(b.textContent));
+      ok("좌표 없는 '집' 칩도 보인다", homes.length >= 2, String(homes.length));
+      homes[homes.length - 1].dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      await wait(430);
+      ok("좌표 없는 '집' → geocodeByName('집') 호출 없음", geoAsked.length === 0 && searched.length === 0, `지오코딩 ${JSON.stringify(geoAsked)} / 검색 ${JSON.stringify(searched)}`);
+      ok("좌표 없는 '집' → 못 찾았다고만 안내", /찾지 못했어요/.test(w.document.getElementById("pm-pick-hint").textContent) && ev("pickedLat") === null,
+        `${w.document.getElementById("pm-pick-hint").textContent} / pickedLat=${ev("pickedLat")}`);
+
+      w.smartPlaceSearch = realSearch; w.geocodeByName = realGeo; w.fetch = realFetch;
+      w.closePlaceModal();
+      ev("state.bookings = []; state.savedPlaces = []; state.days[0].items = []; PM_TRANSIT_CACHE.clear(); saveState();");
     }
 
   } catch (e) {
