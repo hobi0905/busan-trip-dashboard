@@ -409,7 +409,8 @@ setTimeout(async () => {
     // 27) 📅 일반 일정 카드: 메모만 기본, 메뉴·가격은 펼치면
     const plainCard = w.document.querySelector("#timeline-list .card.tl-collapsible");
     ok("카드 기본 접힘", plainCard && !plainCard.classList.contains("tl-open") && !!plainCard.querySelector(".tl-extra") && /더 보기/.test(plainCard.textContent), "");
-    ok("접힘 CSS: 체류·세부 숨김", /\.card\.tl-collapsible:not\(\.tl-open\) \.tl-stay/.test(html) && /\.tl-extra \{ display: none; \}/.test(html), "");
+    ok("접힘 CSS: 세부는 접히고 펼치면 보인다", /\.tl-extra \{ display: none; \}/.test(html) && /\.card\.tl-open \.tl-extra \{ display: block; \}/.test(html)
+      && !/\.tl-stay/.test(html), "");
     plainCard.querySelector(".tl-place").click();
     ok("카드 탭 → 펼침", plainCard.classList.contains("tl-open") && /접기/.test(plainCard.textContent), "");
     plainCard.querySelector(".tl-place").click();
@@ -605,7 +606,9 @@ setTimeout(async () => {
     ok("호텔 카드에 더 보기 표시", vCards.every(c => /더 보기/.test((c.querySelector(".tl-fold-cue") || {}).textContent || "")), "");
     ok("호텔 카드: 제목·메모·사진 1장", vCards.every(c => !!c.querySelector(".tl-place") && !!c.querySelector(".tl-memo")
       && c.querySelectorAll(".ph-slot").length === 1 && !!c.querySelector(".tl-extra")), "");
-    ok("호텔 카드: 접힐 때 한 줄 요약 CSS", /\.card\.tl-virtual\.tl-collapsible:not\(\.tl-open\) \.tl-memo \{[^}]*-webkit-line-clamp: 1;/.test(html), "");
+    ok("호텔 카드: 일반 카드와 같은 모양(파란 띠·배경 없음)", !/\.tl-virtual\s*\{[^}]*border-left: 4px/.test(html)
+      && !/\.tl-virtual\s*\{[^}]*background: var\(--ocean-soft\)/.test(html)
+      && !/\.card\.tl-virtual\.tl-collapsible:not\(\.tl-open\) \.tl-memo/.test(html), "");
     ok("호텔 카드: 상세는 .tl-extra 안", vCards.every(c => !!c.querySelector(".tl-extra .tl-meta")),
       vCards.map(c => c.querySelectorAll(".tl-extra .tl-meta").length).join(","));
     const vCard = vCards[0];
@@ -615,12 +618,14 @@ setTimeout(async () => {
       && ev(`expandedTimelineCards.has(${JSON.stringify(vId)})`), vCard.className);
     vCard.querySelector(".tl-place").click();
     ok("다시 탭 → 접힘", !vCard.classList.contains("tl-open") && /더 보기/.test(vCard.querySelector(".tl-fold-cue").textContent), "");
-    ok("호텔 카드: 펼치면 루트·금액·버튼", (() => {
+    ok("호텔 카드: 펼치면 지도 버튼, 금액·결제 문구는 없음", (() => {
       w.renderTimeline();
       const c = w.document.querySelector(`#timeline-list .card[data-card-id="${vId}"]`);
       c.querySelector(".tl-place").click();
       const extra = c.querySelector(".tl-extra");
-      return /🛣️|좌표가 없어|이동 시간/.test(extra.textContent) && !!extra.querySelector(".tl-meta .tl-cost");
+      const card = c.textContent;
+      return !!extra.querySelector(".tl-meta .map-btn") && !extra.querySelector(".tl-cost")
+        && !/₩|결제 예정|결제 완료/.test(card);
     })(), "");
 
     /* ================= 2026-11-21 (폭염·한파 실내 위주 코스) ================= */
@@ -2085,6 +2090,167 @@ setTimeout(async () => {
       ok("경비: 다시 끄면 원래대로", total() === "₩358,811", total());
 
       ev("state.bookings = []; state.expenses = []; state.days[0].items = []; state.expenseIncludeMap = {}; saveState();");
+    }
+
+    // 57) 📍 지도 위 같은 장소·호텔은 핀 하나로 — 세 지도 모두, 동선 순서는 그대로
+    {
+      ev(`currentDay = 1; editMode = false;
+        state.meta = { title:'핀 중복 테스트', destination:'부산', startDate:'2027-05-01', endDate:'2027-05-03', travelers:2 };
+        state.days = [
+          { day:1, label:'1일차', date:'2027-05-01', items: [
+            { id:'dp-a', time:'09:00', place:'부산역', lat:35.1157, lng:129.0403, moveMode:'KTX 일반실', moveMin:150 },
+            { id:'dp-h', time:'15:00', place:'호텔 아쿠아 펠리스 체크인', lat:35.1532, lng:129.1180 },
+            { id:'dp-b', time:'17:00', place:'광안리 해변', lat:35.1532, lng:129.1187 },
+            { id:'dp-b2', time:'19:00', place:'광안리 해변', lat:35.1532, lng:129.1187 },
+            { id:'dp-c', time:'20:00', place:'민락회센터', lat:35.1532, lng:129.1189 }
+          ]},
+          { day:2, label:'2일차', date:'2027-05-02', items: [
+            { id:'dp-d', time:'10:00', place:'감천문화마을', lat:35.0975, lng:129.0106 }
+          ]},
+          { day:3, label:'3일차', date:'2027-05-03', items: [] }
+        ];
+        state.bookings = [{ id:'bk-dp', type:'hotel', name:'호텔 아쿠아 펠리스', room:'디럭스 오션뷰 더블', inDate:'2027-05-01', outDate:'2027-05-03', inTime:'15:00', outTime:'11:00', price:211411, payStatus:'reserved', lat:35.1532, lng:129.1180 }];
+        state.expenses = []; state.savedPlaces = []; currentDay = 1; saveState();`);
+
+      // 같은 이름·같은 숙소는 하나로, 이름이 다른 가까운 장소는 그대로 (병합 규칙 직접 확인)
+      ok("핀 병합: 같은 숙소 출발·복귀·체크인은 1개", ev(`mergeMapPoints([
+        { it:{ place:'🏨 호텔 아쿠아 펠리스 출발' }, ll:[35.1532,129.1180], num:'🏨', kind:'hotelStart' },
+        { it:{ place:'호텔 아쿠아 펠리스 체크인' }, ll:[35.1532,129.1180], num:2 },
+        { it:{ place:'🏨 호텔 아쿠아 펠리스 복귀' }, ll:[35.1532,129.1180], num:'🏨', kind:'hotelEnd' }
+      ]).length`) === 1, ev("JSON.stringify(mergeMapPoints([{ it:{place:'호텔 A'}, ll:[35,129], num:1 },{ it:{place:'호텔 A 체크인'}, ll:[35,129], num:2 }]).length)"));
+      ok("핀 병합: 같은 이름 반복은 1개", ev("mergeMapPoints([{ it:{place:'광안리 해변'}, ll:[35.1532,129.1187], num:1 },{ it:{place:'광안리  해변'}, ll:[35.1532,129.1187], num:2 }]).length") === 1, "");
+      ok("핀 병합: 20m 안이라도 이름이 다르면 구분", ev("mergeMapPoints([{ it:{place:'광안리 해변'}, ll:[35.1532,129.1187], num:1 },{ it:{place:'민락회센터'}, ll:[35.1532,129.1189], num:2 },{ it:{place:'호텔 A'}, ll:[35.1600,129.1200], num:3 },{ it:{place:'호텔 B'}, ll:[35.1602,129.1200], num:4 }]).length") === 4, "");
+
+      // 홈 지도 (1일차) — 5개 일정 중 같은 곳 1쌍 → 핀 4개, 동선은 5개 순서 그대로
+      const homeProbe = ev(`(() => {
+        const calls = { markers: [], lines: [] };
+        const surface = { alive:true, hostEl:()=>null, containerPoint:()=>null, fromContainerPoint:()=>null,
+          clearMarkers(){ calls.markers.length = 0; }, clearShapes(){},
+          polyline(lls){ calls.lines.push(lls); },
+          addMarker(m){ calls.markers.push({ num:m.num, popup:String(m.popup||""), ll:m.ll }); return { openPopup(){} }; } };
+        const savedMap = homeMap, savedPts = homePts, savedMk = homeMarkers;
+        homeMap = surface; homePts = homeGeoPts(); homeMarkers = {};
+        let alias = false;
+        try { drawHomePins(); alias = homeMarkers[3] && homeMarkers[4] && homeMarkers[3] === homeMarkers[4]; }
+        finally { const out = { calls, alias, pts: homePts.map(p => p.ll) }; homeMap = savedMap; homePts = savedPts; homeMarkers = savedMk; return JSON.parse(JSON.stringify(out)); }
+      })()`);
+      ok("홈 지도: 같은 장소 핀 1개", homeProbe.calls.markers.length === 4,
+        homeProbe.calls.markers.map(m => `${m.num}:${m.popup.replace(/<[^>]+>/g, " ")}`).join(" | "));
+      ok("홈 지도: 합쳐진 핀 말풍선에 방문 횟수", homeProbe.calls.markers.some(m => /광안리 해변/.test(m.popup) && /3·4번 방문/.test(m.popup)),
+        homeProbe.calls.markers.map(m => m.popup).join(" | "));
+      ok("홈 지도: 가까운 다른 장소는 따로", homeProbe.calls.markers.some(m => /민락회센터/.test(m.popup)), "");
+      ok("홈 지도: 동선은 5개 좌표 순서 그대로", homeProbe.calls.lines.length === 1 && homeProbe.calls.lines[0].length === 5
+        && JSON.stringify(homeProbe.calls.lines[0]) === JSON.stringify(homeProbe.pts), JSON.stringify(homeProbe.calls.lines[0]));
+      ok("홈 지도: 합쳐진 번호도 같은 핀을 가리킨다", homeProbe.alias, "");
+
+      // 일정 지도 (1일차) — 숙소 복귀 핀 + 숙소 체크인 일정 + 광안리 2번 → 핀 4개, 동선 6개
+      const dayProbe = ev(`(() => {
+        const calls = { markers: [], lines: [] };
+        const surface = { alive:true, hostEl:()=>null, containerPoint:()=>null, fromContainerPoint:()=>null,
+          clearMarkers(){ calls.markers.length = 0; }, clearShapes(){},
+          polyline(lls){ calls.lines.push(lls); },
+          addMarker(m){ calls.markers.push({ num:m.num, popup:String(m.popup||"") }); return { openPopup(){} }; } };
+        const savedMap = leafletMap;
+        const pts = dayMapGeoPts(state.days[0]);
+        leafletMap = surface;
+        try { drawDayPins(pts); } finally { leafletMap = savedMap; }
+        return JSON.parse(JSON.stringify({ calls, pts: pts.map(p => p.ll) }));
+      })()`);
+      ok("일정 지도: 숙소 자동 핀과 숙소 일정 카드가 1개", dayProbe.calls.markers.length === 4,
+        dayProbe.calls.markers.map(m => `${m.num}:${m.popup.replace(/<[^>]+>/g, " ")}`).join(" | "));
+      ok("일정 지도: 합쳐진 숙소 핀 말풍선", dayProbe.calls.markers.some(m => /호텔 아쿠아 펠리스/.test(m.popup) && /숙소 복귀/.test(m.popup)),
+        dayProbe.calls.markers.map(m => m.popup).join(" | "));
+      ok("일정 지도: 동선은 6개 좌표 순서 그대로", dayProbe.calls.lines.length === 1 && dayProbe.calls.lines[0].length === 6
+        && JSON.stringify(dayProbe.calls.lines[0]) === JSON.stringify(dayProbe.pts), JSON.stringify(dayProbe.calls.lines[0]));
+
+      // 일정 지도 (2일차) — 숙소 출발 + 숙소 복귀 + 감천마을 → 핀 2개
+      const day2Probe = ev(`(() => {
+        const calls = { markers: [], lines: [] };
+        const surface = { alive:true, hostEl:()=>null, containerPoint:()=>null, fromContainerPoint:()=>null,
+          clearMarkers(){ calls.markers.length = 0; }, clearShapes(){},
+          polyline(lls){ calls.lines.push(lls); },
+          addMarker(m){ calls.markers.push({ num:m.num, popup:String(m.popup||"") }); return { openPopup(){} }; } };
+        const savedMap = leafletMap;
+        const pts = dayMapGeoPts(state.days[1]);
+        leafletMap = surface;
+        try { drawDayPins(pts); } finally { leafletMap = savedMap; }
+        return JSON.parse(JSON.stringify({ calls, pts: pts.map(p => p.ll) }));
+      })()`);
+      ok("일정 지도: 숙소 출발·복귀 핀 1개로", day2Probe.calls.markers.length === 2
+        && day2Probe.calls.markers.some(m => /숙소 출발·복귀/.test(m.popup)),
+        day2Probe.calls.markers.map(m => m.popup).join(" | "));
+      ok("일정 지도: 2일차 동선 3개 좌표 유지", day2Probe.calls.lines.length === 1 && day2Probe.calls.lines[0].length === 3
+        && JSON.stringify(day2Probe.calls.lines[0]) === JSON.stringify(day2Probe.pts), JSON.stringify(day2Probe.calls.lines[0]));
+
+      // 큰 지도 (1일차) — 핀 4개, 스텝은 5개 그대로
+      const bigProbe = ev(`(() => {
+        const calls = { markers: [], lines: [] };
+        const surface = { alive:true, hostEl:()=>null, containerPoint:()=>null, fromContainerPoint:()=>null,
+          clearMarkers(){ calls.markers.length = 0; }, clearShapes(){},
+          polyline(lls){ calls.lines.push(lls); },
+          addMarker(m){ calls.markers.push({ num:m.num, popup:String(m.popup||"") }); return { openPopup(){} }; } };
+        const savedMap = bigMap, savedPts = bigMapPts, savedMk = bigMapMarkers;
+        bigMap = surface; bigMapPts = activeDayGeoPts();
+        let marks = 0;
+        try { drawBigPins(); marks = bigMapMarkers.length; } finally {
+          const out = { calls, marks, steps: bigMapPts.length };
+          bigMap = savedMap; bigMapPts = savedPts; bigMapMarkers = savedMk;
+          return JSON.parse(JSON.stringify(out));
+        }
+      })()`);
+      ok("큰 지도: 같은 장소 핀 1개", bigProbe.calls.markers.length === 4,
+        bigProbe.calls.markers.map(m => `${m.num}:${m.popup.replace(/<[^>]+>/g, " ")}`).join(" | "));
+      ok("큰 지도: 스텝(◀▶)·동선 순서는 5개 그대로", bigProbe.marks === 5 && bigProbe.steps === 5
+        && bigProbe.calls.lines.length === 1 && bigProbe.calls.lines[0].length === 5, JSON.stringify({ marks: bigProbe.marks, steps: bigProbe.steps }));
+
+      // 고객이 보는 실제 화면(renderTimeline 등)에서 숙소 연동 카드도 정상으로 그려진다
+      w.renderTimeline();
+      ok("지도 병합 후에도 일정 목록 정상", w.document.querySelectorAll("#timeline-list .card").length >= 5, "");
+    }
+
+    // 58) 🏨 예약 내역은 경비 탭 — 일정 카드는 일반 일정처럼 간단히
+    {
+      ev(`state.meta = { title:'예약 내역 탭 테스트', destination:'부산', startDate:'2027-05-01', endDate:'2027-05-02', travelers:2 };
+        state.days = [{ day:1, label:'1일차', date:'2027-05-01', items:[{ id:'bx-1', time:'12:00', place:'부산역', lat:35.1157, lng:129.0403 }] }];
+        state.bookings = [
+          { id:'bx-h', type:'hotel', name:'호텔 아쿠아 펠리스', room:'디럭스 오션뷰 더블', inDate:'2027-05-01', outDate:'2027-05-02', inTime:'15:00', outTime:'11:00', price:211411, payStatus:'reserved', dueAmount:211411, dueDate:'2027-04-20', lat:35.1532, lng:129.1180 },
+          { id:'bx-t', type:'transit', mode:'KTX', name:'KTX 101', from:'서울역', to:'부산역', depDate:'2027-05-01', depTime:'09:00', arrTime:'11:30', seat:'4호 12A', price:59800, payStatus:'paid' }
+        ];
+        state.expenses = []; currentDay = 1; saveState();`);
+      w.renderTimeline();
+      w.renderExpenses();
+
+      const tlPanel = w.document.getElementById("tab-timeline");
+      const expPanel = w.document.getElementById("tab-expenses");
+      ok("예약 내역 섹션: 경비 탭에 있다", !!expPanel.querySelector("#bookings-section #bookings-card")
+        && !tlPanel.querySelector("#bookings-section"), "");
+      ok("경비 탭 예약 내역: 금액·결제 예정 그대로", /호텔 아쿠아 펠리스/.test(expPanel.textContent)
+        && /211,411/.test(expPanel.textContent) && /결제 예정/.test(expPanel.textContent)
+        && /KTX 101/.test(expPanel.textContent) && /59,800/.test(expPanel.textContent), "");
+      ok("경비 탭 예약 내역: 숙소·교통편 추가 버튼", !!expPanel.querySelector("#bookings-section") 
+        && /숙소 추가/.test(expPanel.querySelector("#bookings-section").textContent)
+        && /교통편 추가/.test(expPanel.querySelector("#bookings-section").textContent), "");
+
+      const vCards2 = [...w.document.querySelectorAll("#timeline-list .card.tl-virtual")];
+      const vText = vCards2.map(c => c.textContent).join(" | ");
+      ok("일정 탭 예약 연동 카드 생성", vCards2.length >= 2, `${vCards2.length}장`);
+      ok("일정 카드에는 금액·결제 문구가 없다", vCards2.length > 0 && !/₩|결제 예정|결제 완료|211,411|59,800/.test(vText), vText.slice(0, 160));
+      ok("일정 카드에는 객실·예약 상세가 없다", !/디럭스|오션뷰|211,411/.test(vText), vText.slice(0, 160));
+      ok("일정 카드 구성은 일반 카드와 같다", vCards2.every(c => !!c.querySelector(".tl-place") && !!c.querySelector(".tl-memo")
+        && c.querySelectorAll(".ph-slot").length === 1), "");
+      ok("일정 카드: 지도 버튼은 그대로", vCards2.every(c => !c.querySelector(".tl-extra") || !!c.querySelector(".tl-extra .map-btn")), "");
+
+      // 일정 연동은 그대로 — 숙소 자동 카드가 그날 맨 마지막에, 교통편이 출발일에
+      ok("일정 연동 유지: 숙소 복귀·교통편 카드", vCards2.some(c => /숙소 복귀/.test(c.textContent))
+        && vCards2.some(c => /서울역/.test(c.textContent) && /부산역/.test(c.textContent)), vText.slice(0, 200));
+      ok("일정 연동 유지: 거점 자동 반영", (() => { w.ensureSavedPlaces(); return ev("JSON.stringify(state.savedPlaces.filter(p => p.auto).map(p => p.label))").includes("호텔 아쿠아 펠리스"); })(),
+        ev("JSON.stringify((state.savedPlaces||[]).map(p => p.label))"));
+      ok("일정 연동 유지: 숙소 좌표로 지도 핀", ev("JSON.stringify(dayMapGeoPts(state.days[0]).filter(p => p.kind && p.kind.indexOf('hotel') === 0))").includes("hotel")
+        || ev("dayMapGeoPts(state.days[0]).some(p => p.num === '🏨')"), "");
+
+      // 경비 탭에서 예약 금액이 총액에 잡히는지 (연동 그대로)
+      ok("경비: 예약 금액이 총액에 들어간다", ev("getSyncedExpenses().filter(e => e.fromBooking).length") === 2,
+        ev("JSON.stringify(getSyncedExpenses().filter(e => e.fromBooking).map(e => [e.name, e.amount]))"));
     }
 
   } catch (e) {
