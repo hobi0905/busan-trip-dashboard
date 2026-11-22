@@ -8814,12 +8814,18 @@
       return false;
     }
 
+    // '가격 변동' / '가격변동' / '가 격 변 동' / '-' / '변동' — 공백이 섞여도 같은 뜻으로 본다
+    function isVariablePriceText(text) {
+      const compact = String(text || "").replace(/\s/g, "");
+      if (!compact || compact.length > 6) return false;
+      return /^(가격)?변[동등]$/.test(compact) || /^[-–—]+$/.test(compact);
+    }
+
     // 가격만 있는 줄 → { price } 또는 { variable: true }
     function parseMenuPriceToken(line) {
       const s = String(line || "").replace(/\s+/g, " ").trim();
       if (!s || s.length > 24) return null;
-      // 가격 변동 / 가격변동 / 변동 (오탈자 조금 섞여도)
-      if (/^(가격\s*)?변\s*[동등]/.test(s) && s.replace(/\s/g, "").length <= 8) return { variable: true };
+      if (isVariablePriceText(s)) return { variable: true };
       // 6,500원 · 6.500원 · 6,500 원 · ₩6,500 · 6500
       const m = s.match(/^[₩￦]?\s*([0-9][0-9.,]*)\s*(원|₩|￦)?$/);
       if (!m) return null;
@@ -8837,7 +8843,7 @@
     function menuNameCandidate(line) {
       const s = String(line || "").replace(/\s+/g, " ").trim();
       if (!s || isMenuNoiseLine(s)) return null;
-      if (/^(가격\s*)?변\s*[동등]/.test(s)) return null;
+      if (isVariablePriceText(s)) return null;
       const plain = s.replace(/\s/g, "");
       if (plain.length < 2) return null;
       if (s.length > 24) return null;                              // 설명 문장은 대개 25자 이상
@@ -8882,9 +8888,11 @@
           if (price >= 500 && price <= 500000) return { name, price };
         }
       }
-      const mVar = s.match(/^(.{1,40}?)\s*(?:가격\s*)?변\s*[동등]$/) || s.match(/^(.{1,40}?)\s*[-–—]$/);
-      if (mVar) {
-        const name = mVar[1].replace(/[\s,]+$/, "").trim();
+      // 이름 뒤에 '가격 변동' / '가 격 변 동' / '-'가 붙은 줄 — 꼬리를 길게 잡을수록 정확하다
+      const parts = s.split(/\s+/);
+      for (let i = 1; i < parts.length; i++) {
+        if (!isVariablePriceText(parts.slice(i).join(""))) continue;
+        const name = parts.slice(0, i).join(" ").replace(/[\s,]+$/, "").trim();
         if (name && /[가-힣A-Za-z]/.test(name)) return { name, variable: true };
       }
       return null;
@@ -8941,7 +8949,7 @@
     // 직접 추가 가격 입력 — '가격 변동' / '-' / 빈칸은 변동 메뉴로
     function parseManualMenuPrice(value) {
       const s = String(value == null ? "" : value).replace(/\s+/g, " ").trim();
-      if (!s || s === "-" || s === "–" || /^(가격\s*)?변\s*[동등]$/.test(s)) return { variable: true };
+      if (!s || isVariablePriceText(s)) return { variable: true };
       const digits = s.replace(/[^\d]/g, "");
       if (!digits) return null;
       return { price: Number(digits) };
