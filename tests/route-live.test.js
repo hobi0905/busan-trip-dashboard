@@ -291,6 +291,14 @@ setTimeout(async () => {
     await runRoute("파리", "2027-06-04", "2027-06-06");
     checkRealPlaces("파리 기본", "파리", { domestic: false });
 
+    // ── 5-2) 해외 파리 3일 (폭염 실내 위주) ───────────────────
+    ev("recWeatherMode = 'heat'");
+    ev("ROUTE_PLACE_CACHE.clear()");
+    kakaoCalls = 0;
+    await runRoute("파리", "2027-06-04", "2027-06-06");
+    const parisHeat = checkRealPlaces("파리 폭염", "파리", { domestic: false });
+    ok("파리 폭염: 모두 실내 장소", parisHeat.every(i => i.indoor === true), parisHeat.filter(i => i.indoor !== true).map(i => i.place).join(", "));
+
     // ── 6) 동선 맞춤 추천 — 해외 파리 '카페' ─────────────────
     setTrip({ title: "파리", dest: "파리", start: "2027-06-04", end: "2027-06-06", tripType: "overseas", country: "FR", days: dayStub("2027-06-04", 3) });
     ev(`state.days = window._generatedRoutePlan.days.map(d => ({ ...d })); currentDay = 1; saveState();`);
