@@ -1732,6 +1732,28 @@
       border-radius: 999px; padding: 2px 9px; margin: 0 0 4px;
     }
     .card.tl-open .tl-eta { display: none; }
+    /* ===== 🧭 일정 사이 구간 길찾기 커넥터 ===== */
+    .tl-br { position: relative; display: flex; align-items: center; justify-content: center; gap: 4px; }
+    .tl-br-edit { margin: -4px 0 5px; }
+    .tl-br-btn { font-family: inherit; font-size: 11px; font-weight: 800; line-height: 1.5; letter-spacing: -0.2px; color: var(--muted); background: transparent; border: 1px dashed var(--border); border-radius: 999px; padding: 2px 10px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .tl-br-btn:active { background: var(--ocean-soft); }
+    .tl-br-set .tl-br-btn { color: var(--ocean-dark); border-style: solid; border-color: var(--ocean-border); background: var(--ocean-soft); }
+    .tl-br-clear { font-family: inherit; font-size: 10.5px; font-weight: 800; color: #94a3b8; background: #fff; border: 1px solid var(--border); border-radius: 999px; width: 20px; height: 20px; line-height: 1; padding: 0; cursor: pointer; flex: 0 0 auto; }
+    .tl-br-clear:active { background: var(--danger-bg); color: var(--danger); }
+    .tl-br-view { flex-direction: column; align-items: flex-start; margin: -2px 0 7px 14px; }
+    .tl-br-arrow { font-family: inherit; font-size: 11px; font-weight: 800; line-height: 1.4; color: var(--ocean-dark); background: #f8fafc; border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; cursor: pointer; white-space: nowrap; }
+    .tl-br-arrow:active { background: var(--ocean-soft); }
+    .tl-br-view.tl-br-open .tl-br-arrow { background: var(--ocean-soft); border-color: var(--ocean-border); }
+    .tl-br-detail { margin: 4px 0 0 2px; padding: 5px 9px; font-size: 11px; line-height: 1.55; color: var(--muted); background: #fff; border: 1px solid var(--border); border-left: 3px solid var(--ocean-border); border-radius: 9px; word-break: keep-all; }
+    .tl-br-detail .tl-br-fare { font-weight: 800; color: var(--ocean-dark); }
+    .tl-br-detail .tl-br-mode { font-weight: 600; }
+    .br-sheet { max-width: 520px; }
+    .br-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .br-endpoints { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12.5px; font-weight: 800; color: var(--text); background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 7px 10px; margin-bottom: 9px; }
+    .br-endpoints .br-arrow { color: var(--ocean-dark); }
+    .br-endpoints .br-ep { min-width: 0; overflow-wrap: anywhere; }
+    .br-hint { font-size: 11px; color: var(--muted); font-weight: 600; margin: 8px 0 8px; line-height: 1.5; text-align: center; }
+    .br-clear-btn { width: 100%; font-family: inherit; font-size: 12px; font-weight: 800; color: var(--danger); background: var(--danger-bg); border: 1px solid #fecaca; border-radius: 12px; padding: 8px 10px; cursor: pointer; }
     .tl-extra { display: none; }
     .card.tl-open .tl-extra { display: block; }
     /* 접힌 카드는 장소·메모만 깔끔하게 */
@@ -2376,6 +2398,20 @@
         <span>식당·카페 (클릭 시 메뉴판 선택 가능)</span>
       </label>
       <button class="btn btn-primary" style="width:100%;" onclick="savePlaceEdit()">저장하기</button>
+    </div>
+  </div>
+
+  <!-- 🧭 BETWEEN-ROUTE MODAL — 일정과 일정 사이 구간 길찾기 (편집 모드에서만) -->
+  <div id="between-route-modal" class="modal-backdrop" onclick="if(event.target===this)closeBetweenRouteModal()">
+    <div class="modal-sheet br-sheet">
+      <div class="br-head">
+        <div id="br-title" style="font-size:16px;font-weight:800;">🧭 구간 길찾기</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeBetweenRouteModal()">닫기</button>
+      </div>
+      <div id="br-endpoints" class="br-endpoints"></div>
+      <div id="br-box"></div>
+      <div class="br-hint">🚏 요금은 1인 기준이에요 · 루트를 하나 누르면 바로 저장되고 창이 닫혀요</div>
+      <button type="button" id="br-clear" class="br-clear-btn" style="display:none;" onclick="clearBetweenRouteFromModal()">🗑️ 이 구간 길찾기 지우기</button>
     </div>
   </div>
 
@@ -4265,6 +4301,7 @@
       if (isTripUnavailable(currentSyncId)) return;
       try { syncDiningChecklist(); ensureAirportOutfitAlert(); } catch (e) { console.warn("checklist sync error", e); }
       try { savePersonalPackingLocal(getPacking()); } catch (e) {}
+      try { pruneBetweenRoutes(); } catch (e) { console.warn("between route prune", e); }   // 지운 일정의 구간 기록 정리
       localStorage.setItem(getLocalKey(), JSON.stringify(state));
       try { registerMyTrip(currentSyncId, state.meta, true); } catch (e) {}
       renderAll();
@@ -4379,6 +4416,38 @@
           included: expenseIncluded(eid, false)
         });
       }
+
+      // 🧭 일정 사이 구간 길찾기로 고른 대중교통 요금 — 1인 요금 × 인원수, 대중교통이라 기본은 제외
+      const brTravelers = Math.max(1, Number(state.meta && state.meta.travelers) || 2);
+      (state.days || []).forEach(day => {
+        const store = day && day.betweenRoutes;
+        if (!store || typeof store !== "object") return;
+        Object.keys(store).forEach(pairKey => {
+          const rec = store[pairKey];
+          const per = Number(rec && rec.farePer) || 0;
+          if (!(per > 0)) return;
+          const cut = pairKey.indexOf("__");
+          const fromId = cut >= 0 ? pairKey.slice(0, cut) : "";
+          const toId = cut >= 0 ? pairKey.slice(cut + 2) : "";
+          const ids = new Set((day.items || []).map(it => String(it && it.id)));
+          if (!ids.has(fromId) || !ids.has(toId)) return;   // 사라진 일정의 구간은 세지 않는다
+          if (!betweenPairActive(day, fromId, toId)) return;  // 순서가 바뀌어 더 이상 이어지지 않는 구간도 세지 않는다
+          const eid = "tl_br_" + day.day + "_" + pairKey;
+          const fromName = (rec.from && rec.from.name) || "출발";
+          const toName = (rec.to && rec.to.name) || "도착";
+          list.push({
+            id: eid,
+            dayNum: day.day,
+            category: "교통",
+            name: `${day.day}일차 · ${fromName} → ${toName} 구간 이동`,
+            amount: per * brTravelers,
+            status: statusMap[eid] || "현장",
+            fromTimeline: true,
+            transit: true,
+            included: expenseIncluded(eid, false)
+          });
+        });
+      });
 
       // 🏨 숙소 · 🚆 교통편 예약 내역 → 경비 목록(금액·결제 상태 그대로 반영)
       bookingExpenseList().forEach(e => {
@@ -6479,9 +6548,10 @@
         : viewDayFeed(dayObj, bkVirtuals);
       // 🔢 방문 순서 = 지도 핀 번호. 메모·예약 카드는 번호를 받지 않는다 (핀 번호가 밀리지 않게)
       const stopNums = dayItemNumbers(dayObj);
-      const cardBlocks = feed.map(({ it, idx, virtual }) => {
-        if (editModeOn) return virtual ? tlEditVirtualRowHtml(it) : tlEditRowHtml(it);
-        if (isMemoItem(it)) return tlMemoCardHtml(it);
+      const cardEntries = feed.map(({ it, idx, virtual }) => {
+        const entry = (html) => ({ html, it, virtual: Boolean(virtual) });
+        if (editModeOn) return entry(virtual ? tlEditVirtualRowHtml(it) : tlEditRowHtml(it));
+        if (isMemoItem(it)) return entry(tlMemoCardHtml(it));
         // 일출·일몰 시각은 카드 안 배지가 아니라 타임라인의 한 줄 마커로만 보여 준다
         const badges = (it.badges || []).filter(b => !/^\s*(일출|일몰)\s*\d{1,2}:\d{2}/.test(String(b))).map(b => {
           let cls = "tag";
@@ -6506,7 +6576,7 @@
               ${hasMenus ? `<button class="btn btn-soft btn-sm" onclick="event.stopPropagation();openMenuModal('${it.id}')">🍽️ 메뉴 선택</button>` : ""}
               ${it.mapUrl ? `<a class="map-btn" href="${escapeAttr(itemMapUrl(it))}" target="_blank" onclick="event.stopPropagation()">🗺️ 지도</a>` : ""}
             </div>`;
-        return `
+        return entry(`
           <div class="card tl-collapsible${virtual ? " tl-virtual" : ""}${isOpen ? " tl-open" : ""}" data-card-id="${escapeAttr(it.id)}" onclick="toggleTimelineCard('${it.id}',event)">
             <div class="tl-body">
             <div class="tl-main">
@@ -6544,12 +6614,17 @@
             ${photoSlot}
             </div>
           </div>
-        `;
+        `);
       });
       // 🌅 일출 · 🌇 일몰 줄은 일정 탭에서 더 이상 그리지 않는다 (날씨 탭에만 남아 있다)
       const blocks = [];
-      if (editModeOn) blocks.push(`<div class="tl-edit-hint">≡ 를 드래그해 순서(1·2·3…)를 바꾸고, 📋 로 같은 일정을 복사하고, − 로 지울 수 있어요. 카드를 누르면 수정으로 들어가요.</div>`);
-      cardBlocks.forEach(html => blocks.push(html));
+      if (editModeOn) blocks.push(`<div class="tl-edit-hint">≡ 를 드래그해 순서(1·2·3…)를 바꾸고, 📋 로 같은 일정을 복사하고, − 로 지울 수 있어요. 카드를 누르면 수정으로 들어가요. 일정 사이 ─── 🧭 길찾기 ─── 를 누르면 두 일정 사이 대중교통 루트를 골라 둘 수 있어요.</div>`);
+      const betweenPlan = betweenConnectorPlan(dayObj, cardEntries, editModeOn);
+      cardEntries.forEach((e, i) => {
+        blocks.push(e.html);
+        const between = betweenPlan.get(i);
+        if (between) blocks.push(between);
+      });
       if (editModeOn) {
         // 편집 모드에서는 예약(숙소·교통) 카드도 맨 아래에 컴팩트하게 보여 준다
         const vHtml = bkVirtuals.map(tlEditVirtualRowHtml).join("");
@@ -7979,6 +8054,408 @@
       renderRouteRecommendations();
     }
 
+    /* =====================================================================
+       🧭 일정과 일정 사이 '구간 길찾기' 커넥터
+       · 편집 모드: 두 일정 사이 ─── 🧭 길찾기 ─── 를 눌러 카카오 대중교통 루트 3개 중 하나를 고른다
+       · 보기 모드: 저장된 구간만 '↓ 약 N분' 작은 화살표, 누르면 요금·이동수단이 펼쳐진다
+       · 저장 키는 `앞일정id__뒤일정id` — 드래그로 순서가 바뀌어 인접하지 않으면 자동으로 안 보인다
+         (앞 항목이 '이동'이면 그 목적지가, 뒤 항목이 '이동'이면 그 출발지가 구간의 끝이 된다)
+       ===================================================================== */
+    var brCtx = null;        // { day, fromId, toId, from:{name,lat,lng}, to:{...} }
+    var brRoutes = [];       // 지금 모달에 뜬 루트 3개
+    var brSeq = 0;           // 늦게 도착한 응답이 화면을 덮지 않게 하는 순번
+
+    function betweenRouteKey(fromId, toId) { return `${String(fromId)}__${String(toId)}`; }
+
+    function betweenRouteStore(dayObj, create) {
+      if (!dayObj) return {};
+      const cur = dayObj.betweenRoutes;
+      if (!cur || typeof cur !== "object" || Array.isArray(cur)) {
+        if (!create) return {};
+        dayObj.betweenRoutes = {};
+      }
+      return dayObj.betweenRoutes;
+    }
+
+    function getBetweenRoute(dayObj, fromId, toId) {
+      const rec = betweenRouteStore(dayObj, false)[betweenRouteKey(fromId, toId)];
+      return rec && typeof rec === "object" ? rec : null;
+    }
+
+    // '이동' 카드(출발 → 도착)인지 — 메모는 장소가 아니므로 제외
+    function betweenIsMoveItem(it) {
+      if (!it || isMemoItem(it)) return false;
+      if (String(it.fromPlace || "").trim() || String(it.toPlace || "").trim()) return true;
+      return /[→↔⇄]/.test(String(it.place || ""));
+    }
+
+    function betweenMoveParts(it) {
+      const fromPlace = String((it && it.fromPlace) || "").trim();
+      const toPlace = String((it && it.toPlace) || "").trim();
+      if (fromPlace || toPlace) return { from: fromPlace, to: toPlace };
+      const src = String((it && it.place) || "");
+      if (!/[→↔⇄]/.test(src)) return { from: "", to: "" };
+      const parts = src.split(/[→↔⇄]/).map(s => s.trim());
+      return { from: parts[0] || "", to: parts[1] || "" };
+    }
+
+    function betweenNum(v) {
+      const n = Number(v);
+      return Number.isFinite(n) && n !== 0 ? n : null;
+    }
+
+    // 이름만 남은 장소의 좌표 — 저장 거점 → 일정 속 같은 이름 장소(좌표 있는 카드)
+    function betweenCoordsByName(name) {
+      const nm = cleanPlaceName(name) || String(name || "").trim();
+      if (!nm) return null;
+      const sp = findSavedPlaceByName(nm);
+      if (sp && Number.isFinite(Number(sp.lat)) && Number.isFinite(Number(sp.lng))) return { lat: Number(sp.lat), lng: Number(sp.lng) };
+      const hit = findItemCoordsByName(nm);
+      if (hit && Number.isFinite(Number(hit.lat)) && Number.isFinite(Number(hit.lng))) return { lat: Number(hit.lat), lng: Number(hit.lng) };
+      return null;
+    }
+
+    function betweenNameKey(name) { return normalizePlaceKey(cleanPlaceName(name) || name); }
+
+    function betweenSamePlace(a, b) {
+      const ka = betweenNameKey(a), kb = betweenNameKey(b);
+      if (!ka || !kb) return false;
+      if (ka === kb) return true;
+      return ka.length >= 3 && kb.length >= 3 && (ka.includes(kb) || kb.includes(ka));
+    }
+
+    // 구간 한쪽 끝 — side 'to' = 앞 일정에서 나가는 지점, 'from' = 뒤 일정에 들어가는 지점
+    function betweenEndpointOf(it, side) {
+      if (!it || isMemoItem(it)) return null;
+      if (!betweenIsMoveItem(it)) {
+        const name = cleanPlaceName(it.place) || String(it.place || "").trim();
+        if (!name) return null;
+        let lat = betweenNum(it.lat), lng = betweenNum(it.lng);
+        if (lat == null || lng == null) {
+          const byId = COORD_BY_ID[it.id];
+          if (Array.isArray(byId)) { lat = betweenNum(byId[0]); lng = betweenNum(byId[1]); }
+        }
+        if (lat == null || lng == null) { const c = betweenCoordsByName(name); if (c) { lat = c.lat; lng = c.lng; } }
+        return { id: String(it.id), name, lat, lng };
+      }
+      const parts = betweenMoveParts(it);
+      const name = side === "to" ? parts.to : parts.from;
+      if (!name) return null;
+      let lat = side === "to" ? (betweenNum(it.toLat) != null ? betweenNum(it.toLat) : betweenNum(it.lat)) : betweenNum(it.fromLat);
+      let lng = side === "to" ? (betweenNum(it.toLng) != null ? betweenNum(it.toLng) : betweenNum(it.lng)) : betweenNum(it.fromLng);
+      if ((lat == null || lng == null) && side === "to") {
+        const byId = COORD_BY_ID[it.id];
+        if (Array.isArray(byId)) { lat = betweenNum(byId[0]); lng = betweenNum(byId[1]); }
+      }
+      if (lat == null || lng == null) { const c = betweenCoordsByName(name); if (c) { lat = c.lat; lng = c.lng; } }
+      return { id: String(it.id), name, lat, lng };
+    }
+
+    function betweenRouteIcon(rec) {
+      const t = `${(rec && rec.type) || ""} ${(rec && rec.legs) || ""} ${(rec && rec.mode) || ""}`;
+      if (/SUBWAY|지하철|호선|전철/.test(t)) return "🚇";
+      if (/BUS|버스|간선|지선|광역/.test(t)) return "🚌";
+      if (/TRAIN|기차|KTX|SRT/.test(t)) return "🚆";
+      return "🚌";
+    }
+
+    function betweenRouteMinutesText(rec) {
+      const m = Number(rec && rec.minutes);
+      return Number.isFinite(m) && m > 0 ? `약 ${Math.round(m)}분` : "이동";
+    }
+
+    function betweenFareDetailText(rec) {
+      const per = Number(rec && rec.farePer) || 0;
+      const n = placeCostTravelers();
+      if (!(per > 0)) return "요금 정보 없음";
+      const won = (v) => `${Math.round(v).toLocaleString("ko-KR")}원`;
+      return n > 1 ? `1인 ${won(per)} · ${n}명 ${won(per * n)}` : `1인 ${won(per)}`;
+    }
+
+    function betweenRouteModeText(rec) {
+      const legs = String((rec && rec.legs) || "").trim();
+      if (!legs) return String((rec && rec.mode) || "대중교통").replace(/\s*·\s*약\s*\d+분\s*$/, "");
+      const transfers = Number(rec && rec.transfers) || 0;
+      return `${legs} · ${transfers ? `환승 ${transfers}회` : "직통"}`;
+    }
+
+    // 두 카드 사이에 넣을 커넥터 한 줄 (편집 모드 버튼 / 보기 모드 화살표)
+    function betweenConnectorHtml(dayObj, a, b, editing) {
+      if (!dayObj || !a || !b) return "";
+      const from = betweenEndpointOf(a, "to");
+      const to = betweenEndpointOf(b, "from");
+      if (!from || !to) return "";
+      if (betweenSamePlace(from.name, to.name)) return "";   // 같은 곳이면 구간이 없다
+      const rec = getBetweenRoute(dayObj, a.id, b.id);
+      const key = betweenRouteKey(a.id, b.id);
+      const safeKey = escapeAttr(key);
+      const fromId = escapeAttr(a.id), toId = escapeAttr(b.id);
+      const title = escapeAttr(`${from.name} → ${to.name}`);
+      if (editing) {
+        if (rec) {
+          return `<div class="tl-br tl-br-edit tl-br-set" data-br-key="${safeKey}">
+            <button type="button" class="tl-br-btn" title="${title} · 누르면 다른 루트로 바꿀 수 있어요" onclick="event.stopPropagation();openBetweenRouteModal('${fromId}','${toId}')">─── ${betweenRouteIcon(rec)} ${escapeHtmlText(betweenRouteMinutesText(rec))} · 변경 ───</button>
+            <button type="button" class="tl-br-clear" aria-label="이 구간 길찾기 지우기" title="구간 길찾기 지우기" onclick="event.stopPropagation();clearBetweenRoute('${fromId}','${toId}')">✕</button>
+          </div>`;
+        }
+        return `<div class="tl-br tl-br-edit" data-br-key="${safeKey}">
+          <button type="button" class="tl-br-btn tl-br-empty" title="${title} 길찾기" onclick="event.stopPropagation();openBetweenRouteModal('${fromId}','${toId}')">─── 🧭 길찾기 ───</button>
+        </div>`;
+      }
+      if (!rec) return "";
+      return `<div class="tl-br tl-br-view" data-br-key="${safeKey}">
+        <button type="button" class="tl-br-arrow" aria-expanded="false" title="${title}" onclick="event.stopPropagation();toggleBetweenRouteDetail(this)">↓ ${escapeHtmlText(betweenRouteMinutesText(rec))}</button>
+        <div class="tl-br-detail" style="display:none;">
+          <div class="tl-br-fare">💳 ${escapeHtmlText(betweenFareDetailText(rec))}</div>
+          <div class="tl-br-mode">${betweenRouteIcon(rec)} ${escapeHtmlText(betweenRouteModeText(rec))}</div>
+        </div>
+      </div>`;
+    }
+
+    // 화면에 놓인 순서에서 '위치가 있는 카드'끼리 이어 붙일 커넥터 자리 계산 (메모·예약 카드는 건너뛴다)
+    function betweenConnectorPlan(dayObj, entries, editing) {
+      const plan = new Map();
+      let prev = -1;
+      (entries || []).forEach((e, i) => {
+        const it = e && e.it;
+        if (!it || isMemoItem(it) || e.virtual) return;
+        if (prev >= 0) {
+          const html = betweenConnectorHtml(dayObj, entries[prev].it, it, editing);
+          if (html) plan.set(i - 1, html);
+        }
+        prev = i;
+      });
+      return plan;
+    }
+
+    // 보기 모드 — 화살표를 누르면 요금·이동수단이 펼쳐지고 다시 누르면 접힌다
+    function toggleBetweenRouteDetail(el) {
+      const row = el && el.closest ? el.closest(".tl-br") : null;
+      if (!row) return;
+      const detail = row.querySelector(".tl-br-detail");
+      const open = detail ? detail.style.display === "none" : false;
+      if (detail) detail.style.display = open ? "block" : "none";
+      row.classList.toggle("tl-br-open", open);
+      if (el.setAttribute) el.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
+    function renderBetweenRouteEndpoints() {
+      const el = document.getElementById("br-endpoints");
+      if (!el || !brCtx) return;
+      el.innerHTML = `<span class="br-ep">${escapeHtmlText(brCtx.from.name)}</span><span class="br-arrow">→</span><span class="br-ep">${escapeHtmlText(brCtx.to.name)}</span>`;
+    }
+
+    function brNotice(html) {
+      const box = document.getElementById("br-box");
+      if (box) box.innerHTML = html ? `<div class="pm-tr-note">${html}</div>` : "";
+    }
+
+    function openBetweenRouteModal(fromId, toId) {
+      if (!canEdit()) return alert("읽기 전용 권한이라 구간 길찾기를 고를 수 없어요.");
+      const dayObj = state.days.find(d => d.day === currentDay);
+      if (!dayObj) return;
+      const items = dayObj.items || [];
+      const a = items.find(x => String(x.id) === String(fromId));
+      const b = items.find(x => String(x.id) === String(toId));
+      if (!a || !b) return;
+      const from = betweenEndpointOf(a, "to");
+      const to = betweenEndpointOf(b, "from");
+      if (!from || !to) return alert("두 일정의 위치를 찾지 못했어요. 일정에 장소를 먼저 정해 주세요.");
+      brCtx = { day: dayObj.day, fromId: String(a.id), toId: String(b.id), from, to };
+      brRoutes = [];
+      brSeq++;
+      const titleEl = document.getElementById("br-title");
+      if (titleEl) titleEl.textContent = "🧭 구간 길찾기";
+      renderBetweenRouteEndpoints();
+      const clearBtn = document.getElementById("br-clear");
+      if (clearBtn) clearBtn.style.display = getBetweenRoute(dayObj, a.id, b.id) ? "block" : "none";
+      const box = document.getElementById("br-box");
+      if (box) box.innerHTML = "";
+      const modal = document.getElementById("between-route-modal");
+      if (modal) modal.classList.add("open");
+      loadBetweenRouteRoutes();
+    }
+
+    function closeBetweenRouteModal() {
+      brSeq++;
+      const modal = document.getElementById("between-route-modal");
+      if (modal) modal.classList.remove("open");
+      brCtx = null;
+      brRoutes = [];
+    }
+
+    async function betweenGeocode(name) {
+      try {
+        const g = await geocodeByName(cleanPlaceName(name) || String(name || ""));
+        return g && Number.isFinite(Number(g.lat)) ? { lat: Number(g.lat), lng: Number(g.lng) } : null;
+      } catch (e) { return null; }
+    }
+
+    async function loadBetweenRouteRoutes() {
+      const box = document.getElementById("br-box");
+      if (!box || !brCtx) return;
+      const ctx = brCtx;
+      const seq = ++brSeq;
+      if (!isDomesticTrip()) {
+        box.innerHTML = `<div class="pm-tr-note">🌏 해외 일정은 카카오 대중교통 루트 추천을 불러오지 않아요.</div>`;
+        return;
+      }
+      let { from, to } = ctx;
+      const hasFrom = from.lat != null && from.lng != null;
+      const hasTo = to.lat != null && to.lng != null;
+      if (!hasFrom || !hasTo) {
+        box.innerHTML = `<div class="pm-tr-note">🔎 두 일정의 위치를 찾는 중...</div>`;
+        const [fc, tc] = await Promise.all([hasFrom ? Promise.resolve(null) : betweenGeocode(from.name), hasTo ? Promise.resolve(null) : betweenGeocode(to.name)]);
+        if (seq !== brSeq || brCtx !== ctx) return;
+        if (fc) { from.lat = fc.lat; from.lng = fc.lng; }
+        if (tc) { to.lat = tc.lat; to.lng = tc.lng; }
+        if (from.lat == null || from.lng == null || to.lat == null || to.lng == null) {
+          box.innerHTML = `<div class="pm-tr-note err">두 일정 중 위치를 찾지 못한 곳이 있어요. 일정을 눌러 장소를 다시 골라 주세요.</div>`;
+          return;
+        }
+      }
+      const key = `${from.lat.toFixed(5)},${from.lng.toFixed(5)}>${to.lat.toFixed(5)},${to.lng.toFixed(5)}`;
+      const cached = PM_TRANSIT_CACHE.get(key);
+      if (cached) {
+        brRoutes = cached.slice();
+        if (brRoutes.length) renderBetweenRouteCards();
+        else box.innerHTML = `<div class="pm-tr-note">이 두 일정으로는 대중교통 경로를 찾지 못했어요.</div>`;
+        return;
+      }
+      brRoutes = [];
+      box.innerHTML = `<div class="pm-tr-note">🚌 대중교통 루트 찾는 중...</div>`;
+      let data = null;
+      try {
+        data = await fetchKakaoTransit(from, to);
+      } catch (e) {
+        if (seq === brSeq && brCtx === ctx) box.innerHTML = `<div class="pm-tr-note err">대중교통 루트를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</div>`;
+        return;
+      }
+      if (seq !== brSeq || brCtx !== ctx) return;
+      const list = pickTopTransitRoutes(data);
+      if (list.length) PM_TRANSIT_CACHE.set(key, list);
+      brRoutes = list;
+      if (!list.length) {
+        box.innerHTML = `<div class="pm-tr-note">이 두 일정으로는 대중교통 경로를 찾지 못했어요. 가까운 역·정류장이 있는 일정끼리 이어 보세요.</div>`;
+        return;
+      }
+      renderBetweenRouteCards();
+    }
+
+    function renderBetweenRouteCards() {
+      const box = document.getElementById("br-box");
+      if (!box) return;
+      if (!brRoutes.length) { box.innerHTML = ""; return; }
+      const dayObj = state.days.find(d => brCtx && d.day === brCtx.day);
+      const cur = dayObj && brCtx ? getBetweenRoute(dayObj, brCtx.fromId, brCtx.toId) : null;
+      box.innerHTML = `
+        <div class="pm-tr-head">🚌 카카오맵 대중교통 <span class="hint">루트를 누르면 그 구간으로 바로 저장돼요</span></div>
+        <div class="pm-tr-list">${brRoutes.map((r, i) => {
+          const p = (r && r.properties) || {};
+          const mins = transitRouteMinutes(r);
+          const transfers = Math.max(0, Number(p.transfers) || 0);
+          const fare = transitFareText(p.fare);
+          const legs = transitRouteLegs(r).join(" → ") || "도보 위주";
+          const isCur = Boolean(cur) && Number(cur.minutes) === mins && String(cur.legs || "") === transitRouteLegs(r).join(" → ");
+          return `<button type="button" class="pm-tr-card${isCur ? " sel" : ""}" data-br-route="${i}" onclick="pickBetweenRoute(${i})">
+            <span class="pm-tr-top">
+              <span class="pm-tr-badge">${routeCardBadge(i)}</span>
+              <strong class="pm-tr-min">약 ${mins}분</strong>
+              <span class="pm-tr-meta">${transfers ? `환승 ${transfers}회` : "직통"}</span>
+              ${fare ? `<span class="pm-tr-meta">· 1인 ${escapeHtmlText(fare)}</span>` : ""}
+              ${isCur ? `<span class="pm-tr-sel">✓ 저장됨</span>` : ""}
+            </span>
+            <span class="pm-tr-legs">${escapeHtmlText(legs)}</span>
+          </button>`;
+        }).join("")}</div>`;
+    }
+
+    // 루트 하나를 누르면 그 구간으로 바로 저장하고 닫는다 (사용자 요청: "루트 하나 딱 고르고나면")
+    function pickBetweenRoute(i) {
+      if (!brCtx) return;
+      const route = brRoutes[i];
+      if (!route) return;
+      const dayObj = state.days.find(d => d.day === brCtx.day);
+      if (!dayObj) return;
+      if (!canEdit()) return alert("읽기 전용 권한이라 저장할 수 없어요.");
+      const p = (route && route.properties) || {};
+      const rec = {
+        minutes: transitRouteMinutes(route),
+        farePer: transitFareAmount(p.fare),
+        fareText: transitFareText(p.fare),
+        legs: transitRouteLegs(route).join(" → "),
+        transfers: Math.max(0, Number(p.transfers) || 0),
+        type: String(p.type || ""),
+        mode: transitMoveText(route),
+        from: { name: brCtx.from.name, lat: brCtx.from.lat, lng: brCtx.from.lng },
+        to: { name: brCtx.to.name, lat: brCtx.to.lat, lng: brCtx.to.lng },
+        savedAt: new Date().toISOString()
+      };
+      const fromName = brCtx.from.name, toName = brCtx.to.name;
+      betweenRouteStore(dayObj, true)[betweenRouteKey(brCtx.fromId, brCtx.toId)] = rec;
+      closeBetweenRouteModal();
+      saveState();
+      showAppToast(`🧭 '${fromName} → ${toName}' 구간을 저장했어요 · ${betweenRouteMinutesText(rec)}`);
+    }
+
+    function clearBetweenRoute(fromId, toId) {
+      if (!canEdit()) return alert("읽기 전용 권한이라 구간 길찾기를 지울 수 없어요.");
+      const dayObj = state.days.find(d => d.day === currentDay);
+      if (!dayObj) return;
+      const store = betweenRouteStore(dayObj, false);
+      const key = betweenRouteKey(fromId, toId);
+      if (!store[key]) return;
+      delete store[key];
+      if (!Object.keys(store).length) delete dayObj.betweenRoutes;
+      saveState();
+      showAppToast("🧭 구간 길찾기를 지웠어요");
+    }
+
+    function clearBetweenRouteFromModal() {
+      if (!brCtx) return;
+      const { fromId, toId } = brCtx;
+      closeBetweenRouteModal();
+      clearBetweenRoute(fromId, toId);
+    }
+
+    // '이동' 카드에도 출발·도착 좌표를 함께 보관 — 구간 길찾기·루트 재조회에 바로 쓴다
+    function rememberRouteEndpointCoords(target) {
+      if (!target) return;
+      const fc = pmCoordOf(pmFromCoord);
+      const tc = pmCoordOf(pmToCoord) || (typeof pickedLat === "number" && typeof pickedLng === "number"
+        ? { lat: pickedLat, lng: pickedLng, name: "" } : null);
+      if (fc) { target.fromLat = fc.lat; target.fromLng = fc.lng; } else { delete target.fromLat; delete target.fromLng; }
+      if (tc) { target.toLat = tc.lat; target.toLng = tc.lng; } else { delete target.toLat; delete target.toLng; }
+    }
+
+    // 두 일정이 지금도 바로 옆에 붙어 있는지 (메모는 건너뛴다) — 안 붙어 있으면 구간은 없는 것으로 본다
+    function betweenPairActive(dayObj, fromId, toId) {
+      const list = (dayObj && dayObj.items) || [];
+      let prev = null;
+      for (let i = 0; i < list.length; i++) {
+        const it = list[i];
+        if (!it || isMemoItem(it)) continue;
+        if (prev && String(prev.id) === String(fromId) && String(it.id) === String(toId)) return true;
+        prev = it;
+      }
+      return false;
+    }
+
+    // 지운 일정의 구간 기록이 남아 경비에 유령 항목이 생기지 않게 정리
+    function pruneBetweenRoutes() {
+      (state.days || []).forEach(day => {
+        const store = day && day.betweenRoutes;
+        if (!store || typeof store !== "object" || Array.isArray(store)) return;
+        const ids = new Set((day.items || []).map(it => String(it && it.id)));
+        Object.keys(store).forEach(key => {
+          const cut = key.indexOf("__");
+          if (cut < 0) { delete store[key]; return; }
+          if (!ids.has(key.slice(0, cut)) || !ids.has(key.slice(cut + 2))) delete store[key];
+        });
+        if (!Object.keys(store).length) delete day.betweenRoutes;
+      });
+    }
+
     async function savePlaceEdit() {
       const dayObj = state.days.find(d => d.day === currentDay);
       if (!dayObj) return;
@@ -8030,8 +8507,8 @@
             it.costTotal = 0;
             it.moveCost = 0;
           }
-          if (placeEditMode === "route") { it.fromPlace = fromPlace; it.toPlace = toPlace; }
-          else { delete it.fromPlace; delete it.toPlace; }
+          if (placeEditMode === "route") { it.fromPlace = fromPlace; it.toPlace = toPlace; rememberRouteEndpointCoords(it); }
+          else { delete it.fromPlace; delete it.toPlace; delete it.fromLat; delete it.fromLng; delete it.toLat; delete it.toLng; }
           if (typeof pickedLat === "number") { it.lat = pickedLat; it.lng = pickedLng; }
           if (pickedAddress && placeEditMode !== "route") it.addr = pickedAddress; else if (placeEditMode !== "route") delete it.addr;
           // 한 번 찾은 호텔 위치는 예약 거점에도 남겨 다음에 또 찾지 않게 한다
@@ -8048,7 +8525,7 @@
           time: timeOk, place, stay, moveMode, moveMin: 10, moveCost: placeEditMode === "route" ? c : 0, costTotal: c,
           badges: ["직접 추가"], mapUrl, memo
         };
-        if (placeEditMode === "route") { newItem.fromPlace = fromPlace; newItem.toPlace = toPlace; }
+        if (placeEditMode === "route") { newItem.fromPlace = fromPlace; newItem.toPlace = toPlace; rememberRouteEndpointCoords(newItem); }
         if (typeof pickedLat === "number") { newItem.lat = pickedLat; newItem.lng = pickedLng; }
         if (pickedAddress && placeEditMode !== "route") newItem.addr = pickedAddress;
         if (typeof pickedLat === "number" && placeEditMode !== "route") persistHotelCoords(place, { lat: pickedLat, lng: pickedLng, address: pickedAddress });

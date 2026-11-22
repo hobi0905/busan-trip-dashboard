@@ -2297,6 +2297,202 @@ setTimeout(async () => {
       ev("state.bookings = []; saveState();");
     }
 
+    // 64) 🧭 일정과 일정 사이 구간 길찾기 커넥터 — 편집에서 고르고, 보기에서 작게
+    {
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      const TRANSIT_STUB = {
+        status: "OK",
+        routes: [
+          { properties: { type: "SUBWAY", totalTime: 1108, transfers: 0, fare: { value: 1550 } },
+            steps: [{ properties: { type: "SUBWAY", guidance: "2호선 (홍대입구 > 을지로입구)" } }] },
+          { properties: { type: "BUS", totalTime: 2301, transfers: 0, fare: { min: 0, max: 2500 } },
+            steps: [{ properties: { type: "BUS", guidance: "간선 271외 3대 (홍대입구역(중) > 종로1가.종각역)" } }] },
+          { properties: { type: "BUS_AND_SUBWAY", totalTime: 2298, transfers: 1, fare: { value: 1500 } },
+            steps: [
+              { properties: { type: "BUS", guidance: "간선 271외 8대 (홍대입구역(중) > 충정로역(중))" } },
+              { properties: { type: "BUS", guidance: "간선 721외 4대 (충정로역(중) > 종로1가.종각역)" } }] }
+        ]
+      };
+      const DAY = `[
+        { id:'br-home', place:'집', lat:37.4586, lng:126.6425, badges:['직접 추가'] },
+        { id:'br-move', place:'집 → 홍대입구역', fromPlace:'집', toPlace:'홍대입구역', fromLat:37.4586, fromLng:126.6425, toLat:37.5572, toLng:126.9236, lat:37.5572, lng:126.9236, moveMode:'지하철 · 약 40분', badges:['직접 추가'] },
+        { id:'br-hong', place:'홍대입구 카페', lat:37.5572, lng:126.9236, badges:['직접 추가'] },
+        { id:'br-city', place:'시청역', lat:37.5658, lng:126.9774, badges:['직접 추가'] },
+        { id:'br-gwang', place:'광화문', lat:37.5759, lng:126.9769, badges:['직접 추가'] }
+      ]`;
+      const realFetch = w.fetch;
+      const transitCalls = [];
+      w.fetch = (url, opt) => {
+        if (String(url).includes("kakao-transit")) {
+          transitCalls.push(JSON.parse((opt && opt.body) || "{}"));
+          return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(JSON.parse(JSON.stringify(TRANSIT_STUB))) });
+        }
+        return Promise.reject(new Error("offline-test"));
+      };
+      ev(`currentDay = 1; editMode = false;
+        state.meta = { title:'구간', destination:'서울', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: ${DAY} }];
+        state.bookings = []; state.expenses = []; PM_TRANSIT_CACHE.clear(); editMode = true; saveState();`);
+      const list = () => w.document.getElementById("timeline-list");
+      const brBtns = () => [...list().querySelectorAll(".tl-br-edit .tl-br-btn")];
+
+      // (1) 편집 모드에서만 구간 버튼이 생긴다 — 위치가 다른 두 일정 사이
+      ok("구간 길찾기: 편집 모드에 두 일정 사이 버튼", brBtns().length === 3 && brBtns().every(b => /─── 🧭 길찾기 ───/.test(b.textContent)), brBtns().map(b => b.getAttribute("title")).join(" | "));
+      ok("구간 길찾기: 같은 곳끼리는 버튼 없음", !brBtns().some(b => /홍대입구역 → 홍대입구역/.test(b.getAttribute("title") || "")) && !brBtns().some(b => /집 → 집/.test(b.getAttribute("title") || "")), brBtns().map(b => b.getAttribute("title")).join(" | "));
+      ev("editMode = false; renderTimeline();");
+      ok("구간 길찾기: 보기 모드에서는 버튼이 절대 안 보인다", list().querySelectorAll(".tl-br-edit").length === 0 && list().querySelectorAll(".tl-br").length === 0, String(list().querySelectorAll(".tl-br").length));
+      ev("editMode = true; renderTimeline();");
+
+      // (2) 앞이 '이동(A→B)' 이면 B 가 출발지, 뒤가 '이동' 이면 그 출발지가 도착지
+      const ep1 = JSON.parse(ev(`JSON.stringify({ from: betweenEndpointOf(state.days[0].items[1], 'to'), to: betweenEndpointOf(state.days[0].items[3], 'from') })`));
+      ok("구간 출발지: 앞 '이동'의 목적지(B)", ep1.from.name === "홍대입구역" && ep1.from.lat === 37.5572 && ep1.from.lng === 126.9236, JSON.stringify(ep1.from));
+      ok("구간 도착지: 뒤 일정 장소(C)", ep1.to.name === "시청역" && ep1.to.lat === 37.5658, JSON.stringify(ep1.to));
+      const ep2 = JSON.parse(ev("JSON.stringify(betweenEndpointOf(state.days[0].items[1], 'from'))"));
+      ok("구간 도착지: 뒤가 '이동'이면 그 출발지", ep2.name === "집" && ep2.lat === 37.4586, JSON.stringify(ep2));
+
+      // (3) 버튼을 누르면 그 구간 그대로 3개 루트
+      const targetBtn = brBtns().find(b => /^홍대입구 카페 → 시청역/.test(b.getAttribute("title") || ""));
+      targetBtn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      await wait(260);
+      const modal = () => w.document.getElementById("between-route-modal");
+      ok("구간 길찾기: 전용 모달이 열린다", modal().classList.contains("open"), modal().className);
+      ok("구간 길찾기: 출발→도착이 자동으로 잡힌다", /홍대입구 카페[\s\S]*→[\s\S]*시청역/.test(w.document.getElementById("br-endpoints").textContent), w.document.getElementById("br-endpoints").textContent.replace(/\s+/g, " "));
+      const cards = () => [...w.document.querySelectorAll("#br-box .pm-tr-card")];
+      ok("구간 길찾기: 카카오 프록시 루트 3개", cards().length === 3, String(cards().length));
+      ok("구간 길찾기: 요청 좌표가 두 일정 끝점", transitCalls.length === 1 && transitCalls[0].start_x === 126.9236 && transitCalls[0].start_y === 37.5572 && transitCalls[0].end_x === 126.9774 && transitCalls[0].end_y === 37.5658, JSON.stringify(transitCalls[0] || {}));
+      ok("구간 길찾기: 1순위 = 빠른 도착", /빠른 도착/.test(cards()[0].textContent) && /약 18분/.test(cards()[0].textContent), cards()[0].textContent.replace(/\s+/g, " "));
+
+      // (4) 루트 하나를 딱 고르면 저장하고 닫힌다
+      cards()[0].dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      await wait(60);
+      const stored = JSON.parse(ev("JSON.stringify((state.days[0].betweenRoutes||{})['br-hong__br-city']||null)"));
+      ok("구간 저장: 앞__뒤 키로 저장", !!stored && stored.minutes === 18 && stored.farePer === 1550 && stored.legs === "2호선 (홍대입구 > 을지로입구)", JSON.stringify(stored));
+      ok("구간 저장: 고르고 나면 모달이 닫힌다", !modal().classList.contains("open"), modal().className);
+      ok("구간 저장: localStorage 상태에도 남는다", /betweenRoutes/.test(String(w.localStorage.getItem(ev("getLocalKey()")) || "")) && /br-hong__br-city/.test(String(w.localStorage.getItem(ev("getLocalKey()")) || "")), "");
+      const setRows = [...list().querySelectorAll(".tl-br-set")];
+      ok("편집 모드: 고른 구간은 '약 18분 · 변경' + 지우기", setRows.length === 1 && /약 18분 · 변경/.test(setRows[0].textContent) && !!setRows[0].querySelector(".tl-br-clear"), setRows.map(r => r.textContent.trim().replace(/\s+/g, " ")).join(" | "));
+
+      // (5) 보기 모드 — 작은 화살표만, 누르면 요금·이동수단 펼침
+      ev("editMode = false; renderTimeline();");
+      const views = [...list().querySelectorAll(".tl-br-view")];
+      ok("보기 모드: 구간이 작은 화살표 하나로", views.length === 1 && /↓ 약 18분/.test(views[0].querySelector(".tl-br-arrow").textContent), views.map(v => v.textContent.trim().replace(/\s+/g, " ")).join(" | "));
+      ok("보기 모드: 화살표 줄에는 가격이 안 보인다(접힘)", views[0].querySelector(".tl-br-detail").style.display === "none" && views[0].querySelector(".tl-br-arrow").getAttribute("aria-expanded") === "false", views[0].querySelector(".tl-br-arrow").getAttribute("aria-expanded"));
+      views[0].querySelector(".tl-br-arrow").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      const dtxt = views[0].querySelector(".tl-br-detail").textContent.replace(/\s+/g, " ");
+      ok("보기 모드: 화살표 클릭 → 요금(1인·인원수)·자세한 이동수단", views[0].querySelector(".tl-br-detail").style.display === "block"
+        && /1인 1,550원 · 2명 3,100원/.test(dtxt) && /2호선 \(홍대입구 > 을지로입구\) · 직통/.test(dtxt), dtxt);
+      views[0].querySelector(".tl-br-arrow").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      ok("보기 모드: 다시 누르면 접힌다", views[0].querySelector(".tl-br-detail").style.display === "none", views[0].querySelector(".tl-br-arrow").getAttribute("aria-expanded"));
+
+      // (6) 경비 탭 — 구간 요금이 1인×인원수로 들어가고 기본은 제외(토글 가능)
+      const brExp = () => JSON.parse(ev("JSON.stringify(getSyncedExpenses().filter(e => String(e.id).indexOf('tl_br_') === 0))"));
+      const e0 = brExp()[0];
+      ok("경비: 구간 요금이 교통 항목으로 잡힌다", brExp().length === 1 && e0.amount === 3100 && e0.category === "교통" && /홍대입구 카페 → 시청역/.test(e0.name), JSON.stringify(e0));
+      ok("경비: 대중교통 요금이라 기본 제외", e0.transit === true && e0.included === false, JSON.stringify({ transit: e0.transit, included: e0.included }));
+      w.toggleExpenseInclude(e0.id);
+      ok("경비: '경비에 포함'으로 바로 토글", brExp()[0].included === true, String(brExp()[0].included));
+      w.toggleExpenseInclude(e0.id);
+
+      // (7) 메모를 사이에 둬도 이어지고, 커넥터는 다음 일정 바로 위에 붙는다
+      ev(`state.days[0].items = [
+        { id:'br-memo-a', place:'집', lat:37.4586, lng:126.6425 },
+        { id:'br-memo-m', kind:'memo', place:'메모', memo:'중간 메모' },
+        { id:'br-memo-b', place:'시청역', lat:37.5658, lng:126.9774 }
+      ]; editMode = true; saveState();`);
+      const memoRowIdx = [...list().children].findIndex(r => r.classList.contains("tl-edit-memo"));
+      const brRowIdx = [...list().children].findIndex(r => r.classList.contains("tl-br"));
+      ok("구간: 메모는 건너뛰고 두 일정을 잇는다", brBtns().length === 1 && brRowIdx === memoRowIdx + 1, `memo=${memoRowIdx} / br=${brRowIdx}`);
+
+      // (8) 순서가 바뀌어 인접하지 않게 되면 표시·경비에서 사라진다
+      ev(`state.days[0].items = ${DAY};
+        state.days[0].betweenRoutes = { 'br-hong__br-city': { minutes:18, farePer:1550, legs:'2호선 (홍대입구 > 을지로입구)', transfers:0, type:'SUBWAY', mode:'2호선 · 약 18분', from:{name:'홍대입구 카페'}, to:{name:'시청역'} } };
+        state.days[0].items = [state.days[0].items[0], state.days[0].items[1], state.days[0].items[3], state.days[0].items[2], state.days[0].items[4]];
+        editMode = false; saveState();`);
+      ok("구간: 순서가 바뀌면 보기 모드에서 사라진다", list().querySelectorAll(".tl-br-view").length === 0, String(list().querySelectorAll(".tl-br-view").length));
+      ok("구간: 인접하지 않은 구간 요금은 경비에도 없다", brExp().length === 0, JSON.stringify(brExp()));
+      ev("editMode = true; renderTimeline();");
+      ok("구간: 순서가 바뀌면 편집 모드에서도 '변경' 표시가 없다", list().querySelectorAll(".tl-br-set").length === 0, String(list().querySelectorAll(".tl-br-set").length));
+
+      // (9) 편집 모드 ✕ 로 지우기
+      ev(`state.days[0].items = ${DAY};
+        state.days[0].betweenRoutes = { 'br-hong__br-city': { minutes:18, farePer:1550, legs:'2호선 (홍대입구 > 을지로입구)', transfers:0, type:'SUBWAY', mode:'2호선 · 약 18분', from:{name:'홍대입구 카페'}, to:{name:'시청역'} } }; editMode = true; saveState();`);
+      const clearBtn = list().querySelector(".tl-br-set .tl-br-clear");
+      ok("구간: 편집 모드에 지우기(✕) 버튼", !!clearBtn, "");
+      clearBtn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      await wait(40);
+      ok("구간: 지우면 기록도 사라진다", list().querySelectorAll(".tl-br-set").length === 0 && !ev("state.days[0].betweenRoutes"), String(ev("JSON.stringify(state.days[0].betweenRoutes||null)")));
+
+      // (10) '이동(A→B) → 일정(C)' 흐름을 그대로 — 저장하면 B→C 로 조회·저장
+      ev(`state.days[0].items = [state.days[0].items[1], state.days[0].items[3]]; editMode = true; saveState();`);
+      const callsBefore = transitCalls.length;
+      ev("PM_TRANSIT_CACHE.clear()");
+      w.openBetweenRouteModal("br-move", "br-city");
+      await wait(280);
+      const lastCall = transitCalls[transitCalls.length - 1] || {};
+      ok("'이동→일정': 모달이 이동의 목적지(B)에서 출발", transitCalls.length > callsBefore && lastCall.s_name === "홍대입구역" && lastCall.e_name === "시청역" && lastCall.start_x === 126.9236, JSON.stringify(lastCall));
+      cards()[1].dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      await wait(40);
+      ok("'이동→일정': 그 구간으로 저장", !!JSON.parse(ev("JSON.stringify((state.days[0].betweenRoutes||{})['br-move__br-city']||null)")), ev("JSON.stringify(Object.keys(state.days[0].betweenRoutes||{}))"));
+      ev("editMode = false; renderTimeline();");
+      const mvView = list().querySelector(".tl-br-view");
+      ok("'이동→일정': 보기 모드에 '↓ 약 38분'", !!mvView && /↓ 약 38분/.test(mvView.textContent), mvView && mvView.textContent.replace(/\s+/g, " "));
+      mvView.querySelector(".tl-br-arrow").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      ok("'이동→일정': 펼치면 1인 2,500원(최대)·버스 노선", /1인 2,500원/.test(mvView.querySelector(".tl-br-detail").textContent) && /간선 271 \(홍대입구역 > 종로1가\.종각역\) · 직통/.test(mvView.querySelector(".tl-br-detail").textContent), mvView.querySelector(".tl-br-detail").textContent.replace(/\s+/g, " "));
+
+      // (11) '이동' 카드를 저장할 때 출발·도착 좌표도 함께 남긴다 (다음 구간 길찾기에 쓰임)
+      ev(`currentDay = 1; editMode = false;
+        state.days[0].items = [{ id:'br-newmove', place:'', time:'', fromPlace:'', toPlace:'', moveMode:'', moveCost:0, costTotal:0, badges:['직접 추가'] }]; saveState();`);
+      w.openPlaceModal("br-newmove");
+      w.setPlaceMode("route");
+      w.document.getElementById("pm-from").value = "집";
+      w.document.getElementById("pm-to").value = "시청역";
+      w.setRouteEndpointCoord("from", { lat: 37.4586, lng: 126.6425, name: "집" });
+      w.setRouteEndpointCoord("to", { lat: 37.5658, lng: 126.9774, name: "시청역" });
+      await wait(320);
+      await w.savePlaceEdit();
+      const savedMove = JSON.parse(ev("JSON.stringify(state.days[0].items[0])"));
+      ok("'이동' 저장: 출발·도착 좌표도 함께 저장", savedMove.fromLat === 37.4586 && savedMove.fromLng === 126.6425 && savedMove.toLat === 37.5658 && savedMove.toLng === 126.9774, JSON.stringify({ from: [savedMove.fromLat, savedMove.fromLng], to: [savedMove.toLat, savedMove.toLng] }));
+
+      // (12) 해외 일정은 카카오 대중교통을 부르지 않는다
+      ev(`state.meta.tripType = 'overseas'; state.meta.country='JP'; state.meta.destination='도쿄';
+        state.days[0].items = [
+          { id:'br-os-a', place:'도쿄역', lat:35.6812, lng:139.7671 },
+          { id:'br-os-b', place:'시부야', lat:35.6595, lng:139.7005 }
+        ]; editMode = true; saveState();`);
+      const beforeOverseas = transitCalls.length;
+      w.openBetweenRouteModal("br-os-a", "br-os-b");
+      await wait(200);
+      ok("구간: 해외 일정은 카카오 미호출 + 안내", transitCalls.length === beforeOverseas && /해외 일정은/.test(w.document.getElementById("br-box").textContent) && !w.document.querySelector("#br-box .pm-tr-card"), w.document.getElementById("br-box").textContent.replace(/\s+/g, " "));
+      w.closeBetweenRouteModal();
+
+      // (13) 좌표가 없어도 저장 거점·일정 장소에서 찾고, 없으면 지오코딩한다
+      ev(`state.meta = { title:'', destination:'서울', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.days[0].items = [
+          { id:'br-nocoord-a', place:'집' },
+          { id:'br-nocoord-b', place:'시청역' }
+        ];
+        state.savedPlaces = [{ id:'sp-home', kind:'home', label:'집', address:'인천 미추홀구', lat:37.4586, lng:126.6425 }];
+        state.bookings = []; PM_TRANSIT_CACHE.clear(); saveState();`);
+      const ep3 = JSON.parse(ev(`JSON.stringify({ a: betweenEndpointOf(state.days[0].items[0], 'to'), b: betweenEndpointOf(state.days[0].items[1], 'from') })`));
+      ok("구간: 좌표가 없어도 저장 거점 이름으로 찾는다", ep3.a.name === "집" && ep3.a.lat === 37.4586 && ep3.a.lng === 126.6425, JSON.stringify(ep3.a));
+      ok("구간: 모르는 이름은 좌표 없음(지오코딩으로 넘긴다)", ep3.b.name === "시청역" && ep3.b.lat == null, JSON.stringify(ep3.b));
+      const realGeo = w.geocodeByName;
+      const geoAsked = [];
+      w.geocodeByName = async (q) => { geoAsked.push(String(q)); return String(q).includes("시청") ? { lat: 37.5658, lng: 126.9774 } : null; };
+      const callsBeforeGeo = transitCalls.length;
+      w.openBetweenRouteModal("br-nocoord-a", "br-nocoord-b");
+      await wait(260);
+      const geoCall = transitCalls[transitCalls.length - 1] || {};
+      ok("구간: 위치를 모르면 지오코딩해 루트를 찾는다", transitCalls.length === callsBeforeGeo + 1 && geoAsked.includes("시청역") && geoCall.end_x === 126.9774 && geoCall.end_y === 37.5658, `${JSON.stringify(geoAsked)} / ${JSON.stringify(geoCall)}`);
+      w.closeBetweenRouteModal();
+      w.geocodeByName = realGeo;
+
+      w.fetch = realFetch;
+      ev(`state.meta = { title:'', destination:'', startDate:'', endDate:'', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }];
+        state.bookings = []; state.savedPlaces = []; state.expenses = []; editMode = false; PM_TRANSIT_CACHE.clear(); saveState();`);
+    }
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }
