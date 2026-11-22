@@ -1392,6 +1392,66 @@ setTimeout(async () => {
       ev("state.bookings = []; state.savedPlaces = []; state.days[0].items = []; saveState();");
     }
 
+    // ===== 📍 위치 표기: 좌표 숫자 · '좌표' 문구 없이 도로명 주소로 =====
+    {
+      const rawCoordRe = /-?\d{2,3}\.\d{3,}\s*,\s*-?\d{1,3}\.\d{3,}/;
+      ok("도로명 주소 우선 표기", ev("placeAddressText({lat:37.5,lng:127, roadAddress:'서울 마포구 마포대로 109', sub:'다른주소'})") === "서울 마포구 마포대로 109",
+        ev("placeAddressText({lat:37.5,lng:127, roadAddress:'서울 마포구 마포대로 109', sub:'다른주소'})"));
+      ok("좌표 문자열은 주소에서 걸러진다", ev("looksLikeCoordText('37.5428, 126.9497')") === true
+        && ev("placeLocationText('37.5428, 126.9497')") === "📍 위치 확인됨", ev("placeLocationText('37.5428, 126.9497')"));
+      ok("주소 없으면 '위치 확인됨'", ev("placeLocationText('')") === "📍 위치 확인됨", ev("placeLocationText('')"));
+
+      // 카카오 결과의 도로명 주소가 표시용 주소로 잡힌다
+      ok("카카오 결과 roadAddress", ev("kakaoDocToPlace({place_name:'신라스테이 마포', y:'37.5428', x:'126.9497', road_address_name:'서울 마포구 마포대로 109', address_name:'서울 마포구 도화동 1', category_group_code:'AD5'}).roadAddress") === "서울 마포구 마포대로 109",
+        ev("JSON.stringify(kakaoDocToPlace({place_name:'신라스테이 마포', y:'37.5428', x:'126.9497', road_address_name:'서울 마포구 마포대로 109', address_name:'서울 마포구 도화동 1', category_group_code:'AD5'}))"));
+
+      // 거점 목록: 이름 + 도로명 주소, 좌표 숫자·'좌표' 문구 없음
+      ev(`state.savedPlaces = [
+        { id:'pl-t1', kind:'hotel', label:'신라스테이 마포', address:'신라스테이 마포', roadAddress:'서울 마포구 마포대로 109', lat:37.5428, lng:126.9497 },
+        { id:'pl-t2', kind:'home', label:'집', address:'인천 미추홀구 인하로 100', lat:37.4586, lng:126.6425 }
+      ]; state.bookings = []; saveState();`);
+      w.openPlacesModal();
+      const placesTxt = w.document.getElementById("places-modal").textContent;
+      ok("거점 목록에 도로명 주소", /서울 마포구 마포대로 109/.test(placesTxt) && /인천 미추홀구 인하로 100/.test(placesTxt), placesTxt.replace(/\s+/g, " ").slice(0, 160));
+      ok("거점 목록에 좌표 숫자 없음", !rawCoordRe.test(placesTxt), placesTxt.replace(/\s+/g, " ").slice(0, 160));
+      ok("거점 모달에 '좌표' 문구 없음", !/좌표/.test(placesTxt), (placesTxt.match(/.{0,12}좌표.{0,12}/) || [""])[0]);
+      ok("검색 버튼은 '위치 찾기'", /위치 찾기/.test(placesTxt) && !/좌표 찾기/.test(placesTxt), placesTxt.includes("위치 찾기"));
+
+      // 검색 결과를 고르면 입력칸·안내문이 도로명 주소로
+      w.eval(`window._savedPlaceResults = [{ name:'신라스테이 마포', sub:'서울 마포구 마포대로 109', roadAddress:'서울 마포구 마포대로 109', lat:37.5428, lng:126.9497, kind:'attraction' }]; pickSavedPlaceCoords(0);`);
+      ok("고른 곳 주소가 칸에 들어간다", w.document.getElementById("place-address").value === "서울 마포구 마포대로 109", w.document.getElementById("place-address").value);
+      const noteTxt = w.document.getElementById("place-coord-note").textContent;
+      ok("안내문도 주소로", /서울 마포구 마포대로 109/.test(noteTxt) && !rawCoordRe.test(noteTxt) && !/좌표/.test(noteTxt), noteTxt);
+      w.closePlacesModal();
+
+      // 일정 장소 모달에 좌표 숫자·'좌표' 문구 없음
+      w.eval("state.days[0].items = []; delete state.savedPlaces; ensureSavedPlaces();");
+      w.openPlaceModal(null);
+      const placeModalTxt = w.document.getElementById("place-modal").textContent;
+      ok("장소 모달에 좌표 숫자 없음", !rawCoordRe.test(placeModalTxt), placeModalTxt.replace(/\s+/g, " ").slice(0, 120));
+      ok("장소 모달에 '좌표' 문구 없음", !/좌표/.test(placeModalTxt), (placeModalTxt.match(/.{0,12}좌표.{0,12}/) || [""])[0]);
+      w.closePlaceModal();
+
+      // 숙소 예약 모달: 주소가 있으면 주소, 없으면 '위치 확인됨' — 숫자 없음
+      ev(`state.bookings = [{ id:'bk-t1', type:'hotel', name:'신라스테이 마포', room:'스탠다드 · 2명', inDate:'2027-01-31', outDate:'2027-02-02', inTime:'15:00', outTime:'11:00', price:0, payStatus:'planned', addr:'서울 마포구 마포대로 109', lat:37.5428, lng:126.9497, schedule:{ on:true, lat:37.5428, lng:126.9497, plan:{nights:2,mornings:2} } }]; ensureSavedPlaces();`);
+      w.openBookingModal("bk-t1");
+      const bkNote = w.document.getElementById("bk-sched-coord").textContent;
+      ok("숙소 위치 줄에 도로명 주소", /서울 마포구 마포대로 109/.test(bkNote), bkNote);
+      const bkModalTxt = w.document.getElementById("booking-modal").textContent;
+      ok("예약 모달에 좌표 숫자 없음", !rawCoordRe.test(bkModalTxt), (bkModalTxt.match(rawCoordRe) || [""])[0]);
+      ok("예약 모달 버튼은 '위치 검색'·'위치 찾기'", /위치 검색/.test(bkModalTxt) && !/좌표 검색|좌표 찾기/.test(bkModalTxt), "");
+      w.closeBookingModal();
+
+      // 주소를 모르는 예약은 숫자 대신 '위치 확인됨'
+      ev("state.bookings[0].addr = ''; saveState();");
+      w.openBookingModal("bk-t1");
+      const bkNote2 = w.document.getElementById("bk-sched-coord").textContent;
+      ok("주소 없으면 '위치 확인됨'", /위치 확인됨/.test(bkNote2) && !rawCoordRe.test(bkNote2), bkNote2);
+      w.closeBookingModal();
+
+      ev("state.bookings = []; delete state.savedPlaces; ensureSavedPlaces(); state.days[0].items = []; saveState();");
+    }
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }
