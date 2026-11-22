@@ -2226,6 +2226,13 @@ setTimeout(async () => {
         && evenVals.reduce((s, v) => s + v, 0) === 200000, evenVals.join("/"));
       w.closeExpenseEditModal();
 
+      // (6) 이름에 <> 가 들어가도 글자로만 보인다
+      w.renameCompanion(2, '<img src=x onerror=alert(1)>');
+      w.eval(`state.expensePayers['m-hotel'] = { '나':0, '지훈':0, '<img src=x onerror=alert(1)>':200000 }; saveState();`);
+      ok("동반인 이름의 <>는 요약·항목 줄에서 글자로만", !card.querySelector("img") && !list2().querySelector("img")
+        && /<img src=x onerror=alert\(1\)>/.test(card.textContent) && /<img src=x onerror=alert\(1\)>/.test(list2().textContent),
+        `${card.querySelectorAll("img").length} / ${list2().querySelectorAll("img").length}`);
+
       ev("state.bookings = []; state.expenses = []; state.days[0].items = []; state.companions = []; state.expensePayers = {}; state.expenseIncludeMap = {}; state.meta.travelers = 2; saveState();");
     }
 
