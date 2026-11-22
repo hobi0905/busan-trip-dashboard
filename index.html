@@ -4795,12 +4795,16 @@
     // 일정 카드의 지도 링크 — 국내는 카카오맵으로 다시 계산하고, 해외는 저장된 링크를 그대로 쓴다
     function itemMapUrl(it) {
       if (!it) return "";
+      const stored = String(it.mapUrl || "");
+      const isNaverMap = /^https?:\/\/map\.naver\.com/.test(stored);
       if (mapLinkIsDomestic()) {
+        // 공식 예약 페이지처럼 일부러 다른 사이트를 걸어 둔 링크는 건드리지 않는다
+        if (stored && !isNaverMap) return stored;
         const q = itemPlaceQuery(it);
         const hasCoord = (typeof it.lat === "number" && typeof it.lng === "number");
         return hasCoord ? kakaoMapPlaceUrl(q, it.lat, it.lng) : kakaoMapSearchUrl(q);
       }
-      return it.mapUrl || naverMapUrl(itemPlaceQuery(it));
+      return stored || naverMapUrl(itemPlaceQuery(it));
     }
 
 
