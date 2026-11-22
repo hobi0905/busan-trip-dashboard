@@ -1532,6 +1532,194 @@ setTimeout(async () => {
       ev("state.bookings = []; delete state.savedPlaces; ensureSavedPlaces(); state.days[0].items = []; saveState();");
     }
 
+    // 57) 🚌 '이동' 모드 — 카카오맵 기준 대중교통 3개 루트 추천
+    {
+      // 카카오 대중교통 응답(실제 구조 그대로) — 0번이 가장 빠르고, 2·3번은 2번이 더 빠른데도 뒤에 온다
+      const TRANSIT_STUB = {
+        status: "OK",
+        properties: { total: 4 },
+        routes: [
+          { properties: { type: "SUBWAY", totalTime: 1108, totalDistance: 5885, transfers: 0, fare: { value: 1550 } },
+            steps: [{ properties: { type: "SUBWAY", guidance: "2호선 (홍대입구 > 을지로입구)", time: 720, vehicles: [{ name: "2호선", type: "일반" }] } }] },
+          { properties: { type: "BUS", totalTime: 2301, totalDistance: 7484, transfers: 0, fare: { min: 0, max: 2500 } },
+            steps: [{ properties: { type: "BUS", guidance: "간선 271외 3대 (홍대입구역(중) > 종로1가.종각역)", time: 1524, vehicles: [{ name: "271", type: "간선" }] } }] },
+          { properties: { type: "BUS_AND_SUBWAY", totalTime: 2298, totalDistance: 6864, transfers: 1, fare: { value: 1500 } },
+            steps: [
+              { properties: { type: "BUS", guidance: "간선 271외 8대 (홍대입구역(중) > 충정로역(중))", time: 972, vehicles: [{ name: "271" }] } },
+              { properties: { type: "WALKING", guidance: "충정로역까지 도보로 이동", time: 300 } },
+              { properties: { type: "BUS", guidance: "간선 721외 4대 (충정로역(중) > 종로1가.종각역)", time: 552, vehicles: [{ name: "721" }] } }
+            ] },
+          // 같은 노선·같은 환승이 반복되는 경로 — 카드로 또 띄우지 않는다
+          { properties: { type: "BUS_AND_SUBWAY", totalTime: 2298, totalDistance: 6864, transfers: 1, fare: { value: 1500 } },
+            steps: [
+              { properties: { type: "BUS", guidance: "간선 271외 14대 (홍대입구역(중) > 충정로역(중))", time: 972, vehicles: [{ name: "271" }] } },
+              { properties: { type: "WALKING", guidance: "충정로역까지 도보로 이동", time: 300 } },
+              { properties: { type: "BUS", guidance: "간선 721외 1대 (충정로역(중) > 종로1가.종각역)", time: 552, vehicles: [{ name: "721" }] } }
+            ] }
+        ]
+      };
+      const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+      const cards = () => [...w.document.querySelectorAll("#pm-transit-box .pm-tr-card")];
+
+      ev(`currentDay = 1; editMode = false;
+        state.meta = { title:'서울 이동', destination:'서울', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }];
+        state.bookings = []; state.days[0].items = [];
+        state.savedPlaces = [
+          { id:'pl-tr-home', kind:'home', label:'집', address:'인천 미추홀구 인하로 100', roadAddress:'인천 미추홀구 인하로 100', lat:37.4586, lng:126.6425 },
+          { id:'pl-tr-hotel', kind:'hotel', label:'롯데호텔 서울', address:'롯데호텔 서울', roadAddress:'서울 중구 을지로 30', lat:37.5651, lng:126.9816 }
+        ];
+        PM_TRANSIT_CACHE.clear(); saveState();`);
+
+      const realFetch = w.fetch;
+      const realSearch = w.smartPlaceSearch;
+      let transitCalls = [];
+      const stubFetch = (payload) => (url, opt) => {
+        if (String(url).includes("kakao-transit")) {
+          transitCalls.push(JSON.parse((opt && opt.body) || "{}"));
+          return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(JSON.parse(JSON.stringify(payload))) });
+        }
+        return Promise.reject(new Error("offline-test"));
+      };
+      w.fetch = stubFetch(TRANSIT_STUB);
+      w.smartPlaceSearch = async (q) => [{ name: String(q), sub: "서울 마포구", lat: 37.5572, lng: 126.9236, kind: "station" }];
+
+      // (1) 출발·도착이 비어 있으면 아무것도 부르지 않는다
+      w.openPlaceModal(null);
+      w.setPlaceMode("route");
+      const box = w.document.getElementById("pm-transit-box");
+      ok("이동 모드: 출발·도착 전엔 추천 칸 숨김", box.style.display === "none" && transitCalls.length === 0, box.style.display);
+
+      // (2) 출발을 검색해서 고르면 좌표가 확보된다 (도착이 없어 아직 조회는 안 함)
+      w.document.getElementById("pm-from").value = "홍대입구역";
+      await w.searchPlaceOnMap("from");
+      w.selectSearchPlace(0);
+      await wait(320);
+      ok("출발 검색 선택 → 출발 좌표 확보", ev("pmFromCoord && pmCoordOf(pmFromCoord).lat") === 37.5572, JSON.stringify(ev("pmFromCoord")));
+      ok("도착 전엔 조회하지 않는다", transitCalls.length === 0, String(transitCalls.length));
+
+      // (3) 도착을 저장 거점(예약 호텔) 칩으로 바로 넣으면 자동으로 루트를 찾는다
+      const hotelChip = [...w.document.getElementById("pm-saved-to").querySelectorAll(".sp-chip")].find(b => /롯데호텔 서울/.test(b.textContent));
+      ok("이동 모드에도 저장 거점 칩이 보인다", !!hotelChip, w.document.getElementById("pm-saved-to").textContent.replace(/\s+/g, " ").slice(0, 60));
+      hotelChip.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      await wait(420);
+      ok("거점 칩으로 도착 입력 → 카카오 대중교통 1회 조회", transitCalls.length === 1, String(transitCalls.length));
+      const sent = transitCalls[0] || {};
+      ok("프록시 요청 형식(경도=x·위도=y·출발/도착 이름)", sent.start_x === 126.9236 && sent.start_y === 37.5572 && sent.end_x === 126.9816 && sent.end_y === 37.5651 && sent.s_name === "홍대입구역" && sent.e_name === "롯데호텔 서울", JSON.stringify(sent));
+      ok("추천 카드 3개", cards().length === 3, String(cards().length));
+      const badges = cards().map(c => (c.querySelector(".pm-tr-badge") || {}).textContent);
+      ok("배지 순서: 빠른 도착 · 추천 2 · 추천 3", badges.join("|") === "빠른 도착|추천 2|추천 3", badges.join("|"));
+      const txt0 = cards()[0].textContent;
+      ok("1순위는 가장 빨리 도착하는 경로", /2호선 \(홍대입구 > 을지로입구\)/.test(txt0), txt0.replace(/\s+/g, " "));
+      ok("카드에 소요시간·직통·요금", /약 18분/.test(txt0) && /직통/.test(txt0) && /1,550원/.test(txt0), txt0.replace(/\s+/g, " "));
+      const txt1 = cards()[1].textContent;
+      ok("2순위는 카카오가 그 뒤로 보여 준 첫 경로", /간선 271 \(홍대입구역 > 종로1가\.종각역\)/.test(txt1) && /약 38분/.test(txt1), txt1.replace(/\s+/g, " "));
+      ok("요금이 범위면 '최대 …원'", /최대 2,500원/.test(txt1), txt1.replace(/\s+/g, " "));
+      ok("'외 3대'·'(중)' 같은 잡음은 걷어낸다", !/외 \d+대|\(중\)/.test(w.document.getElementById("pm-transit-box").textContent), "");
+      const txt2 = cards()[2].textContent;
+      ok("3순위는 환승 경로(구간 2개)", /환승 1회/.test(txt2) && /간선 271 \(홍대입구역 > 충정로역\) → 간선 721 \(충정로역 > 종로1가\.종각역\)/.test(txt2), txt2.replace(/\s+/g, " "));
+      ok("같은 노선·같은 환승 경로는 한 번만", cards().filter(c => /721/.test(c.textContent)).length === 1, String(cards().length));
+
+      // (4) 카드를 누르면 이동수단 칸에 들어가고, 그 카드가 강조된다
+      cards()[1].dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      const moveVal = w.document.getElementById("pm-move").value;
+      ok("카드 클릭 → 이동수단 칸 자동 입력", moveVal === "간선 271 (홍대입구역 > 종로1가.종각역) · 약 38분", moveVal);
+      ok("카드 클릭 → 선택 카드 강조", cards()[1].classList.contains("sel") && !cards()[0].classList.contains("sel") && /선택됨/.test(cards()[1].textContent), cards().map(c => c.className).join(" / "));
+
+      // (5) 자동 입력 뒤 직접 고쳐도 그대로 저장된다
+      w.document.getElementById("pm-move").value = "간선 271 (홍대입구역 > 종로1가.종각역) · 약 40분 (막차 주의)";
+      w.document.getElementById("pm-memo").value = "2번 출구";
+      await w.savePlaceEdit();
+      const routeItem = JSON.parse(ev("JSON.stringify(state.days[0].items[0] || null)"));
+      ok("이동 일정 저장 — 출발/도착·직접 고친 이동수단", !!routeItem && routeItem.fromPlace === "홍대입구역" && routeItem.toPlace === "롯데호텔 서울"
+        && routeItem.moveMode === "간선 271 (홍대입구역 > 종로1가.종각역) · 약 40분 (막차 주의)",
+        JSON.stringify(routeItem && { from: routeItem.fromPlace, to: routeItem.toPlace, move: routeItem.moveMode }));
+      ok("이동 일정 저장 뒤 모달 닫힘", !w.document.getElementById("place-modal").classList.contains("open"), "");
+
+      // (6) 같은 구간을 다시 물어도 캐시로 다시 부르지 않는다
+      const before = transitCalls.length;
+      w.openPlaceModal(null);
+      w.setPlaceMode("route");
+      w.setRouteEndpointCoord("from", { lat: 37.5572, lng: 126.9236, name: "홍대입구역" });
+      w.setRouteEndpointCoord("to", { lat: 37.5651, lng: 126.9816, name: "롯데호텔 서울" });
+      await wait(400);
+      ok("같은 출발·도착은 캐시로 재호출 없음", transitCalls.length === before && cards().length === 3, `${transitCalls.length - before}회 / 카드 ${cards().length}`);
+
+      // (7) 찾는 중 안내
+      let release = null;
+      w.fetch = (url, opt) => {
+        if (String(url).includes("kakao-transit")) {
+          transitCalls.push(JSON.parse((opt && opt.body) || "{}"));
+          return new Promise(r => { release = () => r({ ok: true, status: 200, json: () => Promise.resolve(JSON.parse(JSON.stringify(TRANSIT_STUB))) }); });
+        }
+        return Promise.reject(new Error("offline-test"));
+      };
+      w.document.getElementById("pm-from").value = "신촌역";
+      w.document.getElementById("pm-to").value = "시청역";
+      w.setRouteEndpointCoord("from", { lat: 37.5551, lng: 126.9368, name: "신촌역" });
+      w.setRouteEndpointCoord("to", { lat: 37.5658, lng: 126.9774, name: "시청역" });
+      ev("if (pmTransitTimer) { clearTimeout(pmTransitTimer); pmTransitTimer = null; }");   // 디바운스를 건너뛰고 바로 부른다
+      const pending = w.loadRouteRecommendations();
+      ok("조회 중엔 '대중교통 루트 찾는 중' 안내", /대중교통 루트 찾는 중/.test(w.document.getElementById("pm-transit-box").textContent), w.document.getElementById("pm-transit-box").textContent);
+      release && release();
+      await pending;
+      ok("응답이 오면 추천 카드로 바뀐다", cards().length === 3, String(cards().length));
+
+      // (8) 경로 없음 / 통신 오류 안내
+      w.fetch = stubFetch({ status: "NO_RESULT", routes: [] });
+      ev("PM_TRANSIT_CACHE.clear()");
+      await w.loadRouteRecommendations({ force: true });
+      const noneTxt = w.document.getElementById("pm-transit-box").textContent;
+      ok("경로 없음 안내", /찾지 못했어요/.test(noneTxt) && cards().length === 0, noneTxt.replace(/\s+/g, " "));
+      w.fetch = () => Promise.reject(new Error("offline-test"));
+      await w.loadRouteRecommendations({ force: true });
+      const errTxt = w.document.getElementById("pm-transit-box").textContent;
+      ok("통신 오류 안내", /불러오지 못했어요/.test(errTxt), errTxt.replace(/\s+/g, " "));
+      ok("경로 없음·오류엔 '다시 찾기' 버튼", !!w.document.querySelector("#pm-transit-box .pm-tr-retry"), "");
+      w.fetch = stubFetch(TRANSIT_STUB);
+      w.document.querySelector("#pm-transit-box .pm-tr-retry").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      await wait(200);
+      ok("'다시 찾기' → 추천 카드 복귀", cards().length === 3, String(cards().length));
+
+      // (9) 출발·도착을 지우면 추천도 함께 사라진다
+      w.fetch = stubFetch(TRANSIT_STUB);
+      ev("PM_TRANSIT_CACHE.clear()");
+      w.setRouteEndpointCoord("from", { lat: 37.5551, lng: 126.9368, name: "신촌역" });
+      w.setRouteEndpointCoord("to", { lat: 37.5658, lng: 126.9774, name: "시청역" });
+      await wait(400);
+      ok("두 지점이 있으면 다시 카드", cards().length === 3, String(cards().length));
+      w.document.getElementById("pm-to").value = "";
+      w.document.getElementById("pm-to").dispatchEvent(new w.Event("input", { bubbles: true }));
+      await wait(60);
+      ok("도착을 지우면 추천 칸 접힘", w.document.getElementById("pm-transit-box").style.display === "none" && cards().length === 0, w.document.getElementById("pm-transit-box").style.display);
+
+      // (10) 저장해 둔 이동 일정을 다시 열면 도착 좌표·거점 이름으로 추천이 다시 뜬다
+      ev(`state.days[0].items = [{ id:'rt-open', time:'', place:'집 → 롯데호텔 서울', fromPlace:'집', toPlace:'롯데호텔 서울', moveMode:'2호선 · 약 19분', lat:37.5651, lng:126.9816, badges:['직접 추가'] }];`);
+      const beforeOpen = transitCalls.length;
+      w.openPlaceModal("rt-open");
+      ok("저장된 이동 일정 → 이동 모드로 열린다", ev("placeEditMode") === "route", ev("placeEditMode"));
+      await wait(420);
+      ok("다시 열어도 출발(집) 좌표를 찾아 조회", transitCalls.length === beforeOpen + 1 && cards().length === 3, `${transitCalls.length - beforeOpen}회 / 카드 ${cards().length}`);
+      ok("다시 연 카드도 1순위가 빠른 도착", /빠른 도착/.test((cards()[0] || { textContent: "" }).textContent), (cards()[0] || { textContent: "" }).textContent.replace(/\s+/g, " ").slice(0, 40));
+
+      // (11) 해외 여행 — 카카오 대중교통을 부르지 않고 추천 칸도 뜨지 않는다
+      ev("state.meta.tripType = 'overseas'; state.meta.country = 'JP'; state.meta.destination = '도쿄'; saveState();");
+      const beforeOverseas = transitCalls.length;
+      w.openPlaceModal(null);
+      w.setPlaceMode("route");
+      w.setRouteEndpointCoord("from", { lat: 35.6812, lng: 139.7671, name: "도쿄역" });
+      w.setRouteEndpointCoord("to", { lat: 35.6595, lng: 139.7005, name: "시부야" });
+      await wait(320);
+      ok("해외에선 프록시 미호출", transitCalls.length === beforeOverseas, String(transitCalls.length - beforeOverseas));
+      ok("해외에선 추천 칸 숨김", w.document.getElementById("pm-transit-box").style.display === "none" && cards().length === 0, w.document.getElementById("pm-transit-box").style.display);
+      w.closePlaceModal();
+
+      w.fetch = realFetch;
+      w.smartPlaceSearch = realSearch;
+      ev(`state.meta = { title:'', destination:'', startDate:'', endDate:'', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.bookings = []; state.savedPlaces = []; state.days[0].items = []; PM_TRANSIT_CACHE.clear(); saveState();`);
+    }
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }

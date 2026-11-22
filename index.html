@@ -1152,6 +1152,23 @@
     .place-row { display: flex; align-items: center; gap: 7px; padding: 7px 0; border-bottom: 1px solid #f1f5f9; }
     .place-row:last-child { border-bottom: none; }
 
+    /* 🚌 '이동' 모드 — 카카오맵 기준 대중교통 3개 루트 추천 */
+    .pm-tr-note { font-size: 11.5px; font-weight: 700; color: var(--muted); background: #f8fafc; border: 1px dashed var(--border); border-radius: 10px; padding: 6px 9px; line-height: 1.45; word-break: keep-all; }
+    .pm-tr-note.err { color: var(--danger); background: var(--danger-bg); border-color: #fecaca; }
+    .pm-tr-retry { margin-left: 6px; font-family: inherit; font-size: 11px; font-weight: 800; color: var(--ocean-dark); background: #fff; border: 1px solid var(--ocean-border); border-radius: 999px; padding: 2px 8px; cursor: pointer; }
+    .pm-tr-head { display: flex; align-items: baseline; gap: 5px; flex-wrap: wrap; font-size: 11.5px; font-weight: 800; color: var(--ocean-dark); margin: 2px 0 5px; }
+    .pm-tr-head .hint { font-weight: 600; color: var(--muted); font-size: 10.5px; }
+    .pm-tr-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; }
+    .pm-tr-card { display: block; width: 100%; text-align: left; font-family: inherit; color: var(--text); background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 7px 9px; cursor: pointer; }
+    .pm-tr-card.sel { border-color: var(--ocean); background: var(--ocean-soft); box-shadow: 0 0 0 2px var(--ocean-border); }
+    .pm-tr-top { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .pm-tr-badge { font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px; background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; white-space: nowrap; }
+    .pm-tr-card:first-child .pm-tr-badge { background: var(--ocean); color: #fff; border-color: var(--ocean); }
+    .pm-tr-min { font-size: 13px; font-weight: 800; }
+    .pm-tr-meta { font-size: 11px; font-weight: 700; color: var(--muted); }
+    .pm-tr-sel { margin-left: auto; font-size: 10.5px; font-weight: 800; color: var(--success); }
+    .pm-tr-legs { font-size: 11.5px; color: #334155; margin-top: 3px; line-height: 1.4; word-break: keep-all; }
+
     /* 🌤️ 집 + 여행지 날씨 나란히 */
     .wx-home-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0 4px; }
     .wx-cell { border: 1px solid var(--border); border-radius: 12px; padding: 8px 9px; background: #fff; min-width: 0; }
@@ -2324,15 +2341,17 @@
       </div>
       <div id="pm-route-box" style="display:none;">
         <div class="row">
-          <input id="pm-from" class="input" style="flex:1;min-width:0;" placeholder="출발지 (예: 서울역)" onkeydown="if(event.key==='Enter')searchPlaceOnMap('from')" onfocus="focusSavedPlaceChips('pm-saved-from')" />
+          <input id="pm-from" class="input" style="flex:1;min-width:0;" placeholder="출발지 (예: 서울역)" onkeydown="if(event.key==='Enter')searchPlaceOnMap('from')" onfocus="focusSavedPlaceChips('pm-saved-from')" oninput="onRouteEndpointEdited('from')" />
           <button class="btn btn-soft btn-sm" style="flex:0 0 auto;white-space:nowrap;" onclick="searchPlaceOnMap('from')">출발 검색</button>
         </div>
         <div id="pm-saved-from"></div>
         <div class="row">
-          <input id="pm-to" class="input" style="flex:1;min-width:0;" placeholder="도착지 (예: 강릉역)" onkeydown="if(event.key==='Enter')searchPlaceOnMap('to')" onfocus="focusSavedPlaceChips('pm-saved-to')" />
+          <input id="pm-to" class="input" style="flex:1;min-width:0;" placeholder="도착지 (예: 강릉역)" onkeydown="if(event.key==='Enter')searchPlaceOnMap('to')" onfocus="focusSavedPlaceChips('pm-saved-to')" oninput="onRouteEndpointEdited('to')" />
           <button class="btn btn-soft btn-sm" style="flex:0 0 auto;white-space:nowrap;" onclick="searchPlaceOnMap('to')">도착 검색</button>
         </div>
         <div id="pm-saved-to"></div>
+        <!-- 🚌 카카오맵 기준 대중교통 3개 루트 — 하나를 누르면 이동수단 칸에 들어간다 -->
+        <div id="pm-transit-box" style="display:none;"></div>
       </div>
       <div id="pm-search-results" style="max-height:130px;overflow-y:auto;margin-bottom:8px;"></div>
       <div class="row">
@@ -6034,10 +6053,14 @@
       // 일정 추가·장소 수정
       attachPlaceAutocomplete("pm-search-q", { onPick: setPlaceCoords });
       attachPlaceAutocomplete("pm-place", { onPick: setPlaceCoords });
-      attachPlaceAutocomplete("pm-from", { onPick: (it) => { document.getElementById("pm-from").value = it.name; } });
+      attachPlaceAutocomplete("pm-from", { onPick: (it) => {
+        document.getElementById("pm-from").value = it.name;
+        setRouteEndpointCoord("from", { lat: it.lat, lng: it.lng, name: it.name });
+      } });
       attachPlaceAutocomplete("pm-to", { onPick: (it) => {
         document.getElementById("pm-to").value = it.name;
         pickedLat = it.lat; pickedLng = it.lng;
+        setRouteEndpointCoord("to", { lat: it.lat, lng: it.lng, name: it.name });
       } });
       // 교통편 출발·도착
       attachPlaceAutocomplete("tr-from", { onPick: setTransitCoords("from") });
@@ -7401,6 +7424,7 @@
 
     function setPlaceMode(mode) {
       placeEditMode = mode;
+      if (mode !== "route") { pmTransitSeq++; pmTransitNotice(""); }   // 이동 모드가 아니면 추천 카드는 접는다
       document.getElementById("pm-single-box").style.display = mode === "single" ? "block" : "none";
       document.getElementById("pm-route-box").style.display = mode === "route" ? "block" : "none";
       document.getElementById("pm-mode-single").className = mode === "single" ? "btn btn-primary btn-sm" : "btn btn-soft btn-sm";
@@ -7424,7 +7448,8 @@
       document.getElementById("place-modal-title").textContent = it ? "✏️ 장소 수정 / 검색" : "➕ 새 일정 추가";
       const isRoute = Boolean(it && (it.fromPlace || it.toPlace || (it.place && it.place.includes("→"))));
       setPlaceMode(isRoute ? "route" : "single");
-      // 새로 여는 모달이니 이전에 고른 위치·진행 중이던 자동 찾기는 모두 버린다
+      // 새로 여는 모달이니 이전에 고른 위치·진행 중이던 자동 찾기·루트 추천은 모두 버린다
+      resetPmTransitRoute();
       pickedCoordSeq++;
       pickedCoordPromise = null;
       pickedAddress = "";
@@ -7437,6 +7462,12 @@
         const parts = src.split("→").map(s => s.trim().replace(/\s*(출발|도착)$/, "").replace(/\(.*?\)/g, "").trim());
         document.getElementById("pm-from").value = it.fromPlace || parts[0] || "";
         document.getElementById("pm-to").value = it.toPlace || parts[1] || "";
+        // 저장해 둔 이동 일정을 다시 열면, 남아 있는 도착 좌표·거점 이름으로 추천을 바로 다시 띄운다
+        pmFromCoord = pmLocalEndpointCoords(document.getElementById("pm-from").value);
+        pmToCoord = (typeof it?.lat === "number" && typeof it?.lng === "number" && isFinite(it.lat) && isFinite(it.lng))
+          ? { lat: it.lat, lng: Number(it.lng), name: document.getElementById("pm-to").value }
+          : pmLocalEndpointCoords(document.getElementById("pm-to").value);
+        scheduleRouteRecommend();
       } else {
         // 예전에 '룸타입·인원'이 섞여 저장된 장소도 편집할 때는 깨끗한 이름으로 보여 준다
         const cleanPlace = it ? (cleanPlaceName(it.place) || String(it.place || "")) : "";
@@ -7459,7 +7490,11 @@
       document.getElementById("place-modal").classList.add("open");
     }
 
-    function closePlaceModal() { document.getElementById("place-modal").classList.remove("open"); }
+    function closePlaceModal() {
+      pmTransitSeq++;   // 닫은 뒤에 도착한 추천 응답은 버린다
+      if (pmTransitTimer) { clearTimeout(pmTransitTimer); pmTransitTimer = null; }
+      document.getElementById("place-modal").classList.remove("open");
+    }
 
     async function searchPlaceOnMap(side = "single") {
       searchTargetSide = side;
@@ -7497,10 +7532,12 @@
       const pickedName = p.name || "";
       if (searchTargetSide === "from") {
         if (pickedName) document.getElementById("pm-from").value = pickedName;
+        setRouteEndpointCoord("from", { lat: p.lat, lng: p.lng != null ? p.lng : p.lon, name: pickedName });
       } else if (searchTargetSide === "to") {
         if (pickedName) document.getElementById("pm-to").value = pickedName;
         pickedLat = parseFloat(p.lat);
         pickedLng = Number(p.lng != null ? p.lng : p.lon);
+        setRouteEndpointCoord("to", { lat: p.lat, lng: p.lng != null ? p.lng : p.lon, name: pickedName });
       } else {
         if (pickedName) document.getElementById("pm-place").value = pickedName;
         pickedLat = parseFloat(p.lat);
@@ -7511,6 +7548,276 @@
         showPlacePickHint(`📍 선택한 위치${pickedAddress ? ` · ${pickedAddress}` : ""}`);
       }
       document.getElementById("pm-search-results").innerHTML = `<div style="font-size:12px;color:var(--success);padding:4px;">✓ ${searchTargetSide === "from" ? "출발지" : searchTargetSide === "to" ? "도착지" : "장소"} 선택됨</div>`;
+    }
+
+    /* =====================================================================
+       🚌 '이동' 모드 — 카카오맵 기준 대중교통 3개 루트 자동 추천
+       · 출발·도착 좌표가 모두 잡히면(검색 선택·저장 거점·예약 호텔 칩) 바로 조회한다
+       · 1순위는 가장 빨리 도착하는 경로, 2~3순위는 카카오가 그 뒤로 보여 준 순서
+       · 국내 여행에서만 부른다 — 해외는 기존 동작 그대로 (카카오 대중교통 미호출)
+       ===================================================================== */
+    const KAKAO_TRANSIT_PROXY = "https://lnmjpktrrpxgolaetlap.supabase.co/functions/v1/kakao-transit";
+    const PM_TRANSIT_CACHE = new Map();   // '출발좌표>도착좌표' → 루트 3개 (같은 구간은 다시 부르지 않는다)
+    let pmFromCoord = null;               // { lat, lng, name }
+    let pmToCoord = null;
+    let pmTransitRoutes = [];             // 지금 화면에 뜬 추천 3개
+    let pmTransitPick = -1;               // 선택한 카드 (없으면 -1)
+    let pmTransitKey = "";                // 지금 화면의 '출발>도착' 키
+    let pmTransitSeq = 0;                 // 늦게 도착한 응답이 화면을 덮지 않게 하는 순번
+    let pmTransitTimer = null;            // 조회 디바운스
+
+    function pmCoordOf(v) {
+      if (!v) return null;
+      const lat = Number(v.lat), lng = Number(v.lng);
+      if (!isFinite(lat) || !isFinite(lng) || (lat === 0 && lng === 0)) return null;
+      return { lat, lng, name: String(v.name || "") };
+    }
+
+    // 출발·도착 중 한 쪽이 정해졌을 때 — 검색 선택·저장 거점 칩·예약 호텔 칩이 모두 이 길로 들어온다
+    function setRouteEndpointCoord(side, coord) {
+      const c = pmCoordOf(coord);
+      if (side === "from") pmFromCoord = c; else pmToCoord = c;
+      scheduleRouteRecommend();
+    }
+
+    // 이름을 직접 고쳐 쳤거나 지웠을 때 — 그 쪽 좌표는 버리고 다시 맞춘다
+    function onRouteEndpointEdited(side) {
+      if (side === "from") pmFromCoord = null; else pmToCoord = null;
+      scheduleRouteRecommend();
+    }
+
+    function scheduleRouteRecommend() {
+      if (pmTransitTimer) { clearTimeout(pmTransitTimer); pmTransitTimer = null; }
+      if (placeEditMode !== "route") return;
+      if (!isDomesticTrip() || !pmCoordOf(pmFromCoord) || !pmCoordOf(pmToCoord)) {
+        pmTransitSeq++;                    // 진행 중이던 조회 결과는 버린다
+        pmTransitRoutes = []; pmTransitPick = -1; pmTransitKey = "";
+        pmTransitNotice("");
+        return;
+      }
+      pmTransitTimer = setTimeout(() => { pmTransitTimer = null; loadRouteRecommendations(); }, 220);
+    }
+
+    // 모달을 다시 열거나 모드를 바꿀 때 — 이전 출발·도착·카드가 남지 않게 모두 지운다
+    function resetPmTransitRoute() {
+      pmTransitSeq++;
+      if (pmTransitTimer) { clearTimeout(pmTransitTimer); pmTransitTimer = null; }
+      pmFromCoord = null; pmToCoord = null;
+      pmTransitRoutes = []; pmTransitPick = -1; pmTransitKey = "";
+      pmTransitNotice("");
+    }
+
+    function pmTransitNotice(text, tone, opts = {}) {
+      const box = document.getElementById("pm-transit-box");
+      if (!box) return;
+      if (!text) { box.style.display = "none"; box.innerHTML = ""; return; }
+      box.style.display = "block";
+      const retry = opts.retry ? `<button type="button" class="pm-tr-retry" onclick="loadRouteRecommendations({force:true})">다시 찾기</button>` : "";
+      box.innerHTML = `<div class="pm-tr-note${tone === "err" ? " err" : ""}">${escapeHtmlText(text)}${retry}</div>`;
+    }
+
+    // 이름만 남은 출발·도착도 저장 거점·일정 장소에서 조용히 좌표를 찾는다 (네트워크 호출 없음)
+    function pmLocalEndpointCoords(name) {
+      const nm = cleanPlaceName(name) || String(name || "").trim();
+      const key = normalizePlaceKey(nm);
+      if (!key) return null;
+      const sp = findSavedPlaceByName(nm);
+      if (sp && isFinite(Number(sp.lat)) && isFinite(Number(sp.lng))) {
+        return { lat: Number(sp.lat), lng: Number(sp.lng), name: nm };
+      }
+      let hit = null;
+      (state.days || []).forEach(d => (d.items || []).forEach(it => {
+        if (hit) return;
+        if (it.fromPlace || it.toPlace || /→/.test(String(it.place || ""))) return;   // 이동 카드는 건너뛴다
+        if (typeof it.lat !== "number" || typeof it.lng !== "number") return;
+        const k = normalizePlaceKey(cleanPlaceName(it.place) || it.place);
+        if (k && (k === key || k.includes(key) || key.includes(k))) hit = { lat: it.lat, lng: Number(it.lng), name: nm };
+      }));
+      return hit;
+    }
+
+    async function loadRouteRecommendations(opts = {}) {
+      const box = document.getElementById("pm-transit-box");
+      if (!box) return;
+      if (placeEditMode !== "route" || !isDomesticTrip()) { pmTransitNotice(""); return; }
+      const from = pmCoordOf(pmFromCoord), to = pmCoordOf(pmToCoord);
+      if (!from || !to) { pmTransitNotice(""); return; }
+      const key = `${from.lat.toFixed(5)},${from.lng.toFixed(5)}>${to.lat.toFixed(5)},${to.lng.toFixed(5)}`;
+      const cached = PM_TRANSIT_CACHE.get(key);
+      if (cached) {
+        pmTransitKey = key; pmTransitRoutes = cached.slice(); pmTransitPick = -1;
+        if (cached.length) renderRouteRecommendations();
+        else pmTransitNotice("이 출발·도착으로는 대중교통 경로를 찾지 못했어요. 가까운 역·정류장 이름으로 바꿔 보세요.", "", { retry: true });
+        return;
+      }
+      if (!opts.force && key === pmTransitKey && pmTransitRoutes.length) { renderRouteRecommendations(); return; }
+      const seq = ++pmTransitSeq;
+      pmTransitKey = key;
+      pmTransitRoutes = []; pmTransitPick = -1;
+      pmTransitNotice("🚌 대중교통 루트 찾는 중...");
+      let data = null;
+      try {
+        data = await fetchKakaoTransit(from, to);
+      } catch (e) {
+        if (seq !== pmTransitSeq || placeEditMode !== "route") return;
+        pmTransitNotice("대중교통 루트를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.", "err", { retry: true });
+        return;
+      }
+      if (seq !== pmTransitSeq || placeEditMode !== "route") return;   // 그새 출발·도착이 바뀌었다
+      const list = pickTopTransitRoutes(data);
+      if (list.length) PM_TRANSIT_CACHE.set(key, list);   // 빈 결과·오류는 캐시하지 않는다 (다시 시도할 수 있게)
+      pmTransitRoutes = list;
+      pmTransitPick = -1;
+      if (!list.length) {
+        pmTransitNotice("이 출발·도착으로는 대중교통 경로를 찾지 못했어요. 가까운 역·정류장 이름으로 바꿔 보세요.", "", { retry: true });
+        return;
+      }
+      renderRouteRecommendations();
+    }
+
+    // 카카오 대중교통 길찾기 프록시 (국내 주소→좌표는 이미 위에서 확인됨)
+    async function fetchKakaoTransit(from, to) {
+      const body = JSON.stringify({
+        start_x: from.lng, start_y: from.lat, end_x: to.lng, end_y: to.lat,
+        s_name: String(from.name || "").trim() || "출발지",
+        e_name: String(to.name || "").trim() || "도착지"
+      });
+      const ctrl = typeof AbortController === "function" ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => { try { ctrl.abort(); } catch (e) {} }, 12000) : null;
+      try {
+        const res = await fetch(KAKAO_TRANSIT_PROXY, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+          ...(ctrl ? { signal: ctrl.signal } : {})
+        });
+        if (!res || !res.ok) throw new Error("대중교통 조회 실패 " + (res && res.status));
+        return await res.json();
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
+    }
+
+    // 🥇 가장 빨리 도착하는 경로 1개 + 카카오가 그 뒤로 보여 준 순서 2개 = 최대 3개
+    function pickTopTransitRoutes(data) {
+      const routes = Array.isArray(data && data.routes) ? data.routes : [];
+      if (!routes.length || (data.status && data.status !== "OK")) return [];
+      let bestIdx = -1, bestTime = Infinity;
+      routes.forEach((r, i) => {
+        const t = Number(r && r.properties && r.properties.totalTime);
+        if (isFinite(t) && t > 0 && t < bestTime) { bestTime = t; bestIdx = i; }
+      });
+      if (bestIdx < 0) return [];
+      const ordered = [routes[bestIdx]].concat(routes.filter((r, i) => i !== bestIdx));
+      const seen = new Set();
+      const out = [];
+      ordered.forEach(r => {
+        if (!r || !r.properties) return;
+        const sig = transitRouteSignature(r);
+        if (seen.has(sig)) return;        // 같은 노선·같은 환승이면 한 번만 (안내가 겹치지 않게)
+        seen.add(sig);
+        out.push(r);
+      });
+      return out.slice(0, 3);
+    }
+
+    // 도보를 뺀 실제 탑승 구간만 뽑는다 (지하철·버스·기차 등)
+    function transitRideSteps(route) {
+      const steps = Array.isArray(route && route.steps) ? route.steps : [];
+      return steps.map(s => (s && s.properties) || {}).filter(p => {
+        const t = String(p.type || "");
+        if (!t) return Boolean(p.guidance);
+        return !/WALK|도보/i.test(t);
+      });
+    }
+
+    // '간선 271외 3대 (홍대입구역(중) > 종로1가.종각역)' → '간선 271 (홍대입구역 > 종로1가.종각역)'
+    function cleanTransitGuidance(g) {
+      return String(g || "")
+        .replace(/외\s*\d+\s*대/g, "")
+        .replace(/\(중\)/g, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+    }
+
+    function transitRouteLegs(route) {
+      const legs = transitRideSteps(route)
+        .map(p => cleanTransitGuidance(p.guidance || ((p.vehicles && p.vehicles[0] && p.vehicles[0].name) || "")))
+        .filter(Boolean);
+      return [...new Set(legs)];
+    }
+
+    function transitRouteSignature(route) {
+      const p = (route && route.properties) || {};
+      return [String(p.type || ""), Number(p.transfers) || 0, transitRouteLegs(route).join(">")].join("|");
+    }
+
+    function transitRouteMinutes(route) {
+      const t = Number(route && route.properties && route.properties.totalTime);
+      return isFinite(t) && t > 0 ? Math.max(1, Math.round(t / 60)) : 0;
+    }
+
+    function transitFareText(fare) {
+      if (!fare) return "";
+      const won = (v) => Math.round(Number(v) || 0).toLocaleString("ko-KR");
+      if (isFinite(Number(fare.value)) && Number(fare.value) > 0) return `${won(fare.value)}원`;
+      const min = Number(fare.min), max = Number(fare.max);
+      if (isFinite(min) && isFinite(max) && max > 0) {
+        if (min <= 0) return `최대 ${won(max)}원`;
+        return min === max ? `${won(min)}원` : `${won(min)}~${won(max)}원`;
+      }
+      return "";
+    }
+
+    // 이동수단 칸에 들어갈 한 줄 — '2호선 (홍대입구 > 을지로입구) · 약 19분'
+    function transitMoveText(route) {
+      const legs = transitRouteLegs(route);
+      const mins = transitRouteMinutes(route);
+      const head = legs.length ? legs.join(" → ") : "대중교통";
+      return mins ? `${head} · 약 ${mins}분` : head;
+    }
+
+    function routeCardBadge(i) { return i === 0 ? "빠른 도착" : `추천 ${i + 1}`; }
+
+    function renderRouteRecommendations() {
+      const box = document.getElementById("pm-transit-box");
+      if (!box) return;
+      if (!pmTransitRoutes.length) { pmTransitNotice(""); return; }
+      box.style.display = "block";
+      box.innerHTML = `
+        <div class="pm-tr-head">🚌 카카오맵 대중교통 <span class="hint">누르면 이동수단 칸에 들어가요</span></div>
+        <div class="pm-tr-list">${pmTransitRoutes.map((r, i) => routeCardHtml(r, i)).join("")}</div>`;
+    }
+
+    function routeCardHtml(route, i) {
+      const p = (route && route.properties) || {};
+      const mins = transitRouteMinutes(route);
+      const transfers = Math.max(0, Number(p.transfers) || 0);
+      const fare = transitFareText(p.fare);
+      const legs = transitRouteLegs(route).join(" → ") || "도보 위주";
+      return `<button type="button" class="pm-tr-card${pmTransitPick === i ? " sel" : ""}" onclick="selectRouteRecommendation(${i})">
+        <span class="pm-tr-top">
+          <span class="pm-tr-badge">${routeCardBadge(i)}</span>
+          <strong class="pm-tr-min">약 ${mins}분</strong>
+          <span class="pm-tr-meta">${transfers ? `환승 ${transfers}회` : "직통"}</span>
+          ${fare ? `<span class="pm-tr-meta">· ${escapeHtmlText(fare)}</span>` : ""}
+          ${pmTransitPick === i ? `<span class="pm-tr-sel">✓ 선택됨</span>` : ""}
+        </span>
+        <span class="pm-tr-legs">${escapeHtmlText(legs)}</span>
+      </button>`;
+    }
+
+    // 카드를 누르면 이동수단 칸에 채운다 — 이후에 직접 고쳐 써도 그대로 저장된다
+    function selectRouteRecommendation(i) {
+      const route = pmTransitRoutes[i];
+      if (!route) return;
+      pmTransitPick = i;
+      const move = document.getElementById("pm-move");
+      if (move) {
+        move.value = transitMoveText(route);
+        try { move.dispatchEvent(new Event("input", { bubbles: true })); } catch (e) {}
+      }
+      renderRouteRecommendations();
     }
 
     async function savePlaceEdit() {
@@ -11613,6 +11920,19 @@
         if (target === "pm-place" || target === "pm-to") { pickedLat = pl.lat; pickedLng = pl.lng; }
         else if (target === "tr-from") trFromCoord = { lat: pl.lat, lng: pl.lng, name: val };
         else if (target === "tr-to") trToCoord = { lat: pl.lat, lng: pl.lng, name: val };
+        if (target === "pm-from" || target === "pm-to") {
+          setRouteEndpointCoord(target === "pm-from" ? "from" : "to", { lat: pl.lat, lng: pl.lng, name: val });
+        }
+      } else if (target === "pm-from" || target === "pm-to") {
+        // 좌표가 아직 없는 거점(새 예약 등) — 뒤에서 조용히 찾아 대중교통 루트까지 이어 준다
+        const side = target === "pm-from" ? "from" : "to";
+        setRouteEndpointCoord(side, null);
+        resolveSavedPlaceCoords(pl).then(g => {
+          if (!g || placeEditMode !== "route" || !isFinite(Number(g.lat))) return;
+          const cur = document.getElementById(target);
+          if (!cur || cur.value.trim() !== val) return;   // 그새 다른 곳으로 바꿨다
+          setRouteEndpointCoord(side, { lat: Number(g.lat), lng: Number(g.lng), name: val });
+        }).catch(() => {});
       }
       const boxId = targetBoxFor(target);
       if (boxId) renderSavedPlaceChips(boxId, `✓ ${pl.label || val} 채움`);
