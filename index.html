@@ -1674,9 +1674,15 @@
     .tl-edit-row.tl-edit-virtual { opacity: 0.95; }
     .tl-edit-row.tl-edit-virtual .tl-edit-card { background: #e0f2fe; }
     .tl-edit-hint { font-size: 11px; color: var(--muted); margin: 0 0 10px; text-align: center; }
-    /* 좁은 화면에서 '✏️ 일정 편집' 버튼이 잘리지 않게 */
+    /* 플랜 B는 오른쪽 컴팩트 칸 — 제목·부제·스위치가 한 줄에 들어가게 */
+    .planb-bar.planb-bar-compact { flex: 0 0 auto; }
+    .planb-bar.planb-bar-compact .switch { margin-left: 0; }
+    /* 좁은 화면에서도 '✏️ 일정 편집'이 넓은 칸을 채운다 (플랜 B는 오른쪽 컴팩트) */
     @media (max-width: 430px) {
-      #edit-mode-btn { font-size: 12px !important; padding: 0 9px !important; }
+      #edit-mode-btn { font-size: 14.5px !important; padding: 0 10px !important; }
+      .planb-bar.planb-bar-compact { padding: 6px 8px !important; gap: 6px !important; }
+      .planb-bar.planb-bar-compact #planb-bar-title { font-size: 11.5px !important; }
+      .planb-bar.planb-bar-compact #planb-bar-sub { font-size: 9.5px !important; }
     }
 
     /* ===== 일정 카드 접힘/펼침 ===== */
@@ -1694,6 +1700,27 @@
     .card.tl-collapsible:not(.tl-open) { padding-top: 13px; padding-bottom: 13px; }
     .card.tl-collapsible:not(.tl-open) .tl-memo { margin-bottom: 0; }
     .tl-extra-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; padding-top: 8px; border-top: 1px solid #f1f5f9; }
+
+    /* ===== 📝 메모 — 시간 없는 메모 카드 · 편집기 ===== */
+    .btn-memo { background: #fff7ed; color: #b45309; border: 1px solid #fed7aa; font-weight: 800; }
+    .btn-memo:active { background: #ffedd5; }
+    .memo-sheet { background: #fffdf7; }
+    .memo-title-input { width: 100%; margin-bottom: 8px; font-weight: 700; }
+    .memo-body-input { width: 100%; margin-bottom: 8px; line-height: 1.62; min-height: 112px; resize: vertical; }
+    .memo-hint { font-size: 11px; color: #92400e; background: #fffbeb; border: 1px dashed #fcd34d; border-radius: 10px; padding: 7px 9px; line-height: 1.5; margin-bottom: 10px; }
+    .card.tl-memo-card { background: linear-gradient(180deg, #fffdf5 0%, #fffaef 100%); border: 1px solid #fde68a; border-left: 4px solid #f59e0b; padding: 12px 14px; }
+    .tl-memo-head { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-bottom: 6px; }
+    .tl-memo-badge { font-size: 11px; font-weight: 800; color: #92400e; background: #fef3c7; border: 1px solid #fcd34d; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+    .tl-memo-title { font-size: 14.5px; font-weight: 800; color: #78350f; flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+    .tl-memo-text { font-size: 13px; color: #4b3f31; line-height: 1.62; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .tl-memo-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; margin-top: 9px; padding-top: 8px; border-top: 1px dashed #fcd34d; }
+    .tl-memo-actions .btn { padding: 5px 10px; font-size: 11.5px; }
+    .tl-memo-actions .btn:disabled { opacity: 0.38; }
+    .tl-edit-row.tl-edit-memo .tl-edit-card { background: #fffdf5; box-shadow: inset 0 0 0 1px #fde68a; }
+    .tl-edit-row.tl-edit-memo .tl-edit-cat { color: #b45309; }
+    .tl-edit-row.tl-edit-memo .tl-edit-place { font-size: 14px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+    .home-row.home-row-memo { background: #fffdf5; }
+    .home-row.home-row-memo .hr-place { color: #92400e; }
 
     /* ===== 🔎 연관검색어 (공통 자동완성) ===== */
     .ac-wrap { position: relative; flex: 1 1 auto; min-width: 0; }
@@ -1802,18 +1829,18 @@
       <!-- TAB 1: TIMELINE -->
       <section id="tab-timeline" class="tab-panel">
         <div class="day-tabs" id="day-tabs"></div>
-        <div class="tl-planb-row" style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
-          <div class="planb-bar" style="flex:1;margin-bottom:0;padding:8px 12px;">
-            <div>
-              <div style="font-weight:800;font-size:13px;" id="planb-bar-title">☔ 플랜 B</div>
-              <div style="font-size:11px;color:var(--muted);" id="planb-bar-sub">우천·한파 대체</div>
+        <div class="tl-planb-row" style="display:flex;gap:8px;align-items:stretch;margin-bottom:10px;">
+          <button id="edit-mode-btn" class="btn btn-soft" style="flex:1 1 auto;min-width:0;height:48px;white-space:nowrap;font-size:15.5px;" onclick="toggleEditMode()">✏️ 일정 편집</button>
+          <div class="planb-bar planb-bar-compact" style="flex:0 0 auto;margin-bottom:0;padding:6px 10px;gap:8px;">
+            <div style="display:flex;flex-direction:column;justify-content:center;min-width:0;">
+              <div style="font-weight:800;font-size:12px;white-space:nowrap;" id="planb-bar-title">☔ 플랜 B</div>
+              <div style="font-size:10px;color:var(--muted);white-space:nowrap;" id="planb-bar-sub">우천·한파 대체</div>
             </div>
-            <label class="switch">
+            <label class="switch" style="flex:0 0 auto;align-self:center;">
               <input type="checkbox" id="planb-toggle" />
               <span class="slider"></span>
             </label>
           </div>
-          <button id="edit-mode-btn" class="btn btn-soft" style="height:48px;white-space:nowrap;" onclick="toggleEditMode()">✏️ 일정 편집</button>
         </div>
         <div id="planb-content" class="planb-box" style="display:none;"></div>
         <div class="card tl-map-card" style="padding:10px;">
@@ -1836,9 +1863,10 @@
           <button class="map-help-btn" id="map-action-help" title="영업시간·변수·혜택 체크 설명 보기" onclick="openActionHelp()">?</button>
         </div>
         <div class="hours-note hours-updated-label map-stamp-line" id="map-hours-stamp" style="text-align:center;margin:0 0 12px;">아직 업데이트 전</div>
-        <div id="add-btns-row" style="display:none;gap:8px;margin-bottom:12px;">
-          <button class="btn btn-soft" style="flex:1;" onclick="openPlaceModal(null)">+ 일정 추가</button>
-          <button class="btn btn-primary" style="flex:1;" onclick="openTransitModal()">🚆 교통편 추가</button>
+        <div id="add-btns-row" style="display:none;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+          <button class="btn btn-soft" style="flex:1 1 100px;white-space:nowrap;padding:9px 8px;font-size:12.5px;" onclick="openPlaceModal(null)">+ 일정 추가</button>
+          <button class="btn btn-primary" style="flex:1 1 100px;white-space:nowrap;padding:9px 8px;font-size:12.5px;" onclick="openTransitModal()">🚆 교통편 추가</button>
+          <button class="btn btn-memo" style="flex:1 1 100px;white-space:nowrap;padding:9px 8px;font-size:12.5px;" onclick="openMemoModal(null)">📝 메모 추가</button>
         </div>
         <div class="tl-places-row" style="margin:0 0 12px;">
           <button class="btn btn-soft btn-sm" style="width:100%;" onclick="openPlacesModal()">🏠 자주 쓰는 거점 (집·공항·역·호텔) 관리</button>
@@ -2292,6 +2320,20 @@
         <span>식당·카페 (클릭 시 메뉴판 선택 가능)</span>
       </label>
       <button class="btn btn-primary" style="width:100%;" onclick="savePlaceEdit()">저장하기</button>
+    </div>
+  </div>
+
+  <!-- 📝 MEMO MODAL — 시간 없이 메모만 (추가 · 수정) -->
+  <div id="memo-modal" class="modal-backdrop" onclick="if(event.target===this)closeMemoModal()">
+    <div class="modal-sheet memo-sheet">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div id="memo-modal-title" style="font-size:16px;font-weight:800;">📝 메모 추가</div>
+        <button class="btn btn-sm" style="background:#f1f5f9;" onclick="closeMemoModal()">닫기</button>
+      </div>
+      <input id="memo-title" class="input memo-title-input" maxlength="60" placeholder="제목 (선택)" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('memo-body').focus();}" />
+      <textarea id="memo-body" class="input memo-body-input" rows="5" placeholder="메모 내용을 적어 주세요&#10;예: 우산 챙기기 · 체크인 15시 · 웨이팅 먼저 걸기"></textarea>
+      <div class="memo-hint">🕒 시간은 적지 않아도 돼요. 추가하면 그날 맨 위에 생기고, <b>↑ 위로 / ↓ 아래로</b>나 편집의 ≡ 드래그로 원하는 자리까지 내릴 수 있어요.</div>
+      <button class="btn btn-primary" style="width:100%;" onclick="saveMemoItem()">메모 저장</button>
     </div>
   </div>
 
@@ -4210,6 +4252,7 @@
 
       (state.days || []).forEach(day => {
         (day.items || []).forEach(it => {
+          if (isMemoItem(it)) return;   // 📝 메모는 지출 항목을 만들지 않는다
           const ct = Number(it.costTotal) || 0;
           const mc = Number(it.moveCost) || 0;
           const cat = inferItemExpenseCategory(it);
@@ -4843,6 +4886,7 @@
 
     // 이동·메모성 카드는 사진을 조회하지 않는다 (관광지·식당·카페·숙소 중심)
     function shouldLookupPhoto(item) {
+      if (item && item.kind === "memo") return false;          // 📝 메모 카드는 사진을 찾지 않는다
       const p = String(item && item.place != null ? item.place : "").trim();
       if (!p) return false;
       if (/→|↔|⇄/.test(p)) return false;                       // A → B 이동 카드
@@ -6056,6 +6100,47 @@
       setTimeout(() => { try { searchBookingHotelCoords(); } catch (e) {} }, 120);
     }
 
+    // 📝 메모처럼 시간이 없는 카드는 배열 위치를 지켜 그 자리에 그린다 (시간순으로 다시 정렬되면 맨 끝으로 밀려난다)
+    function dayFeedOrder(items) {
+      const list = (items || []).map((it, idx) => ({ it, idx, virtual: false }));
+      const out = list.filter(x => !isMemoItem(x.it))
+        .sort((a, b) => String(a.it.time || "99:99").localeCompare(String(b.it.time || "99:99")));
+      list.filter(x => isMemoItem(x.it)).forEach(m => {
+        out.splice(Math.min(Math.max(0, m.idx), out.length), 0, m);
+      });
+      // 일출·일몰 줄은 바로 뒤 일정의 시간을 기준으로 끼운다 (메모는 시간이 없으므로)
+      out.forEach((row, i) => {
+        if (!isMemoItem(row.it)) return;
+        const next = out.slice(i + 1).find(x => !isMemoItem(x.it));
+        row.sortTime = next ? (next.it.time || "99:99") : "00:00";
+      });
+      return out;
+    }
+
+    function tlMemoCardHtml(it) {
+      const dayObj = state.days.find(d => d.day === currentDay);
+      const list = (dayObj?.items) || [];
+      const pos = list.findIndex(x => String(x.id) === String(it.id));
+      const canUp = pos > 0;
+      const canDown = pos >= 0 && pos < list.length - 1;
+      const title = memoTitleOf(it);
+      const body = String(it.memo || "").trim();
+      const editable = canEdit();
+      return `<div class="card tl-memo-card" data-card-id="${escapeAttr(it.id)}" data-memo-id="${escapeAttr(it.id)}">
+        <div class="tl-memo-head">
+          <span class="tl-memo-badge">📝 메모</span>
+          ${title ? `<span class="tl-memo-title">${escapeHtmlText(title)}</span>` : ""}
+        </div>
+        <div class="tl-memo-text">${body ? escapeHtmlText(body) : "빈 메모"}</div>
+        ${editable ? `<div class="tl-memo-actions">
+          <button class="btn btn-soft btn-sm" onclick="event.stopPropagation();moveMemo('${escapeAttr(it.id)}',-1)" ${canUp ? "" : "disabled"}>↑ 위로</button>
+          <button class="btn btn-soft btn-sm" onclick="event.stopPropagation();moveMemo('${escapeAttr(it.id)}',1)" ${canDown ? "" : "disabled"}>↓ 아래로</button>
+          <button class="btn btn-soft btn-sm" onclick="event.stopPropagation();openMemoModal('${escapeAttr(it.id)}')">✏️ 수정</button>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteItem('${escapeAttr(it.id)}')">삭제</button>
+        </div>` : ""}
+      </div>`;
+    }
+
     function renderTimeline() {
       // 드래그 중에 날씨·동기화 등으로 목록이 다시 그려지면, 손을 떼기 전의 순서가 통째로 사라진다.
       // 목록을 다시 그리기 전에 지금까지의 드래그를 먼저 마무리(확정)한다.
@@ -6089,8 +6174,9 @@
       // · 교통편 예약은 기존처럼 출발 시각 순서대로 합친다.
       const editModeOn = Boolean(editMode);
       // ✏️ 편집 모드에서는 사용자가 정한 배열 순서를 그대로, 평소에는 시간순으로 보여 준다
-      const feed = dayObj.items.map((it, idx) => ({ it, idx, virtual: false }));
-      if (!editModeOn) feed.sort((a, b) => String(a.it.time || "99:99").localeCompare(String(b.it.time || "99:99")));
+      const feed = editModeOn
+        ? dayObj.items.map((it, idx) => ({ it, idx, virtual: false }))
+        : dayFeedOrder(dayObj.items);
       const bkVirtuals = bookingTimelineItems(dayObj);
       if (!editModeOn) {
         // 🏨 숙소 자동 카드: 복귀는 그날 맨 마지막, 출발은 그날 맨 처음
@@ -6116,6 +6202,7 @@
       }
       const cardBlocks = feed.map(({ it, idx, virtual }) => {
         if (editModeOn) return virtual ? tlEditVirtualRowHtml(it) : tlEditRowHtml(it);
+        if (isMemoItem(it)) return tlMemoCardHtml(it);
         // 일출·일몰 시각은 카드 안 배지가 아니라 타임라인의 한 줄 마커로만 보여 준다
         const badges = (it.badges || []).filter(b => !/^\s*(일출|일몰)\s*\d{1,2}:\d{2}/.test(String(b))).map(b => {
           let cls = "tag";
@@ -6190,8 +6277,9 @@
       const blocks = [];
       if (editModeOn) blocks.push(`<div class="tl-edit-hint">≡ 손잡이를 드래그해 순서를 바꾸고, − 로 지울 수 있어요. 카드를 누르면 장소 수정으로 들어가요.</div>`);
       let sunIdx = 0;
-      feed.forEach(({ it }, i) => {
-        while (sunIdx < sunRows.length && sunRows[sunIdx].time <= (it.time || "99:99")) {
+      feed.forEach(({ it, sortTime }, i) => {
+        const sortKey = sortTime || it.time || "99:99";
+        while (sunIdx < sunRows.length && sunRows[sunIdx].time <= sortKey) {
           blocks.push(sunRows[sunIdx].html);
           sunIdx++;
         }
@@ -6330,6 +6418,16 @@
     }
 
     function tlEditRowHtml(it) {
+      if (isMemoItem(it)) {
+        return `<div class="tl-edit-row tl-edit-memo" data-item-id="${escapeAttr(it.id)}">
+        <button type="button" class="tl-edit-del" aria-label="삭제" onclick="event.stopPropagation();deleteItem('${escapeAttr(it.id)}')">−</button>
+        <div class="tl-edit-card" onclick="event.stopPropagation();openMemoModal('${escapeAttr(it.id)}')">
+          <div class="tl-edit-cat">📝 메모</div>
+          <div class="tl-edit-place">${escapeHtmlText(memoRowLabel(it))}</div>
+        </div>
+        <div class="tl-edit-handle tl-drag-handle" data-drag-handle="1" title="드래그해서 순서 바꾸기" aria-label="드래그해서 순서 바꾸기">≡</div>
+      </div>`;
+      }
       const cat = tlItemCategory(it);
       const name = escapeHtmlText(it.place || "이름 없음");
       return `<div class="tl-edit-row" data-item-id="${escapeAttr(it.id)}">
@@ -6948,10 +7046,121 @@
     }
 
     function deleteItem(itemId) {
-      if (!confirm("이 일정을 삭제할까요?")) return;
       const dayObj = state.days.find(d => d.day === currentDay);
       if (!dayObj) return;
-      dayObj.items = dayObj.items.filter(x => x.id !== itemId);
+      const target = (dayObj.items || []).find(x => String(x.id) === String(itemId));
+      if (!confirm(isMemoItem(target) ? "이 메모를 삭제할까요?" : "이 일정을 삭제할까요?")) return;
+      dayObj.items = dayObj.items.filter(x => String(x.id) !== String(itemId));
+      saveState();
+    }
+
+    /* =====================================================================
+       📝 메모 — 시간(time) 없이 내용만 적는 카드
+       · 추가하면 그날 items 맨 앞(unshift)에 생기고, 사용자가 ↑↓ · 드래그로 위치를 정한다
+       · 지도 핀 · 이동 시간 · 경비 합계에는 잡히지 않는다 (kind: "memo") 
+       ===================================================================== */
+    let editingMemoId = null;
+
+    function isMemoItem(it) { return Boolean(it && it.kind === "memo"); }
+
+    // 카드에 크게 보일 제목 (직접 적은 제목만 — 내용만 적은 메모는 제목 없이 내용만)
+    function memoTitleOf(it) {
+      if (!it) return "";
+      return String(it.memoTitle || "").trim();
+    }
+
+    // 편집 모드 한 줄 요약
+    function memoRowLabel(it) {
+      if (!it) return "메모";
+      const t = String(it.memoTitle || "").trim();
+      const body = String(it.memo || "").replace(/\s+/g, " ").trim();
+      const line = [t, body].filter(Boolean).join(" · ") || String(it.place || "").trim();
+      return line ? line.slice(0, 120) : "메모";
+    }
+
+    function makeMemoItem(title, body) {
+      const cleanBody = String(body || "").replace(/[ \t]+\n/g, "\n").trim();
+      const cleanTitle = String(title || "").trim().slice(0, 60);
+      const firstLine = (cleanBody.split("\n").map(s => s.trim()).find(Boolean) || "").slice(0, 40);
+      return {
+        id: "memo-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        kind: "memo",
+        time: "",
+        place: cleanTitle || firstLine,
+        memoTitle: cleanTitle,
+        memo: cleanBody,
+        stay: "",
+        stayMin: 0,
+        moveMode: "",
+        moveMin: 0,
+        moveCost: 0,
+        costTotal: 0,
+        lat: null,
+        lng: null,
+        badges: ["📝 메모"]
+      };
+    }
+
+    function openMemoModal(itemId) {
+      if (!canEdit()) return alert("읽기 전용 권한이라 메모를 고칠 수 없어요.");
+      const dayObj = state.days.find(d => d.day === currentDay);
+      if (!dayObj) return;
+      const it = itemId ? (dayObj.items || []).find(x => String(x.id) === String(itemId)) : null;
+      editingMemoId = it ? it.id : null;
+      const titleEl = document.getElementById("memo-modal-title");
+      if (titleEl) titleEl.textContent = it ? "📝 메모 수정" : "📝 메모 추가";
+      const inputTitle = document.getElementById("memo-title");
+      const inputBody = document.getElementById("memo-body");
+      if (inputTitle) inputTitle.value = it ? String(it.memoTitle || "") : "";
+      if (inputBody) inputBody.value = it ? String(it.memo || "") : "";
+      const modal = document.getElementById("memo-modal");
+      if (modal) modal.classList.add("open");
+      setTimeout(() => { try { (it ? inputBody : inputTitle)?.focus(); } catch (e) {} }, 80);
+    }
+
+    function closeMemoModal() {
+      const modal = document.getElementById("memo-modal");
+      if (modal) modal.classList.remove("open");
+      editingMemoId = null;
+    }
+
+    function saveMemoItem() {
+      if (!canEdit()) return alert("읽기 전용 권한이라 메모를 저장할 수 없어요.");
+      const dayObj = state.days.find(d => d.day === currentDay);
+      if (!dayObj) return;
+      const inputTitle = document.getElementById("memo-title");
+      const inputBody = document.getElementById("memo-body");
+      const title = inputTitle ? inputTitle.value.trim() : "";
+      const body = inputBody ? inputBody.value.trim() : "";
+      if (!title && !body) return alert("메모 내용을 적어 주세요.");
+      if (!Array.isArray(dayObj.items)) dayObj.items = [];
+      if (editingMemoId) {
+        const it = dayObj.items.find(x => String(x.id) === String(editingMemoId));
+        if (!it) { closeMemoModal(); return; }
+        it.kind = "memo";
+        it.memoTitle = title;
+        it.memo = body;
+        it.place = title || (body.split("\n").map(s => s.trim()).find(Boolean) || "").slice(0, 40);
+        it.time = "";
+        if (!Array.isArray(it.badges) || !it.badges.length) it.badges = ["📝 메모"];
+        // 위치(배열 순서)는 그대로 둔다 — 수정만으로 카드가 튀지 않게
+      } else {
+        dayObj.items.unshift(makeMemoItem(title, body));   // 그날 맨 위
+      }
+      closeMemoModal();
+      saveState();   // 저장 + 지도·경비·요약까지 다시 그리기
+    }
+
+    // 메모를 하루 안에서 위·아래로 옮긴다 (배열 순서 = 화면 순서)
+    function moveMemo(itemId, delta) {
+      if (!canEdit()) return alert("읽기 전용 권한이라 메모 위치를 바꿀 수 없어요.");
+      const dayObj = state.days.find(d => d.day === currentDay);
+      if (!dayObj) return;
+      const i = (dayObj.items || []).findIndex(x => String(x.id) === String(itemId));
+      const j = i + (Number(delta) || 0);
+      if (i < 0 || j < 0 || j >= dayObj.items.length) return;
+      const [moved] = dayObj.items.splice(i, 1);
+      dayObj.items.splice(j, 0, moved);
       saveState();
     }
 
@@ -6973,6 +7182,12 @@
     }
 
     function openPlaceModal(itemId) {
+      // 📝 메모는 시간·장소가 없는 카드라 메모 편집기로 보낸다
+      if (itemId) {
+        const preDay = state.days.find(d => d.day === currentDay);
+        const pre = (preDay?.items || []).find(x => String(x.id) === String(itemId));
+        if (isMemoItem(pre)) return openMemoModal(pre.id);
+      }
       editingPlaceId = itemId;
       const dayObj = state.days.find(d => d.day === currentDay);
       const it = itemId ? dayObj?.items.find(x => x.id === itemId) : null;
@@ -7863,6 +8078,7 @@
     function homeGeoPts() {
       const dayObj = (state.days || []).find(d => d.day === currentDay) || (state.days || [])[0];
       return (dayObj?.items || []).map((it, idx) => {
+        if (isMemoItem(it)) return null;   // 📝 메모는 홈 지도 핀·동선에 넣지 않는다
         const ll = (typeof it.lat === "number" && typeof it.lng === "number") ? [it.lat, it.lng] : (COORD_BY_ID[it.id] || null);
         return ll ? { it, num: idx + 1, ll } : null;
       }).filter(Boolean);
@@ -7975,26 +8191,34 @@
       const region = photoRegionOfDay(dayObj);
       bodyEl.innerHTML = items.map((it, idx) => {
         const num = idx + 1;
-        const hasPin = homePts.some(p => p.num === num);
-        const photo = shouldLookupPhoto(it)
-          ? `<span class="ph-slot ph-sm" data-ph="${escapeAttr(it.place)}" data-ph-region="${escapeAttr(region)}" data-emo="${homePlaceEmoji(it)}"></span>`
-          : `<span class="hr-emo">${homePlaceEmoji(it)}</span>`;
-        return `<div class="home-row" data-num="${num}" role="button" tabindex="0" onclick="homeFocusPin(${num})">
-          <span class="hr-num${hasPin ? "" : " no-pin"}">${num}</span>
+        const memo = isMemoItem(it);
+        const hasPin = !memo && homePts.some(p => p.num === num);
+        const photo = memo
+          ? `<span class="hr-emo">📝</span>`
+          : (shouldLookupPhoto(it)
+            ? `<span class="ph-slot ph-sm" data-ph="${escapeAttr(it.place)}" data-ph-region="${escapeAttr(region)}" data-emo="${homePlaceEmoji(it)}"></span>`
+            : `<span class="hr-emo">${homePlaceEmoji(it)}</span>`);
+        const rowClick = memo ? `openTimelineFromHome(${dayObj?.day || currentDay})` : `homeFocusPin(${num})`;
+        return `<div class="home-row${memo ? " home-row-memo" : ""}" data-num="${num}" role="button" tabindex="0" onclick="${rowClick}">
+          <span class="hr-num${hasPin ? "" : " no-pin"}">${memo ? "📝" : num}</span>
           <span class="hr-time">${escapeAttr(it.time || "—")}</span>
           <span class="hr-main">
-            <span class="hr-place">${escapeAttr(it.place || "이름 없음")}</span>
+            <span class="hr-place">${escapeAttr(memo ? (memoTitleOf(it) || "메모") : (it.place || "이름 없음"))}</span>
             <span class="hr-memo">${escapeAttr(homeMemoLine(it))}</span>
           </span>
           <span class="hr-photo">${photo}</span>
-          ${homeMoveChip(it)}
+          ${memo ? "" : homeMoveChip(it)}
           <button class="hr-chev" onclick="event.stopPropagation();openTimelineFromHome(${dayObj?.day || currentDay})" title="일정 탭에서 상세히 보기">›</button>
         </div>`;
       }).join("");
       const titleEl = document.getElementById("home-sheet-title");
       if (titleEl) titleEl.textContent = `${dayObj?.day || currentDay}일차 일정 요약`;
       const countEl = document.getElementById("home-sheet-count");
-      if (countEl) countEl.textContent = ` · ${items.length}곳`;
+      if (countEl) {
+        const placeCount = items.filter(x => !isMemoItem(x)).length;
+        const memoCount = items.length - placeCount;
+        countEl.textContent = ` · ${placeCount}곳` + (memoCount ? ` · 메모 ${memoCount}개` : "");
+      }
       syncHomeRowsHidden();
       try { hydrateHomePhotos(bodyEl); } catch (e) { console.warn(e); }
     }
@@ -8154,6 +8378,7 @@
       }
       const dayObj = state.days.find(d => d.day === currentDay) || state.days[0];
       const itemPts = (dayObj.items || []).map(it => {
+        if (isMemoItem(it)) return null;   // 📝 메모는 지도 핀·폴리라인에서 제외
         const ll = (typeof it.lat === "number" && typeof it.lng === "number") ? [it.lat, it.lng] : (COORD_BY_ID[it.id] || null);
         return ll ? { it, ll } : null;
       }).filter(Boolean);
@@ -8222,6 +8447,7 @@
     function activeDayGeoPts() {
       const dayObj = state.days.find(d => d.day === currentDay) || state.days[0];
       return (dayObj?.items || []).map(it => {
+        if (isMemoItem(it)) return null;   // 📝 메모는 큰 지도 스텝에서도 제외
         const ll = (typeof it.lat === "number" && typeof it.lng === "number") ? [it.lat, it.lng] : (COORD_BY_ID[it.id] || null);
         return ll ? { it, ll } : null;
       }).filter(Boolean);
@@ -10132,6 +10358,7 @@
     // 화면을 그릴 때 쓰는 동기 좌표 (네트워크 없이 아는 것만)
     function coordsOfItem(it) {
       if (!it) return null;
+      if (isMemoItem(it)) return null;   // 📝 메모는 장소가 아니다 — 지도·동선·거리 계산에서 제외
       if (typeof it.lat === "number" && typeof it.lng === "number") return { lat: it.lat, lng: it.lng, name: it.place || "" };
       const byId = COORD_BY_ID[it.id];
       if (Array.isArray(byId)) return { lat: byId[0], lng: byId[1], name: it.place || "" };
@@ -14154,6 +14381,7 @@
 
     function applyAutoBookingBadge(item) {
       if (!item) return "";
+      if (isMemoItem(item)) return "";   // 📝 메모에는 예약 배지를 자동으로 붙이지 않는다
       if (item.bookingFree || isBookingFreeTransit(item.transitType)) return "";
       let label = bookingBadgeFor(item.place);
       if (!label && /예약\s*(권장|필수)|예매\s*필수|웨이팅|줄\s*서기|대기가?\s*(길|많)/.test(String(item.memo || ""))) label = "예약 권장";
@@ -15943,7 +16171,7 @@
     function diningSpotNames() {
       const keys = [];
       (state.days || []).forEach(day => (day.items || []).forEach(it => {
-        if (!it.place || it.fromPlace || it.toPlace) return;
+        if (!it.place || it.fromPlace || it.toPlace || isMemoItem(it)) return;
         if (/→|체크인|체크아웃|보관함|공항/.test(it.place)) return;
         const isDining = Array.isArray(it.menus) || DINING_RE.test(it.place);
         if (!isDining) return;
@@ -15973,7 +16201,7 @@
     function hoursTargets() {
       const out = [];
       (state.days || []).forEach(day => (day.items || []).forEach(it => {
-        if (!it.place || it.fromPlace || it.toPlace) return;
+        if (!it.place || it.fromPlace || it.toPlace || isMemoItem(it)) return;
         if (/→|체크인|체크아웃|보관함/.test(it.place)) return;
         const cat = inferItemExpenseCategory(it);
         const dining = Array.isArray(it.menus) || DINING_RE.test(it.place);

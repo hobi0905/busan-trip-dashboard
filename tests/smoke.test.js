@@ -888,6 +888,133 @@ setTimeout(async () => {
     ok("칩 색 구분(식사·카페)", w.document.querySelectorAll("#timeline-list .tl-meal.food").length > 0
       && w.document.querySelectorAll("#timeline-list .tl-meal.cafe").length > 0, "");
 
+    /* ================= 2026-11-22 📝 메모 추가 · 플랜 B/일정 편집 자리 교환 ================= */
+    // 47) 일정 탭 — 시간 없는 '메모' 추가·수정·이동·삭제 + 지도·이동시간·경비 비간섭
+    {
+      const seedItems = [
+        { id: "mm-a", time: "09:00", place: "부산역", memo: "", stay: "체류 20분", moveMode: "도보", moveMin: 10, moveCost: 0, costTotal: 12000, lat: 35.1157, lng: 129.0403, badges: [] },
+        { id: "mm-b", time: "18:00", place: "광안리", memo: "", stay: "체류 60분", moveMode: "택시", moveMin: 15, moveCost: 9000, costTotal: 20000, lat: 35.1532, lng: 129.1187, badges: [] }
+      ];
+      ev(`currentDay = 1;
+        state.meta = { title:'메모 테스트', destination:'부산', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2 };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: ${JSON.stringify(seedItems)} }, { day:2, label:'2일차', date:'2027-03-07', items: [] }];
+        state.bookings = []; state.expenses = []; state.bookingAlerts = []; state.weather = []; state.checklist = [];
+        saveState();`);
+
+      ok("메모 버튼(+ 메모 추가) · 모달 · 카드 CSS",
+        /<button class="btn btn-memo"[^>]*onclick="openMemoModal\(null\)">📝 메모 추가<\/button>/.test(html)
+        && /id="memo-modal"/.test(html) && /id="memo-body"/.test(html)
+        && /\.card\.tl-memo-card/.test(html),
+        "");
+
+      const travelBefore = w.document.getElementById("hdr-travel-time").textContent;
+      const expBefore = ev("getSyncedExpenses().reduce((s,e)=>s+(Number(e.amount)||0),0)");
+      const pinsBefore = ev("homeGeoPts().length");
+      const bigBefore = ev("activeDayGeoPts().length");
+
+      // 추가 — 시간 칸이 없는 모달, 저장하면 그날 맨 위
+      w.openMemoModal(null);
+      const memoModal = w.document.getElementById("memo-modal");
+      ok("메모 모달: 시간 입력 없음", memoModal.classList.contains("open")
+        && !memoModal.querySelector('input[type="time"]') && !/id="memo-time"/.test(memoModal.innerHTML),
+        "");
+      w.document.getElementById("memo-title").value = "체크인 준비";
+      w.document.getElementById("memo-body").value = "15시 체크인\n우산 챙기기";
+      w.saveMemoItem();
+      const memo = ev("state.days[0].items[0]");
+      ok("메모 추가: 그날 맨 위(index 0)·시간 없음", ev("state.days[0].items.length") === 3
+        && memo.kind === "memo" && memo.time === "" && ev("state.days[0].items[1].id") === "mm-a",
+        ev("state.days[0].items.map(i=>i.kind||i.id).join(',')"));
+      ok("메모 저장 필드(place·memo·0원·좌표없음·📝 배지)", memo.place === "체크인 준비"
+        && /우산 챙기기/.test(memo.memo) && memo.moveMin === 0 && memo.costTotal === 0 && memo.moveCost === 0
+        && memo.lat === null && memo.lng === null && (memo.badges || []).includes("📝 메모"),
+        JSON.stringify({ place: memo.place, badges: memo.badges }));
+
+      const listHtml = () => w.document.getElementById("timeline-list").innerHTML;
+      const memoCard = () => w.document.querySelector("#timeline-list .tl-memo-card");
+      ok("메모 카드가 맨 위에 따뜻한 메모 스타일로", !!memoCard()
+        && listHtml().indexOf("tl-memo-card") < listHtml().indexOf('data-card-id="mm-a"')
+        && /📝 메모/.test(memoCard().textContent) && /체크인 준비/.test(memoCard().textContent)
+        && /우산 챙기기/.test(memoCard().textContent),
+        memoCard() ? memoCard().textContent.trim().slice(0, 40) : "카드 없음");
+      ok("메모 카드 조작 버튼(위로·아래로·수정·삭제)", !!memoCard()
+        && !!memoCard().querySelector('button[onclick*="moveMemo"]')
+        && !!memoCard().querySelector('button[onclick*="openMemoModal"]')
+        && !!memoCard().querySelector('button[onclick*="deleteItem"]'),
+        "");
+
+      // 비간섭 — 지도 핀·큰 지도 스텝·총 이동 시간·경비
+      ok("메모는 지도 핀·동선에 안 잡힘", ev("homeGeoPts().length") === pinsBefore
+        && ev("activeDayGeoPts().length") === bigBefore && ev("coordsOfItem(state.days[0].items[0])") === null
+        && !ev("homeGeoPts().some(p => p.it.kind === 'memo')"),
+        `핀 ${pinsBefore} → ${ev("homeGeoPts().length")}`);
+      ok("메모는 총 이동 시간에 안 잡힘", w.document.getElementById("hdr-travel-time").textContent === travelBefore,
+        `${travelBefore} → ${w.document.getElementById("hdr-travel-time").textContent}`);
+      ok("메모는 경비에 안 잡힘", ev("getSyncedExpenses().reduce((s,e)=>s+(Number(e.amount)||0),0)") === expBefore
+        && !ev("getSyncedExpenses().some(e => /체크인 준비/.test(String(e.name||'')))"),
+        `${expBefore} → ${ev("getSyncedExpenses().reduce((s,e)=>s+(Number(e.amount)||0),0)")}`);
+
+      // 순서 — 아래로/위로 옮기면 화면·저장까지 따라온다
+      w.moveMemo(memo.id, 1);
+      ok("메모 아래로 이동(배열·화면·저장)", ev("state.days[0].items[1].id") === memo.id
+        && listHtml().indexOf('data-card-id="mm-a"') < listHtml().indexOf("tl-memo-card")
+        && JSON.parse(w.localStorage.getItem(w.getLocalKey())).days[0].items[1].id === memo.id,
+        ev("state.days[0].items.map(i=>i.kind||i.id).join(',')"));
+      w.moveMemo(memo.id, -1);
+      ok("메모 위로 이동", ev("state.days[0].items[0].id") === memo.id
+        && JSON.parse(w.localStorage.getItem(w.getLocalKey())).days[0].items[0].id === memo.id, "");
+
+      // 수정 — 위치 유지, 제목을 비우면 내용만
+      w.openMemoModal(memo.id);
+      ok("메모 수정 프리필", /수정/.test(w.document.getElementById("memo-modal-title").textContent)
+        && w.document.getElementById("memo-title").value === "체크인 준비"
+        && /우산 챙기기/.test(w.document.getElementById("memo-body").value), "");
+      w.document.getElementById("memo-title").value = "";
+      w.document.getElementById("memo-body").value = "15시 체크인\n우산·보조배터리";
+      w.saveMemoItem();
+      ok("메모 수정(위치·개수 유지)", ev("state.days[0].items.length") === 3 && ev("state.days[0].items[0].id") === memo.id
+        && ev("state.days[0].items[0].memoTitle") === "" && /보조배터리/.test(ev("state.days[0].items[0].memo")),
+        "");
+      ok("제목 없는 메모는 내용만 보인다", !!memoCard() && /보조배터리/.test(memoCard().textContent)
+        && !memoCard().querySelector(".tl-memo-title"), "");
+
+      // 편집 모드 — 메모 행에서도 드래그 손잡이·수정·삭제가 그대로 동작
+      w.toggleEditMode();
+      const memoRow = w.document.querySelector(`#timeline-list .tl-edit-row[data-item-id="${memo.id}"]`);
+      ok("편집 모드 메모 행 + ≡ 손잡이", !!memoRow && /📝 메모/.test(memoRow.textContent)
+        && !!memoRow.querySelector('[data-drag-handle="1"]')
+        && !!memoRow.querySelector(".tl-edit-del"), "");
+      if (memoRow) memoRow.querySelector(".tl-edit-card").click();
+      ok("편집 행 클릭 → 메모 편집기", w.document.getElementById("memo-modal").classList.contains("open")
+        && /수정/.test(w.document.getElementById("memo-modal-title").textContent), "");
+      w.closeMemoModal();
+      w.toggleEditMode();
+
+      // 삭제
+      w.deleteItem(memo.id);
+      ok("메모 삭제", ev("state.days[0].items.length") === 2
+        && !ev("state.days[0].items.some(i => i.kind === 'memo')"), ev("state.days[0].items.map(i=>i.kind||i.id).join(',')"));
+    }
+
+    // 48) ☔ 플랜 B ↔ ✏️ 일정 편집 — 자리와 크기 교환 (편집 버튼이 넓은 왼쪽)
+    {
+      const rowStart = html.indexOf('<div class="tl-planb-row"');
+      const rowEnd = html.indexOf("</div>", html.indexOf('id="planb-toggle"', rowStart));
+      const rowHtml = html.slice(rowStart, rowEnd);
+      ok("플랜 B·일정 편집 위치 교환", rowStart > 0 && rowHtml.indexOf('id="edit-mode-btn"') >= 0
+        && rowHtml.indexOf('id="edit-mode-btn"') < rowHtml.indexOf('id="planb-bar-title"'),
+        rowStart > 0 ? rowHtml.slice(0, 90) : "row 없음");
+      ok("일정 편집 = 넓은 왼쪽(flex:1)", /id="edit-mode-btn"[^>]*flex:1 1 auto/.test(html), "");
+      ok("플랜 B = 오른쪽 컴팩트(flex:0 0 auto)", /class="planb-bar planb-bar-compact"[^>]*flex:0 0 auto/.test(html)
+        && /\.planb-bar\.planb-bar-compact/.test(html), "");
+      const toggle = w.document.getElementById("planb-toggle");
+      ok("플랜 B 토글·제목 그대로 동작", !!toggle && !!w.document.getElementById("planb-bar-title")
+        && !!w.document.getElementById("planb-bar-sub")
+        && typeof w.updatePlanBBar === "function", "");
+      w.updatePlanBBar();
+      ok("플랜 B 제목 갱신", /플랜 B/.test(w.document.getElementById("planb-bar-title").textContent), "");
+    }
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }
