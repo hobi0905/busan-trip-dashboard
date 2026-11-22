@@ -2512,6 +2512,32 @@ setTimeout(async () => {
         state.bookings = []; state.savedPlaces = []; state.expenses = []; editMode = false; PM_TRANSIT_CACHE.clear(); saveState();`);
     }
 
+    // 65) 🍽️ 메뉴판 불러오기 모달 — '네이버 지도' 안내 문구가 남아 있지 않다
+    {
+      const menuModal = w.document.getElementById("menu-modal");
+      const bulk = w.document.getElementById("menu-bulk-text");
+      const modalCopy = [menuModal.textContent]
+        .concat([...menuModal.querySelectorAll("[placeholder],[title],[aria-label]")].map(el =>
+          [el.getAttribute("placeholder"), el.getAttribute("title"), el.getAttribute("aria-label")].filter(Boolean).join(" ")))
+        .join(" ");
+      ok("메뉴 모달: '네이버 지도' 안내 문구 없음", !/네이버/.test(modalCopy), (modalCopy.match(/.{0,15}네이버.{0,15}/) || [""])[0]);
+      ok("메뉴 모달: 안내가 특정 지도 앱을 말하지 않는다", /메뉴판 텍스트 붙여넣기/.test(bulk.placeholder) && !/지도/.test(bulk.placeholder), bulk.placeholder);
+
+      // 문구만 바꾸고 붙여넣기 기능은 그대로 동작한다
+      ev(`state.meta = { title:'메뉴', destination:'부산', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [{ id:'mm-1', place:'카페', badges:['직접 추가'], menus: [] }] }];
+        currentDay = 1; editMode = false; renderTimeline(); openMenuModal('mm-1');`);
+      ok("메뉴 모달: 메뉴 있는 식당·카페에서 열린다", menuModal.classList.contains("open"), menuModal.className);
+      bulk.value = "아메리카노 5,500원\n카페라떼 6,000원";
+      ev("applyBulkMenuText()");
+      const draft = JSON.parse(ev("JSON.stringify(draftMenus)"));
+      ok("메뉴 모달: 붙여넣은 텍스트로 일괄 추가가 그대로 동작", draft.length === 2 && draft[0].name === "아메리카노" && draft[0].price === 5500 && draft[1].name === "카페라떼" && draft[1].price === 6000, JSON.stringify(draft));
+      ok("메뉴 모달: 추가 후 입력창이 비워진다", bulk.value === "", bulk.value);
+      ok("메뉴 모달: 화면에 추가된 메뉴가 보인다", /아메리카노/.test(w.document.getElementById("menu-modal-list").textContent), w.document.getElementById("menu-modal-list").textContent.replace(/\s+/g, " "));
+      w.closeMenuModal();
+      ev(`state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }]; state.bookings = []; state.expenses = []; saveState();`);
+    }
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }
