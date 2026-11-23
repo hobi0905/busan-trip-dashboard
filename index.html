@@ -1913,7 +1913,7 @@
         </div>
       </div>
       <div class="badges-row">
-        <span class="pill" id="hdr-travel-time">총 이동 0분</span>
+        <span class="pill" id="hdr-travel-time">Day 1 총 이동 0시간 0분</span>
         <span class="pill sync-local" id="hdr-sync">로컬 저장됨</span>
         <button class="pill" style="cursor:pointer;" onclick="openMyPageTab()" id="hdr-profile-btn" title="마이페이지">👤 마이페이지</button>
         <button class="pill" style="cursor:pointer;" onclick="openMembersModal()" id="hdr-members-btn">👥 동반인 <span id="hdr-req-badge" class="badge-dot" style="display:none;">0</span></button>
@@ -3278,7 +3278,7 @@
       <button type="button" class="pcs-nav-btn" data-tab="mypage" onclick="pcGoTab('mypage')"><span class="pcs-ico">👤</span><span>마이</span></button>
     </nav>
     <div class="pcs-sum" aria-label="여행 요약">
-      <div class="pcs-sum-row"><span>총 이동</span><b id="pcs-sum-move">0분</b></div>
+      <div class="pcs-sum-row"><span>⏱️</span><b id="pcs-sum-move">Day 1 총 이동 0시간 0분</b></div>
     </div>
     <div class="pcs-foot">
       <button type="button" onclick="openShareModal()" title="일정 공유">🔗 공유</button>
@@ -4392,7 +4392,15 @@
       d.days.forEach(day => (day.items || []).forEach(it => {
         if (!it || isMemoItem(it)) return;
         if (it.id != null && seeds.has(String(it.id))) return;
-        if (isMoveCardItem(it)) return;
+        if (isMoveCardItem(it)) {
+          // 이동 카드: 옛 코드가 박아 둔 moveMin 10 보다 카드에 적힌 실제 시간이 우선이다
+          // (예: moveMode '수인분당선 → 5호선 · 약 75분' + moveMin 10 → 75분)
+          if ((Number(it.moveMin) || 0) === 10) {
+            const real = moveMinutesFromText(it.moveMode) || moveMinutesFromText(it.stay);
+            if (real > 0 && real !== 10) it.moveMin = real;
+          }
+          return;
+        }
         if ((Number(it.moveCost) || 0) > 0) return;
         if ((Number(it.moveMin) || 0) !== 10) return;
         const mode = String(it.moveMode || "").trim();
@@ -4874,9 +4882,8 @@
       const diff = Math.ceil((start - today) / 86400000);
       document.getElementById("hdr-dday").textContent = diff > 0 ? `D-${diff}` : diff === 0 ? "D-Day" : `D+${Math.abs(diff)}`;
 
-      const totalMin = state.days.reduce((acc, d) => acc + (d.items || []).reduce((s, it) => s + itemMoveMinutes(it), 0), 0);
-      const h = Math.floor(totalMin / 60), min = totalMin % 60;
-      document.getElementById("hdr-travel-time").textContent = `총 이동 ${h}시간 ${min}분`;
+      // ⏱️ 총 이동은 여행 전체가 아니라 지금 보고 있는 일차 하루치
+      renderTravelTimeBadge();
 
       const synced = getSyncedExpenses();
       // 🎫 대중교통 요금은 기본으로 빼 두고, 경비 탭에서 켠 항목만 총액에 넣는다
@@ -6723,16 +6730,76 @@
       return `<div class="tl-move">${moveIconOf(mode)} ${escapeHtmlText(text)}</div>`;
     }
 
-    /* 📊 '총 이동'에 더할 분 — 실제 이동만 센다 (일반 장소의 더미 10분은 합계를 오염시키지 않게) */
+    /* 📊 '총 이동'에 더할 분 — 실제 이동만 센다 (일반 장소의 더미 10분은 합계를 오염시키지 않게)
+       · 이동 카드: 카드에 적힌 이동수단·체류의 실제 시간(약 75분)을 먼저 읽고, 없으면 moveMin
+       · 일반 장소: 이동수단에 적힌 시간('도보 5분')을 먼저 읽고, 없으면 moveMin */
     function itemMoveMinutes(it) {
       if (!it || isMemoItem(it)) return 0;
+      if (isMoveCardItem(it)) return Math.max(0, Math.round(moveCardMinutes(it) || 0));
       const mode = String(it.moveMode || "").trim();
-      if (!mode && !isMoveCardItem(it)) return 0;
-      const n = Number(it.moveMin);
-      return Number.isFinite(n) && n > 0 ? n : 0;
+      if (!mode) return 0;
+      const fromMode = moveMinutesFromText(mode);
+      if (fromMode > 0) return fromMode;
+      const n = Math.round(Number(it.moveMin) || 0);
+      return n > 0 ? n : 0;
+    }
+
+    /* ⏱️ 구간 길찾기 기록의 소요 시간(분) — minutes, 없으면 mode/summary 글자에서 */
+    function betweenRouteRecordMinutes(rec) {
+      if (!rec || typeof rec !== "object") return 0;
+      const raw = rec.minutes != null ? rec.minutes : rec.timeMin;
+      const n = Math.round(Number(raw) || 0);
+      if (n > 0) return n;
+      return moveMinutesFromText(rec.mode || rec.summary || "");
+    }
+
+    /* ⏱️ 하루치 이동 시간 — 그날 일정 카드의 실제 이동 + 지금 이어져 있는 구간 길찾기
+       · 구간 길찾기가 있는 구간은 그 값을 쓰고 도착 카드의 moveMode/moveMin 과 겹쳐 세지 않는다
+       · 이동 카드로 들어가는 구간은 카드가 가진 이동과 별개 구간이라 따로 더한다
+       · 메모는 이동이 아니다 */
+    function dayTravelMinutes(dayObj) {
+      if (!dayObj || !Array.isArray(dayObj.items)) return 0;
+      const list = dayObj.items.filter(it => it && !isMemoItem(it));
+      let total = 0;
+      for (let i = 0; i < list.length; i++) {
+        const it = list[i];
+        const prev = i > 0 ? list[i - 1] : null;
+        const rec = prev ? getBetweenRoute(dayObj, prev.id, it.id) : null;
+        const brMin = rec ? betweenRouteRecordMinutes(rec) : 0;
+        const moveCard = isMoveCardItem(it);
+        if (brMin > 0 && !moveCard) {
+          total += brMin;
+          continue;
+        }
+        total += itemMoveMinutes(it);
+        if (brMin > 0) total += brMin;
+      }
+      return total;
+    }
+
+    // 'Day 1 총 이동 1시간 15분' — 지금 보고 있는 일차 하루치
+    function travelTimeBadgeText(dayObj) {
+      const dayNum = dayObj && dayObj.day != null ? dayObj.day : currentDay;
+      const totalMin = dayTravelMinutes(dayObj);
+      const h = Math.floor(totalMin / 60), min = totalMin % 60;
+      return `Day ${dayNum} 총 이동 ${h}시간 ${min}분`;
+    }
+
+    // 상단 배지 + PC 사이드바를 같은 문구로 맞춘다 (일차 탭을 바꿀 때마다 호출)
+    function renderTravelTimeBadge() {
+      const days = (state && state.days) || [];
+      const dayObj = days.find(d => d && d.day === currentDay) || days[0] || null;
+      const text = travelTimeBadgeText(dayObj);
+      const badge = document.getElementById("hdr-travel-time");
+      if (badge) badge.textContent = text;
+      const pc = document.getElementById("pcs-sum-move");
+      if (pc) pc.textContent = text;
+      return text;
     }
 
     function renderTimeline() {
+      // ⏱️ 목록을 다시 그릴 때마다 그 일차의 총 이동도 같이 맞춘다 (일차 탭·홈 알약 전환 포함)
+      try { renderTravelTimeBadge(); } catch (e) { console.warn("travel badge", e); }
       // 드래그 중에 날씨·동기화 등으로 목록이 다시 그려지면, 손을 떼기 전의 순서가 통째로 사라진다.
       // 목록을 다시 그리기 전에 지금까지의 드래그를 먼저 마무리(확정)한다.
       if (tlDragState) { try { tlEditEnd(); } catch (e) { console.warn("drag end before render", e); } }
@@ -9406,6 +9473,7 @@
 
     function setDay(d) {
       currentDay = d;
+      renderTravelTimeBadge();
       renderTimeline();
       renderDayMap();
       updateDayFloatBar();
@@ -20769,8 +20837,9 @@
       const ed = String(m.endDate || "").replace(/-/g, ".");
       pcSetText("pcs-trip-sub", sd && ed ? `${sd} ~ ${ed}` : "");
       pcSetText("pcs-dday", document.getElementById("hdr-dday")?.textContent || "");
-      const move = (document.getElementById("hdr-travel-time")?.textContent || "").replace(/^총 이동\s*/, "").trim();
-      pcSetText("pcs-sum-move", move || "0분");
+      const days = (state && state.days) || [];
+      const dayObj = days.find(d => d && d.day === currentDay) || days[0] || null;
+      pcSetText("pcs-sum-move", travelTimeBadgeText(dayObj));
     }
 
     function updatePcMetrics() {
