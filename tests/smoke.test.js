@@ -3337,6 +3337,90 @@ setTimeout(async () => {
       ev("state.bookings = []; state.expenses = []; state.days[0].items = []; state.companions = []; state.members = []; state.expensePayers = {}; state.expenseIncludeMap = {}; state.meta.travelers = 2; saveState();");
     }
 
+    // 61) 🧹 일반 장소에 따라붙던 '도보 10분 · ₩0' 기본값 — 이동 모드·실제 이동만 시간이 잡힌다
+    {
+      const headText = () => w.document.getElementById("hdr-travel-time").textContent;
+      const cardOf = (id) => w.document.querySelector(`#timeline-list [data-card-id="${id}"]`);
+      ev(`currentDay = 1; editMode = false;
+        state.meta = { title:'기본 이동값', destination:'부산', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }, { day:2, label:'2일차', date:'2027-03-07', items: [] }];
+        state.bookings = []; state.expenses = []; state.savedPlaces = []; PM_TRANSIT_CACHE.clear(); saveState();`);
+      const headBefore = headText();
+
+      // (1) 일반 장소를 새로 추가 — 이동 시간·요금은 0, 카드에 🚶 줄 자체가 없다
+      w.openPlaceModal(null);
+      w.document.getElementById("pm-place").value = "망원시장손칼국수";
+      w.document.getElementById("pm-memo").value = "11시 오픈";
+      await w.savePlaceEdit();
+      const plain = ev("JSON.stringify(state.days[0].items[0] || null)");
+      const plainIt = plain ? JSON.parse(plain) : null;
+      ok("일반 장소 추가: moveMin·moveCost 기본값 0", !!plainIt && plainIt.moveMin === 0 && plainIt.moveCost === 0
+        && plainIt.moveMode === "", plain ? JSON.stringify({ moveMin: plainIt && plainIt.moveMin, moveCost: plainIt && plainIt.moveCost }) : "저장 안 됨");
+      w.renderTimeline();
+      const plainCard = plainIt ? cardOf(plainIt.id) : null;
+      ok("일반 장소 카드: '🚶 (0분 · ₩0)' 줄이 없다", !!plainCard && !plainCard.querySelector(".tl-move")
+        && !/🚶/.test(plainCard.textContent) && !/0분/.test(plainCard.textContent),
+        plainCard ? plainCard.textContent.replace(/\s+/g, " " ).slice(0, 90) : "카드 없음");
+      ok("일반 장소는 총 이동 시간을 늘리지 않는다", headText() === headBefore, `${headBefore} → ${headText()}`);
+
+      // (2) '이동(출발 → 도착)' 모드에서 실제 이동 시간이 잡히면 moveMin 이 그 값으로
+      w.openPlaceModal(null);
+      w.setPlaceMode("route");
+      w.document.getElementById("pm-from").value = "시청역";
+      w.document.getElementById("pm-to").value = "을지로입구역";
+      w.document.getElementById("pm-move").value = "2호선 (시청 > 을지로입구) · 약 19분";
+      w.document.getElementById("pm-cost").value = "3100";
+      await w.savePlaceEdit();
+      const routeIt = ev("JSON.stringify(state.days[0].items[1] || null)");
+      const route = routeIt ? JSON.parse(routeIt) : null;
+      ok("이동 모드 저장: moveMin = 적힌 시간(19분) · moveCost = 금액", !!route && route.moveMin === 19
+        && route.moveCost === 3100 && route.fromPlace === "시청역" && route.toPlace === "을지로입구역",
+        routeIt || "저장 안 됨");
+      w.renderTimeline();
+      const routeCard = route ? cardOf(route.id) : null;
+      const routeMove = routeCard ? routeCard.querySelector(".tl-move") : null;
+      ok("이동 카드: 시간·요금이 한 번씩만 보인다", !!routeMove && /약 19분/.test(routeMove.textContent)
+        && (routeMove.textContent.match(/19\s*분/g) || []).length === 1 && /₩3,100/.test(routeMove.textContent),
+        routeMove ? routeMove.textContent.trim() : "이동 줄 없음");
+      ok("이동 카드 저장이 총 이동에 잡힌다", headText() === "총 이동 0시간 19분", headText());
+
+      // (3) 이동 카드라도 요금이 0이면 '· ₩0' 을 붙이지 않는다
+      ev(`state.days[0].items.push({ id:'dm-free', time:'', place:'광안리 → 해운대', fromPlace:'광안리', toPlace:'해운대', moveMode:'도보 25분', moveMin:25, moveCost:0, costTotal:0 }); saveState();`);
+      const freeMove = cardOf("dm-free") && cardOf("dm-free").querySelector(".tl-move");
+      ok("이동 카드: 요금 0이면 ₩0 표기 없음", !!freeMove && /도보 25분/.test(freeMove.textContent) && !/₩/.test(freeMove.textContent),
+        freeMove ? freeMove.textContent.trim() : "이동 줄 없음");
+
+      // (4) 예전에 저장된 더미(moveMin 10 · moveCost 0)는 상태를 불러올 때 정리된다
+      ev(`localStorage.setItem(getLocalKey(), JSON.stringify({
+        meta: state.meta,
+        days: [{ day:1, label:'1일차', date:'2027-03-06', items: [
+          { id:'dm-a', time:'', place:'망원시장손칼국수', moveMode:'', moveMin:10, moveCost:0, costTotal:0 },
+          { id:'dm-b', time:'', place:'보통공원', moveMode:'도보', moveMin:10, moveCost:0, costTotal:0 },
+          { id:'dm-c', time:'', place:'감천문화마을', moveMode:'도보 5분', moveMin:5, moveCost:0, costTotal:0 },
+          { id:'au2-7', time:'', place:'와이니어드 산책', moveMode:'도보', moveMin:10, moveCost:0, costTotal:0 },
+          { id:'dm-rt', time:'', place:'부산역 → 광안리', fromPlace:'부산역', toPlace:'광안리', moveMode:'수영로', moveMin:10, moveCost:1550, costTotal:1550 }
+        ] }, { day:2, label:'2일차', date:'2027-03-07', items: [] }],
+        bookings: [], expenses: []
+      }));`);
+      const loaded = ev(`(() => { const d = loadState(); return JSON.stringify(d.days[0].items.map(i => [i.id, i.moveMode, i.moveMin, i.moveCost])); })()`);
+      const byId = {};
+      JSON.parse(loaded).forEach(([id, mode, min, cost]) => { byId[id] = { mode, min, cost }; });
+      ok("불러올 때 더미 정리: 빈 이동수단 + 10분 → 0", byId["dm-a"].mode === "" && byId["dm-a"].min === 0
+        && byId["dm-a"].cost === 0, JSON.stringify(byId["dm-a"]));
+      ok("불러올 때 더미 정리: '도보'만 적힌 10분 → 0", byId["dm-b"].mode === "" && byId["dm-b"].min === 0, JSON.stringify(byId["dm-b"]));
+      ok("불러올 때 실제 값 보존: '도보 5분' · 시드(au2-7) · 이동 카드", byId["dm-c"].min === 5 && byId["au2-7"].min === 10
+        && byId["au2-7"].mode === "도보" && byId["dm-rt"].min === 10 && byId["dm-rt"].cost === 1550,
+        JSON.stringify([byId["dm-c"], byId["au2-7"], byId["dm-rt"]]));
+
+      // (5) 총 이동 — 더미 10분은 빼고 실제 이동만 (5분 + 시드 10분 + 이동 카드 10분 = 25분)
+      ev(`state = loadState(); currentDay = 1; renderAll();`);
+      ok("총 이동: 일반 장소 더미는 합산되지 않는다", headText() === "총 이동 0시간 25분", headText());
+      ev(`state.days[0].items = [{ id:'dm-x', time:'', place:'보통공원', moveMode:'', moveMin:10, moveCost:0, costTotal:0 }]; renderAll();`);
+      ok("총 이동: 정리 전 더미가 있어도 0분", headText() === "총 이동 0시간 0분", headText());
+
+      ev("state.bookings = []; state.expenses = []; state.days[0].items = []; PM_TRANSIT_CACHE.clear(); saveState();");
+    }
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }
