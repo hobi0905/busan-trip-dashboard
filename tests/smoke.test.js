@@ -3556,6 +3556,195 @@ setTimeout(async () => {
       ev('document.body.classList.remove("view-pc"); buildPcTimeline();');
     }
 
+    // 58) 💌 초대 링크(?trip=…&invite=1)에서 기존 프로필을 불러오면
+    //     기존에 참가해 있던 여행으로 튀지 않고 초대받은 여행 + '입장 요청' 창이 떠야 한다
+    {
+      const nodeCrypto = require("crypto");
+      const sha256Hex = (s) => nodeCrypto.createHash("sha256").update(String(s), "utf8").digest("hex");
+      const INVITE_ID = "new-trip-123";
+      const OLD_TRIP = {
+        meta: { title: "가연의 서울 여행", hostId: "u_old", startDate: "2026-12-01", endDate: "2026-12-02" },
+        days: [{ day: 1, date: "2026-12-01", label: "1일차", items: [] }],
+        expenses: [], members: [],
+      };
+      const inviteTrip = (patch) => Object.assign({
+        meta: { title: "초대받은 제주 여행", hostId: "u_host9", startDate: "2026-12-20", endDate: "2026-12-22" },
+        days: [{ day: 1, date: "2026-12-20", label: "1일차", items: [] }],
+        expenses: [], members: [],
+      }, patch || {});
+      const prof = (id, nick) => ({ id, nickname: nick || "", avatar: "", passHash: "", bio: "", likes: [] });
+      // 이 기기에 저장된 프로필 + 그 프로필이 예전에 보던 여행(가장 최근 여행)
+      const seedFor = (extra) => Object.assign({
+        busan_trip_my_profile_v1: JSON.stringify(prof("u_anon1", "")),
+        busan_trip_saved_profiles_v1: JSON.stringify([{ id: "u_old", nickname: "옛프로필", avatar: "", passHash: sha256Hex("pw1234"), bio: "", likes: [], at: new Date().toISOString() }]),
+        busan_trip_my_trips_v1_u_old: JSON.stringify([{ syncId: "old-trip-777", title: "가연의 서울 여행", startDate: "2026-12-01", endDate: "2026-12-02", hostId: "u_old", lastOpenedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }]),
+        "busan_trip_dashboard_v1_old-trip-777": JSON.stringify(OLD_TRIP),
+      }, extra || {});
+      // 가짜 supabase — __profile__:<닉네임> 행만 돌려준다(오프라인 테스트)
+      const fakeSupabase = (rows) => ({
+        createClient() {
+          return {
+            from() {
+              let key = null;
+              const q = {
+                select() { return q; },
+                eq(col, val) { if (col === "sync_id") key = val; return q; },
+                maybeSingle: async () => (Object.prototype.hasOwnProperty.call(rows, key)
+                  ? { data: { data: rows[key], updated_at: new Date().toISOString() }, error: null }
+                  : { data: null, error: null }),
+                upsert: async () => ({ error: null }),
+              };
+              return q;
+            },
+            channel() { const c = { on() { return c; }, subscribe() { return c; } }; return c; },
+            removeChannel() {},
+          };
+        },
+      });
+      const makeInviteDom = (url, seed, extraBefore) => new JSDOM(html, {
+        runScripts: "dangerously",
+        url,
+        pretendToBeVisual: true,
+        virtualConsole: new VirtualConsole(),
+        beforeParse(window) {
+          if (!window.TextEncoder) { const util = require("util"); window.TextEncoder = util.TextEncoder; window.TextDecoder = util.TextDecoder; }
+          window.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
+          window.fetch = () => Promise.reject(new Error("offline-test"));
+          window.structuredClone = (o) => JSON.parse(JSON.stringify(o));
+          window.Notification = class { static permission = "denied"; static requestPermission() { return Promise.resolve("denied"); } };
+          window.IntersectionObserver = class { observe() {} unobserve() {} disconnect() {} };
+          window.ResizeObserver = class { observe() {} unobserve() {} disconnect() {} };
+          window.HTMLElement.prototype.scrollIntoView = () => {};
+          window.scrollTo = () => {};
+          window.print = () => {};
+          window.alert = (m) => { (window.__alerts = window.__alerts || []).push(String(m)); };
+          window.confirm = () => true;
+          if (!window.crypto.subtle) {
+            Object.defineProperty(window.crypto, "subtle", {
+              value: { digest: async (alg, data) => nodeCrypto.createHash("sha256").update(Buffer.from(data)).digest().buffer },
+            });
+          }
+          for (const [k, v] of Object.entries(seed || {})) window.localStorage.setItem(k, v);
+          if (extraBefore) extraBefore(window);
+        },
+      });
+      const settle = (ms) => new Promise((r) => setTimeout(r, ms || 320));
+      const isOpen = (w, id) => w.document.getElementById(id).classList.contains("open");
+      const INVITE_URL = `https://hobi0905.github.io/busan-trip-dashboard/?trip=${INVITE_ID}&invite=1`;
+
+      // ① 기기 저장 프로필을 고르면 초대받은 여행이 그대로 열리고 '입장 요청' 창이 뜬다
+      const domA = makeInviteDom(INVITE_URL, seedFor({ [`busan_trip_dashboard_v1_${INVITE_ID}`]: JSON.stringify(inviteTrip()) }));
+      const wA = domA.window;
+      await settle(400);
+      ok("초대 링크: 처음엔 프로필 창(비로그인)", isOpen(wA, "profile-modal") && !isOpen(wA, "join-modal"), "");
+      await wA.eval("switchProfile('u_old')");
+      await settle();
+      ok("초대 링크: 기존 프로필을 골라도 초대받은 여행 유지 (기존 여행으로 안 튐)",
+        wA.eval("currentSyncId") === "new-trip-123" && wA.eval("state.meta.title") === "초대받은 제주 여행",
+        `${wA.eval("currentSyncId")} / ${wA.eval("state.meta.title")}`);
+      ok("초대 링크: 멤버가 아니면 '입장 요청' 창이 뜬다",
+        isOpen(wA, "join-modal") && /동반인 승인 요청 보내기/.test(wA.document.getElementById("join-status-box").textContent),
+        wA.document.getElementById("join-status-box").textContent.trim().slice(0, 40));
+      ok("초대 링크: URL 도 초대 링크(trip+invite) 유지",
+        /trip=new-trip-123/.test(wA.location.search) && /invite=1/.test(wA.location.search), wA.location.search);
+      ok("초대 링크: 승인 전에는 일정이 잠겨 있다",
+        !wA.document.body.classList.contains("unlocked"), "");
+
+      // ② 요청을 보내면 초대 여행에 남고, 호스트에게 갈 요청이 그 여행에 쌓인다
+      wA.eval("sendJoinRequest()");
+      await settle(200);
+      const req = wA.eval("JSON.stringify(state.joinRequests||[])");
+      ok("초대 링크: '입장 요청'을 보내도 초대 여행에 남는다",
+        wA.eval("currentSyncId") === "new-trip-123" && /u_old/.test(req), `${wA.eval("currentSyncId")} / ${req}`);
+      ok("초대 링크: 요청 후엔 '승인을 기다리는 중' 안내",
+        /승인을 기다리는 중/.test(wA.document.getElementById("join-status-box").textContent), "");
+
+      // ③ '내 여행으로'를 고르면 원래 하던 '내 여행'으로 나간다(초대 화면 닫기)
+      wA.eval("exitJoinGate()");
+      await settle();
+      ok("초대 링크: '내 여행으로'를 고르면 내 여행이 열린다",
+        wA.eval("currentSyncId") === "old-trip-777" && !isOpen(wA, "join-modal"),
+        String(wA.eval("currentSyncId")));
+      wA.close();
+
+      // ④ '기존 프로필 불러오기'(로그인) 경로도 같다
+      const domB = makeInviteDom(INVITE_URL,
+        seedFor({ [`busan_trip_dashboard_v1_${INVITE_ID}`]: JSON.stringify(inviteTrip()) }),
+        (window) => {
+          window.supabase = fakeSupabase({
+            "__profile__:가연": { id: "u_gal", nickname: "가연", passHash: sha256Hex("pw1234"), avatar: "", bio: "", likes: [] },
+          });
+        });
+      const wB = domB.window;
+      await settle(400);
+      wB.eval("openProfileModal(true); setProfileMode('login');");
+      wB.document.getElementById("prof-nickname").value = "가연";
+      wB.document.getElementById("prof-password").value = "pw1234";
+      await wB.eval("submitProfileModal()");
+      await settle(500);
+      ok("초대 링크: '기존 프로필 불러오기'(로그인)해도 초대받은 여행 유지",
+        wB.eval("currentSyncId") === "new-trip-123" && wB.eval("myProfile.id") === "u_gal"
+        && wB.eval("state.meta.title") === "초대받은 제주 여행"
+        && isOpen(wB, "join-modal"),
+        `${wB.eval("currentSyncId")} / ${wB.eval("myProfile.id")} / join ${isOpen(wB, "join-modal")}`);
+      wB.close();
+
+      // ⑤ 초대 링크에서 '새 프로필 만들기'로 들어와도 초대받은 여행으로 입장 요청
+      const domC = makeInviteDom(INVITE_URL, seedFor({ [`busan_trip_dashboard_v1_${INVITE_ID}`]: JSON.stringify(inviteTrip()) }));
+      const wC = domC.window;
+      await settle(400);
+      wC.eval("openProfileModal(true); setProfileMode('create');");
+      wC.document.getElementById("prof-nickname").value = "새친구";
+      wC.document.getElementById("prof-password").value = "pw1234";
+      await wC.eval("submitProfileModal()");
+      await settle(500);
+      ok("초대 링크: 새 프로필을 만들어도 초대받은 여행 유지 + 입장 요청",
+        wC.eval("currentSyncId") === "new-trip-123" && wC.eval("myProfile.nickname") === "새친구"
+        && isOpen(wC, "join-modal"),
+        `${wC.eval("currentSyncId")} / ${wC.eval("myProfile.nickname")} / join ${isOpen(wC, "join-modal")}`);
+      wC.close();
+
+      // ⑥ 이미 멤버·호스트인 프로필은 입장 요청 없이 초대받은 여행이 바로 열린다
+      const domD = makeInviteDom(INVITE_URL, {
+        busan_trip_my_profile_v1: JSON.stringify(prof("u_anon1", "")),
+        busan_trip_saved_profiles_v1: JSON.stringify([
+          { id: "u_old", nickname: "옛프로필", avatar: "", passHash: "", bio: "", likes: [], at: new Date().toISOString() },
+          { id: "u_host9", nickname: "호스트", avatar: "", passHash: "", bio: "", likes: [], at: new Date().toISOString() },
+        ]),
+        [`busan_trip_dashboard_v1_${INVITE_ID}`]: JSON.stringify(inviteTrip({ members: [{ id: "u_old", nickname: "옛프로필", role: "editor" }] })),
+      });
+      const wD = domD.window;
+      await settle(400);
+      await wD.eval("switchProfile('u_old')");
+      await settle();
+      ok("초대 링크: 이미 멤버인 프로필은 입장 요청 없이 초대 여행이 열린다",
+        wD.eval("currentSyncId") === "new-trip-123" && !isOpen(wD, "join-modal")
+        && wD.document.body.classList.contains("unlocked")
+        && wD.eval("state.meta.title") === "초대받은 제주 여행",
+        `${wD.eval("currentSyncId")} / join ${isOpen(wD, "join-modal")}`);
+      await wD.eval("switchProfile('u_host9')");
+      await settle();
+      ok("초대 링크: 호스트 프로필도 바로 초대 여행이 열린다",
+        wD.eval("currentSyncId") === "new-trip-123" && !isOpen(wD, "join-modal")
+        && wD.document.body.classList.contains("unlocked") && wD.eval("isHost()") === true, "");
+      wD.close();
+
+      // ⑦ 회귀: 초대 링크가 아닌 일반 진입(?new=1 → 기존 프로필)은 예전처럼 가장 최근 내 여행
+      const domE = makeInviteDom("https://hobi0905.github.io/busan-trip-dashboard/?new=1", seedFor({}));
+      const wE = domE.window;
+      await settle(400);
+      ok("일반 진입: 첫 화면은 기존/신규 선택", isOpen(wE, "entry-chooser-modal"), "");
+      wE.eval("chooseEntry('existing')");
+      await settle(200);
+      await wE.eval("switchProfile('u_old')");
+      await settle();
+      ok("일반 진입(?new=1): 기존 프로필을 고르면 가장 최근 내 여행이 열린다",
+        wE.eval("currentSyncId") === "old-trip-777" && wE.eval("state.meta.title") === "가연의 서울 여행"
+        && !isOpen(wE, "join-modal"),
+        `${wE.eval("currentSyncId")} / ${wE.eval("state.meta.title")}`);
+      wE.close();
+    }
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }
