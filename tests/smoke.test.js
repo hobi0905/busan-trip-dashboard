@@ -3483,6 +3483,79 @@ setTimeout(async () => {
       ev("state.bookings = []; state.expenses = []; state.days[0].items = []; state.days[1].items = []; currentDay = 1; saveState();");
     }
 
+    // 56) 🧾 일정 탭 맨 아래 — 🔄 영업시간 업데이트·'아직 업데이트 전' 줄 제거, ⚙️ 설정 위 ➕ 일정 추가 · ✅ 편집 완료
+    {
+      ev('document.body.classList.remove("view-pc"); buildPcTimeline();');
+      const panel = w.document.getElementById("tab-timeline");
+      const foot = panel.querySelector(".tl-foot-row");
+      ok("맨 아래 .tl-foot-row 에는 ⚙️ 설정만 남는다", !!foot && foot.querySelectorAll("button").length === 1
+        && /⚙️ 설정/.test(foot.textContent) && !/영업시간/.test(foot.textContent),
+        foot ? foot.textContent.replace(/\s+/g, " ").trim() : "행 없음");
+      ok("맨 아래 영업시간 업데이트 버튼 제거", !panel.querySelector(".tl-foot-row .hours-refresh-btn")
+        && !/🔄 영업시간 업데이트/.test(html), "");
+      ok("맨 아래 '아직 업데이트 전' 줄(.tl-foot-stamp) 제거", !panel.querySelector(".tl-foot-stamp")
+        && !/class="[^"]*tl-foot-stamp/.test(html), "");
+      ok("지도 아래 🔄 영업시간 버튼은 그대로", !!panel.querySelector(".map-action-row .hours-refresh-btn")
+        && /onclick="refreshBusinessHours\(\)"/.test(panel.querySelector(".map-action-row").innerHTML), "");
+      ok("체크리스트 탭 영업시간 버튼도 그대로", !!w.document.getElementById("hours-refresh-btn"), "");
+
+      // 자리: ➕/편집 줄이 ⚙️ 설정 줄 바로 위
+      const kids = [...panel.children];
+      const editRow = panel.querySelector(".tl-foot-edit-row");
+      ok("➕ 일정 추가·편집 버튼이 ⚙️ 설정 바로 위", !!editRow && !!foot
+        && kids.indexOf(editRow) >= 0 && kids.indexOf(editRow) === kids.indexOf(foot) - 1,
+        kids.map(el => el.className || el.id).slice(-4).join(" | "));
+
+      const addBtn = w.document.getElementById("tl-foot-add-btn");
+      const editBtn = w.document.getElementById("tl-foot-edit-btn");
+      ok("맨 아래 버튼 존재 + 일정 추가는 실제 추가 함수(openPlaceModal)로 연결", !!addBtn && !!editBtn
+        && /id="tl-foot-add-btn"[^>]*onclick="openPlaceModal\(null\)"/.test(html), addBtn ? addBtn.outerHTML.slice(0, 80) : "없음");
+      ok("맨 아래 편집 버튼은 toggleEditMode 로 연결", /id="tl-foot-edit-btn"[^>]*onclick="toggleEditMode\(\)"/.test(html), "");
+
+      // 보기 모드: ✏️ 일정 편집 하나, ➕ 일정 추가는 감춰 둔다
+      ev("if (editMode) { editMode = false; } renderTimeline();");
+      ok("보기 모드: ✏️ 일정 편집만 보인다", editBtn.textContent === "✏️ 일정 편집"
+        && addBtn.style.display === "none", `${editBtn.textContent} / add ${addBtn.style.display}`);
+
+      // 맨 아래 버튼으로 편집 모드 → ➕ 일정 추가 · ✅ 편집 완료가 나란히, 상단과 동기화
+      editBtn.click();
+      const topBtn = w.document.getElementById("edit-mode-btn");
+      const addRow = w.document.getElementById("add-btns-row");
+      ok("맨 아래 ✏️ 일정 편집 → 편집 모드", ev("editMode") === true && editBtn.textContent === "✅ 편집 완료",
+        `${ev("editMode")} / ${editBtn.textContent}`);
+      ok("편집 모드: ➕ 일정 추가 · ✅ 편집 완료가 나란히", addBtn.style.display !== "none"
+        && addBtn.textContent === "➕ 일정 추가" && editBtn.textContent === "✅ 편집 완료"
+        && [...editRow.querySelectorAll("button")].filter(b => b.style.display !== "none").length === 2,
+        editRow.textContent.replace(/\s+/g, " ").trim());
+      ok("편집 모드: 상단 #edit-mode-btn 도 편집 완료로 동기화", /편집 완료/.test(topBtn.textContent)
+        && addRow.style.display === "flex", `${topBtn.textContent} / ${addRow.style.display}`);
+
+      // 상단 버튼으로 나가면 맨 아래도 같이 돌아온다
+      topBtn.click();
+      ok("상단에서 편집 끝 → 맨 아래도 ✏️ 일정 편집 · 추가 감춤", ev("editMode") === false
+        && editBtn.textContent === "✏️ 일정 편집" && addBtn.style.display === "none",
+        `${ev("editMode")} / ${editBtn.textContent} / ${addBtn.style.display}`);
+
+      // ➕ 일정 추가 → 상단과 같은 추가 모달이 열린다
+      ev("if (editMode) { editMode = false; } renderTimeline();");
+      editBtn.click();
+      addBtn.click();
+      ok("맨 아래 ➕ 일정 추가 → 새 일정 추가 모달", w.document.getElementById("place-modal").classList.contains("open")
+        && /새 일정 추가/.test(w.document.getElementById("place-modal-title").textContent),
+        w.document.getElementById("place-modal-title").textContent);
+      w.closePlaceModal();
+      w.toggleEditMode();
+      ok("정리: 보기 모드로 복귀", ev("editMode") === false && editBtn.textContent === "✏️ 일정 편집", "");
+
+      // PC 버전: 오른쪽 칸에서도 ➕/편집 줄이 ⚙️ 설정 바로 위
+      ev('document.body.classList.add("view-pc"); buildPcTimeline();');
+      const right = w.document.querySelector("#tab-timeline .tl-pc-right");
+      ok("PC: 우 칸에서도 추가·편집 줄이 ⚙️ 설정 바로 위", !!right
+        && [...right.children].indexOf(right.querySelector(".tl-foot-edit-row")) === [...right.children].indexOf(right.querySelector(".tl-foot-row")) - 1,
+        right ? [...right.children].map(el => el.className || el.id).join(" | ") : "no-right");
+      ev('document.body.classList.remove("view-pc"); buildPcTimeline();');
+    }
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }
