@@ -2006,11 +2006,14 @@
         </div>
         <div id="timeline-list"></div>
         <div id="lodging-rec-box"></div>
-        <div class="tl-foot-row" style="margin-top:16px;margin-bottom:6px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-soft btn-sm" onclick="openThemeModal()" style="padding:8px 18px;">⚙️ 설정</button>
-          <button class="btn btn-soft btn-sm hours-refresh-btn" data-default-label="🔄 영업시간 업데이트" onclick="refreshBusinessHours()" style="padding:8px 14px;">🔄 영업시간 업데이트</button>
+        <!-- ➕ 일정 추가 · ✏️ 일정 편집/✅ 편집 완료 — ⚙️ 설정 바로 위 (편집 모드에서 추가·완료가 나란히) -->
+        <div class="tl-foot-edit-row" id="tl-foot-edit-row" style="margin-top:16px;margin-bottom:8px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-soft btn-sm" id="tl-foot-add-btn" onclick="openPlaceModal(null)" style="display:none;flex:1 1 120px;max-width:220px;padding:9px 14px;font-size:13px;white-space:nowrap;">➕ 일정 추가</button>
+          <button class="btn btn-soft btn-sm" id="tl-foot-edit-btn" onclick="toggleEditMode()" style="flex:1 1 120px;max-width:220px;padding:9px 14px;font-size:13px;white-space:nowrap;">✏️ 일정 편집</button>
         </div>
-        <div class="hours-note hours-updated-label tl-foot-stamp" style="text-align:center;margin-bottom:8px;">아직 업데이트 전</div>
+        <div class="tl-foot-row" style="margin-top:0;margin-bottom:6px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-soft btn-sm" onclick="openThemeModal()" style="padding:8px 18px;">⚙️ 설정</button>
+        </div>
       </section>
 
       <!-- TAB 2: EXPENSES -->
@@ -4925,6 +4928,7 @@
       }
       const emBtn = document.getElementById("edit-mode-btn");
       if (emBtn) emBtn.style.display = canEdit() ? "inline-flex" : "none";
+      try { syncTimelineFootButtons(); } catch (e) { console.warn(e); }
       try { refreshHomeHeader(); } catch (e) {}
       try { syncPcSidebar(); } catch (e) {}
       try { updatePcMetrics(); } catch (e) {}
@@ -6938,12 +6942,33 @@
         emBtn.textContent = editMode ? "✓ 편집 완료" : "✏️ 일정 편집";
         emBtn.className = editMode ? "btn btn-primary" : "btn btn-soft";
       }
+      syncTimelineFootButtons();
       renderBookings();
     }
 
     function toggleEditMode() {
       editMode = !editMode;
       renderTimeline();
+    }
+
+    /* 맨 아래 ⚙️ 설정 위 버튼들 — 상단 #edit-mode-btn·#add-btns-row 와 같은 상태를 본다
+       · 보기 모드: ✏️ 일정 편집 하나
+       · 편집 모드: ➕ 일정 추가 · ✅ 편집 완료 나란히 */
+    function syncTimelineFootButtons() {
+      const wrap = document.getElementById("tl-foot-edit-row");
+      const addBtn = document.getElementById("tl-foot-add-btn");
+      const editBtn = document.getElementById("tl-foot-edit-btn");
+      const allowed = (typeof canEdit === "function") ? canEdit() : true;
+      if (wrap) wrap.style.display = allowed ? "flex" : "none";
+      if (addBtn) {
+        addBtn.style.display = (allowed && editMode) ? "block" : "none";
+        addBtn.textContent = "➕ 일정 추가";
+        addBtn.className = "btn btn-soft btn-sm";
+      }
+      if (editBtn) {
+        editBtn.textContent = editMode ? "✅ 편집 완료" : "✏️ 일정 편집";
+        editBtn.className = editMode ? "btn btn-primary btn-sm" : "btn btn-soft btn-sm";
+      }
     }
 
     /* =====================================================================
@@ -20869,7 +20894,7 @@
       const panel = document.getElementById("tab-timeline");
       if (!panel) return;
       const leftSel = [".day-tabs", ".tl-map-card", ".map-action-row", ".map-help-row", "#map-hours-stamp", ".tl-planb-row", "#planb-content", "#add-btns-row", ".tl-places-row"];
-      const rightSel = ["#timeline-list", "#lodging-rec-box", ".tl-foot-row", ".tl-foot-stamp"];
+      const rightSel = ["#timeline-list", "#lodging-rec-box", ".tl-foot-edit-row", ".tl-foot-row"];
       let left = panel.querySelector(".tl-pc-left");
       let right = panel.querySelector(".tl-pc-right");
       const built = Boolean(left && right);
