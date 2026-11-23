@@ -333,12 +333,6 @@
     #exp-people-card .exp-invite-label { font-size: 11.5px; font-weight: 800; color: var(--muted); }
     #exp-people-card .exp-invite-row .btn { font-size: 11.5px; padding: 4px 9px; border-radius: 999px; }
     #exp-people-card .exp-invite-none { font-size: 11px; font-weight: 600; color: var(--muted); }
-    #exp-people-card .exp-settle-line {
-      margin-top: 8px; padding: 7px 10px; border-radius: 10px;
-      background: var(--ocean-soft); border: 1px solid var(--ocean-border);
-      font-size: 12px; font-weight: 800; color: var(--ocean-dark); line-height: 1.45; word-break: keep-all;
-    }
-    #exp-people-card .exp-settle-line.quiet { background: #f8fafc; border-color: var(--border); color: var(--muted); font-weight: 700; }
     .exp-edit-btn { flex: 0 0 auto; }
     /* ✏️ 정산 수정 모달 */
     .exp-payer-row { display: flex; align-items: center; gap: 6px; padding: 5px 0; }
@@ -10858,7 +10852,7 @@
       return { amounts: out, custom: false };
     }
 
-    // 사람별 결제액·부담 몫·차액 (몫은 포함된 경비 총액의 1/N)
+    // 사람별 결제액·부담 몫 (몫은 포함된 경비 총액의 1/N)
     function expensePeopleSummary() {
       const people = participantNames();
       const included = getSyncedExpenses().filter(e => e.included);
@@ -10871,26 +10865,7 @@
       });
       const n = Math.max(1, people.length);
       const share = total / n;
-      const net = {};
-      people.forEach(nm => { net[nm] = paid[nm] - share; });
-      return { people, included, total, n, share, paid, net };
-    }
-
-    // 차액을 누가 누구에게 보내면 되는지 (적은 사람 → 많은 사람)
-    function expenseTransfers(net) {
-      const debtors = Object.entries(net).filter(([, v]) => v < -0.5).map(([name, v]) => ({ name, amt: -v })).sort((a, b) => b.amt - a.amt);
-      const creditors = Object.entries(net).filter(([, v]) => v > 0.5).map(([name, v]) => ({ name, amt: v })).sort((a, b) => b.amt - a.amt);
-      const out = [];
-      let i = 0, j = 0;
-      while (i < debtors.length && j < creditors.length) {
-        const pay = Math.min(debtors[i].amt, creditors[j].amt);
-        if (pay >= 1) out.push({ from: debtors[i].name, to: creditors[j].name, amt: Math.round(pay) });
-        debtors[i].amt -= pay;
-        creditors[j].amt -= pay;
-        if (debtors[i].amt < 1) i++;
-        if (creditors[j].amt < 1) j++;
-      }
-      return out;
+      return { people, included, total, n, share, paid };
     }
 
     function addCompanion() {
@@ -11002,10 +10977,6 @@
       const rows = s.people.map((nm, i) => {
         const isMe = i === 0;
         const paid = Math.round(s.paid[nm] || 0);
-        const net = s.net[nm] || 0;
-        const quiet = Math.abs(net) < 1;
-        const diff = quiet ? "차액 없음" : net > 0 ? `받을 ₩${Math.round(net).toLocaleString("ko-KR")}` : `낼 ₩${Math.round(-net).toLocaleString("ko-KR")}`;
-        const diffColor = quiet ? "var(--muted)" : net > 0 ? "var(--success)" : "var(--danger)";
         return `
           <div class="exp-person-row" data-person="${escapeAttr(nm)}">
             <div class="exp-person-top">
@@ -11017,11 +10988,9 @@
             <div class="exp-person-nums">
               <span>결제 <b>${fmt(paid)}</b></span>
               <span>몫 <b>${fmt(s.share)}</b></span>
-              <span style="color:${diffColor};font-weight:800;">${diff}</span>
             </div>
           </div>`;
       }).join("");
-      const transfers = expenseTransfers(s.net);
       host.innerHTML = `
         <h3 class="sec-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;">
           <span>👥 사람별 경비</span>
@@ -11035,9 +11004,6 @@
         </div>` : ""}
         ${rows}
         <datalist id="exp-companion-names">${invited.map(nm => `<option value="${escapeAttr(nm)}"></option>`).join("")}</datalist>
-        ${transfers.length
-          ? `<div class="exp-settle-line" id="exp-settle-line">💸 정산: ${transfers.map(t => `${escapeHtmlText(t.from)} → ${escapeHtmlText(t.to)} ${fmt(t.amt)}`).join(" · ")}</div>`
-          : `<div class="exp-settle-line quiet" id="exp-settle-line">정산할 금액이 없어요 — 각자 ${fmt(s.share)}씩</div>`}
         <button class="btn btn-soft btn-sm" style="margin-top:10px;" onclick="addCompanion()">＋ 동반인 추가</button>
       `;
     }
