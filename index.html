@@ -4294,6 +4294,7 @@
     let saveTimer = null;
     let entryChoiceDone = false;     // ?new=1 첫 화면(기존/신규) 선택 여부
     let profileCreateFresh = false;   // '새 프로필'을 기존 프로필 수정이 아닌 새 계정으로 만들지
+    let inviteEntryDismissed = false; // 초대 링크 화면에서 '내 여행으로'로 빠져나왔는지
     try { migrateLegacyProfileData(); } catch (e) { console.warn("profile migrate", e); }
 
     /* =====================================================================
@@ -14459,7 +14460,38 @@
     /* =====================================================================
        프로필 전환 · 로그아웃 · 새 프로필 시작
        ===================================================================== */
+    /* 💌 초대 링크(?trip=…&invite=1)로 들어온 뒤 기존 프로필을 불러오거나
+       기기 저장 프로필로 전환하면, 예전에 보던 여행으로 튀지 않고 초대받은
+       여행을 그대로 연다. 멤버·호스트가 아니면 checkInviteFlow 가 '입장 요청' 창을 띄운다. */
+    function isInviteEntry() {
+      return Boolean(isInviteLink && urlTripParam && !inviteEntryDismissed);
+    }
+
+    async function openInvitedTripForProfile() {
+      isNewFlow = false;
+      pendingNewTripSetup = false;
+      entryChoiceDone = true;
+      const inviteTripId = urlTripParam;
+      // 초대 여행으로 다시 붙는다(내 기기 저장본 + 클라우드 최신 상태 불러오기)
+      await switchTrip(inviteTripId);
+      // switchTrip 이 공유 URL로 바꾸면서 invite 파라미터를 지우므로 초대 링크 상태를 되살린다
+      try {
+        const u = new URL(location.href);
+        u.searchParams.set("trip", inviteTripId);
+        u.searchParams.set("invite", "1");
+        u.searchParams.delete("new");
+        history.replaceState(null, "", u.toString());
+      } catch (e) { console.warn("invite url", e); }
+      renderAll();
+      checkLockScreen();
+      checkTripGoneGate();
+      checkInviteFlow();   // 초대 여행의 멤버·호스트가 아니면 여기서 입장 요청 창이 열린다
+      updateAccessGate();
+    }
+
     async function loadProfileTripsOrFresh() {
+      // 초대 링크로 들어온 상태라면 내 여행 목록이 아니라 초대받은 여행을 유지한다
+      if (isInviteEntry()) { await openInvitedTripForProfile(); return; }
       const stored = getStoredTrips().filter(t => t.syncId !== "au-sydney-4n5d");
       // 내가 호스트·동반인인 여행을 먼저 연다(남의 여행만 남았으면 그거나 새 여행)
       const mine = stored.filter(t => tripRoleOf(t.syncId) !== "guest");
@@ -14528,7 +14560,9 @@
       myProfile = loadMyProfile();
       closeProfileModal();
       alert("이 기기에서 로그아웃했어요. 여행 데이터와 클라우드 프로필은 그대로예요.");
-      location.replace(location.pathname);
+      // 초대 링크로 들어와 있던 중이면 로그아웃 후에도 초대받은 여행 화면으로 돌아온다
+      if (isInviteEntry()) location.replace(`${location.pathname}?trip=${encodeURIComponent(urlTripParam)}&invite=1`);
+      else location.replace(location.pathname);
     }
 
     function chooseEntry(kind) {
@@ -14554,8 +14588,14 @@
 
     function exitJoinGate() {
       document.getElementById("join-modal")?.classList.remove("open");
+      // '내 여행으로'로 초대 화면을 벗어났다면, 이후 프로필 전환은 원래대로 내 여행을 연다
+      inviteEntryDismissed = true;
       const list = getMyTrips().filter(t => t && t.syncId && t.syncId !== currentSyncId);
-      const fallback = list.find(t => t.role === "host") || list[0];
+      // 동반인으로만 들어가 있던 여행이 아니라 내(호스트) 여행 중 가장 최근 것을 연다
+      const mine = list.filter(t => tripRoleOf(t.syncId) !== "guest");
+      const pool = mine.length ? mine : list;
+      pool.sort((a, b) => tripRecencyScore(b) - tripRecencyScore(a));
+      const fallback = pool[0];
       if (fallback) {
         switchTrip(fallback.syncId);
         return;
@@ -14941,7 +14981,9 @@
       const needsApproval = Boolean(
         !isTripTombstoned(currentSyncId) && !(state && state.deleted === true) && (
           (state.meta && state.meta.hostId && !isHost() && !(state.members || []).some(m => m.id === myProfile.id)) ||
-          (isInviteLink && !isHost() && !(state.members || []).some(m => m.id === myProfile.id))
+          // 초대 링크로 받은 '그 여행'을 보고 있을 때만 동반인 승인 게이트를 적용한다
+          // (다른 내 여행으로 넘어간 뒤에는 게이트가 따라가지 않는다)
+          (isInviteEntry() && currentSyncId === urlTripParam && !isHost() && !(state.members || []).some(m => m.id === myProfile.id))
         )
       );
       if (needsApproval) {
@@ -15337,6 +15379,8 @@
 
     /* 기존 프로필로 로그인하면 국내/해외 선택 없이 가장 최근 여행을 바로 연다 */
     async function openMostRecentTrip() {
+      // 초대 링크로 들어온 상태라면 가장 최근 여행이 아니라 초대받은 여행을 유지한다
+      if (isInviteEntry()) { await openInvitedTripForProfile(); return; }
       isNewFlow = false;
       pendingNewTripSetup = false;
       const cleanUrl = new URL(location.href);
