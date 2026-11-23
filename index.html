@@ -6735,7 +6735,16 @@
        · 일반 장소: 이동수단에 적힌 시간('도보 5분')을 먼저 읽고, 없으면 moveMin */
     function itemMoveMinutes(it) {
       if (!it || isMemoItem(it)) return 0;
-      if (isMoveCardItem(it)) return Math.max(0, Math.round(moveCardMinutes(it) || 0));
+      if (isMoveCardItem(it)) {
+        const modeMin = moveMinutesFromText(`${it.moveMode || ""} ${it.transitType || ""}`);
+        if (modeMin > 0) return modeMin;
+        const n = Math.round(Number(it.moveMin) || 0);
+        const stayMin = moveMinutesFromText(it.stay);
+        // 옛 코드가 박아 둔 더미 10분은 카드에 적힌 실제 시간보다 우선하지 않는다
+        if (n === 10 && stayMin > 0 && stayMin !== 10) return stayMin;
+        if (n > 0) return n;
+        return stayMin;
+      }
       const mode = String(it.moveMode || "").trim();
       if (!mode) return 0;
       const fromMode = moveMinutesFromText(mode);

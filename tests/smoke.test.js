@@ -3455,6 +3455,9 @@ setTimeout(async () => {
         String(ev("state.days[0].items[0].moveMin")));
       ok("이동 카드는 moveMode 글자의 실제 시간을 총 이동에 쓴다", ev("itemMoveMinutes(state.days[0].items[0])") === 75,
         String(ev("itemMoveMinutes(state.days[0].items[0])")));
+      ok("이동 카드: 시간이 stay('약 75분')에만 있어도 더미 10분 대신 그 값",
+        ev("itemMoveMinutes({ id:'mv-stay', place:'집 → 호텔', fromPlace:'집', toPlace:'호텔', moveMode:'수인분당선 → 5호선', stay:'약 75분', moveMin:10 })") === 75,
+        String(ev("itemMoveMinutes({ id:'mv-stay', place:'집 → 호텔', fromPlace:'집', toPlace:'호텔', moveMode:'수인분당선 → 5호선', stay:'약 75분', moveMin:10 })")));
       ok("Day 1 총 이동 = 75 + 18 + 12 + 9 = 1시간 54분", headText() === "Day 1 총 이동 1시간 54분", headText());
       ok("PC 사이드바도 현재 일차 합계", pcText() === "Day 1 총 이동 1시간 54분", pcText());
       ok("인접하지 않은 구간 기록은 합산하지 않는다", ev("itemMoveMinutes(state.days[0].items[0])") === 75
