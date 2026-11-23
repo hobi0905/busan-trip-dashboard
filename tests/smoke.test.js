@@ -3382,7 +3382,7 @@ setTimeout(async () => {
       ok("이동 카드: 시간·요금이 한 번씩만 보인다", !!routeMove && /약 19분/.test(routeMove.textContent)
         && (routeMove.textContent.match(/19\s*분/g) || []).length === 1 && /₩3,100/.test(routeMove.textContent),
         routeMove ? routeMove.textContent.trim() : "이동 줄 없음");
-      ok("이동 카드 저장이 총 이동에 잡힌다", headText() === "총 이동 0시간 19분", headText());
+      ok("이동 카드 저장이 총 이동에 잡힌다", headText() === "Day 1 총 이동 0시간 19분", headText());
 
       // (3) 이동 카드라도 요금이 0이면 '· ₩0' 을 붙이지 않는다
       ev(`state.days[0].items.push({ id:'dm-free', time:'', place:'광안리 → 해운대', fromPlace:'광안리', toPlace:'해운대', moveMode:'도보 25분', moveMin:25, moveCost:0, costTotal:0 }); saveState();`);
@@ -3414,11 +3414,70 @@ setTimeout(async () => {
 
       // (5) 총 이동 — 더미 10분은 빼고 실제 이동만 (5분 + 시드 10분 + 이동 카드 10분 = 25분)
       ev(`state = loadState(); currentDay = 1; renderAll();`);
-      ok("총 이동: 일반 장소 더미는 합산되지 않는다", headText() === "총 이동 0시간 25분", headText());
+      ok("총 이동: 일반 장소 더미는 합산되지 않는다", headText() === "Day 1 총 이동 0시간 25분", headText());
       ev(`state.days[0].items = [{ id:'dm-x', time:'', place:'보통공원', moveMode:'', moveMin:10, moveCost:0, costTotal:0 }]; renderAll();`);
-      ok("총 이동: 정리 전 더미가 있어도 0분", headText() === "총 이동 0시간 0분", headText());
+      ok("총 이동: 정리 전 더미가 있어도 0분", headText() === "Day 1 총 이동 0시간 0분", headText());
 
       ev("state.bookings = []; state.expenses = []; state.days[0].items = []; PM_TRANSIT_CACHE.clear(); saveState();");
+    }
+
+    // 62) ⏱️ 총 이동 — 여행 전체가 아니라 현재 일차 하루치 (이동 카드 실제 시간 + 활성 구간 길찾기)
+    {
+      const headText = () => w.document.getElementById("hdr-travel-time").textContent;
+      const pcText = () => w.document.getElementById("pcs-sum-move").textContent;
+      const day1Items = [
+        { id:"mv-home", time:"", place:"집 → 신라스테이 마포", fromPlace:"집", toPlace:"신라스테이 마포", moveMode:"수인분당선 → 5호선 · 약 75분", moveMin:10, moveCost:0, costTotal:0 },
+        { id:"td-a", time:"", place:"망원시장손칼국수", moveMode:"", moveMin:0, moveCost:0, costTotal:0 },
+        { id:"td-b", time:"", place:"보통공원", moveMode:"도보 10분", moveMin:10, moveCost:0, costTotal:0 },
+        { id:"td-c", time:"", place:"감천문화마을", moveMode:"", moveMin:0, moveCost:0, costTotal:0 }
+      ];
+      ev(`localStorage.setItem(getLocalKey(), JSON.stringify({
+        meta: { title:'일차별 이동', destination:'서울', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2 },
+        days: [
+          { day:1, label:'1일차', date:'2027-03-06', items: ${JSON.stringify(day1Items)},
+            betweenRoutes: {
+              'mv-home__td-a': { minutes:18, farePer:0, mode:'5호선 · 약 18분', from:{name:'신라스테이 마포'}, to:{name:'망원시장손칼국수'} },
+              'td-a__td-b': { minutes:12, farePer:0, mode:'도보 · 약 12분', from:{name:'망원시장손칼국수'}, to:{name:'보통공원'} },
+              'td-b__td-c': { minutes:9, farePer:0, mode:'버스 · 약 9분', from:{name:'보통공원'}, to:{name:'감천문화마을'} },
+              'mv-home__td-c': { minutes:99, farePer:0, mode:'기차 · 약 99분', from:{name:'집'}, to:{name:'감천문화마을'} }
+            } },
+          { day:2, label:'2일차', date:'2027-03-07', items: [
+            { id:'td2-a', time:'', place:'부산역 → 광안리', fromPlace:'부산역', toPlace:'광안리', moveMode:'도보 25분', moveMin:25, moveCost:0, costTotal:0 },
+            { id:'td2-b', time:'', place:'해운대', moveMode:'', moveMin:0, moveCost:0, costTotal:0 }
+          ],
+            betweenRoutes: { 'td2-a__td2-b': { minutes:14, farePer:0, mode:'2호선 · 약 14분', from:{name:'광안리'}, to:{name:'해운대'} } } }
+        ],
+        bookings: [], expenses: []
+      }));`);
+      ev(`state = loadState(); currentDay = 1; renderAll();`);
+
+      ok("불러올 때 이동 카드 moveMin 10 → 카드에 적힌 실제 75분", ev("state.days[0].items[0].moveMin") === 75,
+        String(ev("state.days[0].items[0].moveMin")));
+      ok("이동 카드는 moveMode 글자의 실제 시간을 총 이동에 쓴다", ev("itemMoveMinutes(state.days[0].items[0])") === 75,
+        String(ev("itemMoveMinutes(state.days[0].items[0])")));
+      ok("Day 1 총 이동 = 75 + 18 + 12 + 9 = 1시간 54분", headText() === "Day 1 총 이동 1시간 54분", headText());
+      ok("PC 사이드바도 현재 일차 합계", pcText() === "Day 1 총 이동 1시간 54분", pcText());
+      ok("인접하지 않은 구간 기록은 합산하지 않는다", ev("itemMoveMinutes(state.days[0].items[0])") === 75
+        && !/99/.test(headText()), headText());
+
+      ev("setDay(2)");
+      ok("Day 2 로 바꾸면 그 일차만 (25 + 14 = 39분)", headText() === "Day 2 총 이동 0시간 39분", headText());
+      ok("Day 2 전환: 사이드바도 같이 갱신", pcText() === "Day 2 총 이동 0시간 39분", pcText());
+      ok("Day 2 전환: Day 1 값이 섞이지 않는다", !/54분|114/.test(headText()), headText());
+
+      ev("setDay(1)");
+      ok("Day 1 로 돌아오면 다시 1시간 54분", headText() === "Day 1 총 이동 1시간 54분", headText());
+
+      // 순서를 바꿔 구간이 어긋나면 그 구간 길찾기는 빠지고, 도착 카드 자체 이동(도보 10분)이 잡힌다
+      ev(`state.days[0].items = [state.days[0].items[0], state.days[0].items[1], state.days[0].items[3], state.days[0].items[2]]; currentDay = 1; renderAll();`);
+      ok("순서가 어긋난 구간 길찾기는 빠지고 카드 이동만 남는다 (75+18+10 = 1시간 43분)",
+        headText() === "Day 1 총 이동 1시간 43분", headText());
+
+      // 0분인 일차도 일차를 함께 보여 준다
+      ev(`state.days[1].items = [{ id:'td2-empty', time:'', place:'메모만 있는 날', moveMode:'', moveMin:0, moveCost:0, costTotal:0 }]; currentDay = 2; renderAll();`);
+      ok("이동이 없는 일차도 'Day 2 총 이동 0시간 0분'", headText() === "Day 2 총 이동 0시간 0분", headText());
+
+      ev("state.bookings = []; state.expenses = []; state.days[0].items = []; state.days[1].items = []; currentDay = 1; saveState();");
     }
 
   } catch (e) {
