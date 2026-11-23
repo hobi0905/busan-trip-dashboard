@@ -4367,8 +4367,46 @@
 
     function getLocalKey() { return STORAGE_KEY + "_" + currentSyncId; }
 
+    // 시드·템플릿 일정 id — 이 id 들은 처음부터 의도된 이동 시간을 갖고 있으므로 정리 대상이 아니다
+    var seedItemIdCache = null;
+    function seedItemIds() {
+      if (seedItemIdCache) return seedItemIdCache;
+      const ids = new Set();
+      const add = (trip) => ((trip && trip.days) || []).forEach(day => (day.items || []).forEach(it => {
+        if (it && it.id != null) ids.add(String(it.id));
+      }));
+      add(DEFAULT_DATA);
+      add(AUSTRALIA_SAMPLE);
+      seedItemIdCache = ids;
+      return ids;
+    }
+
+    /* 🧹 일반 장소에 예전 코드가 넣던 더미 이동값 정리
+       · 새 일정 추가가 늘 moveMin: 10 을 넣어서 일반 장소 카드에 '🚶 (10분 · ₩0)' 이 뜨고
+         상단 '총 이동'에도 10분씩 더해졌다. 그 흔적(moveMin 10 · moveCost 0)만 지운다.
+       · 이동 카드(fromPlace/toPlace·화살표)나 실제 이동 시간을 적은 이동수단('도보 10분' 등),
+         시드·템플릿 일정의 의도된 값은 그대로 둔다. */
+    function stripDummyMoveDefaults(d) {
+      if (!d || !Array.isArray(d.days)) return d;
+      const seeds = seedItemIds();
+      d.days.forEach(day => (day.items || []).forEach(it => {
+        if (!it || isMemoItem(it)) return;
+        if (it.id != null && seeds.has(String(it.id))) return;
+        if (isMoveCardItem(it)) return;
+        if ((Number(it.moveCost) || 0) > 0) return;
+        if ((Number(it.moveMin) || 0) !== 10) return;
+        const mode = String(it.moveMode || "").trim();
+        if (mode && !/^도보$/.test(mode)) return;   // '도보 10분'처럼 시간을 적었거나 다른 수단이면 실제 값
+        it.moveMode = "";
+        it.moveMin = 0;
+        it.moveCost = 0;
+      }));
+      return d;
+    }
+
     function hydrateDefaults(d) {
       if (!d || !Array.isArray(d.days)) return d;
+      try { stripDummyMoveDefaults(d); } catch (e) { console.warn("dummy move clean", e); }
       d.days.forEach(day => {
         const defDay = DEFAULT_DATA.days.find(x => x.day === day.day);
         if (!defDay) return;
@@ -4836,7 +4874,7 @@
       const diff = Math.ceil((start - today) / 86400000);
       document.getElementById("hdr-dday").textContent = diff > 0 ? `D-${diff}` : diff === 0 ? "D-Day" : `D+${Math.abs(diff)}`;
 
-      const totalMin = state.days.reduce((acc, d) => acc + d.items.reduce((s, it) => s + (it.moveMin || 0), 0), 0);
+      const totalMin = state.days.reduce((acc, d) => acc + (d.items || []).reduce((s, it) => s + itemMoveMinutes(it), 0), 0);
       const h = Math.floor(totalMin / 60), min = totalMin % 60;
       document.getElementById("hdr-travel-time").textContent = `총 이동 ${h}시간 ${min}분`;
 
@@ -6665,6 +6703,35 @@
       return `<div class="tl-eta">⏱️ 이동시간 ${escapeHtmlText(text)}</div>`;
     }
 
+    /* 🚶 카드 이동 줄 — 실제로 이동한 카드에만 쓴다
+       · 이동 카드(출발 → 도착)이거나 이동수단을 적은 경우만 '이동'이다
+       · 일반 장소에 예전 코드가 넣던 더미(moveMode 없음 · moveMin 10 · moveCost 0)는
+         줄 자체를 그리지 않는다 — '🚶 (10분 · ₩0)' 이 뜨지 않게
+       · 0원은 괄호에 넣지 않는다 (이동수단만 적었으면 수단만, 시간·요금이 있으면 괄호로) */
+    function moveLineHtml(it, opts) {
+      if (!it) return "";
+      const showCost = !(opts && opts.showCost === false);
+      const mode = String(it.moveMode || "").trim();
+      const min = Math.round(Number(it.moveMin) || 0);
+      const cost = showCost ? Math.round(Number(it.moveCost) || 0) : 0;
+      if (!mode && !(min > 0) && !(cost > 0)) return "";
+      const detail = [];
+      // 이동수단 글자에 이미 적힌 시간은 두 번 적지 않는다 ('수영로 · 약 46분 (46분 · ₩0)' 금지)
+      if (min > 0 && !/\d+\s*(분|시간)/.test(mode)) detail.push(`${min}분`);
+      if (cost > 0) detail.push(fmt(cost));
+      const text = detail.length ? (mode ? `${mode} (${detail.join(" · ")})` : `(${detail.join(" · ")})`) : mode;
+      return `<div class="tl-move">${moveIconOf(mode)} ${escapeHtmlText(text)}</div>`;
+    }
+
+    /* 📊 '총 이동'에 더할 분 — 실제 이동만 센다 (일반 장소의 더미 10분은 합계를 오염시키지 않게) */
+    function itemMoveMinutes(it) {
+      if (!it || isMemoItem(it)) return 0;
+      const mode = String(it.moveMode || "").trim();
+      if (!mode && !isMoveCardItem(it)) return 0;
+      const n = Number(it.moveMin);
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    }
+
     function renderTimeline() {
       // 드래그 중에 날씨·동기화 등으로 목록이 다시 그려지면, 손을 떼기 전의 순서가 통째로 사라진다.
       // 목록을 다시 그리기 전에 지금까지의 드래그를 먼저 마무리(확정)한다.
@@ -6755,9 +6822,7 @@
             ${pickedText ? `<div style="font-size:12.5px;font-weight:700;color:var(--ocean-dark);background:var(--ocean-soft);padding:6px 9px;border-radius:8px;margin-bottom:6px;">🍴 ${pickedText} (${Number(it.costTotal) > 0 ? fmt(it.costTotal) : (picked.some(m => m.variablePrice || m.price == null) ? "가격 변동" : fmt(0))})</div>` : ""}
             ${!virtual && it.scheduled && it.routeSummary ? `<div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:2px;">🛣️ ${it.routeSummary}</div>` : ""}
             <div class="tl-meta">
-              <div class="tl-move">${moveIconOf(it.moveMode)} ${it.moveMode || ""} ${virtual
-                ? (it.moveMin ? `(${it.moveMin}분)` : "")
-                : `(${it.moveMin || 0}분 · ${fmt(it.moveCost || 0)})`}</div>
+              ${moveLineHtml(it, { showCost: !virtual })}
               ${virtual
                 ? `<div style="display:flex;align-items:center;gap:6px;">${it.routeUrl ? `<a class="map-btn" href="${escapeAttr(itemRouteUrl(it))}" target="_blank" onclick="event.stopPropagation()">길찾기</a>` : ""}${it.mapUrl ? `<a class="map-btn" href="${escapeAttr(itemMapUrl(it))}" target="_blank" onclick="event.stopPropagation()">지도</a>` : ""}</div>`
                 : `<div style="display:flex;align-items:center;gap:6px;">
@@ -8653,10 +8718,19 @@
         typeof pickedLat === "number" ? pickedLat : undefined,
         typeof pickedLng === "number" ? pickedLng : undefined);
 
+      // 🚶 이동 시간은 '실제로 잡힌 경우'만 — 이동수단에 적은 시간(추천 루트 '약 19분' 포함)이나
+      //    이동 모드의 체류(이동 80분)에서 읽는다. 일반 장소는 이동이 없으면 0으로 둔다
+      const typedMoveMin = moveMinutesFromText(moveMode) || (placeEditMode === "route" ? moveMinutesFromText(stay) : 0);
+
       if (editingPlaceId) {
         const it = dayObj.items.find(x => x.id === editingPlaceId);
         if (it) {
           it.time = timeOk; it.place = place; it.moveMode = moveMode; it.stay = stay; it.memo = memo; it.mapUrl = mapUrl;
+          // 이동수단을 지우면 이동 시간도 없다 · 시간을 새로 적었으면 그 값 · 이동 모드에서 시간이 안 잡히면 0
+          // (일반 장소 수정에서 이동수단을 그대로 두었다면 원래 값은 건드리지 않는다)
+          if (!String(moveMode).trim()) it.moveMin = 0;
+          else if (typedMoveMin > 0) it.moveMin = typedMoveMin;
+          else if (placeEditMode === "route") it.moveMin = 0;
           if (costNum !== null) {
             it.costTotal = costNum;
             if (placeEditMode === "route") it.moveCost = costNum;
@@ -8680,7 +8754,9 @@
         const c = costNum ?? 0;
         const newItem = {
           id: "d" + currentDay + "-" + Date.now(),
-          time: timeOk, place, stay, moveMode, moveMin: 10, moveCost: placeEditMode === "route" ? c : 0, costTotal: c,
+          time: timeOk, place, stay, moveMode,
+          // 새 일반 장소에는 이동이 없다 — '도보 10분' 기본값을 넣지 않는다
+          moveMin: typedMoveMin, moveCost: placeEditMode === "route" ? c : 0, costTotal: c,
           badges: [], mapUrl, memo
         };
         if (placeEditMode === "route") { newItem.fromPlace = fromPlace; newItem.toPlace = toPlace; rememberRouteEndpointCoords(newItem); }
@@ -10132,14 +10208,17 @@
 
     function homeMoveChip(it) {
       const mode = String(it.moveMode || "");
+      const min = Number(it.moveMin);
+      const hasMin = Number.isFinite(min) && min > 0;
+      // 이동이 없는 일반 장소는 칩을 만들지 않는다 ('🚶 —' 빈 칩 금지)
+      if (!mode.trim() && !hasMin) return "";
       let ico = "🚶";
       if (/택시/.test(mode)) ico = "🚕";
       else if (/버스|급행/.test(mode)) ico = "🚌";
       else if (/해변열차|스카이캡슐/.test(mode)) ico = "🚡";
       else if (/페리|선박/.test(mode)) ico = "⛴️";
       else if (/KTX|열차|기차|전철|지하철|호선|분당|ITX|SRT/.test(mode)) ico = "🚆";
-      const min = Number(it.moveMin);
-      const txt = Number.isFinite(min) && min > 0 ? `${Math.round(min)}분` : "—";
+      const txt = hasMin ? `${Math.round(min)}분` : "—";
       return `<span class="hr-move">${ico} ${txt}</span>`;
     }
 
@@ -15555,7 +15634,7 @@
               handleIncomingDeletedTrip(syncId, payload.new.data);
               return;
             }
-            state = payload.new.data;
+            state = stripDummyMoveDefaults(payload.new.data);
             localStorage.setItem(getLocalKey(), JSON.stringify(state));
             renderAll();
             checkLockScreen();
