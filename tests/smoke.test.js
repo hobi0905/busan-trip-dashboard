@@ -2181,7 +2181,14 @@ setTimeout(async () => {
         && /결제 ₩130,000/.test(rowTxt("나")) && /몫 ₩130,000/.test(rowTxt("동반인 1"))
         && /총 ₩260,000 ÷ 2명/.test(card.textContent),
         `${rowTxt("나")} / ${rowTxt("동반인 1")}`);
-      ok("사람별 경비: 기본 상태는 정산할 금액이 없다", /정산할 금액이 없어요/.test(cardTxt()), cardTxt().slice(0, 200));
+      ok("사람별 경비: 받을·낼·차액 없음이 사라지고 결제·몫만", !/받을 ₩|낼 ₩|차액 없음/.test(rowTxt("나"))
+        && !/받을 ₩|낼 ₩|차액 없음/.test(rowTxt("동반인 1")) && /결제/.test(rowTxt("나")) && /몫/.test(rowTxt("나")),
+        `${rowTxt("나")} / ${rowTxt("동반인 1")}`);
+      ok("사람별 경비: 정산 줄(#exp-settle-line)과 정산 문구가 없다", !w.document.getElementById("exp-settle-line")
+        && card.querySelectorAll(".exp-settle-line").length === 0 && !/💸 정산:|정산할 금액이 없어요/.test(cardTxt()), cardTxt().slice(0, 200));
+      ok("사람별 경비 요약은 그대로 (총액·몫 계산 유지)",
+        ev("expensePeopleSummary().total") === 260000 && ev("expensePeopleSummary().share") === 130000,
+        `${ev("expensePeopleSummary().total")} / ${ev("expensePeopleSummary().share")}`);
 
       // (2) ✏️ → '나' 옆 전액 → 저장
       openEdit2("m-hotel");
@@ -2199,8 +2206,12 @@ setTimeout(async () => {
       // (3) 나 / 동반인별 결제액과 정산 차액
       ok("전액: 나·동반인 결제액이 각각 바뀐다", /결제 ₩230,000/.test(rowTxt("나")) && /결제 ₩30,000/.test(rowTxt("동반인 1")),
         `${rowTxt("나")} / ${rowTxt("동반인 1")}`);
-      ok("전액: 정산 차액이 '동반인 1 → 나'로 계산된다", /동반인 1 → 나 ₩100,000/.test(cardTxt()),
-        (w.document.getElementById("exp-settle-line") || {}).textContent);
+      ok("전액: 받을·낼·차액 없음은 여전히 없다", !/받을 ₩|낼 ₩|차액 없음/.test(cardTxt()),
+        `${rowTxt("나")} / ${rowTxt("동반인 1")}`);
+      ok("전액: 정산 줄 없이 결제·몫만 남는다", !w.document.getElementById("exp-settle-line")
+        && card.querySelectorAll(".exp-settle-line").length === 0
+        && !/💸 정산:|정산할 금액이 없어요|받을 ₩|낼 ₩/.test(cardTxt()) && /결제 ₩230,000/.test(rowTxt("나")),
+        cardTxt());
       ok("전액: 항목 줄에도 누가 얼마 냈는지 보인다", /나 ₩200,000/.test(list2().textContent.replace(/\s+/g, " ")),
         list2().textContent.replace(/\s+/g, " ").slice(0, 240));
 
@@ -2230,7 +2241,9 @@ setTimeout(async () => {
       w.renameCompanion(2, '<img src=x onerror=alert(1)>');
       w.eval(`state.expensePayers['m-hotel'] = { '나':0, '지훈':0, '<img src=x onerror=alert(1)>':200000 }; saveState();`);
       ok("동반인 이름의 <>는 요약·항목 줄에서 글자로만", !card.querySelector("img") && !list2().querySelector("img")
-        && /<img src=x onerror=alert\(1\)>/.test(card.textContent) && /<img src=x onerror=alert\(1\)>/.test(list2().textContent),
+        && !!personRow("<img src=x onerror=alert(1)>") && [...card.querySelectorAll(".exp-person-input")]
+          .some(inp => inp.value === "<img src=x onerror=alert(1)>")
+        && /<img src=x onerror=alert\(1\)>/.test(list2().textContent),
         `${card.querySelectorAll("img").length} / ${list2().querySelectorAll("img").length}`);
 
       ev("state.bookings = []; state.expenses = []; state.days[0].items = []; state.companions = []; state.expensePayers = {}; state.expenseIncludeMap = {}; state.meta.travelers = 2; saveState();");
@@ -3223,7 +3236,8 @@ setTimeout(async () => {
         && ev("state.expensePayers['m-stay']['동반인 1']") === 147100, ev("JSON.stringify(state.expensePayers)"));
       const card3 = w.document.getElementById("exp-people-card").textContent.replace(/\s+/g, " ");
       ok("자동 분배: 사람별 경비에 각자 결제액", /결제 ₩150,000/.test(card3) && /결제 ₩147,100/.test(card3), card3.slice(0, 240));
-      ok("자동 분배: 정산은 차액 1,450만", /동반인 1 → 나 ₩1,450/.test(card3), card3.slice(-160));
+      ok("자동 분배: 정산 줄 없이 결제액만 보인다", !w.document.getElementById("exp-settle-line")
+        && !/💸 정산:|정산할 금액이 없어요|받을 ₩|낼 ₩|차액 없음/.test(card3), card3.slice(-160));
       ok("자동 분배: 항목 줄에도 누가 얼마 냈는지", /나 ₩150,000 · 동반인 1 ₩147,100/.test(list3().textContent.replace(/\s+/g, " ")),
         list3().textContent.replace(/\s+/g, " ").slice(0, 240));
 
@@ -3310,8 +3324,8 @@ setTimeout(async () => {
 
       // (4) 칩 하나 더 → 인원이 늘고 이름이 그대로
       clickChip("수민");
-      ok("초대 동반인: 두 번째 칩으로 3명", !!rowOf("수민") && ev("state.meta.travelers") === 3
-        && /지훈/.test(card4.textContent) && /수민/.test(card4.textContent), ev("JSON.stringify(state.companions)"));
+      ok("초대 동반인: 두 번째 칩으로 3명", !!rowOf("수민") && !!rowOf("지훈") && ev("state.meta.travelers") === 3
+        && ev("JSON.stringify(state.companions)") === '["나","지훈","수민"]', ev("JSON.stringify(state.companions)"));
 
       // (5) 직접 입력도 그대로 — 초대받지 않은 사람 이름
       const nameInput = [...card4.querySelectorAll(".exp-person-input")][1];
