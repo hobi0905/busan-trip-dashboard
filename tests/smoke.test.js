@@ -3180,6 +3180,163 @@ setTimeout(async () => {
       ok("홈 메모 제외: 일차를 돌아와도 3곳", w.document.querySelectorAll("#home-sheet-body .home-row").length === 3, "");
     }
 
+    // 63) 💳 정산 수정 모달 — 한 사람 결제액을 고치면 나머지 금액이 다른 사람 칸으로 자동 분배
+    {
+      ev(`currentDay = 1; editMode = false;
+        state.meta = { title:'결제액 자동 분배', destination:'서울', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }];
+        state.bookings = [];
+        state.expenses = [{ id:'m-stay', category:'숙소', name:'신라스테이 마포', amount:297100, status:'현장', manual:true }];
+        state.companions = []; state.expensePayers = {}; state.expenseIncludeMap = {}; state.expenseStatusMap = {}; state.members = [];
+        saveState();`);
+
+      const list3 = () => w.document.getElementById("expense-list");
+      const open3 = (id) => list3().querySelector(`[data-exp-edit="${id}"]`).dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      const modal3 = w.document.getElementById("exp-edit-modal");
+      const payer = () => [...modal3.querySelectorAll(".exp-payer-input")];
+      const vals3 = () => payer().map(i => i.value).join("/");
+      const type3 = (i, v) => { const el = payer()[i]; el.value = String(v); el.dispatchEvent(new w.Event("input", { bubbles: true })); };
+      const sumVal = () => w.document.getElementById("exp-edit-sum-val").textContent;
+      const sumHint = () => w.document.getElementById("exp-edit-sum-hint").textContent;
+
+      // (1) 2명 — '나'에 150,000을 넣으면 동반인 칸에 나머지 147,100이 바로 들어간다
+      open3("m-stay");
+      ok("자동 분배: 2명 처음에는 1/N", vals3() === "148550/148550", vals3());
+      type3(0, 150000);
+      ok("자동 분배: 2명 — 나 150,000 → 동반인 147,100", vals3() === "150000/147100", vals3());
+      ok("자동 분배: 합계 표시도 총액 그대로", sumVal() === "₩297,100" && sumHint() === "항목 금액 ₩297,100", `${sumVal()} / ${sumHint()}`);
+
+      // (2) 반대 방향 — 동반인 칸을 고치면 '나' 칸에 나머지가 들어간다
+      type3(1, 200000);
+      ok("자동 분배: 동반인 200,000 → 나 97,100", vals3() === "97100/200000", vals3());
+
+      // (3) 총액을 넘기면 다른 사람은 0, 초과 안내 문구는 그대로
+      type3(0, 400000);
+      ok("자동 분배: 총액 초과 → 다른 사람 0", vals3() === "400000/0", vals3());
+      ok("자동 분배: 총액 초과 안내가 남는다", /총액 ₩297,100보다 많아요/.test(sumHint()), sumHint());
+
+      // (4) 저장 — 두 사람 금액이 각각 남고 정산 차액도 1/N 기준
+      type3(0, 150000);
+      ok("자동 분배: 다시 고치면 나머지도 다시 계산", vals3() === "150000/147100", vals3());
+      w.saveExpenseEdit();
+      ok("자동 분배: 저장하면 사람별 금액이 각각 남는다", ev("state.expensePayers['m-stay']['나']") === 150000
+        && ev("state.expensePayers['m-stay']['동반인 1']") === 147100, ev("JSON.stringify(state.expensePayers)"));
+      const card3 = w.document.getElementById("exp-people-card").textContent.replace(/\s+/g, " ");
+      ok("자동 분배: 사람별 경비에 각자 결제액", /결제 ₩150,000/.test(card3) && /결제 ₩147,100/.test(card3), card3.slice(0, 240));
+      ok("자동 분배: 정산은 차액 1,450만", /동반인 1 → 나 ₩1,450/.test(card3), card3.slice(-160));
+      ok("자동 분배: 항목 줄에도 누가 얼마 냈는지", /나 ₩150,000 · 동반인 1 ₩147,100/.test(list3().textContent.replace(/\s+/g, " ")),
+        list3().textContent.replace(/\s+/g, " ").slice(0, 240));
+
+      // (5) 기존 전액·N빵 버튼은 그대로
+      open3("m-stay");
+      ok("자동 분배: 다시 열어도 저장된 금액", vals3() === "150000/147100", vals3());
+      modal3.querySelector("button[onclick='splitExpenseEvenly()']").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      ok("자동 분배 뒤에도 N빵은 그대로", vals3() === "148550/148550", vals3());
+      [...modal3.querySelectorAll(".exp-payer-row")][0].querySelector("button").dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      ok("자동 분배 뒤에도 전액은 그대로", vals3() === "297100/0", vals3());
+
+      // (6) 3명 — 나머지를 N-1명에게 균등 분배
+      w.closeExpenseEditModal();
+      w.addCompanion();
+      open3("m-stay");
+      ok("자동 분배: 사람이 늘면 남은 칸은 0", vals3() === "150000/147100/0", vals3());
+      type3(0, 100000);
+      ok("자동 분배: 3명 — 나 100,000 → 나머지 197,100을 둘에게", vals3() === "100000/98550/98550", vals3());
+      type3(1, 100001);
+      ok("자동 분배: 3명 — 나머지 1원은 앞사람에게", vals3() === "98550/100001/98549", vals3());
+      ok("자동 분배: 3명 합계도 총액과 일치", payer().reduce((s, i) => s + Number(i.value), 0) === 297100,
+        String(payer().reduce((s, i) => s + Number(i.value), 0)));
+
+      // (7) 4명 — 나눠지지 않는 금액도 합계가 총액과 맞는다
+      w.closeExpenseEditModal();
+      w.addCompanion();
+      open3("m-stay");
+      type3(0, 100001);
+      ok("자동 분배: 4명도 합계 일치", vals3() === "100001/65700/65700/65699"
+        && payer().reduce((s, i) => s + Number(i.value), 0) === 297100, vals3());
+      w.closeExpenseEditModal();
+
+      ev("state.bookings = []; state.expenses = []; state.days[0].items = []; state.companions = []; state.expensePayers = {}; state.expenseIncludeMap = {}; state.meta.travelers = 2; saveState();");
+    }
+
+    // 64) 👥 초대된 동반인 이름을 골라 결제자 명단에 넣기
+    {
+      ev(`currentDay = 1; editMode = false;
+        state.meta = { title:'초대 동반인 정산', destination:'서울', startDate:'2027-03-06', endDate:'2027-03-07', travelers:2, tripType:'domestic', country:'대한민국' };
+        state.days = [{ day:1, label:'1일차', date:'2027-03-06', items: [] }];
+        state.bookings = [];
+        state.expenses = [{ id:'m-hotel2', category:'숙소', name:'신라스테이 마포', amount:297100, status:'현장', manual:true }];
+        state.companions = []; state.expensePayers = {}; state.expenseIncludeMap = {}; state.expenseStatusMap = {};
+        state.members = [{ id:'u-ji', nickname:'지훈', role:'editor' }, { id:'u-su', nickname:'수민', role:'viewer' }];
+        saveState();`);
+
+      const card4 = w.document.getElementById("exp-people-card");
+      const rowOf = (nm) => [...card4.querySelectorAll(".exp-person-row")].find(r => r.getAttribute("data-person") === nm) || null;
+      const chip = (nm) => card4.querySelector(`[data-invite-name="${nm}"]`);
+      const clickChip = (nm) => chip(nm).dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      const list4 = () => w.document.getElementById("expense-list");
+      const modal4 = w.document.getElementById("exp-edit-modal");
+
+      // (1) 초대된 멤버는 후보 칩으로 자동으로 뜬다
+      ok("초대 동반인: 사람별 경비에 초대된 동반인 칩", !!chip("지훈") && !!chip("수민") && /초대된 동반인/.test(card4.textContent),
+        card4.textContent.replace(/\s+/g, " ").slice(0, 160));
+      ok("초대 동반인: 두 명이면 '모두 불러오기'도 있다", !!card4.querySelector("[data-invite-all]"), "");
+      const dl = w.document.getElementById("exp-companion-names");
+      ok("초대 동반인: 이름 입력칸에 초대된 이름 드롭다운", !!dl
+        && [...dl.querySelectorAll("option")].map(o => o.getAttribute("value")).join(",") === "지훈,수민"
+        && card4.querySelector(".exp-person-input").getAttribute("list") === "exp-companion-names",
+        dl ? [...dl.querySelectorAll("option")].map(o => o.getAttribute("value")).join(",") : "없음");
+
+      // (2) 칩을 누르면 '동반인 1' 대신 그 이름이 들어간다
+      clickChip("지훈");
+      ok("초대 동반인: 칩을 누르면 명단에 그 이름", !!rowOf("지훈") && !rowOf("동반인 1")
+        && ev("JSON.stringify(state.companions)") === '["나","지훈"]', ev("JSON.stringify(state.companions)"));
+      ok("초대 동반인: 인원수·저장도 함께", ev("state.meta.travelers") === 2
+        && ev("JSON.parse(localStorage.getItem(getLocalKey())).companions[1]") === "지훈", "");
+      ok("초대 동반인: 이미 넣은 이름은 후보에서 빠진다", !chip("지훈") && !!chip("수민"), "");
+
+      // (3) 정산 수정 모달에도 그 이름 그대로
+      list4().querySelector('[data-exp-edit="m-hotel2"]').dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      ok("초대 동반인: 수정 모달 결제자 이름도 그대로", [...modal4.querySelectorAll(".exp-payer-name")].map(e => e.textContent).join(",") === "나,지훈",
+        [...modal4.querySelectorAll(".exp-payer-name")].map(e => e.textContent).join(","));
+      const inp4 = [...modal4.querySelectorAll(".exp-payer-input")];
+      inp4[0].value = "150000";
+      inp4[0].dispatchEvent(new w.Event("input", { bubbles: true }));
+      ok("초대 동반인: 자동 분배도 그 사람 칸으로", inp4.map(i => i.value).join("/") === "150000/147100",
+        inp4.map(i => i.value).join("/"));
+      w.saveExpenseEdit();
+      ok("초대 동반인: 저장된 금액이 이름별로", ev("state.expensePayers['m-hotel2']['지훈']") === 147100
+        && /지훈 ₩147,100/.test(list4().textContent.replace(/\s+/g, " ")), ev("JSON.stringify(state.expensePayers)"));
+
+      // (4) 칩 하나 더 → 인원이 늘고 이름이 그대로
+      clickChip("수민");
+      ok("초대 동반인: 두 번째 칩으로 3명", !!rowOf("수민") && ev("state.meta.travelers") === 3
+        && /지훈/.test(card4.textContent) && /수민/.test(card4.textContent), ev("JSON.stringify(state.companions)"));
+
+      // (5) 직접 입력도 그대로 — 초대받지 않은 사람 이름
+      const nameInput = [...card4.querySelectorAll(".exp-person-input")][1];
+      nameInput.value = "민지";
+      nameInput.dispatchEvent(new w.Event("change", { bubbles: true }));
+      ok("초대 동반인: 초대가 없어도 직접 이름 입력", !!rowOf("민지"), ev("JSON.stringify(state.companions)"));
+
+      // (6) '모두 불러오기' — 빈 명단을 초대된 사람으로 한 번에
+      ev(`state.companions = []; state.meta.travelers = 2; state.expensePayers = {}; saveState();`);
+      const allBtn = card4.querySelector("[data-invite-all]");
+      ok("초대 동반인: 빈 명단이면 모두 불러오기 버튼", !!allBtn, "");
+      if (allBtn) allBtn.dispatchEvent(new w.MouseEvent("click", { bubbles: true }));
+      ok("초대 동반인: 모두 불러오면 초대된 사람 전부", ev("JSON.stringify(state.companions)") === '["나","지훈","수민"]'
+        && !!rowOf("지훈") && !!rowOf("수민"), ev("JSON.stringify(state.companions)"));
+      ok("초대 동반인: 모두 넣으면 남은 후보 칩은 없다", card4.querySelectorAll("[data-invite-name]").length === 0
+        && /모두 명단에 있어요/.test(card4.textContent), card4.textContent.replace(/\s+/g, " ").slice(0, 160));
+
+      // (7) 초대가 없는 여행은 지금처럼 '동반인 N'
+      ev(`state.members = []; state.companions = []; state.meta.travelers = 2; saveState();`);
+      ok("초대 동반인: 초대가 없으면 칩 없이 그대로", !card4.querySelector(".exp-invite-row") && !!rowOf("동반인 1"),
+        card4.textContent.replace(/\s+/g, " ").slice(0, 120));
+
+      ev("state.bookings = []; state.expenses = []; state.days[0].items = []; state.companions = []; state.members = []; state.expensePayers = {}; state.expenseIncludeMap = {}; state.meta.travelers = 2; saveState();");
+    }
+
   } catch (e) {
     results.push({ name: "테스트 실행 오류", pass: false, extra: e.stack });
   }

@@ -328,6 +328,11 @@
     #exp-people-card .exp-person-input { flex: 1 1 auto; height: 32px; padding: 4px 9px; font-size: 13px; font-weight: 700; border-radius: 9px; }
     #exp-people-card .exp-person-nums { display: flex; flex-wrap: wrap; gap: 3px 10px; margin-top: 4px; font-size: 11.5px; color: var(--muted); font-weight: 600; }
     #exp-people-card .exp-person-nums b { color: var(--text); font-weight: 800; }
+    /* ✉️ 초대된 동반인 칩 — 이름을 골라 명단으로 */
+    #exp-people-card .exp-invite-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 2px 0 8px; }
+    #exp-people-card .exp-invite-label { font-size: 11.5px; font-weight: 800; color: var(--muted); }
+    #exp-people-card .exp-invite-row .btn { font-size: 11.5px; padding: 4px 9px; border-radius: 999px; }
+    #exp-people-card .exp-invite-none { font-size: 11px; font-weight: 600; color: var(--muted); }
     #exp-people-card .exp-settle-line {
       margin-top: 8px; padding: 7px 10px; border-radius: 10px;
       background: var(--ocean-soft); border: 1px solid var(--ocean-border);
@@ -10752,10 +10757,66 @@
       saveState();
     }
 
+    // ✉️ 초대된 동반인(👥 동반인 관리의 멤버) 이름 — 결제자 명단 후보
+    function invitedMemberNames() {
+      const me = (myProfile && String(myProfile.nickname || "").trim()) || "";
+      const out = [];
+      (Array.isArray(state.members) ? state.members : []).forEach(m => {
+        if (!m || typeof m !== "object") return;
+        const nm = String(m.nickname == null ? "" : m.nickname).trim();
+        if (!nm || nm === EXP_ME) return;        // '나' 칸이 이미 있다
+        if (me && nm === me) return;
+        if (out.includes(nm)) return;
+        out.push(nm);
+      });
+      return out;
+    }
+
+    // 이름 하나를 명단에 넣는다 — 비어 있는 '동반인 N' 자리가 있으면 그 자리를 채운다
+    function placeCompanionName(list, nm) {
+      const cur = list.slice();
+      if (!nm || cur.includes(nm)) return cur;
+      const slot = cur.findIndex((x, i) => i > 0 && /^동반인 \d+$/.test(String(x)));
+      if (slot > 0) { cur[slot] = nm; return cur; }
+      if (cur.length >= 20) return cur;
+      cur.push(nm);
+      return cur;
+    }
+
+    function commitCompanionList(list) {
+      const base = Math.max(1, Number(state.meta.travelers) || 2);
+      state.companions = list;
+      state.meta.travelers = Math.max(base, list.length);
+      saveState();
+    }
+
+    // ✉️ 초대된 동반인 칩 → 그 이름으로 결제자 명단을 채운다
+    function applyInvitedCompanion(name) {
+      const nm = String(name == null ? "" : name).trim();
+      if (!nm || nm === EXP_ME) return;
+      const list = participantNames();
+      if (list.includes(nm)) return;
+      const next = placeCompanionName(list, nm);
+      if (!next.includes(nm)) return;                // 20명을 넘어 더 넣을 수 없다
+      commitCompanionList(next);
+    }
+
+    // ✉️ 초대된 동반인을 한 번에 모두 명단으로
+    function fillInvitedCompanions() {
+      const invited = invitedMemberNames();
+      if (!invited.length) return;
+      let list = participantNames();
+      invited.forEach(nm => { list = placeCompanionName(list, nm); });
+      commitCompanionList(list);
+    }
+
     function renderExpensePeople() {
       const host = document.getElementById("exp-people-card");
       if (!host) return;
       const s = expensePeopleSummary();
+      // ✉️ 초대된 동반인(👥 동반인 관리의 멤버) — 이름을 골라 바로 명단에 넣을 수 있게 한다
+      const invited = invitedMemberNames();
+      const inviteLeft = invited.filter(nm => !s.people.includes(nm));
       const rows = s.people.map((nm, i) => {
         const isMe = i === 0;
         const paid = Math.round(s.paid[nm] || 0);
@@ -10768,7 +10829,7 @@
             <div class="exp-person-top">
               ${isMe
                 ? `<span class="exp-person-name me">👤 나</span>`
-                : `<input class="input exp-person-input" data-companion-idx="${i}" value="${escapeAttr(nm)}" aria-label="동반인 이름" onchange="renameCompanion(${i}, this.value)" />
+                : `<input class="input exp-person-input" data-companion-idx="${i}" value="${escapeAttr(nm)}" list="exp-companion-names" placeholder="이름 (초대된 동반인 선택)" aria-label="동반인 이름" onchange="renameCompanion(${i}, this.value)" />
                    <button class="menu-ic-btn del" title="동반인 삭제" aria-label="동반인 삭제" onclick="removeCompanion(${i})">✕</button>`}
             </div>
             <div class="exp-person-nums">
@@ -10784,7 +10845,14 @@
           <span>👥 사람별 경비</span>
           <span style="font-size:11.5px;font-weight:700;color:var(--muted);">총 ${fmt(s.total)} ÷ ${s.n}명</span>
         </h3>
+        ${invited.length ? `<div class="exp-invite-row">
+          <span class="exp-invite-label">✉️ 초대된 동반인</span>
+          ${inviteLeft.map(nm => `<button class="btn btn-soft btn-sm exp-invite-chip" data-invite-name="${escapeAttr(nm)}" title="이 이름으로 동반인 명단에 넣기" onclick="applyInvitedCompanion(this.dataset.inviteName)">＋ ${escapeHtmlText(nm)}</button>`).join("")}
+          ${inviteLeft.length > 1 ? `<button class="btn btn-soft btn-sm exp-invite-chip" data-invite-all="1" onclick="fillInvitedCompanions()">모두 불러오기</button>` : ""}
+          ${inviteLeft.length ? "" : `<span class="exp-invite-none">모두 명단에 있어요</span>`}
+        </div>` : ""}
         ${rows}
+        <datalist id="exp-companion-names">${invited.map(nm => `<option value="${escapeAttr(nm)}"></option>`).join("")}</datalist>
         ${transfers.length
           ? `<div class="exp-settle-line" id="exp-settle-line">💸 정산: ${transfers.map(t => `${escapeHtmlText(t.from)} → ${escapeHtmlText(t.to)} ${fmt(t.amt)}`).join(" · ")}</div>`
           : `<div class="exp-settle-line quiet" id="exp-settle-line">정산할 금액이 없어요 — 각자 ${fmt(s.share)}씩</div>`}
@@ -10815,7 +10883,7 @@
         <div class="exp-payer-row" data-payer-idx="${i}">
           <span class="exp-payer-name" title="${escapeAttr(nm)}">${escapeHtmlText(nm)}</span>
           <input type="number" class="input exp-payer-input" data-payer-idx="${i}" min="0" step="1000" inputmode="numeric"
-            value="${Math.round(alloc.amounts[nm] || 0)}" aria-label="${escapeAttr(nm)} 결제 금액" oninput="updateExpenseEditSum()" />
+            value="${Math.round(alloc.amounts[nm] || 0)}" aria-label="${escapeAttr(nm)} 결제 금액" oninput="onExpensePayerInput(this)" />
           <button class="btn btn-soft btn-sm" onclick="fillExpensePayerFull(${i})">전액</button>
         </div>`).join("");
       updateExpenseEditSum();
@@ -10831,6 +10899,28 @@
 
     function expenseEditInputs() {
       return [...document.querySelectorAll("#exp-edit-payers .exp-payer-input")];
+    }
+
+    // 💳 한 사람 결제액을 고치면 나머지 금액은 다른 사람 칸에 자동으로 — 총액이 정해진 항목만
+    function distributeExpenseRemainder(source) {
+      const inputs = expenseEditInputs();
+      if (inputs.length < 2 || !source) return;
+      const idx = inputs.indexOf(source);
+      if (idx < 0) return;
+      const e = getSyncedExpenses().find(x => x.id === expenseEditId);
+      const amount = e ? (Number(e.amount) || 0) : 0;
+      if (!(amount > 0)) return;                       // 총액이 없으면 1/N 값을 건드리지 않는다
+      const mine = Math.max(0, Math.round(Number(source.value) || 0));
+      const rest = Math.max(0, Math.round(amount - mine));   // 총액을 넘겨도 나머지는 0
+      const others = inputs.filter((_, i) => i !== idx);
+      const base = Math.floor(rest / others.length);
+      const extra = rest - base * others.length;             // 1원 단위는 앞사람부터
+      others.forEach((inp, i) => { inp.value = String(base + (i < extra ? 1 : 0)); });
+    }
+
+    function onExpensePayerInput(source) {
+      distributeExpenseRemainder(source);
+      updateExpenseEditSum();
     }
 
     function updateExpenseEditSum() {
